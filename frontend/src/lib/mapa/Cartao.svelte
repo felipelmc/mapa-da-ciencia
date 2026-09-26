@@ -2,7 +2,7 @@
 	/**
 	 * O cartão de um documento: o que ele é, de onde veio, em que tópico está (e por quê) e os 5 vizinhos.
 	 * O resumo vem do fragmento de detalhes, carregado na hora; sem licença que permita publicar, fica o aviso.
-	 * Com a classificação, o resumo traz as evidências marcadas e a lista das respostas do modelo.
+	 * Com a classificação, o resumo traz as evidências marcadas e a lista das respostas do modelo (sem o resumo, só a lista).
 	 */
 	import type { Topicos } from '$lib/contrato/tipos';
 	import { usarProjeto } from '$lib/dados/contexto';
@@ -72,7 +72,12 @@
 		{:else if d?.resumo}
 			<p class="resumo" lang={d.idioma ?? undefined}>{d.resumo}</p>
 		{:else if d && d.fonte_analise !== 'so_titulo'}
-			<p class="nota">A licença deste resumo ({d.licenca}) não permite mostrá-lo aqui. Ele está na página do artigo.</p>
+			<p class="nota" data-testid="aviso-licenca">A licença deste resumo ({d.licenca}) não permite mostrá-lo aqui. Ele está na página do artigo.</p>
+		{/if}
+		{#if d && !d.resumo && Object.keys(d.evidencias ?? {}).length}
+			{#await codebook then cb}
+				<ResumoComEvidencias resumo={null} idioma={d.idioma} evidencias={d.evidencias ?? {}} codebook={cb} />
+			{/await}
 		{/if}
 		{#if d?.palavras_chave?.length}
 			<p class="chaves">{d.palavras_chave.join(' · ')}</p>

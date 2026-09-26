@@ -113,3 +113,26 @@ def test_cli(projeto, estatico, tmp_path, monkeypatch):
     assert r.exit_code == 0, r.output
     texto = " ".join(r.output.split())
     assert "Site publicado em" in texto and "resumos com licença aberta" in texto and "http.server" in texto
+
+
+def test_a_regra_e_a_licenca_mesmo_sem_resumo(tmp_path):
+    """No exemplo sintético, os documentos sem licença conhecida já vêm sem resumo, mas as evidências citam o
+    texto: elas também saem."""
+    import shutil
+    from pathlib import Path
+
+    from mapa_da_ciencia.publicar import filtrar_dados
+
+    pasta = tmp_path / "dados"
+    shutil.copytree(Path(__file__).parents[1] / "contrato" / "exemplo" / "dados", pasta)
+    publicados, retirados, evidencias = filtrar_dados(pasta)
+    detalhes = _detalhes(tmp_path)
+    fechados = [d for d in detalhes.values() if not d.licenca.startswith("cc")]
+    assert fechados and evidencias > 0 and retirados == 0  # nenhum tinha resumo, mas todos tinham evidências
+    assert all(e.evidencia == "" for d in fechados for e in d.evidencias.values())
+    assert publicados == sum(d.resumo is not None for d in detalhes.values())
+    manifesto = m.Manifesto.model_validate_json((pasta / "manifesto.json").read_text(encoding="utf-8"))
+    assert manifesto.api is False and manifesto.publicacao.resumos_publicados == publicados
+    abertos = {doc for doc, d in detalhes.items() if d.licenca.startswith("cc")}
+    val = m.Validacao.model_validate_json((pasta / "validacao.json").read_text(encoding="utf-8"))
+    assert all(d.evidencia == "" for d in val.divergencias if d.doc not in abertos)

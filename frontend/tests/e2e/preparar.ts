@@ -1,12 +1,14 @@
 // Preparação global dos testes e2e (globalSetup do Playwright).
 //
-// Monta três sites numa pasta temporária, cada um com o build e uma pasta `dados/` ao lado
+// Monta cinco sites numa pasta temporária, cada um com o build e uma pasta `dados/` ao lado
 // do index.html, e serve cada um com o servidor estático sem reescrita:
 //   raiz        build + exemplo sintético, servido em /
 //   subcaminho  o mesmo, servido em /mapa-da-ciencia/demo/ (como no GitHub Pages)
 //   vazio       build + só um manifesto de projeto recém-criado (`mapa novo`), com api: true
 //   painel      build + exemplo sintético com api: true e as APIs falsas do painel (`api-falsa.ts`, a codificação;
 //               `api-falsa-painel.ts`, etapas, jobs com SSE, modelos, configuração e codebook)
+//   publicado   build + o exemplo passado pelas regras do `mapa publicar` (contrato/exemplo-publicado, gerado pelo
+//               scripts/gerar_contrato.py, porque o job do frontend no CI não tem Python)
 // As URLs vão para variáveis de ambiente, que os workers herdam. A função devolvida
 // derruba os servidores e apaga a pasta temporária.
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -20,6 +22,7 @@ import { servir, type Servidor } from './servidor.ts';
 const RAIZ = fileURLToPath(new URL('../..', import.meta.url));
 const BUILD = join(RAIZ, 'build');
 const EXEMPLO = join(RAIZ, '..', 'contrato', 'exemplo', 'dados');
+const PUBLICADO = join(RAIZ, '..', 'contrato', 'exemplo-publicado', 'dados');
 export const SUBCAMINHO = '/mapa-da-ciencia/demo/';
 
 /** Data de modificação mais recente entre os arquivos que entram no build. */
@@ -73,7 +76,9 @@ export default async function preparar() {
 			writeFileSync(join(pasta, 'manifesto.json'), JSON.stringify({ ...manifesto, api: true }));
 		});
 
-		const [raiz, sub, vazio, painel] = await Promise.all([
+		montarSite(join(tmp, 'publicado'), (pasta) => cpSync(PUBLICADO, pasta, { recursive: true }));
+
+		const [raiz, sub, vazio, painel, publicado] = await Promise.all([
 			servir(join(tmp, 'raiz')),
 			servir(join(tmp, 'sub')),
 			servir(join(tmp, 'vazio'), criarPainelFalso(JSON.parse(readFileSync(join(EXEMPLO, 'codebook.json'), 'utf8')))),
@@ -81,13 +86,15 @@ export default async function preparar() {
 				const validacao = criarApiFalsa(EXEMPLO);
 				const painel = criarPainelFalso(JSON.parse(readFileSync(join(EXEMPLO, 'codebook.json'), 'utf8')));
 				return (req, res, url) => painel(req, res, url) || validacao(req, res, url);
-			})())
+			})()),
+			servir(join(tmp, 'publicado'))
 		]);
-		servidores.push(raiz, sub, vazio, painel);
+		servidores.push(raiz, sub, vazio, painel, publicado);
 		process.env.E2E_URL_RAIZ = `${raiz.origem}/`;
 		process.env.E2E_URL_SUBCAMINHO = `${sub.origem}${SUBCAMINHO}`;
 		process.env.E2E_URL_VAZIO = `${vazio.origem}/`;
 		process.env.E2E_URL_PAINEL = `${painel.origem}/`;
+		process.env.E2E_URL_PUBLICADO = `${publicado.origem}/`;
 	} catch (e) {
 		await Promise.all(servidores.map((s) => s.fechar()));
 		rmSync(tmp, { recursive: true, force: true });

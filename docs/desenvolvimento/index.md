@@ -69,7 +69,7 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 
 | O quê | Gerado por | Quando regenerar |
 |---|---|---|
-| `contrato/schema/*.json` e `contrato/exemplo/dados/` | `uv run python scripts/gerar_contrato.py` | Ao mudar `contrato/modelos.py` ou o gerador de exemplo |
+| `contrato/schema/*.json`, `contrato/exemplo/dados/` e `contrato/exemplo-publicado/dados/` | `uv run python scripts/gerar_contrato.py` | Ao mudar `contrato/modelos.py`, o gerador de exemplo ou as regras do `mapa publicar` |
 | `frontend/src/lib/contrato/tipos.ts` | `npm run tipos` (em `frontend/`) | Depois de regenerar os schemas |
 | `docs/referencia/{cli,configuracao,codebook,contrato}.md` | `uv run python scripts/gerar_referencias.py` | Ao mudar comandos, `config.py` ou o contrato |
 | `src/mapa_da_ciencia/fontes/scielo-revistas.json` | `uv run python scripts/gerar_revistas.py` (1 requisição à ArticleMeta) | Para atualizar a lista de revistas do SciELO Brasil |

@@ -38,7 +38,8 @@
 	/**
 	 * O resumo com as evidências da classificação marcadas, e a lista das respostas do modelo. Passar o mouse (ou o
 	 * foco) numa resposta acende o trecho dela no resumo e apaga os outros; um clique deixa aceso. Respostas cujo trecho não foi achado no
-	 * resumo, ou que não precisavam de trecho, dizem isso na lista.
+	 * resumo, ou que não precisavam de trecho, dizem isso na lista. Sem o resumo (no site publicado, quando a licença não
+	 * permite mostrá-lo), fica só a lista, com os valores.
 	 */
 	import type { CodebookContrato } from '$lib/contrato/tipos';
 
@@ -48,7 +49,7 @@
 		evidencias,
 		codebook
 	}: {
-		resumo: string;
+		resumo: string | null;
 		idioma: string | null;
 		evidencias: Record<string, Evidencia>;
 		codebook: CodebookContrato | null;
@@ -58,7 +59,7 @@
 	let sobre = $state<string | null>(null);
 	let fixa = $state<string | null>(null);
 	const ativa = $derived(sobre ?? fixa);
-	const segmentos = $derived(segmentar(resumo, evidencias));
+	const segmentos = $derived(resumo ? segmentar(resumo, evidencias) : []);
 	const ordem = $derived(
 		codebook ? codebook.variaveis.map((v) => v.id).filter((id) => id in evidencias) : Object.keys(evidencias)
 	);
@@ -81,13 +82,15 @@
 	};
 </script>
 
-<p class="resumo" lang={idioma ?? undefined} data-testid="resumo-marcado">
-	{#each segmentos as s, k (k)}{#if s.variaveis.length}<mark
-				class:acesa={ativa !== null && s.variaveis.includes(ativa)}
-				class:apagada={ativa !== null && !s.variaveis.includes(ativa)}
-				data-variaveis={s.variaveis.join(' ')}>{s.texto}</mark
-			>{:else}{s.texto}{/if}{/each}
-</p>
+{#if resumo}
+	<p class="resumo" lang={idioma ?? undefined} data-testid="resumo-marcado">
+		{#each segmentos as s, k (k)}{#if s.variaveis.length}<mark
+					class:acesa={ativa !== null && s.variaveis.includes(ativa)}
+					class:apagada={ativa !== null && !s.variaveis.includes(ativa)}
+					data-variaveis={s.variaveis.join(' ')}>{s.texto}</mark
+				>{:else}{s.texto}{/if}{/each}
+	</p>
+{/if}
 
 <section class="respostas" aria-label="Classificação pelo codebook" data-testid="respostas-classificacao">
 	<h3 class="rotulo-miudo">Classificação</h3>
@@ -109,8 +112,8 @@
 					<span class="nome">{nome(id)}</span>
 					<span class="valor">
 						{valor(id)}
-						{#if e.campo === 'titulo'}<span class="nota">no título</span>{/if}
-						{#if NOTAS[e.status]}<span class="nota">{NOTAS[e.status]}</span>{/if}
+						{#if resumo && e.campo === 'titulo'}<span class="nota">no título</span>{/if}
+						{#if resumo && NOTAS[e.status]}<span class="nota">{NOTAS[e.status]}</span>{/if}
 					</span>
 				</button>
 			</li>

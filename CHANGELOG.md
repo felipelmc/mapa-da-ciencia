@@ -40,6 +40,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - **`mapa publicar [--destino] [--sem-resumos]`** e `api.publicar()`: o site estático do projeto, com a interface e o contrato, `api: false`, resumos (e o texto das evidências) só com licença Creative Commons, sem e-mails (varredura final), montado numa pasta nova e trocado de uma vez; contrato 1.4 (`Manifesto.publicacao`); guia "Publicar o site";
 - **Metodologia** no site publicado: sem API, a seção Projeto vira a página Metodologia, tirada do manifesto (fontes, recorte, contagens, modelos com o digest, hash do codebook, sementes, durações, licenças e o que a publicação retirou), com os links para as explicações;
 - o GitHub Pages do projeto publica a documentação em `/` e, a partir do *asset* `piloto-publicado.zip` da última *release*, a demo do piloto em `/demo/` (sem o *asset*, sai só a documentação, com um aviso);
+- `contrato/exemplo-publicado/`: o exemplo sintético passado pelas regras do `mapa publicar`, gerado e conferido pelo `scripts/gerar_contrato.py`; os testes e2e ganham o site publicado (sem API, a Metodologia com a publicação, o cartão de um artigo sem licença aberta com os valores da classificação e sem os trechos);
 
 ## [0.4.0] - 2026-09-26
 

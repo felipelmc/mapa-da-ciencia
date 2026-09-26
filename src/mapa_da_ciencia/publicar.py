@@ -54,6 +54,44 @@ def _gravar(caminho: Path, obj: m.BaseModel) -> None:
     caminho.write_text(json.dumps(obj.model_dump(mode="json"), ensure_ascii=False, separators=(",", ":")), "utf-8")
 
 
+def filtrar_dados(pasta: Path, *, sem_resumos: bool = False, em: datetime | None = None) -> tuple[int, int, int]:
+    """Aplica as regras da publicação a uma pasta do contrato, no lugar: resumos e texto das evidências só com
+    licença aberta (a regra é a licença, com ou sem resumo), divergências da validação sem o trecho dos outros, e o
+    manifesto com `api: false` e `publicacao`. Devolve (resumos publicados, resumos retirados, evidências
+    retiradas)."""
+    publicados = retirados = evid_retiradas = 0
+    abertos: set[str] = set()
+    for arq in sorted((pasta / "detalhes").glob("*.json")):
+        frag = m.Fragmento.model_validate(_json(arq))
+        for doc, det in frag.documentos.items():
+            if not sem_resumos and pode_publicar_resumo(det.licenca):
+                abertos.add(doc)
+                publicados += det.resumo is not None
+                continue
+            if det.resumo is not None:
+                retirados += 1
+                det.resumo = None
+            for e in det.evidencias.values():
+                if e.evidencia:
+                    evid_retiradas += 1
+                e.evidencia, e.inicio, e.fim, e.campo = "", None, None, None
+        _gravar(arq, frag)
+
+    if (arq := pasta / "validacao.json").exists():
+        val = m.Validacao.model_validate(_json(arq))
+        for d in val.divergencias:
+            if d.doc not in abertos:
+                d.evidencia = ""
+        _gravar(arq, val)
+
+    manifesto = m.Manifesto.model_validate(_json(pasta / "manifesto.json"))
+    publicacao = m.PublicacaoInfo(
+        em=em or datetime.now(UTC), resumos_publicados=publicados, resumos_retirados=retirados, sem_resumos=sem_resumos
+    )
+    _gravar(pasta / "manifesto.json", manifesto.model_copy(update={"api": False, "publicacao": publicacao}))
+    return publicados, retirados, evid_retiradas
+
+
 def publicar(
     projeto: Projeto, destino: Path | None = None, *, sem_resumos: bool = False, estatico: Path | None = None
 ) -> ResumoPublicacao:
@@ -75,45 +113,9 @@ def publicar(
     shutil.copytree(estatico, novo)
     shutil.copytree(dados, novo / "dados")
 
-    publicados = retirados = evid_retiradas = 0
-    abertos: set[str] = set()
-    for arq in sorted((novo / "dados" / "detalhes").glob("*.json")):
-        frag = m.Fragmento.model_validate(_json(arq))
-        for doc, det in frag.documentos.items():
-            if det.resumo is None:
-                continue
-            if not sem_resumos and pode_publicar_resumo(det.licenca):
-                publicados += 1
-                abertos.add(doc)
-                continue
-            retirados += 1
-            det.resumo = None
-            for e in det.evidencias.values():
-                if e.evidencia:
-                    evid_retiradas += 1
-                e.evidencia, e.inicio, e.fim, e.campo = "", None, None, None
-        _gravar(arq, frag)
-
-    if (arq := novo / "dados" / "validacao.json").exists():
-        val = m.Validacao.model_validate(_json(arq))
-        for d in val.divergencias:
-            if d.doc not in abertos:
-                d.evidencia = ""
-        _gravar(arq, val)
+    publicados, retirados, evid_retiradas = filtrar_dados(novo / "dados", sem_resumos=sem_resumos)
 
     manifesto = m.Manifesto.model_validate(_json(novo / "dados" / "manifesto.json"))
-    manifesto = manifesto.model_copy(
-        update={
-            "api": False,
-            "publicacao": m.PublicacaoInfo(
-                em=datetime.now(UTC),
-                resumos_publicados=publicados,
-                resumos_retirados=retirados,
-                sem_resumos=sem_resumos,
-            ),
-        }
-    )
-    _gravar(novo / "dados" / "manifesto.json", manifesto)
 
     for arq in (novo / "dados").rglob("*.json"):
         if EMAIL.search(arq.read_text(encoding="utf-8")):

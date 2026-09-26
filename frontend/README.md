@@ -77,13 +77,21 @@ frontend/
 │   └── routes/                       uma pasta por seção; +layout.svelte abre o projeto
 ├── static/favicon.svg
 └── tests/e2e/
-    ├── preparar.ts                   globalSetup: monta e serve raiz, subcaminho e projeto vazio
-    ├── servidor.ts                   estático sem reescrita (como o GitHub Pages)
+    ├── preparar.ts                   globalSetup: monta e serve os cinco sites (tabela abaixo)
+    ├── servidor.ts                   estático sem reescrita (como o GitHub Pages), com rotas de API opcionais
+    ├── api-falsa.ts                  API falsa da codificação (fila, gravar, métricas)
+    ├── api-falsa-painel.ts           API falsa do painel (etapas, jobs com SSE, modelos, configuração, codebook)
     ├── comum.ts                      ajudantes: vigiar o console, esperar o mapa, ler o exemplo
     ├── casca.spec.ts                 casca, capa, temas, projeto vazio
     ├── mapa.spec.ts                  a vista Mapa
     ├── topicos.spec.ts               a vista Tópicos
-    └── geografia.spec.ts             a vista Geografia
+    ├── geografia.spec.ts             a vista Geografia
+    ├── classificacao.spec.ts         a vista Classificação
+    ├── validacao.spec.ts             a vista Validação
+    ├── codificar.spec.ts             a codificação pelo teclado
+    ├── projeto.spec.ts               a vista Projeto (linha de metrô, jobs ao vivo, assistente) e a Metodologia
+    ├── exportar.spec.ts              exportar figuras e o modo apresentação
+    └── publicado.spec.ts             o site gerado pelo `mapa publicar`
 ```
 
 Os testes unitários ficam ao lado do código (`*.test.ts`).
@@ -211,13 +219,15 @@ Um só sistema de tokens (`src/lib/estilos/tokens.css`) com dois temas, escolhid
 | `geografia/escala.test.ts` | classes de cor em escala logarítmica com limites redondos; a escala sequencial (`--seq-*`) muda de claridade sempre no mesmo sentido, com tons vizinhos distinguíveis e o mais forte com contraste 3:1 sobre o fundo, nos dois temas |
 | `geografia/malhas.test.ts` | as 27 UFs do IBGE com a sigla, os países com ISO-2 único, projeções que cabem na área de desenho |
 
-**De ponta a ponta** (`npm run e2e`). O `tests/e2e/preparar.ts` copia o build para uma pasta temporária, com os dados de exemplo em `dados/` ao lado do `index.html`, e serve três sites com um estático sem reescrita:
+**De ponta a ponta** (`npm run e2e`). O `tests/e2e/preparar.ts` copia o build para uma pasta temporária, com os dados de exemplo em `dados/` ao lado do `index.html`, e serve cinco sites com um estático sem reescrita:
 
 | Site | Serve |
 |---|---|
 | raiz | build + exemplo em `/` |
 | subcaminho | build + exemplo em `/mapa-da-ciencia/demo/` |
-| vazio | build + só um manifesto de projeto novo, com `api: true` |
+| vazio | build + só um manifesto de projeto novo, com `api: true`, e a API falsa do painel |
+| painel | build + exemplo com `api: true` e as duas APIs falsas (`api-falsa.ts` e `api-falsa-painel.ts`) |
+| publicado | build + `contrato/exemplo-publicado/`, o exemplo passado pelas regras do `mapa publicar` (gerado pelo `scripts/gerar_contrato.py`; o job do frontend no CI não tem Python) |
 
 Os testes cobrem:
 
@@ -232,6 +242,10 @@ Os testes cobrem:
 - projeto vazio, sem pedir arquivos ausentes;
 - no Mapa (`mapa.spec.ts`): o desenho dos pontos, contornos e rótulos pelo zoom, legenda, cor por revista, cartão pelo link e pelo clique, busca, laço pelo link e pelo mouse, play da linha do tempo e atalhos.
 - na Geografia (`geografia.spec.ts`): o peso de cada UF igual ao gabarito do Python, o ranking pela instituição de maior peso, o Brasil fora da escala do mundo, o clique numa UF que vai para o recorte e dali para o Mapa, o teclado, "Ver como tabela", "Mostrar mais", a cobertura por ano (o aviso dos anos com muito peso sem afiliação) e o projeto vazio.
+- na Classificação, na Validação e na codificação (`classificacao.spec.ts`, `validacao.spec.ts`, `codificar.spec.ts`): as barras e o cruzamento conferidos com o exemplo, a lista com a evidência marcada, os selos de kappa, a matriz de confusão e 20 fichas codificadas só pelo teclado que sobrevivem a um reload.
+- no Projeto (`projeto.spec.ts`): a linha de metrô, o job ao vivo que sobrevive à queda proposital da primeira conexão SSE, cancelar, retomar depois de um reload, baixar um modelo, o assistente e o editor do codebook; no site estático, a Metodologia.
+- na exportação (`exportar.spec.ts`): SVG com as fontes embutidas e a largura do artigo, PNG na largura do preset, CSV com BOM e o modo apresentação.
+- no site publicado (`publicado.spec.ts`): nenhuma chamada à API, a Metodologia com o que a publicação retirou e o cartão de um artigo sem licença aberta, com os valores da classificação e sem o resumo nem os trechos citados.
 
 As capturas ficam em `test-results/` (ignorado pelo git): `tema-observatorio-1440x900.png`, `tema-prancha-1440x900.png` e `estreita-observatorio-390x844.png`.
 

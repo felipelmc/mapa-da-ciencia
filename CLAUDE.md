@@ -18,7 +18,7 @@ uv run pytest                                # testes (pythonpath=src)
 uv run pytest tests/test_projeto.py -k novo  # um teste
 uv run ruff check && uv run ruff format      # lint e formatação (formata também Python em Markdown)
 uv run mkdocs build --strict                 # documentação, sem avisos
-uv run python scripts/gerar_contrato.py      # regenera contrato/schema e contrato/exemplo (--checar no CI)
+uv run python scripts/gerar_contrato.py      # regenera contrato/schema, contrato/exemplo e contrato/exemplo-publicado (--checar no CI)
 uv run python scripts/gerar_referencias.py   # regenera docs/referencia/{cli,configuracao,codebook,contrato,api-http}.md
 uv run mapa diagnostico                      # memória, Ollama, modelos, rede
 uv run mapa painel --exemplo                 # painel com dados sintéticos
