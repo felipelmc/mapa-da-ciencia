@@ -42,6 +42,7 @@ npx playwright install chromium
 | `npm run tipos` | Regenera `src/lib/contrato/tipos.ts` a partir de `../contrato/schema/*.schema.json`. |
 | `npm run tipos:checar` | Falha se `tipos.ts` estiver desatualizado em relação aos schemas. Roda no CI. |
 | `npm run empacotar` | Faz o build e copia `build/` para `../src/mapa_da_ciencia/web/estatico/` (apaga o destino antes), de onde o `mapa painel` serve a interface. |
+| `node scripts/baixar-malhas.ts` | Regrava as malhas da vista Geografia em `src/lib/geografia/malhas/`: as UFs do IBGE (1 requisição à API de malhas) e os países do Natural Earth (pacote `world-atlas`, sem rede). Com `--so-mundo`, só a do mundo. As malhas são versionadas; o painel não baixa nada. |
 | `node scripts/capturas.ts ../projetos/cp-scielo` | Gera as capturas do mapa da documentação (`../docs/imagens/`) a partir dos dados de um projeto, com o Playwright. Roda só localmente, depois do `npm run build`: o piloto não está no repositório. O cartão mostra sempre um artigo com licença CC BY. |
 
 A ordem do CI (`.github/workflows/ci.yml`) é: `npm ci`, `tipos:checar`, `check`, `test`, `build`, `e2e`.
@@ -56,6 +57,7 @@ frontend/
 ├── playwright.config.ts              e2e sobre o build, 1440×900, um worker
 ├── scripts/
 │   ├── gerar-tipos.ts                schemas do contrato → src/lib/contrato/tipos.ts
+│   ├── baixar-malhas.ts              IBGE e Natural Earth → src/lib/geografia/malhas/
 │   ├── relativizar-index.ts          pós-build: "/_app/ → "./_app/ no index.html
 │   └── empacotar.ts                  build/ → ../src/mapa_da_ciencia/web/estatico/
 ├── src/
@@ -69,6 +71,7 @@ frontend/
 │   │   ├── estilos/base.css          reset, tipografia, foco, fundo, movimento
 │   │   ├── componentes/              casca (Trilho, BarraSuperior…), estados vazios, carta da capa
 │   │   ├── recorte/                  barra do recorte (comum às vistas de análise) e linha do tempo
+│   │   ├── geografia/                malhas (TopoJSON versionado) e projeções equivalentes
 │   │   ├── secoes.ts                 as seções: rótulo, rota, ícone, resumo, marco, arquivos usados
 │   │   └── formato.ts                números e datas em pt-BR
 │   └── routes/                       uma pasta por seção; +layout.svelte abre o projeto
