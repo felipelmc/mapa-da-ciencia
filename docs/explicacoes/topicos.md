@@ -111,7 +111,7 @@ No piloto, rodar de novo com outra semente mantém o número e a cor de 50 dos 5
 
 ## 11. Rótulos
 
-Cada tópico e cada macrotema ganha um **rótulo** curto e uma **descrição** em português, escritos pelo modelo de linguagem local do projeto (`modelos.rotulos`, o `qwen3.5:9b` no perfil padrão). O modelo recebe as 15 palavras-chave e os 5 títulos representativos do tópico; para um macrotema, recebe os rótulos dos seus tópicos. As respostas seguem um esquema JSON, com temperatura 0 e semente fixa.
+Cada tópico e cada macrotema ganha um **rótulo** curto e uma **descrição** em português, escritos pelo modelo de linguagem local do projeto (`modelos.rotulos`, o `qwen3.5:9b` no perfil padrão). O modelo recebe as 15 palavras-chave e os 5 títulos representativos do tópico; para um macrotema, recebe os rótulos dos seus tópicos e as palavras-chave mais fortes da área, e é orientado a dar o nome da subárea que eles têm em comum, e não uma lista. Um macrotema de um tópico só leva o nome do tópico. As respostas seguem um esquema JSON, com temperatura 0 e semente fixa.
 
 Alguns cuidados:
 

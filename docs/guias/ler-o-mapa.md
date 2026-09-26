@@ -4,7 +4,7 @@ O **Mapa** do painel mostra cada documento do corpus como um ponto. Esta página
 
 <figure markdown="span">
   ![O mapa do piloto: milhares de pontos coloridos por tópico, com contornos em volta dos tópicos e os rótulos dos macrotemas; à esquerda, o painel de controles com a busca, o laço e a legenda](../imagens/mapa.png){ loading=lazy }
-  <figcaption>O piloto: 4.275 artigos de dez revistas de ciência política, de 2010 a 2025, coloridos por tópico. Os rótulos são as palavras-chave de cada macrotema (gerado com <code>--sem-rotulos</code>).</figcaption>
+  <figcaption>O piloto: 4.275 artigos de dez revistas de ciência política, de 2010 a 2025, coloridos por tópico. Com o zoom afastado, os rótulos são os dos macrotemas, escritos pelo modelo de linguagem local (<code>qwen3.5:9b</code>).</figcaption>
 </figure>
 
 ## O que o mapa mostra
