@@ -19,6 +19,8 @@ mapa novo [OPÇÕES] pasta
 | `pasta` | Pasta onde o projeto será criado. | **obrigatório** |
 | `--modelo`, `-m` | Modelo de projeto: ciencia-politica, vazio. | `ciencia-politica` |
 | `--perfil`, `-p` | Perfil de modelos locais: leve, padrao, forte. Padrão: sugerido pela memória da máquina. |  |
+| `--revista`, `-r` | ISSN ou acrônimo de uma revista do recorte (repita para várias). |  |
+| `--anos` | Período do recorte: 2024 ou 2010-2025. |  |
 
 ## `mapa status`
 
@@ -59,3 +61,51 @@ mapa painel [OPÇÕES]
 | `--exemplo` | Mostra o exemplo sintético, sem precisar de um projeto. |  |
 | `--porta` | Porta local do servidor. | `8765` |
 | `--abrir`, `--nao-abrir` | Abre o navegador automaticamente. | `True` |
+
+## `mapa revistas`
+
+Lista as revistas do SciELO Brasil, para escolher o recorte de um projeto.
+
+```
+mapa revistas [OPÇÕES] busca
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `busca` | Parte do título, acrônimo, categoria ou ISSN. | **obrigatório** |
+| `--area`, `-a` | Filtra pela grande área (ex.: humanas, saúde). | `` |
+| `--yaml` | Imprime as linhas prontas para colar em `fontes.scielo.revistas`. |  |
+
+## `mapa coletar`
+
+Coleta os artigos do recorte e monta o corpus do projeto (dados/documentos.parquet).
+
+```
+mapa coletar [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--revista`, `-r` | Coleta só esta revista (ISSN ou acrônimo); repita para várias. |  |
+| `--anos` | Coleta só este período: 2024 ou 2010-2025. |  |
+| `--limite` | Coleta só os N primeiros artigos (para testar). |  |
+| `--atualizar` | Baixa de novo as listas de artigos (para pegar publicações novas). |  |
+| `--offline` | Não acessa a internet: usa só o que está em brutos/. |  |
+| `--sem-openalex` | Não enriquece com o OpenAlex (citações, licença por artigo). |  |
+| `--consulta` | Só os artigos cujo título ou resumo respondem a esta busca (via OpenAlex). |  |
+
+## `mapa importar`
+
+Acrescenta ao projeto artigos de uma busca exportada do search.scielo.org (ou de uma lista de DOIs).
+
+```
+mapa importar [OPÇÕES] arquivos
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `arquivos` | Arquivos RIS, CSV ou BibTeX do search.scielo.org, ou listas de DOIs (.txt). | **obrigatório** |
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--nao-coletar` | Só copia os arquivos para importados/, sem rodar a coleta. |  |
+| `--sem-openalex` | Não usa o OpenAlex na coleta. |  |

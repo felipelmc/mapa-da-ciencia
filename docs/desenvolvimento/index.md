@@ -33,8 +33,11 @@ flowchart LR
 | Parte | Onde | Papel |
 |---|---|---|
 | CLI | `src/mapa_da_ciencia/cli.py` | Só orquestra; a lógica fica nos módulos |
+| API para notebooks | `api.py` | Fachada com as mesmas etapas da CLI, devolvendo objetos Python ([referência](../referencia/api-python.md)) |
 | Configuração | `config.py`, `projeto.py` | `mapa.yaml`, `codebook.yaml` e layout da pasta do projeto |
 | Reprodutibilidade | `manifesto.py` | Registro de cada execução de etapa |
+| Coleta | `coleta.py`, `fontes/`, `documento.py`, `texto.py` | Orquestração da etapa (`coleta.py`); buscador com cache (`fontes/base.py`), ArticleMeta, OpenAlex, importação, deduplicação; o `Documento` normalizado |
+| Armazenamento | `armazenamento.py` | Corpus em Parquet via DuckDB, com views para consulta ([ADR 0006](../decisoes/0006-armazenamento-parquet-duckdb.md)) |
 | Rede e máquina | `rede.py`, `recursos.py` | HTTP com `truststore`; memória, swap e disco |
 | Modelos | `llm/` | Interface de provedor e adaptador do Ollama; perfis |
 | Contrato | `contrato/` | Modelos Pydantic (a fonte da verdade), exportação, exemplo sintético |
@@ -61,13 +64,15 @@ npm run dev                   # com os dados de exemplo; veja o README do fronte
 
 ## Arquivos gerados a partir do código
 
-Três conjuntos de arquivos são **gerados** e versionados. O CI falha se estiverem desatualizados:
+Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros estiverem desatualizados:
 
 | O quê | Gerado por | Quando regenerar |
 |---|---|---|
 | `contrato/schema/*.json` e `contrato/exemplo/dados/` | `uv run python scripts/gerar_contrato.py` | Ao mudar `contrato/modelos.py` ou o gerador de exemplo |
 | `frontend/src/lib/contrato/tipos.ts` | `npm run tipos` (em `frontend/`) | Depois de regenerar os schemas |
 | `docs/referencia/{cli,configuracao,codebook,contrato}.md` | `uv run python scripts/gerar_referencias.py` | Ao mudar comandos, `config.py` ou o contrato |
+| `src/mapa_da_ciencia/fontes/scielo-revistas.json` | `uv run python scripts/gerar_revistas.py` (1 requisição à ArticleMeta) | Para atualizar a lista de revistas do SciELO Brasil |
+| `tests/fixtures/articlemeta/` | `uv run python scripts/recortar_fixtures.py` (precisa do cache do spike, `spikes/saida/brutos/`) | Ao precisar de novos casos de teste; os e-mails reais viram `anonimo@exemplo.invalid` |
 
 ## Convenções
 
@@ -83,7 +88,7 @@ Três conjuntos de arquivos são **gerados** e versionados. O CI falha se estive
 |---|---|---|
 | M0 | Spikes: fontes, embeddings, modelo de classificação, frontend ([ADRs 0001–0005](../decisoes/README.md)) | concluído |
 | M1 | Esqueleto: pacote, CLI, configuração, diagnóstico, contrato, painel, documentação, CI | concluído (v0.1.0) |
-| M2 | Coleta: ArticleMeta, OpenAlex, importação, deduplicação, cache | |
+| M2 | Coleta: ArticleMeta, OpenAlex, importação, deduplicação, cache | concluído (v0.2.0) |
 | M3 | Tópicos e mapa de documentos | |
 | M4 | Rótulos com LLM, tópicos no tempo, geografia | |
 | M5 | Classificação por codebook e validação | |

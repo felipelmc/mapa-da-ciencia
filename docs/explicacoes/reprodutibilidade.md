@@ -4,7 +4,13 @@ Um resultado do `mapa-da-ciencia` deve poder ser refeito, e explicado, por outra
 
 ## 1. Respostas brutas guardadas
 
-Toda resposta das APIs (ArticleMeta, OpenAlex) é gravada comprimida em `brutos/`, antes de qualquer processamento. Rodar a coleta de novo não refaz requisições, e toda a normalização pode ser refeita a partir desses arquivos, mesmo que a API mude ou saia do ar.
+Toda resposta das APIs (ArticleMeta, OpenAlex) é gravada comprimida em `brutos/`, antes de qualquer processamento. Toda a normalização pode ser refeita a partir desses arquivos, mesmo que a API mude ou saia do ar. Na prática:
+
+- **A segunda execução não faz nenhuma requisição.** Tudo vem de `brutos/`.
+- **Interromper não perde nada.** Cada resposta é gravada assim que chega, de forma atômica: primeiro num arquivo `.tmp`, que só depois ganha o nome definitivo. Um Ctrl+C nunca deixa arquivo pela metade, e rodar de novo busca só o que falta.
+- **Arquivo corrompido é baixado de novo** automaticamente.
+- **Modo offline** (`mapa coletar --offline`): reconstrói o corpus só a partir de `brutos/` e avisa se faltar alguma resposta.
+- **A chave do OpenAlex nunca é gravada**, nem quando a API a repete dentro da resposta.
 
 ## 2. Manifesto de cada execução
 

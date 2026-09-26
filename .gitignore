@@ -30,6 +30,7 @@ site/
 !.env.exemplo
 
 # Dados de projetos e saídas de spikes (nunca versionar)
+projetos/
 brutos/
 estado.sqlite*
 saida/

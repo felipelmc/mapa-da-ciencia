@@ -43,7 +43,7 @@ recorte:
   anos: [2010, 2025]
 ```
 
-- **Revistas:** use o ISSN que aparece na página da revista no SciELO. O comando `mapa revistas` (marco M2) vai listar as revistas por área.
+- **Revistas:** use o ISSN da revista no SciELO. O comando `mapa revistas` procura revistas por título ou área e imprime as linhas prontas para colar (veja [Montar um recorte](recorte.md)).
 - **Anos:** primeiro e último ano de publicação, inclusive.
 - **Idiomas:** `idioma_analise: en` usa os resumos em inglês nos embeddings, porque eles cobrem quase todo o corpus. `idioma_exibicao: pt` mostra os resumos em português. O porquê está no registro de decisão [0004](../decisoes/0004-embeddings-e-idioma-de-analise.md).
 
@@ -63,8 +63,8 @@ Dentro da pasta do projeto (ou em qualquer subpasta):
 mapa status
 ```
 
-O comando mostra o recorte, os modelos e em que ponto está cada etapa: coleta, embeddings, tópicos, classificação, geografia, validação e exportação. Fora da pasta, indique o projeto com `--projeto` (`-P`): `mapa status -P cp-scielo`.
+O comando mostra o recorte, os modelos e em que ponto está cada etapa: coleta, embeddings, tópicos, classificação, geografia, validação e exportação. Depois da coleta, mostra também a cobertura do corpus (veja [Montar um recorte](recorte.md#4-conferir)). Fora da pasta, indique o projeto com `--projeto` (`-P`): `mapa status -P cp-scielo`.
 
 ## Próximo passo
 
-Revise o [codebook](codebook.md) antes de classificar. A coleta (`mapa coletar`) chega no marco M2.
+Ajuste o [recorte](recorte.md) e rode `mapa coletar`. Antes de classificar, revise o [codebook](codebook.md).

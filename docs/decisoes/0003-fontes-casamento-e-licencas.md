@@ -87,3 +87,41 @@ Numa amostra de 9 artigos, em 2 de 3 casos em que o OpenAlex diz `cc-by-nc` o JA
 
     uv run spikes/s01_fontes.py               # 10 revistas, ~30 min na 1ª vez
     uv run spikes/s01_fontes.py --revistas op # só a Opinião Pública, ~3 min
+
+## Adendo (2026-09-26, marco M2): a coleta de produção
+
+O código de produção (`mapa coletar`, marco M2) refez o piloto com a cascata **conferida** e com as correções que a própria coleta revelou. O texto acima continua valendo como registro do spike. Os números abaixo substituem os de cima para quem for usar o corpus.
+
+**O corpus.** Das 4.947 PIDs, ficam 4.275 documentos: os artigos de pesquisa e de revisão de 2010 a 2025 (670 de outros tipos ficam de fora), depois de fundir 2 artigos carregados duas vezes na ArticleMeta (*Dados* e *Lua Nova*, 2025).
+
+| Revista | Documentos | Com resumo | Resumo só do OpenAlex | Resumo em inglês | DOI | `v240` | Casados c/ OpenAlex |
+|---|---|---|---|---|---|---|---|
+| RBCP | 404 | 398 | 9 | 389 | 400 | 282 | 399 |
+| Dados | 506 | 506 | 3 | 503 | 503 | 300 | 503 |
+| Opinião Pública | 396 | 395 | 7 | 388 | 396 | 280 | 396 |
+| Lua Nova | 431 | 429 | 15 | 414 | 426 | 268 | 429 |
+| Rev. Sociologia e Política | 487 | 486 | 2 | 484 | 487 | 220 | 487 |
+| BPSR | 260 | 260 | 3 | 260 | 260 | 194 | 260 |
+| Contexto Internacional | 403 | 403 | 2 | 401 | 403 | 195 | 403 |
+| RBPI | 401 | 401 | 4 | 397 | 401 | 196 | 401 |
+| Novos Estudos CEBRAP | 427 | 420 | 33 | 386 | 426 | 242 | 411 |
+| RBCS | 560 | 559 | 15 | 539 | 560 | 346 | 560 |
+| **Total** | **4.275** | **4.257 (99,6%)** | **93** | **4.161 (97,3%)** | **4.262 (99,7%)** | **2.523 (59,0%)** | **4.249 (99,4%)** |
+
+"Com resumo" inclui os 93 resumos que só o OpenAlex tinha (a reserva da decisão 3). O DOI inclui os que vieram do OpenAlex.
+
+**Cascata conferida.** DOI 3.105 · PID na URL 949 · DOI derivado 192 · título e ano 3 · sem casamento 26. A conferência (ano ±1, título parecido, cada trabalho usado uma vez) e três correções mudaram o resultado do spike:
+
+- **DOIs trocados** (*Dados*, 2014): o spike casava os dois PIDs com o mesmo trabalho. Agora só o artigo certo casa, e o outro perde o DOI, que o OpenAlex confirmou ser do primeiro.
+- **Location principal num repositório.** O OpenAlex às vezes registra o LA Referencia ou o DOAJ como fonte principal de um artigo de revista, e ele sumia da lista da revista. A lista passou a considerar qualquer location (`locations.source.issn`).
+- **Trabalhos fora do índice de filtros e anos errados.** Quem sobra é procurado pelo DOI, numa lista e depois no endereço direto (grátis). Com ano divergente, vale título longo praticamente igual: o OpenAlex registra artigos da *Novos Estudos* de 2025 como de 2005.
+
+A investigação pedida acima para a *Novos Estudos* (38 sem casamento no spike) termina aqui: sobram 16, dos quais 15 têm DOI do CEBRAP (`10.25091`) que o OpenAlex não conhece. Os 26 sem casamento seguem no corpus, só sem citações e sem a licença do OpenAlex.
+
+**Licenças.** `cc-by` 2.142 · `cc-by-nc` 2.098 · `other-oa` 26 · `cc-by-sa` 6 · `cc-by-nc-nd` 3. A licença veio do OpenAlex (mais restritiva que a da revista) em 2.133 casos, as duas fontes concordaram em 1.934, e só a da revista existia em 208. A licença do OpenAlex passou a ser lida na location da própria revista, quando ela informa. Com a regra da decisão 6, **4.249 resumos (99,4%) podem ir para um site publicado**.
+
+**Custo.** Com o cache da ArticleMeta aproveitado do spike, a primeira coleta levou 58 s e 32 créditos do OpenAlex (30 das listas por revista e 2 da busca por DOI). As seguintes fazem 0 requisições e levam cerca de 10 s. O pico de memória é de 0,36 GB: normalizar cada registro assim que chega evita guardar os brutos, que chegavam a 2,65 GB.
+
+**Consequência para o M3.** 96 documentos (2,3%) não têm resumo em inglês, quase todos porque o resumo veio só do OpenAlex, no idioma original. A etapa de tópicos precisa decidir o que fazer com eles (título em inglês, tradução ou exclusão marcada), sem misturar idiomas em silêncio (ADR 0004).
+
+Reprodução: `mapa novo projetos/cp-scielo` e `mapa coletar -P projetos/cp-scielo`. A tabela sai de `mapa status` e de uma consulta com `mapa_da_ciencia.api.consultar`.

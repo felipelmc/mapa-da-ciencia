@@ -1,0 +1,6 @@
+# DOIs e PIDs para testar a importação por lista
+10.1590/1807-019120243011
+https://doi.org/10.1590/SciELOPreprints.17844
+S0104-62762024000100200
+
+não é identificador

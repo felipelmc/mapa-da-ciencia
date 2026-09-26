@@ -1,6 +1,6 @@
 [project]
 name = "mapa-da-ciencia"
-version = "0.1.0"
+version = "0.2.0"
 description = "Observatório da literatura científica: tópicos no tempo, classificação por codebook com validação humana e geografia da produção, com modelos de linguagem locais."
 readme = "README.md"
 license = "MIT"
@@ -25,6 +25,7 @@ dependencies = [
     "psutil>=7.0",
     "fastapi>=0.141",
     "uvicorn>=0.54",
+    "duckdb>=1.5",
 ]
 
 [project.scripts]

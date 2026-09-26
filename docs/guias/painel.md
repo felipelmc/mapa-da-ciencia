@@ -42,7 +42,12 @@ A interface tem dois temas: **Observatório** (escuro, bom para projetar) e **Pr
 
 ## Projeto novo, painel vazio
 
-Logo depois do `mapa novo`, o painel abre, mas sem dados: a página inicial explica quais etapas rodar primeiro. Os números e as vistas aparecem conforme as etapas vão sendo concluídas.
+Logo depois do `mapa novo`, o painel abre, mas sem dados: a página inicial explica quais etapas rodar primeiro. Os números e as vistas aparecem conforme as etapas vão sendo concluídas:
+
+- depois do `mapa coletar`, a página inicial mostra quantos documentos e revistas há e o período coberto;
+- depois do `mapa topicos` (marco M3), aparecem os macrotemas e o mapa.
+
+Cada etapa grava seus arquivos em `saida/dados/`. Basta recarregar a página, sem reiniciar o `mapa painel`.
 
 ## Como funciona
 

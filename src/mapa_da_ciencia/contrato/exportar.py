@@ -17,6 +17,8 @@ from mapa_da_ciencia.contrato.modelos import (
     Manifesto,
     ProjetoInfo,
     RecorteInfo,
+    Revista,
+    Revistas,
 )
 from mapa_da_ciencia.projeto import Projeto
 
@@ -34,6 +36,8 @@ def manifesto_do_projeto(
     if cfg.fontes.openalex.enriquecer or cfg.fontes.openalex.consulta:
         fontes.append("openalex")
     fontes += [f"importar:{p.name}" for p in cfg.fontes.importar]
+    if cfg.fontes.openalex.consulta:
+        fontes.append(f"consulta:{cfg.fontes.openalex.consulta}")
     return Manifesto(
         api=api,
         gerado_em=datetime.now(UTC),
@@ -97,3 +101,48 @@ def escrever_dados(destino: Path, arquivos: dict[str, BaseModel], fragmentos: di
         arq.write_text(_serializar(frag), encoding="utf-8")
         escritos.append(arq)
     return escritos
+
+
+def exportar_coleta(projeto: Projeto, *, duracao_s: float | None = None) -> list[Path]:
+    """Depois da coleta: `manifesto.json` com as contagens e `revistas.json`, para o painel já mostrar o corpus.
+
+    Com isso a capa do painel já mostra documentos, revistas e período. As etapas seguintes (tópicos,
+    geografia...) acrescentam os seus arquivos e reescrevem o manifesto com a lista completa.
+    """
+    from mapa_da_ciencia.armazenamento import ARQUIVO, cobertura, conectar
+    from mapa_da_ciencia.fontes import revistas as retrato
+
+    caminho = projeto.dados / ARQUIVO
+    cob = cobertura(caminho)
+    con = conectar(caminho)
+    try:
+        linhas = con.execute(
+            """SELECT coalesce(revista_acronimo, revista_issn, '?'), revista_issn, any_value(revista_titulo), count(*)
+               FROM documentos GROUP BY 1, 2 ORDER BY 4 DESC"""
+        ).fetchall()
+    finally:
+        con.close()
+    lista = []
+    for acronimo, issn, titulo, n in linhas:
+        conhecida = retrato.por_issn(issn) if issn else None
+        lista.append(
+            Revista(
+                id=acronimo,
+                issn=issn or "",
+                titulo=titulo or acronimo,
+                areas=list(conhecida.areas) if conhecida else [],
+                n=n,
+            )
+        )
+    manifesto = manifesto_do_projeto(
+        projeto,
+        api=False,
+        contagens=Contagens(documentos=cob["documentos"], com_afiliacao=cob["com_afiliacao"]),
+        arquivos=["manifesto", "revistas"],
+    )
+    execucao = manifesto.execucao.model_copy(
+        update={"duracao_s": {"coleta": round(duracao_s, 1)} if duracao_s is not None else {}}
+    )
+    manifesto = manifesto.model_copy(update={"licencas": cob["licencas"], "execucao": execucao})
+    destino = projeto.saida / "dados"
+    return escrever_dados(destino, {"manifesto": manifesto, "revistas": Revistas(revistas=lista)}, {})

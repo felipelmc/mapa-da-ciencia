@@ -1,0 +1,93 @@
+import pytest
+
+from mapa_da_ciencia.documento import (
+    Documento,
+    Texto,
+    mais_restritiva,
+    normalizar_licenca,
+    pode_publicar_resumo,
+)
+from mapa_da_ciencia.texto import (
+    contem_email,
+    limpar,
+    normalizar_doi,
+    normalizar_orcid,
+    normalizar_titulo,
+    remover_emails,
+    similaridade_titulo,
+)
+
+
+def test_limpar_desfaz_entidades_duplamente_escapadas_e_tags():
+    bruto = "Resumo: O Brasil&amp;#8217;s   <i>welfare</i>\n state &amp;amp; a crise"
+    assert limpar(bruto, prefixo_resumo=True) == "O Brasil’s welfare state & a crise"
+    assert limpar(None) == ""
+
+
+def test_prefixo_so_sai_quando_pedido_e_quando_e_prefixo():
+    assert limpar("Abstract: The study", prefixo_resumo=True) == "The study"
+    assert limpar("Resumo dos debates sobre", prefixo_resumo=True) == "dos debates sobre"
+    assert limpar("Abstracts matter", prefixo_resumo=True) == "Abstracts matter"
+    assert limpar("Resumo: texto") == "Resumo: texto"
+
+
+def test_emails():
+    assert remover_emails("Universidade X, joao.silva@ufmg.br; Belo Horizonte") == "Universidade X, ; Belo Horizonte"
+    assert contem_email({"a": [{"b": "contato: x@y.org"}]})
+    assert not contem_email({"a": ["sem arroba", 3, None]})
+
+
+@pytest.mark.parametrize(
+    ("entrada", "saida"),
+    [
+        ("https://doi.org/10.1590/1807-019120243011", "10.1590/1807-019120243011"),
+        ("DOI: 10.1590/S0011-52582014000200007.", "10.1590/s0011-52582014000200007"),
+        ("doi:10.1590/ABC)", "10.1590/abc"),
+        ("sem doi", None),
+        (None, None),
+    ],
+)
+def test_normalizar_doi(entrada, saida):
+    assert normalizar_doi(entrada) == saida
+
+
+def test_orcid_e_titulo():
+    assert normalizar_orcid("https://orcid.org/0000-0002-1825-009x") == "0000-0002-1825-009X"
+    assert normalizar_orcid("0000") is None
+    assert normalizar_titulo("Políticas Públicas: &amp; Saúde!") == "politicas publicas saude"
+    assert similaridade_titulo("Coalizões no Congresso", "Coalizoes no congresso") == 1.0
+    assert similaridade_titulo("Coalizões no Congresso", "A política externa chinesa") < 0.5
+    assert similaridade_titulo("", "x") == 0.0
+
+
+def test_licencas():
+    assert normalizar_licenca("BY-NC") == "cc-by-nc"
+    assert normalizar_licenca("cc-by") == "cc-by"
+    assert normalizar_licenca("public-domain") == "cc0"
+    assert normalizar_licenca("other-oa") == "other-oa"
+    assert normalizar_licenca("licença esquisita") == "other-oa"
+    assert normalizar_licenca(None) is None
+    # a mais restritiva vence, e a fonte fica registrada (ADR 0003)
+    assert mais_restritiva("cc-by-nc", "BY") == ("cc-by-nc", "openalex")
+    assert mais_restritiva("cc-by", "BY-NC-ND") == ("cc-by-nc-nd", "revista")
+    assert mais_restritiva("cc-by", "BY") == ("cc-by", "ambas")
+    assert mais_restritiva(None, "BY") == ("cc-by", "revista")
+    assert mais_restritiva(None, None) == ("desconhecida", "nenhuma")
+    assert pode_publicar_resumo("cc-by-nc-nd")
+    assert not pode_publicar_resumo("other-oa")
+    assert not pode_publicar_resumo("desconhecida")
+
+
+def test_documento_texto_em_idioma_preferido():
+    d = Documento(
+        id="S0104-62762024000100200",
+        fonte="articlemeta",
+        tipo="research-article",
+        ano=2024,
+        titulos=[Texto(idioma="en", texto="Title"), Texto(idioma="pt", texto="Título")],
+    )
+    assert d.texto_em("titulos", ["pt", "en"]).texto == "Título"
+    assert d.texto_em("titulos", ["es"]).texto == "Title"
+    assert d.texto_em("resumos", ["pt"]) is None
+    with pytest.raises(ValueError):
+        Documento(id="x", fonte="articlemeta", tipo=None, ano=2024, email="a@b.c")

@@ -13,6 +13,8 @@ Layout:
 
 from __future__ import annotations
 
+import json
+import re
 import shutil
 from dataclasses import dataclass, field
 from importlib import resources
@@ -72,8 +74,20 @@ class Projeto:
         )
 
     @classmethod
-    def criar(cls, pasta: Path | str, *, modelo: str, perfil: Perfil, nome: str | None = None) -> Projeto:
-        """Cria a pasta do projeto a partir de um modelo, com os modelos de LLM do perfil."""
+    def criar(
+        cls,
+        pasta: Path | str,
+        *,
+        modelo: str,
+        perfil: Perfil,
+        nome: str | None = None,
+        revistas: list[str] | None = None,
+        anos: tuple[int, int] | None = None,
+    ) -> Projeto:
+        """Cria a pasta do projeto a partir de um modelo, com os modelos de LLM do perfil.
+
+        `revistas` (ISSNs ou acrônimos) e `anos` substituem o recorte do modelo, mantendo os comentários do YAML.
+        """
         if modelo not in MODELOS_DE_PROJETO:
             raise ErroConfig(f"Modelo de projeto desconhecido: {modelo}. Opções: {', '.join(MODELOS_DE_PROJETO)}")
         raiz = Path(pasta).resolve()
@@ -90,6 +104,7 @@ class Projeto:
             modelo_classificacao=perfil.classificacao,
             modelo_rotulos=perfil.rotulos,
         )
+        config = _ajustar_recorte(config, revistas, anos)
         (raiz / ARQUIVO_CONFIG).write_text(config, encoding="utf-8")
         codebook = "codebook-exemplo.yaml" if modelo == "ciencia-politica" else "codebook-vazio.yaml"
         (raiz / ARQUIVO_CODEBOOK).write_text(textos.joinpath(codebook).read_text(encoding="utf-8"), encoding="utf-8")
@@ -141,6 +156,31 @@ class Projeto:
         for sub in (self.dados, self.saida):
             shutil.rmtree(sub, ignore_errors=True)
             sub.mkdir()
+
+
+def _ajustar_recorte(config: str, revistas: list[str] | None, anos: tuple[int, int] | None) -> str:
+    """Troca a lista de revistas e/ou os anos no texto do YAML, sem perder os comentários do resto.
+
+    Com outras revistas, o título e a descrição do modelo deixam de valer: o título passa a ser o da
+    revista (ou "N revistas do SciELO Brasil") e a descrição fica vazia.
+    """
+    if revistas:
+        from mapa_da_ciencia.fontes.revistas import resolver
+
+        achadas = [(ident, resolver(ident)) for ident in revistas]
+        faltam = [ident for ident, r in achadas if r is None]
+        if faltam:
+            raise ErroConfig(f"Revista(s) não encontrada(s): {', '.join(faltam)}. Confira com `mapa revistas`.")
+        linhas = "".join(f"      - {r.issn}           # {r.titulo}\n" for _, r in achadas if r)
+        config = re.sub(r"(    revistas:[^\n]*\n)(      - [^\n]*\n)+", lambda m: m.group(1) + linhas, config, count=1)
+        titulos = [r.titulo for _, r in achadas if r]
+        titulo = titulos[0] if len(titulos) == 1 else f"{len(titulos)} revistas do SciELO Brasil"
+        config = re.sub(r"^titulo: .*$", lambda _: f"titulo: {json.dumps(titulo, ensure_ascii=False)}", config,
+                        count=1, flags=re.M)  # fmt: skip
+        config = re.sub(r"^descricao: (?:>\n(?:  [^\n]*\n)+|[^\n]*\n)", 'descricao: ""\n', config, count=1, flags=re.M)
+    if anos:
+        config = re.sub(r"(  anos: )\[\d{4}, \d{4}\]", lambda m: f"{m.group(1)}[{anos[0]}, {anos[1]}]", config, count=1)
+    return config
 
 
 def _slug(texto: str) -> str:

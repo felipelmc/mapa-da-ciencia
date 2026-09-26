@@ -1,0 +1,242 @@
+{
+ "meta": {
+  "limit": 1000,
+  "offset": 0,
+  "filter": {
+   "processing_date": {
+    "$gte": "1900-01-01",
+    "$lte": "2026-09-26"
+   },
+   "collection": "scl",
+   "code_title": "0104-6276"
+  },
+  "total": 40
+ },
+ "objects": [
+  {
+   "code": "S0104-62762010000100001",
+   "collection": "scl",
+   "processing_date": "2010-07-30"
+  },
+  {
+   "code": "S0104-62762010000100002",
+   "collection": "scl",
+   "processing_date": "2010-07-29"
+  },
+  {
+   "code": "S0104-62762010000100003",
+   "collection": "scl",
+   "processing_date": "2010-07-30"
+  },
+  {
+   "code": "S0104-62762010000100004",
+   "collection": "scl",
+   "processing_date": "2010-07-29"
+  },
+  {
+   "code": "S0104-62762010000100005",
+   "collection": "scl",
+   "processing_date": "2010-07-30"
+  },
+  {
+   "code": "S0104-62762010000100006",
+   "collection": "scl",
+   "processing_date": "2010-07-29"
+  },
+  {
+   "code": "S0104-62762010000100007",
+   "collection": "scl",
+   "processing_date": "2010-07-30"
+  },
+  {
+   "code": "S0104-62762010000100008",
+   "collection": "scl",
+   "processing_date": "2010-07-29"
+  },
+  {
+   "code": "S0104-62762010000100009",
+   "collection": "scl",
+   "processing_date": "2010-07-29"
+  },
+  {
+   "code": "S0104-62762010000100010",
+   "collection": "scl",
+   "processing_date": "2010-07-29"
+  },
+  {
+   "code": "S0104-62762010000200004",
+   "collection": "scl",
+   "processing_date": "2010-12-17"
+  },
+  {
+   "code": "S0104-62762010000200005",
+   "collection": "scl",
+   "processing_date": "2010-12-17"
+  },
+  {
+   "code": "S0104-62762010000200008",
+   "collection": "scl",
+   "processing_date": "2010-12-17"
+  },
+  {
+   "code": "S0104-62762010000200010",
+   "collection": "scl",
+   "processing_date": "2010-12-17"
+  },
+  {
+   "code": "S0104-62762010000200011",
+   "collection": "scl",
+   "processing_date": "2010-12-17"
+  },
+  {
+   "code": "S0104-62762024000100200",
+   "collection": "scl",
+   "processing_date": "2024-06-03",
+   "doi": "10.1590/1807-019120243011"
+  },
+  {
+   "code": "S0104-62762024000100201",
+   "collection": "scl",
+   "processing_date": "2024-06-03",
+   "doi": "10.1590/1807-019120243012"
+  },
+  {
+   "code": "S0104-62762024000100202",
+   "collection": "scl",
+   "processing_date": "2024-06-03",
+   "doi": "10.1590/1807-019120243013"
+  },
+  {
+   "code": "S0104-62762024000100203",
+   "collection": "scl",
+   "processing_date": "2024-06-04",
+   "doi": "10.1590/1807-019120243014"
+  },
+  {
+   "code": "S0104-62762024000100204",
+   "collection": "scl",
+   "processing_date": "2024-06-07",
+   "doi": "10.1590/1807-019120243015"
+  },
+  {
+   "code": "S0104-62762024000100205",
+   "collection": "scl",
+   "processing_date": "2024-06-07",
+   "doi": "10.1590/1807-019120243016"
+  },
+  {
+   "code": "S0104-62762024000100206",
+   "collection": "scl",
+   "processing_date": "2024-06-07",
+   "doi": "10.1590/1807-019120243017"
+  },
+  {
+   "code": "S0104-62762024000100207",
+   "collection": "scl",
+   "processing_date": "2024-09-20",
+   "doi": "10.1590/1807-0191202430110"
+  },
+  {
+   "code": "S0104-62762024000100208",
+   "collection": "scl",
+   "processing_date": "2024-09-20",
+   "doi": "10.1590/1807-019120243018"
+  },
+  {
+   "code": "S0104-62762024000100209",
+   "collection": "scl",
+   "processing_date": "2024-09-20",
+   "doi": "10.1590/1807-019120243019"
+  },
+  {
+   "code": "S0104-62762024000100210",
+   "collection": "scl",
+   "processing_date": "2024-09-27",
+   "doi": "10.1590/1807-0191202430111"
+  },
+  {
+   "code": "S0104-62762024000100211",
+   "collection": "scl",
+   "processing_date": "2024-09-27",
+   "doi": "10.1590/1807-0191202430112"
+  },
+  {
+   "code": "S0104-62762024000100212",
+   "collection": "scl",
+   "processing_date": "2024-09-27",
+   "doi": "10.1590/1807-0191202430113"
+  },
+  {
+   "code": "S0104-62762024000100213",
+   "collection": "scl",
+   "processing_date": "2024-12-18",
+   "doi": "10.1590/1807-0191202430114"
+  },
+  {
+   "code": "S0104-62762024000100214",
+   "collection": "scl",
+   "processing_date": "2024-12-18",
+   "doi": "10.1590/1807-0191202430115"
+  },
+  {
+   "code": "S0104-62762024000100215",
+   "collection": "scl",
+   "processing_date": "2024-12-18",
+   "doi": "10.1590/1807-0191202430116"
+  },
+  {
+   "code": "S0104-62762024000100216",
+   "collection": "scl",
+   "processing_date": "2024-12-18",
+   "doi": "10.1590/1807-0191202430117"
+  },
+  {
+   "code": "S0104-62762024000100217",
+   "collection": "scl",
+   "processing_date": "2024-12-18",
+   "doi": "10.1590/1807-0191202430118"
+  },
+  {
+   "code": "S0104-62762024000100218",
+   "collection": "scl",
+   "processing_date": "2024-12-19",
+   "doi": "10.1590/1807-0191202430119"
+  },
+  {
+   "code": "S0104-62762024000100219",
+   "collection": "scl",
+   "processing_date": "2024-12-19",
+   "doi": "10.1590/1807-0191202430120"
+  },
+  {
+   "code": "S0104-62762024000100220",
+   "collection": "scl",
+   "processing_date": "2024-12-19",
+   "doi": "10.1590/1807-0191202430121"
+  },
+  {
+   "code": "S0104-62762024000100221",
+   "collection": "scl",
+   "processing_date": "2025-01-06",
+   "doi": "10.1590/1807-0191202430122"
+  },
+  {
+   "code": "S0104-62762024000100222",
+   "collection": "scl",
+   "processing_date": "2025-01-07",
+   "doi": "10.1590/1807-0191202430123"
+  },
+  {
+   "code": "S0104-62762024000100223",
+   "collection": "scl",
+   "processing_date": "2025-01-07",
+   "doi": "10.1590/1807-0191202430124"
+  },
+  {
+   "code": "S0104-62762024000100224",
+   "collection": "scl",
+   "processing_date": "2025-01-07",
+   "doi": "10.1590/1807-0191202430125"
+  }
+ ]
+}

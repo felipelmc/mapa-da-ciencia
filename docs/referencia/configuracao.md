@@ -27,7 +27,7 @@ De onde vêm os artigos. Pode combinar mais de uma fonte.
 |---|---|---|---|
 | `scielo` | [FonteScielo](#fontescielo) ou vazio | vazio | Coleta pela ArticleMeta do SciELO, revista a revista. |
 | `openalex` | [FonteOpenAlex](#fonteopenalex) | valores padrão da seção | Enriquecimento (citações, licença) e busca por termo no OpenAlex. |
-| `importar` | lista de caminho | vazio | Arquivos CSV/RIS exportados do search.scielo.org ou listas de DOIs (.txt). |
+| `importar` | lista de caminho | vazio | Arquivos RIS, CSV ou BibTeX exportados do search.scielo.org, ou listas de DOIs (.txt), relativos à pasta do projeto. Os da pasta `importados/` entram sempre, sem precisar listar aqui. |
 
 ### FonteScielo
 
@@ -36,7 +36,7 @@ Coleta pela ArticleMeta do SciELO, revista a revista.
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `colecao` | texto | `"scl"` | Coleção do SciELO (`scl` = Brasil). |
-| `revistas` | lista de texto | **obrigatório** | ISSNs das revistas, como aparecem no SciELO. |
+| `revistas` | lista de texto | vazio | ISSNs das revistas; vazio num projeto só com artigos importados. |
 | `tipos` | lista de texto | `["research-article", "review-article"]` | Tipos de documento incluídos (`document_type` da ArticleMeta). |
 
 ### FonteOpenAlex
@@ -46,7 +46,7 @@ Enriquecimento (citações, licença) e busca por termo no OpenAlex.
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `enriquecer` | sim/não | `true` | Casar cada artigo com o OpenAlex para obter citações e licença. |
-| `consulta` | texto ou vazio | vazio | Busca por termo nas revistas do recorte (opcional). |
+| `consulta` | texto ou vazio | vazio | Busca por termo no título e no resumo, via OpenAlex. Com revistas no recorte, busca só nelas; sem revistas, em todo o SciELO. O corpus passa a ser os resultados da busca, e não as revistas inteiras. |
 
 ### Recorte
 
