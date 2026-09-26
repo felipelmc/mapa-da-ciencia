@@ -8,6 +8,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 - **Marco M5 (classificação por codebook e validação)**:
   - o codebook vira o JSON Schema da resposta do modelo, com a evidência (até 200 caracteres) antes do valor em cada variável, e as respostas são validadas contra ele; a mensagem de sistema é fixa (o Ollama reaproveita o prefixo) e traz as regras da evidência curta;
+  - conferência da evidência: `literal` (a menos de maiúsculas, espaços, aspas e travessões), `aproximada` (90% dos caracteres casando em blocos), `ausente` ou `dispensada` (vazia numa resposta "sem informação"), com os *offsets* do trecho no resumo exibido;
 
 ## [0.4.0] - 2026-09-26
 
