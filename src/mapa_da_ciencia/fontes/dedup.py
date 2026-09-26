@@ -8,6 +8,10 @@ Regras, em ordem:
    títulos diferentes *não* funde: a ArticleMeta também tem DOIs trocados (Dados, 2014).
 3. **Sem DOI, mesmo título, ano e sobrenome do 1º autor, em fontes diferentes** → o mesmo documento.
 
+Depois de fundir, um DOI que ainda aparece em documentos diferentes (títulos incompatíveis) fica só
+com aquele cujo título o OpenAlex confirmou (`casamento == "1_doi"`); os outros ficam sem DOI, e o
+par vai para o relatório. Se nenhum foi confirmado, não dá para saber de quem é o DOI, e nada muda.
+
 Ao fundir, fica a versão da ArticleMeta (ou o menor id) e as `origens` se somam; os pares
 fundidos vão para o manifesto da coleta. Dentro da mesma fonte, dois documentos com o mesmo
 título, ano e 1º autor **sem** DOI em comum viram só uma **suspeita** (`possivel_duplicata_de`):
@@ -30,6 +34,7 @@ SIMILARIDADE_MINIMA = 0.6
 class RelatorioDedup:
     fundidos: list[tuple[str, str]] = field(default_factory=list)  # (removido, mantido)
     suspeitas: list[tuple[str, str]] = field(default_factory=list)  # (documento, possível original)
+    dois_removidos: list[tuple[str, str, str]] = field(default_factory=list)  # (documento, DOI, dono do DOI)
 
 
 def _chave(doc: Documento) -> tuple[str, int, str] | None:
@@ -93,4 +98,20 @@ def deduplicar(documentos: list[Documento]) -> tuple[list[Documento], RelatorioD
             por_doi.setdefault(doc.doi, doc.id)
         if chave:
             por_chave.setdefault(chave, doc.id)
+    _conferir_dois_repetidos(mantidos, relatorio)
     return sorted(mantidos.values(), key=lambda d: d.id), relatorio
+
+
+def _conferir_dois_repetidos(mantidos: dict[str, Documento], relatorio: RelatorioDedup) -> None:
+    """DOI em mais de um documento: fica com o confirmado pelo OpenAlex (ex.: Dados 2014, DOIs trocados)."""
+    por_doi: dict[str, list[str]] = {}
+    for doc in mantidos.values():
+        if doc.doi:
+            por_doi.setdefault(doc.doi, []).append(doc.id)
+    for doi, ids in por_doi.items():
+        confirmados = [i for i in ids if mantidos[i].casamento == "1_doi"]
+        if len(ids) < 2 or len(confirmados) != 1:
+            continue
+        for i in sorted(set(ids) - set(confirmados)):
+            mantidos[i] = mantidos[i].model_copy(update={"doi": None})
+            relatorio.dois_removidos.append((i, doi, confirmados[0]))

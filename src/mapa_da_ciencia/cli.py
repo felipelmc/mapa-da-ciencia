@@ -103,18 +103,18 @@ def novo(
         if perfil is not None and perfil not in PERFIS:
             raise ErroConfig(f"Perfil desconhecido: {perfil}. Opções: {', '.join(PERFIS)}.")
         escolhido = PERFIS[perfil] if perfil else sugerir_perfil()  # type: ignore[index]
-        periodo = interpretar_anos(anos) if anos else None
-        projeto = Projeto.criar(pasta, modelo=modelo, perfil=escolhido, revistas=revista, anos=periodo)
+        recorte_anos = interpretar_anos(anos) if anos else None
+        projeto = Projeto.criar(pasta, modelo=modelo, perfil=escolhido, revistas=revista, anos=recorte_anos)
 
     origem = "escolhido por você" if perfil else f"sugerido para {ram_total_gb():.0f} GB de memória"
     console.print(f"[bold green]Projeto criado[/] em {projeto.raiz}")
     console.print(f"Perfil de modelos: [bold]{escolhido.nome}[/] ({origem}).")
     console.print(
         "\nPróximos passos:\n"
-        f"  1. Revise [bold]{projeto.raiz.name}/mapa.yaml[/] (revistas, anos) e "
-        f"[bold]{projeto.raiz.name}/codebook.yaml[/].\n"
-        "  2. Rode [bold]mapa diagnostico[/] para conferir o Ollama e os modelos.\n"
-        "  3. Rode [bold]mapa coletar[/] dentro da pasta do projeto."
+        f"  1. Revise [bold]{pasta / 'mapa.yaml'}[/] (revistas, anos) e [bold]{pasta / 'codebook.yaml'}[/].\n"
+        f"  2. Entre na pasta: [bold]cd {pasta}[/]\n"
+        "  3. Rode [bold]mapa diagnostico[/] para conferir o Ollama e os modelos.\n"
+        "  4. Rode [bold]mapa coletar[/]."
     )
 
 
@@ -420,7 +420,7 @@ def coletar(
             f"{num(resumo.creditos_openalex, 0)} crédito(s).[/]"
         )
     if resumo.fundidos:
-        console.print(f"[dim]Duplicatas entre fontes fundidas: {num(resumo.fundidos, 0)}.[/]")
+        console.print(f"[dim]Duplicatas fundidas (mesmo artigo registrado duas vezes): {num(resumo.fundidos, 0)}.[/]")
     for doc, original in resumo.possiveis_duplicatas:
         console.print(f"[yellow]Possível duplicata:[/] {doc} parece repetir {original} (mesmo título, ano e 1º autor).")
     for aviso in resumo.avisos:

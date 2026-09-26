@@ -50,6 +50,18 @@ def test_doi_trocado_na_articlemeta_nao_funde(docs):
     par = [p for p, m in casos_especiais().items() if m.startswith("DOI repetido")]
     saida, rel = deduplicar([docs[p] for p in par])
     assert len(saida) == 2 and not rel.fundidos
+    assert not rel.dois_removidos  # sem o OpenAlex, não dá para saber de quem é o DOI
+
+
+def test_doi_repetido_fica_com_o_documento_confirmado_pelo_openalex(docs):
+    dono, outro = sorted(p for p, m in casos_especiais().items() if m.startswith("DOI repetido"))
+    doi = docs[dono].doi
+    casado = docs[dono].model_copy(update={"casamento": "1_doi", "openalex_id": "W1"})
+    sem = docs[outro].model_copy(update={"casamento": "sem_casamento"})
+    saida, rel = deduplicar([sem, casado])
+    por_id = {d.id: d for d in saida}
+    assert por_id[dono].doi == doi and por_id[outro].doi is None
+    assert rel.dois_removidos == [(outro, doi, dono)]
 
 
 def test_mesmo_pid_de_fontes_diferentes_funde_e_soma_origens():

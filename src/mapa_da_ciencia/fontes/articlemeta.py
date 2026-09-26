@@ -135,10 +135,16 @@ async def buscar_registros(
     colecao: str = "scl",
     *,
     ao_avancar: Callable[[str], None] | None = None,
-) -> dict[str, dict | None]:
-    """O registro de cada PID (ou `None` se a API não o conhece). Usa o cache e grava cada um ao chegar."""
+    tratar: Callable[[str, dict], Any] | None = None,
+) -> dict[str, Any]:
+    """O registro de cada PID (ou `None` se a API não o conhece). Usa o cache e grava cada um ao chegar.
 
-    async def um(pid: str) -> tuple[str, dict | None]:
+    Com `tratar(pid, registro)`, guarda o que ela devolver no lugar do registro, que é descartado assim que
+    chega. Os registros brutos são grandes (a lista de referências ocupa ~90%): no piloto, guardar todos até
+    o fim levava a coleta a ~2,6 GB de memória.
+    """
+
+    async def um(pid: str) -> tuple[str, Any]:
         registro = await buscador.json(
             "articlemeta",
             f"{URL}/article/",
@@ -147,6 +153,8 @@ async def buscar_registros(
         )
         if ao_avancar:
             ao_avancar(pid)
+        if tratar is not None and registro is not None:
+            return pid, tratar(pid, registro)
         return pid, registro
 
     return dict(await asyncio.gather(*(um(p) for p in pids)))

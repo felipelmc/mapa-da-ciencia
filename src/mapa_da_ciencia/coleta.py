@@ -252,10 +252,13 @@ async def _hidratar(
             por_colecao.setdefault(ident.colecao or "scl", set()).add(ident.pid)
     documentos: list[Documento] = []
     for colecao, pids in sorted(por_colecao.items()):
-        for pid, registro in (await buscar_registros(buscador, sorted(pids), colecao)).items():
-            if registro is not None:
-                doc = normalizar(registro, revista_do_registro(registro, colecao))
-                documentos.append(doc.model_copy(update={"origens": [origem_do_pid[pid]]}))
+
+        def tratar(pid: str, registro: dict, colecao: str = colecao) -> Documento:
+            doc = normalizar(registro, revista_do_registro(registro, colecao))
+            return doc.model_copy(update={"origens": [origem_do_pid[pid]]})
+
+        achados = await buscar_registros(buscador, sorted(pids), colecao, tratar=tratar)
+        documentos += [doc for doc in achados.values() if doc is not None]
     encontrados = {d.pid for d in documentos}
 
     pendentes = [(i, o) for i, o in itens if not i.pid or i.pid not in encontrados]
@@ -273,9 +276,10 @@ async def _hidratar(
         pid = await _pid_da_obra(buscador, obra, dois_por_revista)
         if pid and pid not in encontrados:
             colecao = _colecao_da_obra(obra) or "scl"
-            registro = (await buscar_registros(buscador, [pid], colecao))[pid]
-            if registro is not None:
-                doc = normalizar(registro, revista_do_registro(registro, colecao))
+            achado = await buscar_registros(
+                buscador, [pid], colecao, tratar=lambda _p, r, c=colecao: normalizar(r, revista_do_registro(r, c))
+            )
+            if (doc := achado[pid]) is not None:
                 documentos.append(doc.model_copy(update={"origens": [origem]}))
                 encontrados.add(pid)
                 continue
@@ -375,18 +379,20 @@ async def coletar_async(
             pids = pids[: opcoes.limite]
         progresso.etapa("Registros da ArticleMeta", len(pids))
         revista_do_pid = {p: r for r, p in pids}
-        registros = await buscar_registros(buscador, [p for _, p in pids], ao_avancar=lambda _pid: progresso.avancar())
+        normalizados = await buscar_registros(
+            buscador,
+            [p for _, p in pids],
+            ao_avancar=lambda _pid: progresso.avancar(),
+            tratar=lambda pid, registro: normalizar(registro, revista_do_pid[pid]),
+        )
 
-        progresso.etapa("Normalizando", len(registros))
         documentos: list[Documento] = []
         excluidos: Counter[str] = Counter()
         nao_encontrados = 0
-        for pid, registro in registros.items():
-            progresso.avancar()
-            if registro is None:
+        for doc in normalizados.values():
+            if doc is None:
                 nao_encontrados += 1
                 continue
-            doc = normalizar(registro, revista_do_pid[pid])
             if doc.tipo not in plano.tipos:
                 excluidos[doc.tipo or "sem tipo"] += 1
                 continue
@@ -411,6 +417,10 @@ async def coletar_async(
         contadores = buscador.contadores
 
     documentos, dedup = deduplicar(documentos)
+    avisos += [
+        f"{doc}: o DOI {doi} é de outro artigo ({dono}, confirmado pelo OpenAlex); o documento ficou sem DOI."
+        for doc, doi, dono in dedup.dois_removidos
+    ]
     n = gravar_documentos(documentos, projeto.dados / ARQUIVO)
     progresso.fim()
 
@@ -448,7 +458,8 @@ async def coletar_async(
             "fundidos": resumo.fundidos,
             "possiveis_duplicatas": len(resumo.possiveis_duplicatas),
         },
-        parametros=_parametros(plano, opcoes) | {"duplicatas_fundidas": dedup.fundidos},
+        parametros=_parametros(plano, opcoes)
+        | {"duplicatas_fundidas": dedup.fundidos, "dois_removidos": dedup.dois_removidos},
     )
     exportar_coleta(projeto, duracao_s=resumo.duracao_s)
     return resumo

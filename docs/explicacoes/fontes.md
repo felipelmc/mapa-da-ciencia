@@ -62,7 +62,7 @@ A ArticleMeta nem sempre informa o DOI: no piloto, faltou em 27% dos registros. 
 3. o DOI derivado do PID (`10.1590/{PID}`), padrão de revistas brasileiras mais antigas;
 4. o título normalizado mais o ano.
 
-Antes de aceitar um candidato, o `mapa` **confere** se ele é mesmo o artigo: o ano precisa bater (com um ano de folga) e o título precisa ser parecido em algum idioma. Além disso, cada trabalho do OpenAlex só pode ser casado com um artigo. A conferência existe porque a própria ArticleMeta tem DOIs trocados: na *Dados* de 2014, dois artigos diferentes aparecem com o mesmo DOI. Sem a conferência, os dois seriam casados com o mesmo trabalho (e herdariam as citações e a licença um do outro). Com ela, só o artigo certo casa, e o outro fica sem casamento.
+Antes de aceitar um candidato, o `mapa` **confere** se ele é mesmo o artigo: o ano precisa bater (com um ano de folga) e o título precisa ser parecido em algum idioma. Além disso, cada trabalho do OpenAlex só pode ser casado com um artigo. A conferência existe porque a própria ArticleMeta tem DOIs trocados: na *Dados* de 2014, dois artigos diferentes aparecem com o mesmo DOI. Sem a conferência, os dois seriam casados com o mesmo trabalho (e herdariam as citações e a licença um do outro). Com ela, só o artigo certo casa, e o outro fica sem casamento e **sem DOI**: como o OpenAlex confirmou que o DOI pertence ao primeiro, ele é retirado do segundo, e a coleta avisa (veja [Duplicatas](#duplicatas)).
 
 O passo usado fica registrado em cada documento.
 
@@ -75,6 +75,8 @@ O mesmo artigo pode chegar mais de uma vez: de fontes diferentes (coletado da re
 - **sem DOI, mesmo título, ano e sobrenome do primeiro autor**, vindos de fontes diferentes.
 
 Quando junta, fica a versão da ArticleMeta, as origens se somam, e o par fica registrado no manifesto da coleta. Quando só desconfia (mesmo título, ano e autor dentro da mesma fonte, sem DOI em comum), o documento é mantido e marcado como **possível duplicata**, para você decidir. Títulos curtos e genéricos, como "Apresentação", nunca contam como duplicata.
+
+Se, depois disso, um DOI ainda aparece em dois documentos diferentes, ele fica só com aquele que o OpenAlex confirmou (casado pelo DOI, com título conferido). Os outros ficam sem DOI, e a coleta mostra um aviso com o par. Se nenhum foi confirmado, não dá para saber de quem é o DOI, e os dois ficam como estão.
 
 ## Cobertura no piloto
 

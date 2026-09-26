@@ -112,3 +112,14 @@ def test_revista_de_outra_colecao_vem_do_registro():
     assert doc.colecao == "arg" and doc.revista_titulo and doc.revista_issn == "1514-7991"
     op = revista_do_registro(next(r for p, r in registros.items() if p.startswith("S0104-6276")))
     assert op.acronimo == "op" and op.titulo == "Opinião Pública"  # do retrato, para o SciELO Brasil
+
+
+def test_tratar_substitui_o_registro_ao_chegar(tmp_path, apis_falsas):
+    """A coleta normaliza cada registro assim que ele chega, sem guardar os brutos (grandes) até o fim."""
+    pids = ["S0104-62762024000100200", "S0104-62769999000100001"]
+
+    async def buscar():
+        async with Buscador(tmp_path, espera_inicial=0) as b:
+            return await buscar_registros(b, pids, tratar=lambda pid, registro: (pid, len(registro["citations"])))
+
+    assert asyncio.run(buscar()) == {pids[0]: (pids[0], 2), pids[1]: None}  # desconhecido continua None
