@@ -1,4 +1,6 @@
 <script lang="ts" module>
+	export type Caixa = { x0: number; y0: number; x1: number; y1: number };
+
 	export interface ItemRotulo {
 		id: string;
 		texto: string;
@@ -25,7 +27,9 @@
 		versao,
 		largura,
 		altura,
-		aoRoda
+		aoRoda,
+		inertes = false,
+		bloqueios = () => []
 	}: {
 		itens: ItemRotulo[];
 		projetar: ((x: number, y: number) => [number, number]) | null;
@@ -34,15 +38,17 @@
 		altura: number;
 		/** A roda do mouse sobre um rótulo continua aproximando o mapa. */
 		aoRoda?: (evento: WheelEvent) => void;
+		/** Deixam o mouse passar (durante o laço, para desenhar por cima deles). */
+		inertes?: boolean;
+		/** Áreas cobertas por painéis (px, relativas ao mapa), onde nenhum rótulo fica. */
+		bloqueios?: () => Caixa[];
 	} = $props();
-
-	type Caixa = { x0: number; y0: number; x1: number; y1: number };
 	const colide = (a: Caixa, b: Caixa) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 
 	const posicionados = $derived.by(() => {
 		void versao;
 		if (!projetar) return [];
-		const ocupadas: Caixa[] = [];
+		const ocupadas: Caixa[] = [...bloqueios()];
 		const saida: { item: ItemRotulo; px: number; py: number }[] = [];
 		for (const item of [...itens].sort((a, b) => b.peso - a.peso)) {
 			const [px, py] = projetar(item.x, item.y);
@@ -57,7 +63,7 @@
 	});
 </script>
 
-<div class="rotulos">
+<div class="rotulos" class:inertes>
 	{#each posicionados as { item, px, py } (item.id)}
 		<button
 			type="button"
@@ -99,6 +105,11 @@
 		border-radius: 999px;
 		pointer-events: auto;
 		cursor: pointer;
+	}
+
+	.inertes .rotulo {
+		pointer-events: none;
+		opacity: 0.6;
 	}
 
 	.rotulo:hover,

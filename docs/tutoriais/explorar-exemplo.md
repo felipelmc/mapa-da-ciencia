@@ -49,7 +49,7 @@ uv run mapa --versao
 uv run mapa painel --exemplo
 ```
 
-O navegador abre em `http://127.0.0.1:8765/`. A página inicial mostra os números do corpus e os sete macrotemas, cada um com sua cor. Use o trilho à esquerda para passear pelas vistas. O **Mapa** mostra os 1.500 documentos fictícios como pontos: arraste para mover, use a roda do mouse para aproximar, e troque a cor em "Colorir por". Tópicos, Classificação, Geografia e Validação ganham conteúdo nos próximos marcos.
+O navegador abre em `http://127.0.0.1:8765/`. A página inicial mostra os números do corpus e os sete macrotemas, cada um com sua cor. Use o trilho à esquerda para passear pelas vistas. O **Mapa** mostra os 1.500 documentos fictícios como pontos: arraste para mover, use a roda do mouse para aproximar, clique num ponto para ver o documento, e experimente a busca (<kbd>/</kbd>), o laço (<kbd>L</kbd>) e o Play da linha do tempo ([Ler o mapa](../guias/ler-o-mapa.md)). Tópicos, Classificação, Geografia e Validação ganham conteúdo nos próximos marcos.
 
 Para encerrar, volte ao terminal e aperte ++ctrl+c++.
 

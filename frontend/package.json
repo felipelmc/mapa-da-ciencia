@@ -38,6 +38,7 @@
     "@fontsource-variable/instrument-sans": "5.3.0",
     "@fontsource-variable/jetbrains-mono": "5.3.0",
     "d3-contour": "4.0.2",
+    "minisearch": "7.2.0",
     "regl-scatterplot": "1.16.0"
   }
 }

@@ -13,6 +13,8 @@ declare global {
 		erro: string | null;
 		/** Posição de um ponto na tela (px, relativa ao canvas), para os testes clicarem nele. */
 		posicaoNaTela?: (i: number) => [number, number] | undefined;
+		/** Laços terminados (evento lassoEnd do gráfico). */
+		lacos?: number;
 		/** Zoom atual da câmera (1 = inicial). */
 		zoom?: number;
 		/** Contornos desenhados (anéis). */

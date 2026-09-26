@@ -37,7 +37,7 @@ Tópicos prontos: 50 tópicos em 7 macrotemas, 4.275 documentos: 2.886 no núcle
 mapa status
 ```
 
-A seção **Tópicos** mostra quantos tópicos e macrotemas há, a estabilidade e a proporção de documentos no núcleo, reatribuídos e sem tópico. Depois de uma coleta que mude o corpus, ela avisa que os tópicos estão desatualizados. O painel (`mapa painel`) mostra os macrotemas na página inicial.
+A seção **Tópicos** mostra quantos tópicos e macrotemas há, a estabilidade e a proporção de documentos no núcleo, reatribuídos e sem tópico. Depois de uma coleta que mude o corpus, ela avisa que os tópicos estão desatualizados. O painel (`mapa painel`) mostra os macrotemas na página inicial e o mapa dos documentos (veja [Ler o mapa](ler-o-mapa.md)).
 
 Para analisar os tópicos num notebook, a view `atribuicoes` da [API Python](../referencia/api-python.md) traz o tópico, a posição no mapa e os vizinhos de cada documento.
 

@@ -4,7 +4,15 @@
 	import { decodificar } from '$lib/dados/documentos';
 	import VistaMapa from '$lib/mapa/VistaMapa.svelte';
 
-	const { fonte } = usarProjeto();
+	const { fonte, manifesto } = usarProjeto();
+
+	// Versão do mapa: muda quando os tópicos são regenerados. Um laço de um link antigo abre com aviso.
+	function versaoDoMapa(texto: string): string {
+		let h = 0x811c9dc5;
+		for (let i = 0; i < texto.length; i += 1) h = Math.imul(h ^ texto.charCodeAt(i), 0x01000193) >>> 0;
+		return h.toString(36).slice(0, 6);
+	}
+	const versaoMapa = versaoDoMapa(`${manifesto.gerado_em}|${manifesto.contagens.topicos}`);
 
 	// documentos.json e topicos.json só existem depois de `mapa topicos`; sem eles, nenhum pedido é feito
 	const dados = (async () => {
@@ -21,7 +29,7 @@
 	<p class="aviso" role="status">Carregando o mapa…</p>
 {:then d}
 	{#if d}
-		<VistaMapa tabela={d.tabela} topicos={d.topicos} />
+		<VistaMapa tabela={d.tabela} topicos={d.topicos} {versaoMapa} />
 	{:else}
 		<div class="vazio">
 			<h1>Mapa</h1>

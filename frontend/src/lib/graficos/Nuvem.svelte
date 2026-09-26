@@ -165,8 +165,12 @@
 					aplicarSelecao();
 				});
 				grafico.subscribe('lassoEnd', ({ coordinates }) => {
-					const vertices: [number, number][] = [];
-					for (let i = 0; i + 1 < coordinates.length; i += 2) vertices.push([coordinates[i], coordinates[i + 1]]);
+					// os tipos dizem número[] plano, mas o regl-scatterplot 1.16 manda pares [x, y]
+					const brutos = coordinates as unknown as (number | [number, number])[];
+					const vertices: [number, number][] = Array.isArray(brutos[0])
+						? (brutos as [number, number][]).map(([px, py]) => [px, py])
+						: Array.from({ length: Math.floor(brutos.length / 2) }, (_, k) => [brutos[2 * k] as number, brutos[2 * k + 1] as number]);
+					debug().lacos = (debug().lacos ?? 0) + 1;
 					if (vertices.length >= 3) aoLaco(vertices);
 				});
 				grafico.subscribe('view', () => {

@@ -157,3 +157,93 @@ test('clicar num ponto abre o cartão dele', async ({ page }) => {
 	await expect(page.getByTestId('cartao-documento')).toBeVisible();
 	await expect(page).toHaveURL(/doc=/);
 });
+
+// ---- busca, laço, linha do tempo e atalhos
+test('busca com "/" e sem acentos; um resultado abre o cartão', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	await page.keyboard.press('/');
+	await expect(page.getByTestId('busca-mapa')).toBeFocused();
+	const palavra = documentos.colunas.titulo[0].split(' ')[0]; // a primeira palavra de um título
+	const semAcento = palavra.normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase();
+	await page.keyboard.type(semAcento);
+	await expect(page).toHaveURL(/busca=/);
+	const d = await page.evaluate(() => window.__mapaDebug!);
+	expect(d.visiveis).toBeGreaterThan(0);
+	expect(d.visiveis).toBeLessThan(n);
+	const resultados = page.getByTestId('resultados-busca').getByRole('button');
+	await expect(resultados.first()).toBeVisible();
+	await resultados.first().click();
+	await expect(page.getByTestId('cartao-documento')).toBeVisible();
+	expect(problemas).toEqual([]);
+});
+
+test('o laço fica no link e reproduz os mesmos documentos', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	// metade direita do mapa (em NDC): esperados = documentos à direita do centro do mapa
+	const xs: number[] = documentos.colunas.x;
+	const centro = (Math.min(...xs) + Math.max(...xs)) / 2;
+	const esperados = xs.filter((x) => x > centro).length;
+	await page.evaluate(() => window.__mapaDebug!.laco!([[0, -1.2], [1.2, -1.2], [1.2, 1.2], [0, 1.2]]));
+	await expect(page).toHaveURL(/laco=/);
+	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBe(esperados);
+	await expect(page.getByTestId('chip-laco')).toContainText(inteiro(esperados));
+
+	// o mesmo link, numa aba nova, mostra os mesmos documentos
+	const link = page.url();
+	const outra = await page.context().newPage();
+	await outra.goto(link);
+	const d = await esperarMapa(outra);
+	expect(d.visiveis).toBe(esperados);
+	await expect(outra.getByTestId('aviso-laco')).toHaveCount(0);
+	await outra.close();
+
+	await page.getByRole('button', { name: 'Tirar o laço' }).click();
+	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBe(n);
+});
+
+test('laço desenhado com o mouse depois do "L"', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	await page.getByRole('button', { name: 'Recolher' }).click(); // o painel sai da frente
+	await page.keyboard.press('l');
+	await expect(page.getByTestId('botao-laco')).toHaveCount(0); // recolhido, o botão some; o modo segue ligado
+	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.modoLaco)).toBe(true);
+	const caixa = (await page.getByTestId('canvas-mapa').boundingBox())!;
+	const [cx, cy, r] = [caixa.x + caixa.width / 2, caixa.y + caixa.height / 2, caixa.height / 3];
+	await page.mouse.move(cx + r, cy);
+	await page.mouse.down();
+	for (let k = 1; k <= 40; k += 1) {
+		const a = (2 * Math.PI * k) / 40;
+		await page.mouse.move(cx + r * Math.cos(a), cy + r * Math.sin(a), { steps: 2 });
+		await page.waitForTimeout(20); // o laço só registra um ponto 10 ms depois do anterior (lassoMinDelay)
+	}
+	await page.mouse.up();
+	await expect(page).toHaveURL(/laco=/);
+	const visiveis = await page.evaluate(() => window.__mapaDebug!.visiveis);
+	expect(visiveis).toBeGreaterThan(0);
+	expect(visiveis).toBeLessThan(n);
+	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.modoLaco)).toBe(false); // desliga sozinho
+});
+
+test('play passa ano a ano pela linha do tempo', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	const primeiro = Math.min(...documentos.colunas.ano);
+	await page.getByTestId('play').click();
+	await expect(page).toHaveURL(new RegExp(`anos=${primeiro}(&|$)`));
+	await expect(page).toHaveURL(new RegExp(`anos=${primeiro + 1}(&|$)`), { timeout: 5000 });
+	await page.getByTestId('play').click(); // pausa
+	const doAno = documentos.colunas.ano.filter((a: number) => a === primeiro + 1).length;
+	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBe(doAno);
+});
+
+test('"?" abre os atalhos na Ajuda', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	await page.keyboard.press('?');
+	await expect(page).toHaveURL(/#\/ajuda$/);
+	await expect(page.getByTestId('atalhos-mapa')).toContainText('liga o laço');
+});
