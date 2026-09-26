@@ -122,6 +122,8 @@ mapa geografia [OPÇÕES]
 | Argumento ou opção | Descrição | Padrão |
 |---|---|---|
 | `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--revisar` | Lista as afiliações que não casaram, com sugestões e um bloco pronto para o instituicoes.yaml. |  |
+| `--limite` | Quantas afiliações listar na revisão. | `20` |
 
 ## `mapa importar`
 

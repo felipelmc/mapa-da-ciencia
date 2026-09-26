@@ -81,7 +81,7 @@ As 20 instituições com mais peso no piloto, conferidas uma a uma: USP, UnB, UF
 
 ## Consequências
 
-- A `v70` fica abaixo da meta de 85% do plano (83,8%). O que falta é, na maior parte, instituição que o índice não conhece: resolve-se pelo `instituicoes.yaml` do projeto, com `mapa geografia --revisar` listando os textos mais frequentes. O piloto recebe o seu.
+- Sem correções, a `v70` fica abaixo da meta de 85% do plano (83,8%). O que falta é, na maior parte, instituição que o índice não conhece, e isso se resolve pelo `instituicoes.yaml` do projeto, com `mapa geografia --revisar` listando os textos mais frequentes e as instituições parecidas. No piloto, uma rodada de revisão (22 apelidos e 6 instituições próprias, como o Centro de Estudos da Metrópole, a Escola Superior de Guerra e o INCT-INEU) leva a `v70` a 86,5% e o total a 93,9%. As sugestões do `--revisar` precisam ser conferidas: para "Brazilian Center for Analysis and Planning" (o Cebrap), a mais parecida era o Centro Universitário de Brasília.
 - Autores com o país errado na `v70` ficam sem instituição e contam no país que a fonte escreveu.
 - Os limiares ficam no topo de `casamento.py`. Mudá-los pede uma nova rodada de `scripts/calibrar_geografia.py`, que herda os rótulos já feitos (`--anteriores`) e mostra só os pares novos para rotular.
 - A amostra rotulada é uma leitura do Claude, não de um especialista em instituições brasileiras. O Felipe pode conferir `dados/0008-amostra-geografia.csv` (coluna `rotulo`).

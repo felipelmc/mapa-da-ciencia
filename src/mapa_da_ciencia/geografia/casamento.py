@@ -304,11 +304,12 @@ class Indice:
         for r in registros.values():
             # cada nome também sem a sigla que ele carrega ("Iscte – Instituto Universitário de Lisboa"), que casa
             # por outro caminho; com ela, para não perder uma palavra que também é sigla ("Nova", da Nova de Lisboa)
-            # (a variante sem a sigla precisa continuar nomeando uma organização: "CONACYT México" não vira "México")
+            # (a variante sem a sigla precisa continuar nomeando uma organização: "CONACYT México" não vira "México",
             proprias = {_chave_sigla(p) for x in r.siglas for p in (x, *x.split("-"))} - DISCRIMINANTES
             nomes = [palavras(n) for n in (r.nome, *r.nomes) if n]
             sem_sigla = [n - proprias for n in nomes if n & proprias]
-            sem_sigla = [n for n in sem_sigla if len(n) >= 2 and n & _ORGANIZACOES]
+            # e dizer qual é ela: "Centro Universitário FEI" sem o FEI é só uma categoria
+            sem_sigla = [n for n in sem_sigla if len(n) >= 2 and n & _ORGANIZACOES and n - GENERICAS - _ORGANIZACOES]
             conjuntos = tuple(dict.fromkeys(c for c in (*nomes, *sem_sigla) if c))
             self._nomes[r.id] = conjuntos
             todas = frozenset().union(*conjuntos)

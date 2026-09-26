@@ -565,7 +565,17 @@ def topicos(
 
 
 @app.command()
-def geografia(projeto: OpcaoProjeto = Path(".")) -> None:
+def geografia(
+    projeto: OpcaoProjeto = Path("."),
+    revisar: Annotated[
+        bool,
+        typer.Option(
+            "--revisar",
+            help="Lista as afiliações que não casaram, com sugestões e um bloco pronto para o instituicoes.yaml.",
+        ),
+    ] = False,
+    limite: Annotated[int, typer.Option("--limite", help="Quantas afiliações listar na revisão.", min=1)] = 20,
+) -> None:
     """Liga cada afiliação a uma instituição, com UF e país, e faz a contagem fracionária da produção."""
     from mapa_da_ciencia.geografia.pipeline import gerar_geografia
     from mapa_da_ciencia.geografia.resultado import PASTA, ler_instituicoes
@@ -574,6 +584,9 @@ def geografia(projeto: OpcaoProjeto = Path(".")) -> None:
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
         resumo = gerar_geografia(p, ProgressoRich(console))
+    if revisar:
+        _revisar_geografia(p, limite)
+        return
 
     console.print(f"\n[bold green]Geografia pronta[/]: {resumo}")
     fontes = Table("Fonte das afiliações", "Vínculos", "Ligados a uma instituição")
@@ -597,7 +610,37 @@ def geografia(projeto: OpcaoProjeto = Path(".")) -> None:
     )
     for aviso in resumo.avisos:
         console.print(f"[yellow]Aviso:[/] {aviso}")
-    console.print("Próximo passo: [bold]mapa painel[/] para ver a geografia.")
+    console.print(
+        "Próximo passo: [bold]mapa painel[/] para ver a geografia, ou [bold]mapa geografia --revisar[/] para "
+        "corrigir as afiliações que não casaram."
+    )
+
+
+def _revisar_geografia(p: Projeto, limite: int) -> None:
+    from mapa_da_ciencia.geografia.revisao import bloco_yaml, pendencias
+
+    lista = pendencias(p, limite)
+    if not lista:
+        console.print("\n[bold green]Todas as afiliações com texto casaram com uma instituição.[/]")
+        return
+    tabela = Table("Texto da afiliação", "Vínculos", "Docs", "País", "Instituição parecida", title_justify="left")
+    tabela.title = f"As {num(len(lista), 0)} afiliações sem instituição mais frequentes"
+    for pend in lista:
+        grafias = f" [dim](+{pend.grafias - 1} grafia(s))[/]" if pend.grafias > 1 else ""
+        sugestao = (
+            "\n".join(f"{s.nome} ({s.pais or '?'}, {num(s.nota, 2)})" for s in pend.sugestoes)
+            if pend.sugestoes
+            else "[dim]—[/]"
+        )
+        tabela.add_row(pend.texto + grafias, num(pend.vinculos, 0), num(pend.documentos, 0), pend.pais or "", sugestao)
+    console.print()
+    console.print(tabela)
+    console.print(
+        "\nCopie para o [bold]instituicoes.yaml[/] do projeto o que estiver certo (as linhas comentadas são "
+        "modelos de instituição própria) e rode [bold]mapa geografia[/] de novo:\n"
+    )
+    # sem quebrar as linhas, para o bloco poder ser copiado como está
+    console.print(bloco_yaml(lista), highlight=False, markup=False, soft_wrap=True)
 
 
 @app.command()

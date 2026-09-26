@@ -170,6 +170,11 @@ class _Arquivo(BaseModel):
     apelidos: dict[str, str] = Field(default_factory=dict)
     instituicoes: dict[str, _Instituicao] = Field(default_factory=dict)
 
+    @field_validator("apelidos", "instituicoes", mode="before")
+    @classmethod
+    def _vazio(cls, v: object) -> object:
+        return {} if v is None else v  # uma seção só com linhas comentadas (o bloco do `--revisar`)
+
 
 @dataclass
 class Correcoes:

@@ -75,3 +75,37 @@ def test_sem_corpus(tmp_path):
     p = Projeto.criar(tmp_path / "vazio", modelo="vazio", perfil=PERFIS["leve"])
     r = runner.invoke(app, ["geografia", "-P", str(p.raiz)])
     assert r.exit_code != 0 and "mapa coletar" in r.output
+
+
+def test_revisar_lista_e_o_bloco_vira_instituicoes_yaml(projeto):
+    from mapa_da_ciencia.geografia.revisao import bloco_yaml, pendencias
+
+    mapa.geografia(projeto, progresso=False)
+    lista = pendencias(projeto, limite=None)
+    assert lista and [p.vinculos for p in lista] == sorted((p.vinculos for p in lista), reverse=True)
+    camara = next(p for p in lista if p.texto == "Centro de Formação da Câmara dos Deputados")
+    assert camara.vinculos == 2 and camara.pais == "BR"
+    bloco = bloco_yaml(lista)
+    assert bloco.startswith("apelidos:\n") and "instituicoes:\n" in bloco
+    # colado como está, o bloco é um instituicoes.yaml válido (as instituições próprias vêm comentadas)
+    (projeto.raiz / "instituicoes.yaml").write_text(bloco, encoding="utf-8")
+    ativos = [linha for linha in bloco.splitlines() if linha.startswith('  "')]
+    mapa.geografia(projeto, progresso=False)
+    depois = pendencias(projeto, limite=None)
+    assert len(depois) == len(lista) - len(ativos)
+    # descomentando uma instituição própria e o apelido dela, o texto casa
+    proprio = (
+        'apelidos:\n  "Centro de Formação da Câmara dos Deputados": cefor\n'
+        "instituicoes:\n  cefor: {nome: Centro de Formação da Câmara dos Deputados, sigla: Cefor, pais: BR, uf: DF}\n"
+    )
+    (projeto.raiz / "instituicoes.yaml").write_text(proprio, encoding="utf-8")
+    mapa.geografia(projeto, progresso=False)
+    with mapa.conectar(projeto) as con:
+        linha = con.execute("SELECT nivel, uf, pais FROM vinculos WHERE instituicao = 'cefor'").fetchall()
+    assert linha and all(x == ("apelido", "DF", "BR") for x in linha)
+
+
+def test_mapa_geografia_revisar(projeto):
+    r = runner.invoke(app, ["geografia", "-P", str(projeto.raiz), "--revisar", "--limite", "3"], env={"COLUMNS": "200"})
+    assert r.exit_code == 0, r.output
+    assert "afiliações sem instituição mais frequentes" in r.output and "apelidos:" in r.output
