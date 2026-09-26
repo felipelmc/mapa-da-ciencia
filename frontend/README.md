@@ -78,7 +78,8 @@ frontend/
     ├── servidor.ts                   estático sem reescrita (como o GitHub Pages)
     ├── comum.ts                      ajudantes: vigiar o console, esperar o mapa, ler o exemplo
     ├── casca.spec.ts                 casca, capa, temas, projeto vazio
-    └── mapa.spec.ts                  a vista Mapa
+    ├── mapa.spec.ts                  a vista Mapa
+    └── topicos.spec.ts               a vista Tópicos
 ```
 
 Os testes unitários ficam ao lado do código (`*.test.ts`).
