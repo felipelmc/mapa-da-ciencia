@@ -1,0 +1,14 @@
+Spike M0d — servidor estático: python
+Pergunta 1: router por hash (variante x modo)
+  [rotas] sem-fallback raiz       FUNCIONA (esperado: funciona)
+  [rotas] sem-fallback subcaminho FALHA    (esperado: falha) etapas com falha: a_cargaInicio
+  [rotas] com-fallback raiz       FUNCIONA (esperado: funciona)
+  [rotas] com-fallback subcaminho FALHA    (esperado: falha) etapas com falha: a_cargaInicio
+  [rotas] inline       raiz       FUNCIONA (esperado: funciona)
+  [rotas] inline       subcaminho FUNCIONA (esperado: funciona)
+  [rotas] base-fixa    raiz       FALHA    (esperado: falha) etapas com falha: a_cargaInicio
+  [rotas] base-fixa    subcaminho FUNCIONA (esperado: funciona)
+  [rotas] relativo     raiz       FUNCIONA (esperado: funciona)
+  [rotas] relativo     subcaminho FUNCIONA (esperado: funciona)
+
+Resultados completos em /Users/felipelmc/Desktop/mapa-da-ciencia/spikes/frontend/resultados/resultados-python-rotas.json

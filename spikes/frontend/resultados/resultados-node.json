@@ -1,0 +1,2503 @@
+{
+  "quando": "2026-09-26T03:37:32.805Z",
+  "servidor": "node",
+  "node": "v24.14.0",
+  "plataforma": "darwin-arm64",
+  "limiares": {
+    "LIMIAR_COR": 24,
+    "FRACAO_MINIMA": 0.005
+  },
+  "versaoChromium": "153.0.8010.12",
+  "rotas": [
+    {
+      "variante": "sem-fallback",
+      "modo": "raiz",
+      "servidor": "node",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.5,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64113/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64113/#/",
+            "pathname": "/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "#/",
+            "hrefMapa": "#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64113/#/mapa",
+          "navegacaoNoCliente": true
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "#/",
+          "urlNaBarra": "http://127.0.0.1:64113/#/",
+          "navegacaoNoCliente": true
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64113/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64113/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64113/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64113/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64113/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 171.5,
+            "msDesdeNavegacao": 190.7999999821186,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64113/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [
+            "[warning] [.WebGL-0x13400442c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+            "[warning] [.WebGL-0x13400442c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+            "[warning] [.WebGL-0x13400442c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+            "[warning] [.WebGL-0x13400442c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+          ],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": []
+    },
+    {
+      "variante": "sem-fallback",
+      "modo": "subcaminho",
+      "servidor": "node",
+      "esperado": false,
+      "funciona": false,
+      "conformeEsperado": true,
+      "segundos": 8,
+      "etapasOk": [],
+      "etapasFalhas": [
+        "a_cargaInicio"
+      ],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64122/sem-fallback/",
+        "a_cargaInicio": {
+          "ok": false,
+          "erro": "locator.waitFor: Timeout 8000ms exceeded."
+        },
+        "problemas": {
+          "console": [
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "excecoes": [
+            "TypeError: Failed to fetch dynamically imported module: http://127.0.0.1:64122/_app/immutable/entry/start.Cq_77ijt.js"
+          ],
+          "respostasComFalha": [
+            "404 /_app/immutable/entry/start.Cq_77ijt.js",
+            "404 /_app/immutable/chunks/m1hoHegV.js",
+            "404 /_app/immutable/chunks/5PXmsLrJ.js",
+            "404 /_app/immutable/nodes/0.lqlSUqwE.js",
+            "404 /_app/immutable/entry/app.B-1bxlsK.js",
+            "404 /_app/immutable/chunks/xihTtKlq.js",
+            "404 /_app/immutable/chunks/BT-BsQH3.js",
+            "404 /_app/immutable/assets/0.Bu4xUFfR.css"
+          ],
+          "requisicoesFalhas": [
+            "net::ERR_ABORTED http://127.0.0.1:64122/_app/immutable/entry/start.Cq_77ijt.js",
+            "net::ERR_ABORTED http://127.0.0.1:64122/_app/immutable/chunks/m1hoHegV.js",
+            "net::ERR_ABORTED http://127.0.0.1:64122/_app/immutable/chunks/5PXmsLrJ.js",
+            "net::ERR_ABORTED http://127.0.0.1:64122/_app/immutable/nodes/0.lqlSUqwE.js",
+            "net::ERR_ABORTED http://127.0.0.1:64122/_app/immutable/entry/app.B-1bxlsK.js",
+            "net::ERR_ABORTED http://127.0.0.1:64122/_app/immutable/chunks/xihTtKlq.js",
+            "net::ERR_ABORTED http://127.0.0.1:64122/_app/immutable/chunks/BT-BsQH3.js",
+            "net::ERR_ABORTED http://127.0.0.1:64122/_app/immutable/assets/0.Bu4xUFfR.css"
+          ]
+        }
+      },
+      "logServidorNao200": [
+        "404 /_app/immutable/entry/start.Cq_77ijt.js",
+        "404 /_app/immutable/chunks/m1hoHegV.js",
+        "404 /_app/immutable/chunks/5PXmsLrJ.js",
+        "404 /_app/immutable/nodes/0.lqlSUqwE.js",
+        "404 /_app/immutable/entry/app.B-1bxlsK.js",
+        "404 /_app/immutable/chunks/xihTtKlq.js",
+        "404 /_app/immutable/chunks/BT-BsQH3.js",
+        "404 /_app/immutable/assets/0.Bu4xUFfR.css"
+      ]
+    },
+    {
+      "variante": "com-fallback",
+      "modo": "raiz",
+      "servidor": "node",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.4,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64131/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64131/#/",
+            "pathname": "/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "#/",
+            "hrefMapa": "#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64131/#/mapa",
+          "navegacaoNoCliente": true
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "#/",
+          "urlNaBarra": "http://127.0.0.1:64131/#/",
+          "navegacaoNoCliente": true
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64131/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64131/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64131/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64131/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64131/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 171.09999999403954,
+            "msDesdeNavegacao": 188.59999999403954,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64131/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": []
+    },
+    {
+      "variante": "com-fallback",
+      "modo": "subcaminho",
+      "servidor": "node",
+      "esperado": false,
+      "funciona": false,
+      "conformeEsperado": true,
+      "segundos": 8,
+      "etapasOk": [],
+      "etapasFalhas": [
+        "a_cargaInicio"
+      ],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64138/com-fallback/",
+        "a_cargaInicio": {
+          "ok": false,
+          "erro": "locator.waitFor: Timeout 8000ms exceeded."
+        },
+        "problemas": {
+          "console": [
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "excecoes": [
+            "TypeError: Failed to fetch dynamically imported module: http://127.0.0.1:64138/_app/immutable/entry/start.xZCqAjb9.js"
+          ],
+          "respostasComFalha": [
+            "404 /_app/immutable/entry/start.xZCqAjb9.js",
+            "404 /_app/immutable/chunks/BZVveBZU.js",
+            "404 /_app/immutable/assets/0.Bu4xUFfR.css",
+            "404 /_app/immutable/chunks/5PXmsLrJ.js",
+            "404 /_app/immutable/entry/app.Dok1VChm.js",
+            "404 /_app/immutable/chunks/xihTtKlq.js",
+            "404 /_app/immutable/nodes/0.D4wiyXm6.js",
+            "404 /_app/immutable/chunks/hJnugBGx.js"
+          ],
+          "requisicoesFalhas": [
+            "net::ERR_ABORTED http://127.0.0.1:64138/_app/immutable/entry/start.xZCqAjb9.js",
+            "net::ERR_ABORTED http://127.0.0.1:64138/_app/immutable/chunks/BZVveBZU.js",
+            "net::ERR_ABORTED http://127.0.0.1:64138/_app/immutable/assets/0.Bu4xUFfR.css",
+            "net::ERR_ABORTED http://127.0.0.1:64138/_app/immutable/chunks/5PXmsLrJ.js",
+            "net::ERR_ABORTED http://127.0.0.1:64138/_app/immutable/entry/app.Dok1VChm.js",
+            "net::ERR_ABORTED http://127.0.0.1:64138/_app/immutable/chunks/xihTtKlq.js",
+            "net::ERR_ABORTED http://127.0.0.1:64138/_app/immutable/nodes/0.D4wiyXm6.js",
+            "net::ERR_ABORTED http://127.0.0.1:64138/_app/immutable/chunks/hJnugBGx.js"
+          ]
+        }
+      },
+      "logServidorNao200": [
+        "404 /_app/immutable/entry/start.xZCqAjb9.js",
+        "404 /_app/immutable/chunks/BZVveBZU.js",
+        "404 /_app/immutable/assets/0.Bu4xUFfR.css",
+        "404 /_app/immutable/chunks/5PXmsLrJ.js",
+        "404 /_app/immutable/entry/app.Dok1VChm.js",
+        "404 /_app/immutable/chunks/xihTtKlq.js",
+        "404 /_app/immutable/nodes/0.D4wiyXm6.js",
+        "404 /_app/immutable/chunks/hJnugBGx.js"
+      ]
+    },
+    {
+      "variante": "inline",
+      "modo": "raiz",
+      "servidor": "node",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.4,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64156/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64156/#/",
+            "pathname": "/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "#/",
+            "hrefMapa": "#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64156/#/mapa",
+          "navegacaoNoCliente": true
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "#/",
+          "urlNaBarra": "http://127.0.0.1:64156/#/",
+          "navegacaoNoCliente": true
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64156/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64156/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64156/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64156/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64156/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 175,
+            "msDesdeNavegacao": 198.7000000178814,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64156/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": []
+    },
+    {
+      "variante": "inline",
+      "modo": "subcaminho",
+      "servidor": "node",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.7,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64158/inline/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64158/inline/#/",
+            "pathname": "/inline/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "/inline#/",
+            "hrefMapa": "/inline#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "/inline#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64158/inline/#/mapa",
+          "navegacaoNoCliente": false
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "/inline#/",
+          "urlNaBarra": "http://127.0.0.1:64158/inline/#/",
+          "navegacaoNoCliente": false
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64158/inline/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64158/inline/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64158/inline/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": false,
+          "mapaPreservado": false
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64158/inline/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64158/inline/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 172.5,
+            "msDesdeNavegacao": 196.09999999403954,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64158/inline/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": [
+        "301 /inline"
+      ]
+    },
+    {
+      "variante": "base-fixa",
+      "modo": "raiz",
+      "servidor": "node",
+      "esperado": false,
+      "funciona": false,
+      "conformeEsperado": true,
+      "segundos": 8,
+      "etapasOk": [],
+      "etapasFalhas": [
+        "a_cargaInicio"
+      ],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64166/",
+        "a_cargaInicio": {
+          "ok": false,
+          "erro": "locator.waitFor: Timeout 8000ms exceeded."
+        },
+        "problemas": {
+          "console": [
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "excecoes": [
+            "TypeError: Failed to fetch dynamically imported module: http://127.0.0.1:64166/base-fixa/_app/immutable/entry/start.Dpnexrvr.js"
+          ],
+          "respostasComFalha": [
+            "404 /base-fixa/_app/immutable/entry/start.Dpnexrvr.js",
+            "404 /base-fixa/_app/immutable/chunks/DbRHtCVN.js",
+            "404 /base-fixa/_app/immutable/assets/0.Bu4xUFfR.css",
+            "404 /base-fixa/_app/immutable/chunks/5PXmsLrJ.js",
+            "404 /base-fixa/_app/immutable/entry/app.BJR9A5Z_.js",
+            "404 /base-fixa/_app/immutable/chunks/xihTtKlq.js",
+            "404 /base-fixa/_app/immutable/nodes/0.BV28YjAe.js",
+            "404 /base-fixa/_app/immutable/chunks/CXIp-V0O.js"
+          ],
+          "requisicoesFalhas": [
+            "net::ERR_ABORTED http://127.0.0.1:64166/base-fixa/_app/immutable/entry/start.Dpnexrvr.js",
+            "net::ERR_ABORTED http://127.0.0.1:64166/base-fixa/_app/immutable/chunks/DbRHtCVN.js",
+            "net::ERR_ABORTED http://127.0.0.1:64166/base-fixa/_app/immutable/assets/0.Bu4xUFfR.css",
+            "net::ERR_ABORTED http://127.0.0.1:64166/base-fixa/_app/immutable/chunks/5PXmsLrJ.js",
+            "net::ERR_ABORTED http://127.0.0.1:64166/base-fixa/_app/immutable/entry/app.BJR9A5Z_.js",
+            "net::ERR_ABORTED http://127.0.0.1:64166/base-fixa/_app/immutable/chunks/xihTtKlq.js",
+            "net::ERR_ABORTED http://127.0.0.1:64166/base-fixa/_app/immutable/nodes/0.BV28YjAe.js",
+            "net::ERR_ABORTED http://127.0.0.1:64166/base-fixa/_app/immutable/chunks/CXIp-V0O.js"
+          ]
+        }
+      },
+      "logServidorNao200": [
+        "404 /base-fixa/_app/immutable/entry/start.Dpnexrvr.js",
+        "404 /base-fixa/_app/immutable/chunks/DbRHtCVN.js",
+        "404 /base-fixa/_app/immutable/chunks/5PXmsLrJ.js",
+        "404 /base-fixa/_app/immutable/entry/app.BJR9A5Z_.js",
+        "404 /base-fixa/_app/immutable/assets/0.Bu4xUFfR.css",
+        "404 /base-fixa/_app/immutable/chunks/xihTtKlq.js",
+        "404 /base-fixa/_app/immutable/nodes/0.BV28YjAe.js",
+        "404 /base-fixa/_app/immutable/chunks/CXIp-V0O.js"
+      ]
+    },
+    {
+      "variante": "base-fixa",
+      "modo": "subcaminho",
+      "servidor": "node",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.6,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64184/base-fixa/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64184/base-fixa/#/",
+            "pathname": "/base-fixa/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "/base-fixa#/",
+            "hrefMapa": "/base-fixa#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "/base-fixa#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64184/base-fixa/#/mapa",
+          "navegacaoNoCliente": false
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "/base-fixa#/",
+          "urlNaBarra": "http://127.0.0.1:64184/base-fixa/#/",
+          "navegacaoNoCliente": false
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64184/base-fixa/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64184/base-fixa/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64184/base-fixa/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": false,
+          "mapaPreservado": false
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64184/base-fixa/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64184/base-fixa/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 170.40000000596046,
+            "msDesdeNavegacao": 187.69999998807907,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64184/base-fixa/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": [
+        "301 /base-fixa"
+      ]
+    },
+    {
+      "variante": "relativo",
+      "modo": "raiz",
+      "servidor": "node",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.4,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64191/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64191/#/",
+            "pathname": "/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "#/",
+            "hrefMapa": "#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64191/#/mapa",
+          "navegacaoNoCliente": true
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "#/",
+          "urlNaBarra": "http://127.0.0.1:64191/#/",
+          "navegacaoNoCliente": true
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64191/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64191/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64191/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64191/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64191/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 168.59999999403954,
+            "msDesdeNavegacao": 186.5,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64191/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": []
+    },
+    {
+      "variante": "relativo",
+      "modo": "subcaminho",
+      "servidor": "node",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.6,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64198/relativo/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64198/relativo/#/",
+            "pathname": "/relativo/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "/relativo#/",
+            "hrefMapa": "/relativo#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "/relativo#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64198/relativo/#/mapa",
+          "navegacaoNoCliente": false
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "/relativo#/",
+          "urlNaBarra": "http://127.0.0.1:64198/relativo/#/",
+          "navegacaoNoCliente": false
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64198/relativo/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64198/relativo/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64198/relativo/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": false,
+          "mapaPreservado": false
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64198/relativo/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64198/relativo/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 171.40000000596046,
+            "msDesdeNavegacao": 188.40000000596046,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64198/relativo/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": [
+        "301 /relativo"
+      ]
+    }
+  ],
+  "mapa": {
+    "urlBase": "http://127.0.0.1:64205/",
+    "versaoChromium": "153.0.8010.12",
+    "screenshot": {
+      "arquivo": "resultados/mapa.png",
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 207.40000000596046,
+        "msDesdeNavegacao": 242.30000001192093,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixelsCanvas": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "problemas": {
+        "console": [
+          "[warning] [.WebGL-0x1140043b400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+          "[warning] [.WebGL-0x1140043b400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+          "[warning] [.WebGL-0x1140043b400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+          "[warning] [.WebGL-0x1140043b400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)",
+          "[warning] Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently"
+        ],
+        "excecoes": [],
+        "respostasComFalha": [],
+        "requisicoesFalhas": []
+      }
+    },
+    "api": {
+      "lassoSelectProgramatico": {
+        "ok": true,
+        "chamada": "scatterplot.lassoSelect(quadrado GL em volta do cluster 0, { isGl: true })",
+        "selecionados": 250,
+        "doCluster0": 250,
+        "eventosSelectNovos": 1
+      },
+      "lassoComMouse": {
+        "ok": true,
+        "chamada": "Shift + arrastar o mouse num círculo de raio 45 px",
+        "clusterAlvo": 25,
+        "selecionados": 250,
+        "doClusterAlvo": 250,
+        "eventosSelectNovos": 1,
+        "eventosLassoEndNovos": 1
+      },
+      "filter": {
+        "ok": true,
+        "chamada": "await scatterplot.filter(índices dos clusters 0–4)",
+        "pedidos": 1250,
+        "filteredPoints": 1250,
+        "isPointsFiltered": true,
+        "eventosFilterNovos": 1,
+        "pixelsAntes": 52995,
+        "pixelsFiltrado": 7260,
+        "pixelsDepoisDoUnfilter": 52995
+      },
+      "corPorCategoria": {
+        "ok": true,
+        "chamada": "scatterplot.set({ colorBy: 'valueA', pointColor: [40 cores] }) / set({ pointColor: '#FFD58F' })",
+        "colorBy": "valueZ",
+        "coresNaPaleta": 40,
+        "coresDistintasComPaleta": 795,
+        "coresDistintasComUmaCor": 62,
+        "coresDistintasRestaurado": 795
+      },
+      "export": {
+        "ok": true,
+        "sincrono": {
+          "chamada": "scatterplot.export()",
+          "largura": 1280,
+          "altura": 800,
+          "pixelsComAlfa": 54226,
+          "fracao": 0.053
+        },
+        "assincrono": {
+          "chamada": "await scatterplot.export({ scale: 1, antiAliasing: 1, pixelAligned: false })",
+          "largura": 1280,
+          "altura": 800,
+          "pixelsComAlfa": 56650,
+          "fracao": 0.0553
+        }
+      }
+    },
+    "tempos": {
+      "padrao": {
+        "navegador": "headless-shell",
+        "flags": [],
+        "renderer": [
+          "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        ],
+        "msAtePrimeiroDesenho": {
+          "n": 10,
+          "mediana": 171,
+          "min": 169,
+          "max": 207,
+          "valores": [
+            207,
+            172,
+            170,
+            170,
+            169,
+            171,
+            171,
+            171,
+            171,
+            170
+          ]
+        },
+        "msDesdeNavegacao": {
+          "n": 10,
+          "mediana": 189,
+          "min": 188,
+          "max": 238,
+          "valores": [
+            238,
+            190,
+            189,
+            188,
+            188,
+            189,
+            189,
+            189,
+            189,
+            189
+          ]
+        }
+      },
+      "swiftshader": {
+        "navegador": "headless-shell",
+        "flags": [
+          "--use-angle=swiftshader",
+          "--enable-unsafe-swiftshader"
+        ],
+        "renderer": [
+          "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        ],
+        "msAtePrimeiroDesenho": {
+          "n": 10,
+          "mediana": 53,
+          "min": 51,
+          "max": 71,
+          "valores": [
+            71,
+            52,
+            53,
+            55,
+            53,
+            52,
+            55,
+            52,
+            51,
+            53
+          ]
+        },
+        "msDesdeNavegacao": {
+          "n": 10,
+          "mediana": 72,
+          "min": 70,
+          "max": 91,
+          "valores": [
+            91,
+            71,
+            72,
+            74,
+            71,
+            70,
+            73,
+            70,
+            73,
+            71
+          ]
+        }
+      },
+      "novo-headless": {
+        "navegador": "chromium-novo-headless",
+        "flags": [],
+        "renderer": [
+          "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        ],
+        "msAtePrimeiroDesenho": {
+          "n": 10,
+          "mediana": 59,
+          "min": 53,
+          "max": 110,
+          "valores": [
+            110,
+            54,
+            53,
+            66,
+            57,
+            62,
+            66,
+            53,
+            70,
+            55
+          ]
+        },
+        "msDesdeNavegacao": {
+          "n": 10,
+          "mediana": 80,
+          "min": 76,
+          "max": 141,
+          "valores": [
+            141,
+            76,
+            78,
+            90,
+            76,
+            82,
+            95,
+            77,
+            90,
+            78
+          ]
+        }
+      }
+    }
+  },
+  "matrizFlags": [
+    {
+      "navegador": "headless-shell",
+      "flags": [],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 219.19999998807907,
+        "msDesdeNavegacao": 248,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 219.19999998807907,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x11c00432400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x11c00432400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "headless-shell",
+      "flags": [
+        "--use-gl=swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 210.60000002384186,
+        "msDesdeNavegacao": 232.7000000178814,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 210.60000002384186,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x12c00439600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x12c00439600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "headless-shell",
+      "flags": [
+        "--use-angle=swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 69.19999998807907,
+        "msDesdeNavegacao": 90.40000000596046,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 69.19999998807907,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x12c00439600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x12c00443800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x12c0043a800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x12c0043a800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "headless-shell",
+      "flags": [
+        "--enable-unsafe-swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 210.40000000596046,
+        "msDesdeNavegacao": 246,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 210.40000000596046,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x11400441400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x11400441400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "headless-shell",
+      "flags": [
+        "--use-angle=swiftshader",
+        "--enable-unsafe-swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 66.80000001192093,
+        "msDesdeNavegacao": 88,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 66.80000001192093,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x10c00436600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x10c00439000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x10c00445600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x10c00445600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "headless-shell",
+      "flags": [
+        "--use-gl=angle",
+        "--use-angle=swiftshader",
+        "--enable-unsafe-swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 67.5,
+        "msDesdeNavegacao": 88.7000000178814,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 67.5,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x13400439600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x13400445000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x13400436600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x13400436600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "headless-shell",
+      "flags": [
+        "--disable-gpu"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 209.30000001192093,
+        "msDesdeNavegacao": 232.30000001192093,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 209.30000001192093,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x11c00437800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x11c00437800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "headless-shell",
+      "flags": [
+        "--disable-gpu",
+        "--enable-unsafe-swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 208,
+        "msDesdeNavegacao": 241.89999997615814,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 208,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x1340043a200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x1340043a200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "headless-shell",
+      "flags": [
+        "--disable-gpu",
+        "--use-angle=swiftshader",
+        "--enable-unsafe-swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 209.2999999821186,
+        "msDesdeNavegacao": 247,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 209.2999999821186,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x12c00445000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x12c00445000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "chromium-novo-headless",
+      "flags": [],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 83.90000000596046,
+        "msDesdeNavegacao": 107.90000000596046,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 53096,
+        "fracao": 0.0519,
+        "fracaoFundo": 0.9471,
+        "coresDistintas": 816,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 83.90000000596046,
+      "avisosConsole": [],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "chromium-novo-headless",
+      "flags": [
+        "--use-gl=swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 224.5,
+        "msDesdeNavegacao": 313.89999997615814,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 224.5,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x124000cd800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x124000c9c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] WebGL: CONTEXT_LOST_WEBGL: loseContext: context lost"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "chromium-novo-headless",
+      "flags": [
+        "--use-angle=swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 624.4000000059605,
+        "msDesdeNavegacao": 1726.199999988079,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 624.4000000059605,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x104000cc000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x104000cba00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x104000c7200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x104000c7200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "chromium-novo-headless",
+      "flags": [
+        "--enable-unsafe-swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 82.30000001192093,
+        "msDesdeNavegacao": 106.7000000178814,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 53096,
+        "fracao": 0.0519,
+        "fracaoFundo": 0.9471,
+        "coresDistintas": 816,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 82.30000001192093,
+      "avisosConsole": [],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "chromium-novo-headless",
+      "flags": [
+        "--use-angle=swiftshader",
+        "--enable-unsafe-swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 585,
+        "msDesdeNavegacao": 1737.7000000178814,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 585,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x12c000cde00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x12c000cb400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x12c000d1400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x12c000d1400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "chromium-novo-headless",
+      "flags": [
+        "--use-gl=angle",
+        "--use-angle=swiftshader",
+        "--enable-unsafe-swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 926.3999999761581,
+        "msDesdeNavegacao": 1852.5,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 926.3999999761581,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x134000cea00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x134000c7e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x134000d2000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x134000d2000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "chromium-novo-headless",
+      "flags": [
+        "--disable-gpu"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 206.90000000596046,
+        "msDesdeNavegacao": 234.09999999403954,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 206.90000000596046,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x104000cc000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x104000cc000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "chromium-novo-headless",
+      "flags": [
+        "--disable-gpu",
+        "--enable-unsafe-swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 206.09999999403954,
+        "msDesdeNavegacao": 240.30000001192093,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 206.09999999403954,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x114000cde00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x114000cde00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    },
+    {
+      "navegador": "chromium-novo-headless",
+      "flags": [
+        "--disable-gpu",
+        "--use-angle=swiftshader",
+        "--enable-unsafe-swiftshader"
+      ],
+      "versao": "153.0.8010.12",
+      "webgl": {
+        "webgl": {
+          "versao": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "webgl2": {
+          "versao": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Google)",
+          "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+        }
+      },
+      "mapa": {
+        "desenhado": true,
+        "erro": null,
+        "pontos": 10000,
+        "clusters": 40,
+        "montagens": 1,
+        "msAtePrimeiroDesenho": 207.89999997615814,
+        "msDesdeNavegacao": 235.09999999403954,
+        "eventosDraw": 2,
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "pixels": {
+        "largura": 1280,
+        "altura": 800,
+        "total": 1024000,
+        "diferentes": 52995,
+        "fracao": 0.0518,
+        "fracaoFundo": 0.947,
+        "coresDistintas": 795,
+        "desenhou": true
+      },
+      "desenhou": true,
+      "msAtePrimeiroDesenho": 207.89999997615814,
+      "avisosConsole": [
+        "[warning] [.WebGL-0x124000c7200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+        "[warning] [.WebGL-0x124000c7200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      ],
+      "respostasComFalha": [],
+      "excecoes": []
+    }
+  ]
+}
