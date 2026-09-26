@@ -19,7 +19,7 @@ from pathlib import Path
 from .. import __version__
 from ..formatar import num
 from ..projeto import Projeto
-from .amostra import PASTA_EXPORTACAO
+from .amostra import ESTRATOS, PASTA_EXPORTACAO
 from .metricas import Metrica, Validacao, calcular
 
 TIPOS = {"humano": "pessoa", "referencia": "referência (não humano)", "modelo": "modelo local"}
@@ -57,7 +57,7 @@ def markdown(v: Validacao, *, projeto: str) -> str:
         "",
         f"Gerado em {datetime.now(UTC):%Y-%m-%d %H:%M} UTC pelo mapa-da-ciencia {__version__}. Codebook "
         f"**{v.codebook}** (hash `{v.hash_codebook}`). Amostra de {num(v.amostra['n'], 0)} documentos com resumo, "
-        f"estratificada por {v.amostra['estratificar_por']}, semente {v.amostra['semente']}.",
+        f"estratificada por {ESTRATOS[v.amostra['estratificar_por']]}, semente {v.amostra['semente']}.",
         "",
         "## Participantes",
         "",

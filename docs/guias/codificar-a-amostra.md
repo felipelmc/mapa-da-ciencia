@@ -8,7 +8,7 @@ Para saber se a classificação do modelo é confiável, compare-a com a leitura
 uv run mapa validar amostra
 ```
 
-A amostra é sorteada uma vez e fica guardada no `estado.sqlite` do projeto. Rodar o comando de novo mostra a mesma amostra; para sortear outra, use `--refazer` (as codificações já feitas continuam guardadas, mas só as dos documentos da amostra nova entram nas métricas).
+A amostra é sorteada uma vez e fica guardada no `estado.sqlite` do projeto. Rodar o comando de novo mostra a mesma amostra; para sortear outra, use `--refazer` (e `--n` para mudar o tamanho só neste sorteio, sem editar o `mapa.yaml`) (as codificações já feitas continuam guardadas, mas só as dos documentos da amostra nova entram nas métricas).
 
 O sorteio segue a seção `validacao` do `mapa.yaml`:
 

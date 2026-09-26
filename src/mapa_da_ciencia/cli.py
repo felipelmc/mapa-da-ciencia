@@ -685,6 +685,10 @@ def validar_amostra(
     refazer: Annotated[
         bool, typer.Option("--refazer", help="Sorteia outra amostra (as codificações já feitas continuam guardadas).")
     ] = False,
+    n: Annotated[
+        int | None,
+        typer.Option("--n", help="Tamanho da amostra neste sorteio (padrão: validacao.n do mapa.yaml).", min=1),
+    ] = None,
 ) -> None:
     """Sorteia a amostra de validação (uma vez) e exporta os textos para quem vai codificar."""
     from mapa_da_ciencia.validacao import amostra as va
@@ -692,12 +696,17 @@ def validar_amostra(
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
         ja = va.ler(p)
-        a = va.sortear(p, refazer=refazer)
+        if ja is not None and n is not None and n != len(ja.docs) and not refazer:
+            raise ErroConfig(
+                f"A amostra já foi sorteada, com {len(ja.docs)} documentos. Use --refazer para sortear outra."
+            )
+        a = va.sortear(p, refazer=refazer, n=n)
         arquivo = va.exportar(p, a)
     novo = ja is None or refazer
     console.print(
         f"[bold green]Amostra {'sorteada' if novo else 'já sorteada'}[/]: {num(len(a.docs), 0)} documentos, "
-        f"estratificada por {a.estratificar_por} ({num(len(a.por_estrato()), 0)} estratos), semente {a.semente}."
+        f"estratificada por {va.ESTRATOS[a.estratificar_por]} ({num(len(a.por_estrato()), 0)} estratos), "
+        f"semente {a.semente}."
     )
     tabela = Table("Estrato", "Documentos")
     for estrato, n in sorted(a.por_estrato().items(), key=lambda e: (-e[1], e[0]))[:12]:
@@ -788,10 +797,12 @@ def _f(valor: float | None, casas: int = 2) -> str:
 
 
 def _mostrar_validacao(r) -> None:
+    from mapa_da_ciencia.validacao.amostra import ESTRATOS
+
     tipos = {"humano": "pessoa", "referencia": "referência, não humano", "modelo": "modelo"}
     console.print(
         f"[bold]Validação[/] na amostra de {num(r.amostra['n'], 0)} documentos (estratificada por "
-        f"{r.amostra['estratificar_por']}, semente {r.amostra['semente']}), codebook {r.codebook}."
+        f"{ESTRATOS[r.amostra['estratificar_por']]}, semente {r.amostra['semente']}), codebook {r.codebook}."
     )
     console.print(
         "Participantes: "

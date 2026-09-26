@@ -131,13 +131,21 @@ def textos_do_projeto(projeto: Projeto) -> list[Texto]:
     return textos_para_classificar(docs, [cfg.recorte.idioma_exibicao, cfg.recorte.idioma_analise])[0]
 
 
-def sortear(projeto: Projeto, *, refazer: bool = False) -> Amostra:
-    """A amostra do projeto: a guardada, ou uma nova (na primeira vez, ou com `refazer`)."""
+ESTRATOS = {"topico": "tópico", "ano": "ano", "revista": "revista"}
+
+
+def sortear(projeto: Projeto, *, refazer: bool = False, n: int | None = None) -> Amostra:
+    """A amostra do projeto: a guardada, ou uma nova (na primeira vez, ou com `refazer`). `n` troca o tamanho
+    de `validacao.n` só neste sorteio."""
     if not refazer and (guardada := ler(projeto)) is not None:
         return guardada
     if not (projeto.dados / ARQUIVO).exists():
         raise ErroConfig("O projeto ainda não tem corpus. Rode `mapa coletar` antes de sortear a amostra.")
     cfg = projeto.config.validacao
+    if n is not None:
+        if n < 1:
+            raise ErroConfig("O tamanho da amostra precisa ser pelo menos 1.")
+        cfg = cfg.model_copy(update={"n": n})
     textos = textos_do_projeto(projeto)
     estrato, criterio, avisos = _estratos(projeto, textos, cfg.estratificar_por)
     grupos: dict[str, list[str]] = defaultdict(list)

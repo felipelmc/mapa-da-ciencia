@@ -317,13 +317,16 @@ def classificar(
     return rodar(p, opcoes, ProgressoRich(Console()))
 
 
-def amostra_de_validacao(projeto: Projeto | str | Path = ".", *, refazer: bool = False) -> Amostra:
+def amostra_de_validacao(
+    projeto: Projeto | str | Path = ".", *, refazer: bool = False, n: int | None = None
+) -> Amostra:
     """A amostra de validação, como `mapa validar amostra`: sorteada na primeira vez (ou com `refazer=True`) e
-    exportada em `validacao/amostra.jsonl`. `amostra.docs` traz os ids na ordem da fila de codificação."""
+    exportada em `validacao/amostra.jsonl`. `amostra.docs` traz os ids na ordem da fila de codificação; `n` troca o
+    tamanho de `validacao.n` só neste sorteio."""
     from mapa_da_ciencia.validacao import amostra as va
 
     p = _projeto(projeto)
-    a = va.sortear(p, refazer=refazer)
+    a = va.sortear(p, refazer=refazer, n=n)
     va.exportar(p, a)
     return a
 

@@ -206,3 +206,14 @@ def test_importar_atualiza_o_painel(projeto, tmp_path):
     mapa.importar_codificacoes(projeto, arquivo, "claude-opus", tipo="referencia")
     manifesto = m.Manifesto.model_validate_json((projeto.saida / "dados" / "manifesto.json").read_text())
     assert "validacao" in manifesto.arquivos and manifesto.contagens.validados == 10
+
+
+def test_tamanho_da_amostra_na_linha_de_comando(projeto):
+    raiz = str(projeto.raiz)
+    r = runner.invoke(app, ["validar", "amostra", "-P", raiz, "--n", "4"], env=ENV)
+    assert r.exit_code == 0, r.output
+    assert "4 documentos" in r.output and "estratificada por revista" in r.output
+    r = runner.invoke(app, ["validar", "amostra", "-P", raiz, "--n", "6"], env=ENV)
+    assert r.exit_code == 1 and "--refazer" in r.output
+    r = runner.invoke(app, ["validar", "amostra", "-P", raiz, "--n", "6", "--refazer"], env=ENV)
+    assert r.exit_code == 0 and len(va.ler(projeto).docs) == 6 and va.ler(projeto).n == 6
