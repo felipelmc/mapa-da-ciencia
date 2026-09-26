@@ -101,7 +101,12 @@ test('projeto sem tópicos: o mapa explica o que fazer e não pede arquivos ause
 
 // ---- cartão do documento
 
-type Detalhe = { resumo: string | null; fonte_analise?: string; licenca: string };
+type Detalhe = {
+	resumo: string | null;
+	fonte_analise?: string;
+	licenca: string;
+	evidencias?: Record<string, { status: string }>;
+};
 const detalhes: Record<string, Detalhe> = {};
 const pastaDetalhes = join(RAIZ, '..', 'contrato', 'exemplo', 'dados', 'detalhes');
 for (const arquivo of readdirSync(pastaDetalhes)) Object.assign(detalhes, ler(`detalhes/${arquivo}`).documentos);

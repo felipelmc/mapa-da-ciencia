@@ -51,12 +51,15 @@ O resultado fica em `dados/classificacao/`, um arquivo por modelo e codebook, e 
 ```python
 import mapa_da_ciencia.api as mapa
 
-mapa.consultar("cp-scielo", """
+mapa.consultar(
+    "cp-scielo",
+    """
     SELECT valor, count(*) AS n
     FROM classificacoes
     WHERE variavel = 'abordagem'
     GROUP BY valor ORDER BY n DESC
-""")
+""",
+)
 ```
 
 A view `classificacoes` tem uma linha por documento × variável, com o valor, a evidência, o status da conferência (`literal`, `aproximada`, `ausente` ou `dispensada`) e a posição do trecho no resumo. Veja a [API Python](../referencia/api-python.md#tabelas-para-consulta).
