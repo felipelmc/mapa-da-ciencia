@@ -36,6 +36,7 @@ from mapa_da_ciencia.projeto import Projeto
 
 if TYPE_CHECKING:
     from mapa_da_ciencia.embeddings import Embeddings
+    from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
 
 __all__ = [
     "Projeto",
@@ -50,6 +51,7 @@ __all__ = [
     "importar",
     "novo",
     "revistas",
+    "topicos",
 ]
 
 Anos = int | str | tuple[int, int]
@@ -162,7 +164,8 @@ def documentos(projeto: Projeto | str | Path = ".") -> list[Documento]:
 
 
 def conectar(projeto: Projeto | str | Path = ".") -> duckdb.DuckDBPyConnection:
-    """Conexão DuckDB com as views `documentos`, `textos`, `autores` e `afiliacoes`.
+    """Conexão DuckDB com as views `documentos`, `textos`, `autores`, `afiliacoes` e, depois de `topicos()`,
+    `atribuicoes`.
 
     Use com `with` para fechar ao fim:
 
@@ -223,3 +226,28 @@ def embeddings(projeto: Projeto | str | Path = ".", *, refazer: bool = False, pr
     from rich.console import Console
 
     return calcular_embeddings(p, refazer=refazer, progresso=ProgressoRich(Console()))
+
+
+def topicos(
+    projeto: Projeto | str | Path = ".",
+    *,
+    sem_rotulos: bool = False,
+    refazer_embeddings: bool = False,
+    semente: int | None = None,
+    progresso: bool = True,
+) -> ResumoTopicos:
+    """Descobre os tópicos, como `mapa topicos`, e devolve o resumo (`print(resumo)` mostra os números).
+
+    O resultado fica em `dados/topicos/` e pode ser consultado pela view `atribuicoes` (tópico, coordenadas no
+    mapa e vizinhos de cada documento), por exemplo: `consultar(p, "SELECT topico, count(*) FROM atribuicoes
+    GROUP BY topico")`.
+    """
+    from mapa_da_ciencia.topicos.pipeline import OpcoesTopicos, gerar_topicos
+
+    p = _projeto(projeto)
+    opcoes = OpcoesTopicos(sem_rotulos=sem_rotulos, refazer_embeddings=refazer_embeddings, semente=semente)
+    if not progresso:
+        return gerar_topicos(p, opcoes, ProgressoNulo())
+    from rich.console import Console
+
+    return gerar_topicos(p, opcoes, ProgressoRich(Console()))

@@ -110,7 +110,8 @@ def ler_documentos(caminho: Path) -> list[Documento]:
 
 
 def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
-    """DuckDB em memória com as views do corpus: `documentos`, `textos`, `autores` e `afiliacoes`."""
+    """DuckDB em memória com as views do corpus: `documentos`, `textos`, `autores`, `afiliacoes` e, se a etapa
+    de tópicos já rodou, `atribuicoes`."""
     con = duckdb.connect()
     con.execute(f"CREATE VIEW documentos AS SELECT * FROM read_parquet('{caminho}')")
     con.execute(
@@ -129,6 +130,9 @@ def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
         SELECT id, f.id AS afiliacao, f.instituicao, f.divisoes, f.cidade, f.uf, f.pais, f.fonte
         FROM documentos, unnest(afiliacoes) AS u(f)"""
     )
+    atribuicoes = caminho.parent / "topicos" / "atribuicoes.parquet"
+    if atribuicoes.exists():  # depois de `mapa topicos`: tópico, coordenadas e vizinhos de cada documento
+        con.execute(f"CREATE VIEW atribuicoes AS SELECT * FROM read_parquet('{atribuicoes}')")
     return con
 
 

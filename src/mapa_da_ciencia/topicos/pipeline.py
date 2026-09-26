@@ -18,6 +18,7 @@ from mapa_da_ciencia.armazenamento import ARQUIVO, ler_documentos
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.contrato.exportar import exportar
 from mapa_da_ciencia.embeddings import VERSAO_TEXTO, calcular_embeddings
+from mapa_da_ciencia.formatar import num
 from mapa_da_ciencia.llm.base import ErroProvedor
 from mapa_da_ciencia.llm.ollama import Ollama
 from mapa_da_ciencia.manifesto import registrar_execucao
@@ -48,6 +49,12 @@ class OpcoesTopicos:
 
 @dataclass
 class ResumoTopicos:
+    """O que a etapa de tópicos fez. `print(resumo)` mostra os números principais numa frase.
+
+    `nucleo`, `reatribuidos` e `sem_topico` somam `documentos`; `casados` conta os tópicos que mantiveram o número
+    e a cor da execução anterior; `rotulos` diz quantos rótulos vieram do modelo, do cache ou do `rotulos.yaml`.
+    """
+
     documentos: int
     topicos: int
     macrotemas: int
@@ -62,11 +69,11 @@ class ResumoTopicos:
     avisos: list[str] = field(default_factory=list)
 
     def __str__(self) -> str:
-        ari = f"ARI {self.estabilidade_ari:.2f}".replace(".", ",") if self.estabilidade_ari is not None else "sem ARI"
+        ari = f"ARI {num(self.estabilidade_ari, 2)}" if self.estabilidade_ari is not None else "sem ARI"
         return (
-            f"{self.topicos} tópicos em {self.macrotemas} macrotemas, {self.documentos} documentos: "
-            f"{self.nucleo} no núcleo, {self.reatribuidos} reatribuídos, {self.sem_topico} sem tópico ({ari}), "
-            f"em {self.duracao_s:.0f} s."
+            f"{num(self.topicos, 0)} tópicos em {num(self.macrotemas, 0)} macrotemas, {num(self.documentos, 0)} "
+            f"documentos: {num(self.nucleo, 0)} no núcleo, {num(self.reatribuidos, 0)} reatribuídos, "
+            f"{num(self.sem_topico, 0)} sem tópico ({ari}), em {num(self.duracao_s, 0)} s."
         )
 
 

@@ -23,6 +23,7 @@ uv run python scripts/gerar_referencias.py   # regenera docs/referencia/{cli,con
 uv run mapa diagnostico                      # memória, Ollama, modelos, rede
 uv run mapa painel --exemplo                 # painel com dados sintéticos
 uv run mapa coletar -P projetos/op-2024      # coleta de verdade (projetos/ fica fora do git)
+uv run mapa topicos -P projetos/cp-scielo    # tópicos (use --sem-rotulos se o modelo de rótulos não couber na memória)
 uv run python scripts/calibrar_topicos.py projetos/cp-scielo  # grade UMAP × HDBSCAN com 3 sementes (ADR 0007)
 ```
 

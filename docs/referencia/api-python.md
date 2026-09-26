@@ -37,6 +37,7 @@ O corpus fica em `dados/documentos.parquet`. `consultar` e `conectar` abrem esse
 | `textos` | título ou resumo em um idioma | `id`, `campo` (`titulo` ou `resumo`), `idioma`, `texto`, `origem` (`articlemeta` ou `openalex`) |
 | `autores` | autor de um documento | `id`, `ordem`, `nome`, `sobrenome`, `orcid`, `afiliacoes` (ids das afiliações) |
 | `afiliacoes` | afiliação de um documento | `id`, `afiliacao`, `instituicao`, `divisoes`, `cidade`, `uf`, `pais`, `fonte` (`v240`, `v70` ou `openalex`) |
+| `atribuicoes` | documento, depois de `topicos()` | `id`, `topico` (−1 = sem tópico), `atribuicao` (`cluster` ou `vizinho`), `x`, `y` (posição no mapa), `vizinhos` (5 ids), `idioma_analise`, `fonte_analise` |
 
 A coluna `id` liga as quatro views. Os campos de `documentos` estão descritos em [Fontes de dados](../explicacoes/fontes.md). Para consultas longas, abra uma conexão:
 
@@ -63,6 +64,8 @@ O Parquet também pode ser lido direto pelo pandas ou pelo polars (`pd.read_parq
 
 ::: mapa_da_ciencia.api.embeddings
 
+::: mapa_da_ciencia.api.topicos
+
 ::: mapa_da_ciencia.api.consultar
 
 ::: mapa_da_ciencia.api.conectar
@@ -74,6 +77,10 @@ O Parquet também pode ser lido direto pelo pandas ou pelo polars (`pd.read_parq
 ## Objetos devolvidos
 
 ::: mapa_da_ciencia.coleta.ResumoColeta
+    options:
+      members: false
+
+::: mapa_da_ciencia.topicos.pipeline.ResumoTopicos
     options:
       members: false
 

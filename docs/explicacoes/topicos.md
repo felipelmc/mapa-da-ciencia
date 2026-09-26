@@ -3,7 +3,7 @@
 Os tópicos do `mapa-da-ciencia` não vêm de uma lista pronta: eles saem dos próprios textos. Artigos que tratam de assuntos parecidos ficam perto uns dos outros num espaço de muitas dimensões, e o agrupamento encontra as regiões mais densas desse espaço. Esta página descreve cada passo e as escolhas por trás deles.
 
 !!! note "Em construção no marco M3"
-    Por enquanto, esta página descreve o texto de análise, os embeddings, a vizinhança, o UMAP, o HDBSCAN, a reatribuição do ruído, a estabilidade, as palavras-chave, os macrotemas, a identidade estável e os rótulos. O comando `mapa topicos` e o mapa no painel chegam ao fim do M3.
+    Por enquanto, esta página descreve o texto de análise, os embeddings, a vizinhança, o UMAP, o HDBSCAN, a reatribuição do ruído, a estabilidade, as palavras-chave, os macrotemas, a identidade estável e os rótulos. Para rodar a etapa, veja o guia [Gerar os tópicos](../guias/topicos.md); o mapa no painel chega ao fim do M3.
 
 ## 1. O texto de análise
 
