@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Documentos } from '$lib/contrato/tipos';
-import { decodificar, deNdc, paraNdc, VIZINHOS, vizinhosDe } from './documentos';
+import { decodificar, deNdc, escalaDe, paraNdc, VIZINHOS, vizinhosDe } from './documentos';
 
 const exemplo: Documentos = JSON.parse(
 	readFileSync(join(import.meta.dirname, '../../../../contrato/exemplo/dados/documentos.json'), 'utf8')
@@ -22,6 +22,18 @@ describe('decodificar documentos.json', () => {
 			Math.max(...exemplo.colunas.y) - Math.min(...exemplo.colunas.y)
 		];
 		expect(ax / ay).toBeCloseTo(bx / by, 4); // a proporção do mapa é preservada
+	});
+
+	it('não deixa uma ilha de poucos pontos achatar a nuvem', () => {
+		const xs = Array.from({ length: 400 }, (_, i) => (i % 20) / 19);
+		const ys = Array.from({ length: 400 }, (_, i) => Math.floor(i / 20) / 19);
+		const semIlha = escalaDe(xs, ys);
+		const comIlha = escalaDe([...xs, 40, 40], [...ys, 0.5, 0.5]); // dois pontos longe, como um grupo desligado
+		expect(comIlha.s).toBeGreaterThan(semIlha.s / 1.3); // sem a ilha, a escala seria 40 vezes menor
+		expect(Math.abs(paraNdc(comIlha, 40, 0.5)[0])).toBeGreaterThan(1); // a ilha fica além da tela inicial
+		// uma nuvem espalhada de verdade continua inteira na tela
+		const larga = escalaDe([...xs, 1.2, -0.2], [...ys, 0.5, 0.5]);
+		expect(Math.abs(paraNdc(larga, 1.2, 0.5)[0])).toBeLessThanOrEqual(0.9401);
 	});
 
 	it('converte entre dados e NDC nos dois sentidos', () => {

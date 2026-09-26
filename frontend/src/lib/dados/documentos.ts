@@ -4,12 +4,19 @@
  * - As coordenadas do UMAP viram NDC (de -1 a 1), como o regl-scatterplot exige, preservando a proporção
  *   (a mesma escala nos dois eixos) e com uma pequena margem. `paraNdc`/`deNdc` convertem nos dois sentidos:
  *   o laço fica na URL em coordenadas dos dados, que não dependem do tamanho da tela.
+ * - O enquadramento resiste a ilhas: o UMAP põe longe um grupo de documentos desligado do resto (no piloto,
+ *   dez artigos com o mesmo resumo), e alguns pontos distantes achatariam a nuvem inteira num canto da tela.
+ *   Quando a extensão total passa de `ESTICAMENTO_MAXIMO` vezes a dos quantis de 0,5% a 99,5%, a escala usa a
+ *   destes, com folga; os pontos de fora ficam além de [-1, 1] e aparecem ao afastar o zoom.
  * - Os vizinhos ficam num só array, 5 por documento (−1 onde faltar).
  */
 import type { Documentos } from '$lib/contrato/tipos';
 
 export const VIZINHOS = 5;
 const MARGEM = 0.94; // fração de [-1, 1] ocupada pelos pontos
+const ESTICAMENTO_MAXIMO = 1.5;
+const FOLGA_QUANTIS = 1.2; // a caixa dos quantis ganha 20%, para as pontas próximas continuarem na tela
+const QUANTIL = 0.005;
 
 export interface Escala {
 	cx: number;
@@ -50,18 +57,30 @@ export function deNdc(escala: Escala, x: number, y: number): [number, number] {
 	return [x / escala.s + escala.cx, y / escala.s + escala.cy];
 }
 
+/** Mínimo, máximo e os quantis de 0,5% e 99,5% de uma coluna. */
+function extensao(v: number[]): { min: number; max: number; baixo: number; alto: number } {
+	if (!v.length) return { min: 0, max: 0, baixo: 0, alto: 0 };
+	const o = Float64Array.from(v).sort();
+	const q = (p: number) => o[Math.round(p * (o.length - 1))];
+	return { min: o[0], max: o[o.length - 1], baixo: q(QUANTIL), alto: q(1 - QUANTIL) };
+}
+
+/** Escala que leva os dados para NDC: a extensão total, ou a dos quantis quando poucos pontos a esticam. */
+export function escalaDe(xs: number[], ys: number[]): Escala {
+	const [ex, ey] = [extensao(xs), extensao(ys)];
+	const total = Math.max(ex.max - ex.min, ey.max - ey.min);
+	const quantis = Math.max(ex.alto - ex.baixo, ey.alto - ey.baixo);
+	const ilha = total > ESTICAMENTO_MAXIMO * quantis;
+	const [a, b] = ilha ? [ex.baixo, ex.alto] : [ex.min, ex.max];
+	const [c, e] = ilha ? [ey.baixo, ey.alto] : [ey.min, ey.max];
+	const amplitude = Math.max(b - a, e - c) * (ilha ? FOLGA_QUANTIS : 1) || 1;
+	return { cx: (a + b) / 2 || 0, cy: (c + e) / 2 || 0, s: (2 * MARGEM) / amplitude };
+}
+
 export function decodificar(d: Documentos): TabelaDocumentos {
 	const n = d.n;
 	const c = d.colunas;
-	let [minX, maxX, minY, maxY] = [Infinity, -Infinity, Infinity, -Infinity];
-	for (let i = 0; i < n; i += 1) {
-		minX = Math.min(minX, c.x[i]);
-		maxX = Math.max(maxX, c.x[i]);
-		minY = Math.min(minY, c.y[i]);
-		maxY = Math.max(maxY, c.y[i]);
-	}
-	const amplitude = Math.max(maxX - minX, maxY - minY) || 1;
-	const escala: Escala = { cx: (minX + maxX) / 2 || 0, cy: (minY + maxY) / 2 || 0, s: (2 * MARGEM) / amplitude };
+	const escala = escalaDe(c.x, c.y);
 	const x = new Float32Array(n);
 	const y = new Float32Array(n);
 	const vizinhos = new Int32Array(n * VIZINHOS).fill(-1);

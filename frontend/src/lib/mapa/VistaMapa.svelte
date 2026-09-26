@@ -130,9 +130,10 @@
 	let tela: HTMLDivElement;
 	let raiz: HTMLDivElement;
 	/** Onde estão os painéis sobre o mapa: rótulos não ficam escondidos atrás deles. */
+	// caixas dos controles sobre o mapa, nas coordenadas do canvas (a `.tela`), como os rótulos
 	function bloqueios(): Caixa[] {
-		if (!raiz) return [];
-		const base = raiz.getBoundingClientRect();
+		if (!raiz || !tela) return [];
+		const base = tela.getBoundingClientRect();
 		return [...raiz.querySelectorAll('[data-sobre-o-mapa]')].map((el) => {
 			const r = el.getBoundingClientRect();
 			return { x0: r.left - base.left - 8, y0: r.top - base.top - 8, x1: r.right - base.left + 8, y1: r.bottom - base.top + 8 };
@@ -204,7 +205,7 @@
 	}
 </script>
 
-<div class="mapa" bind:this={raiz}>
+<div class="mapa" class:com-painel={!recolhido} bind:this={raiz}>
 	<div class="tela" bind:this={tela}>
 		<Nuvem
 			x={tabela.x}
@@ -566,6 +567,13 @@
 
 	.lado > :global(*) {
 		max-height: 100%;
+	}
+
+	/* em telas largas, o painel aberto fica ao lado do mapa, e não por cima: a nuvem inteira aparece */
+	@media (min-width: 821px) {
+		.mapa.com-painel .tela {
+			left: 20rem;
+		}
 	}
 
 	@media (max-width: 820px) {

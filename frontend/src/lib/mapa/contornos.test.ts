@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { TabelaDocumentos } from '$lib/dados/documentos';
 import { dentro } from '$lib/graficos/geometria';
 import { escalaLinear } from '$lib/graficos/escala';
-import { calcularContornos, centroDePeso } from './contornos';
+import { bandaDe, calcularContornos, centroDePeso, contornoDe } from './contornos';
 
 function tabela(grupos: { cx: number; cy: number; n: number; topico: number; atribuicao?: number }[]): TabelaDocumentos {
 	const xs: number[] = [];
@@ -41,6 +41,21 @@ describe('contornos', () => {
 		expect(dentro(-0.5, -0.5, anel3)).toBe(true);
 		expect(dentro(0.5, 0.4, anel3)).toBe(false);
 		expect(c.get(9)!.some((anel) => dentro(0.5, 0.4, anel))).toBe(true);
+	});
+
+	it('a banda acompanha o espalhamento do tópico, e o contorno envolve cerca de 80% dele', () => {
+		let semente = 3;
+		const aleatorio = () => (semente = (semente * 1664525 + 1013904223) % 2 ** 32) / 2 ** 32 - 0.5;
+		const nuvem = (raio: number): [number, number][] =>
+			Array.from({ length: 120 }, () => [aleatorio() * raio, aleatorio() * raio] as [number, number]);
+		const [compacto, espalhado] = [nuvem(0.05), nuvem(0.4)];
+		expect(bandaDe(compacto)).toBeLessThan(bandaDe(espalhado) / 3);
+		for (const pontos of [compacto, espalhado]) {
+			const aneis = contornoDe(pontos);
+			const dentroDeAlgum = pontos.filter(([x, y]) => aneis.some((anel) => dentro(x, y, anel))).length;
+			expect(dentroDeAlgum / pontos.length).toBeGreaterThan(0.7);
+			expect(dentroDeAlgum / pontos.length).toBeLessThan(0.95);
+		}
 	});
 
 	it('centro pesado pelo tamanho', () => {

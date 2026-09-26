@@ -5,7 +5,7 @@ O **Mapa** do painel mostra cada documento do corpus como um ponto. Esta página
 ## O que o mapa mostra
 
 - **Cada ponto é um documento.** Pontos próximos são textos parecidos: título e resumo tratam de assuntos vizinhos.
-- **As linhas fechadas são os tópicos.** Cada contorno envolve a região mais densa do núcleo de um tópico, os documentos que o agrupamento reuniu com mais certeza.
+- **As linhas fechadas são os tópicos.** Cada contorno envolve a região mais densa do núcleo de um tópico (os documentos que o agrupamento reuniu com mais certeza), deixando dentro cerca de 80% deles. Um tópico pode ter mais de um contorno, quando o núcleo se divide em duas regiões do mapa.
 - **Os rótulos nomeiam as regiões.** De longe, aparecem os macrotemas (grupos de tópicos); ao aproximar, os tópicos. Clicar num rótulo mostra só aquele tópico ou macrotema.
 - **A cor** segue o "Colorir por": tópico, macrotema, revista ou ano. Pontos em cinza não têm tópico.
 
