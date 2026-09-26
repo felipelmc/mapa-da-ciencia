@@ -129,6 +129,26 @@ test('o link com doc= abre o cartão, e os vizinhos navegam', async ({ page }) =
 	expect(problemas).toEqual([]);
 });
 
+test('o cartão marca no resumo as evidências da classificação', async ({ page }) => {
+	const problemas = vigiar(page);
+	const id = ids.find((i) => detalhes[i].resumo && Object.keys(detalhes[i].evidencias ?? {}).length)!;
+	const evidencias = detalhes[id].evidencias!;
+	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(id)}`);
+	await esperarMapa(page);
+	const cartao = page.getByTestId('cartao-documento');
+	await expect(cartao.getByTestId('resposta')).toHaveCount(Object.keys(evidencias).length);
+	const marcadas = cartao.getByTestId('resumo-marcado').locator('mark');
+	await expect(marcadas.first()).toBeVisible();
+	// o resumo continua inteiro, com os trechos marcados dentro dele
+	await expect(cartao.getByTestId('resumo-marcado')).toHaveText(detalhes[id].resumo!);
+	// passar o mouse numa resposta acende o trecho dela
+	const [variavel] = Object.entries(evidencias).find(([, e]) => e.status === 'literal')!;
+	const indice = Object.keys(evidencias).indexOf(variavel);
+	await cartao.getByTestId('resposta').nth(indice).hover();
+	await expect(cartao.locator(`mark.acesa[data-variaveis~="${variavel}"]`).first()).toBeVisible();
+	expect(problemas).toEqual([]);
+});
+
 test('resumo sem licença para mostrar dá o aviso; o botão fecha o cartão', async ({ page }) => {
 	const id = ids.find((i) => detalhes[i].resumo === null && detalhes[i].fonte_analise !== 'so_titulo')!;
 	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(id)}`);
