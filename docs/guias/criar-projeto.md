@@ -43,7 +43,7 @@ recorte:
   anos: [2010, 2025]
 ```
 
-- **Revistas:** use o ISSN que aparece na página da revista no SciELO. O comando `mapa revistas` (marco M2) vai listar as revistas por área.
+- **Revistas:** use o ISSN da revista no SciELO. O comando `mapa revistas` procura revistas por título ou área e imprime as linhas prontas para colar (veja [Montar um recorte](recorte.md)).
 - **Anos:** primeiro e último ano de publicação, inclusive.
 - **Idiomas:** `idioma_analise: en` usa os resumos em inglês nos embeddings, porque eles cobrem quase todo o corpus. `idioma_exibicao: pt` mostra os resumos em português. O porquê está no registro de decisão [0004](../decisoes/0004-embeddings-e-idioma-de-analise.md).
 

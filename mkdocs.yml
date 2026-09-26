@@ -95,6 +95,7 @@ nav:
       - guias/index.md
       - Instalar e escolher os modelos: guias/instalacao.md
       - Criar um projeto: guias/criar-projeto.md
+      - Montar um recorte: guias/recorte.md
       - Escrever um codebook: guias/codebook.md
       - Usar o painel: guias/painel.md
       - Solução de problemas: guias/problemas.md

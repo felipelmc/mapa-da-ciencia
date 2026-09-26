@@ -59,3 +59,17 @@ mapa painel [OPÇÕES]
 | `--exemplo` | Mostra o exemplo sintético, sem precisar de um projeto. |  |
 | `--porta` | Porta local do servidor. | `8765` |
 | `--abrir`, `--nao-abrir` | Abre o navegador automaticamente. | `True` |
+
+## `mapa revistas`
+
+Lista as revistas do SciELO Brasil, para escolher o recorte de um projeto.
+
+```
+mapa revistas [OPÇÕES] busca
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `busca` | Parte do título, acrônimo, categoria ou ISSN. | **obrigatório** |
+| `--area`, `-a` | Filtra pela grande área (ex.: humanas, saúde). | `` |
+| `--yaml` | Imprime as linhas prontas para colar em `fontes.scielo.revistas`. |  |

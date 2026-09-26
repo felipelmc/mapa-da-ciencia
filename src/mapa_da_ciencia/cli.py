@@ -216,3 +216,29 @@ def painel(
     finally:
         if temporario is not None:
             temporario.cleanup()
+
+
+@app.command()
+def revistas(
+    busca: Annotated[str, typer.Argument(help="Parte do título, acrônimo, categoria ou ISSN.")] = "",
+    area: Annotated[str, typer.Option("--area", "-a", help="Filtra pela grande área (ex.: humanas, saúde).")] = "",
+    yaml: Annotated[
+        bool, typer.Option("--yaml", help="Imprime as linhas prontas para colar em `fontes.scielo.revistas`.")
+    ] = False,
+) -> None:
+    """Lista as revistas do SciELO Brasil, para escolher o recorte de um projeto."""
+    from mapa_da_ciencia.fontes.revistas import buscar, retrato
+
+    achadas = buscar(busca, area)
+    if yaml:
+        for r in achadas:
+            typer.echo(f"      - {r.issn}           # {r.titulo}")
+        return
+    tabela = Table("Acrônimo", "ISSN", "Título", "Área", "Licença")
+    for r in achadas:
+        tabela.add_row(r.acronimo, r.issn, r.titulo, ", ".join(r.areas), r.licenca or "")
+    console.print(tabela)
+    console.print(
+        f"[dim]{len(achadas)} revista(s). Retrato de {retrato().gerado_em}, só com revistas correntes do "
+        "SciELO Brasil. Use --yaml para copiar os ISSNs para o mapa.yaml.[/]"
+    )

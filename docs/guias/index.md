@@ -5,9 +5,10 @@ Guias resolvem uma tarefa específica, do jeito mais direto. Para aprender o con
 | Guia | Quando usar |
 |---|---|
 | [Instalar e escolher os modelos](instalacao.md) | Preparar a máquina: `uv`, Ollama, perfil de modelos, `mapa diagnostico` |
-| [Criar um projeto](criar-projeto.md) | Definir revistas, anos e modelos de um recorte novo |
+| [Criar um projeto](criar-projeto.md) | Criar a pasta de um projeto novo e entender o que tem nela |
+| [Montar um recorte](recorte.md) | Escolher revistas (`mapa revistas`), anos e tipos de documento |
 | [Escrever um codebook](codebook.md) | Definir as variáveis que o modelo vai preencher para cada resumo |
 | [Usar o painel](painel.md) | Abrir a interface local, com um projeto ou com o exemplo |
 | [Solução de problemas](problemas.md) | Ollama que não responde, falta de memória ou disco, certificados, porta ocupada |
 
-Guias que chegam com os próximos marcos: importar uma busca do search.scielo.org (M2), codificar a amostra de validação e ler kappa e PABAK (M5), exportar figuras e publicar no GitHub Pages (M7).
+Guias que chegam com os próximos marcos: importar uma busca do search.scielo.org (ainda no M2), codificar a amostra de validação e ler kappa e PABAK (M5), exportar figuras e publicar no GitHub Pages (M7).
