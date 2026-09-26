@@ -46,8 +46,11 @@ Desde 2026 o OpenAlex cobra por uso. Sem chave, são mil créditos por dia; com 
 | Uma lista de até 50 DOIs | 1 |
 | Uma página de busca por termo | 10 |
 | Um trabalho no endereço direto (`/works/doi:…`) | 0 |
+| Um lote de até 100 instituições (`/institutions`) | 1 |
 
 O enriquecimento pede os trabalhos de cada revista no período, então custa cerca de 1 crédito por revista para cada 200 artigos: o piloto inteiro (10 revistas, 16 anos) fica em torno de 32 créditos. O `mapa coletar` mostra quantos foram gastos, e `--sem-openalex` pula essa etapa.
+
+Depois do enriquecimento, a coleta busca os **registros das instituições** que aparecem nas autorias (e as instituições acima delas, como a universidade de um hospital universitário), em lotes de 100. Cada registro traz o nome, as siglas, os nomes alternativos, o país, a cidade, a região (a UF, quando existe) e o tipo. No piloto são cerca de mil instituições, uns 10 créditos na primeira vez e nenhum depois: as respostas ficam em `brutos/openalex/instituicoes/`, com um índice dos pedidos, e um identificador que o OpenAlex não devolve não é pedido de novo. Os registros vão para `dados/instituicoes_openalex.parquet` e alimentam a geografia, que roda sem rede. Se o OpenAlex estiver fora do ar, a coleta termina com um aviso, e a geografia usa só os nomes.
 
 Quando a ArticleMeta não traz resumo de um artigo e o OpenAlex traz, o resumo do OpenAlex entra como **reserva**, marcado com a origem (`openalex`). O mesmo vale para o título: no piloto, seis artigos da *Opinião Pública* e da *Novos Estudos* de 2010 a 2013 estão sem título na ArticleMeta.
 

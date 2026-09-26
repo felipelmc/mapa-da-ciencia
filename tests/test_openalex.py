@@ -103,7 +103,9 @@ def projeto(tmp_path):
 def test_coleta_com_openalex_e_cache(projeto, apis_falsas):
     resumo = coletar(projeto)
     assert resumo.casamento == {"1_doi": 25}
-    assert resumo.creditos_openalex == 1 and apis_falsas.chamadas["openalex"] == 1
+    # uma página da lista da revista e um lote de instituições
+    assert resumo.creditos_openalex == 2 and apis_falsas.chamadas["openalex"] == 1
+    assert apis_falsas.chamadas["openalex_instituicoes"] == 1
     assert coletar(projeto).total_requisicoes == 0
 
 
@@ -115,7 +117,7 @@ def test_quem_sobra_e_procurado_pelo_doi(projeto, apis_falsas):
     alvo["locations"] = [{**local, "source": repositorio} for local in alvo.get("locations") or []]
     resumo = coletar(projeto)
     assert resumo.casamento == {"1_doi": 25}
-    assert apis_falsas.chamadas["openalex"] == 2 and resumo.creditos_openalex == 2  # lista + busca por DOI
+    assert apis_falsas.chamadas["openalex"] == 2 and resumo.creditos_openalex == 3  # lista, DOIs e instituições
 
 
 def test_endereco_direto_acha_o_que_os_filtros_nao_acham(projeto, apis_falsas):
@@ -126,7 +128,8 @@ def test_endereco_direto_acha_o_que_os_filtros_nao_acham(projeto, apis_falsas):
     apis_falsas.fora_dos_filtros.add("10.1590/1807-019120243011")
     resumo = coletar(projeto)
     assert resumo.casamento == {"1_doi": 25}
-    assert resumo.requisicoes["openalex"] == 3 and resumo.creditos_openalex == 2  # o endereço direto é grátis
+    # lista, DOIs, endereço direto (grátis) e instituições
+    assert resumo.requisicoes["openalex"] == 4 and resumo.creditos_openalex == 3
     assert coletar(projeto).total_requisicoes == 0  # a obra achada pelo endereço direto fica no cache
 
 

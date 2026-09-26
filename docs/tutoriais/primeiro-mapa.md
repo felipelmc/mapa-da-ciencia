@@ -80,10 +80,10 @@ Coleta concluída em 7,2 s: 25 documento(s) de 1 revista(s), 2024.
 └─────────┴────────────┘
 Ficaram de fora — fora do período: 544.
 ArticleMeta: 26 requisição(ões), 0 resposta(s) do cache.
-OpenAlex: 25 de 25 casados; 1 requisição(ões), 1 crédito(s).
+OpenAlex: 25 de 25 casados; 2 requisição(ões), 2 crédito(s).
 ```
 
-Os 544 "fora do período" são os artigos da revista de outros anos. O OpenAlex cobra créditos por consulta, e sem cadastro são mil por dia: esta coleta gastou 1.
+Os 544 "fora do período" são os artigos da revista de outros anos. O OpenAlex cobra créditos por consulta, e sem cadastro são mil por dia: esta coleta gastou 2, um pela lista de artigos da revista e outro pelos registros das instituições dos autores.
 
 ## 4. Rode de novo
 

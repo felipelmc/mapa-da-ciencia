@@ -35,7 +35,7 @@ from mapa_da_ciencia.documento import (
     normalizar_licenca,
 )
 from mapa_da_ciencia.fontes.articlemeta import RevistaRef
-from mapa_da_ciencia.fontes.base import Buscador
+from mapa_da_ciencia.fontes.base import Buscador, gravar_gz, ler_gz
 from mapa_da_ciencia.texto import (
     limpar,
     normalizar_doi,
@@ -187,6 +187,87 @@ async def buscar_por_dois(buscador: Buscador, dois: list[str], *, api_key: str |
         filtro = "doi:" + "|".join(unicos[i : i + 50])
         obras += await listar_paginas(buscador, filtro, "dois/lote", api_key=api_key)
     return obras
+
+
+CAMPOS_INSTITUICAO = (
+    "id,ror,display_name,display_name_acronyms,display_name_alternatives,international,country_code,geo,type,"
+    "lineage,is_super_system"
+)
+LOTE_INSTITUICOES = 100
+PEDIDOS_INSTITUICOES = "openalex/instituicoes/pedidos.json.gz"
+_IDIOMAS_NOMES = ("pt", "en", "es", "fr", "de", "it")
+
+
+async def buscar_instituicoes(buscador: Buscador, ids: set[str], *, api_key: str | None = None) -> list[dict]:
+    """Registros das instituições (ids curtos, `I123`), em lotes de 100 (1 crédito por lote), com cache.
+
+    Um índice em `brutos/` guarda os ids já pedidos: os que o OpenAlex não devolve (instituições fundidas) não
+    são pedidos de novo, e a segunda coleta faz 0 requisições. Devolve todos os registros já baixados.
+    """
+    caminho = buscador.brutos / PEDIDOS_INSTITUICOES
+    pedidos: dict[str, list] = ler_gz(caminho) if caminho.exists() else {"lotes": []}
+    ja = {i for lote in pedidos["lotes"] for i in lote["ids"]}
+    faltam = sorted(ids - ja)
+    for k in range(0, len(faltam), LOTE_INSTITUICOES):
+        lote = faltam[k : k + LOTE_INSTITUICOES]
+        arquivo = f"openalex/instituicoes/lote-{_hash(*lote, CAMPOS_INSTITUICAO)}.json.gz"
+        params: dict[str, Any] = {
+            "filter": "openalex:" + "|".join(lote),
+            "select": CAMPOS_INSTITUICAO,
+            "per-page": LOTE_INSTITUICOES,
+        }
+        if api_key:
+            params["api_key"] = api_key
+        await buscador.json("openalex", f"{URL}/institutions", params, arquivo, custo=1)
+        pedidos["lotes"].append({"arquivo": arquivo, "ids": lote})
+        gravar_gz(caminho, pedidos)
+    registros: dict[str, dict] = {}
+    for lote in pedidos["lotes"]:
+        arquivo = buscador.brutos / lote["arquivo"]
+        if not arquivo.exists():
+            continue
+        for r in ler_gz(arquivo).get("results") or []:
+            if iid := _curto(r.get("id")):
+                registros[iid] = r
+    return [registros[i] for i in sorted(registros)]
+
+
+COLUNAS_INSTITUICOES = {
+    "id": "VARCHAR",
+    "ror": "VARCHAR",
+    "nome": "VARCHAR",
+    "nome_pt": "VARCHAR",
+    "siglas": "VARCHAR[]",
+    "nomes": "VARCHAR[]",
+    "pais": "VARCHAR",
+    "regiao": "VARCHAR",
+    "cidade": "VARCHAR",
+    "tipo": "VARCHAR",
+    "linhagem": "VARCHAR[]",
+    "super_sistema": "BOOLEAN",
+}
+
+
+def linha_de_instituicao(r: dict) -> dict[str, Any]:
+    """Um registro do OpenAlex na forma de `dados/instituicoes_openalex.parquet`."""
+    iid = _curto(r["id"])
+    geo = r.get("geo") or {}
+    internacional = (r.get("international") or {}).get("display_name") or {}
+    nomes = [*(r.get("display_name_alternatives") or []), *(internacional.get(k) for k in _IDIOMAS_NOMES)]
+    return {
+        "id": iid,
+        "ror": _curto(r.get("ror")),
+        "nome": r.get("display_name"),
+        "nome_pt": internacional.get("pt"),
+        "siglas": list(dict.fromkeys(r.get("display_name_acronyms") or [])),
+        "nomes": list(dict.fromkeys(n for n in nomes if n)),
+        "pais": r.get("country_code"),
+        "regiao": geo.get("region"),
+        "cidade": geo.get("city"),
+        "tipo": r.get("type"),
+        "linhagem": [x for x in (_curto(u) for u in r.get("lineage") or []) if x and x != iid],
+        "super_sistema": bool(r.get("is_super_system")),
+    }
 
 
 async def buscar_obra(buscador: Buscador, doi: str, *, api_key: str | None = None) -> dict | None:

@@ -62,6 +62,7 @@ ESQUEMA: dict[str, str] = {
     "possivel_duplicata_de": "VARCHAR",
 }
 ARQUIVO = "documentos.parquet"
+ARQUIVO_INSTITUICOES = "instituicoes_openalex.parquet"  # registros das instituições do OpenAlex (coleta)
 
 
 def _colunas_sql() -> str:
@@ -102,6 +103,26 @@ def _linhas(con: duckdb.DuckDBPyConnection, sql: str, params: list[Any] | None =
     cursor = con.execute(sql, params or [])
     nomes = [d[0] for d in cursor.description]
     return [dict(zip(nomes, linha, strict=True)) for linha in cursor.fetchall()]
+
+
+def gravar_tabela(linhas: Iterable[dict[str, Any]], colunas: dict[str, str], destino: Path, ordem: str = "id") -> int:
+    """Grava uma tabela qualquer em Parquet (zstd), ordenada por `ordem`, de forma atômica. Devolve quantas linhas."""
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    tmp_parquet = destino.with_name(destino.name + ".tmp")
+    con = duckdb.connect()
+    try:
+        definicao = ", ".join(f'"{k}" {v}' for k, v in colunas.items())
+        con.execute(f"CREATE TABLE t ({definicao})")
+        lista = [[linha.get(k) for k in colunas] for linha in linhas]
+        if lista:
+            con.executemany(f"INSERT INTO t VALUES ({', '.join('?' * len(colunas))})", lista)
+        con.execute(
+            f"COPY (SELECT * FROM t ORDER BY \"{ordem}\") TO '{tmp_parquet}' (FORMAT parquet, COMPRESSION zstd)"
+        )
+    finally:
+        con.close()
+    os.replace(tmp_parquet, destino)
+    return len(lista)
 
 
 def tem_coluna(caminho: Path, nome: str) -> bool:

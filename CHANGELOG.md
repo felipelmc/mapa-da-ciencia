@@ -9,6 +9,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - **Marco M4 (tópicos no tempo e geografia)**:
   - tendência de cada tópico (em alta, em queda, estável) por regressão logística quase-binomial da participação anual, com `scripts/tendencias.py` para comparar os modelos (ADR 0009);
   - a coleta guarda, de cada documento, os autores segundo o OpenAlex, com as instituições (ROR, país, tipo, linhagem) e os textos de afiliação, sem e-mails; um corpus coletado antes da 0.4.0 é reconhecido (`armazenamento.tem_coluna`);
+  - a coleta busca os registros dessas instituições no OpenAlex (siglas, nomes alternativos, cidade, região, linhagem), em lotes de 100, com cache em `brutos/` e gravação em `dados/instituicoes_openalex.parquet`; uns 10 créditos no piloto;
   - contrato de dados 1.2 (só acréscimos): tendência de cada tópico e macrotema como gabarito, com o método; série dos macrotemas; documentos sem tópico por ano; geografia completa (instituição não identificada, autores sem afiliação, as 27 UFs, agregados fracionários e inteiros por UF, país e instituição); casos de referência em `contrato/casos/tendencia.json`; exemplo sintético com a contagem fracionária do glossário e casos de borda;
 
 ### Corrigido
