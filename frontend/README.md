@@ -191,6 +191,8 @@ Um só sistema de tokens (`src/lib/estilos/tokens.css`) com dois temas, escolhid
 |---|---|
 | `dados/fragmentos.test.ts` | `fragmentoDe` igual ao Python; os 64 fragmentos cobertos; cada documento do exemplo no fragmento certo |
 | `dados/estatica.test.ts` | cache; detalhe no fragmento certo; escolha da fonte por `api`; projeto vazio sem nenhuma requisição além do manifesto (`fetch` falso); erro e nova tentativa; versão do contrato |
+| `graficos/fluxo.test.ts` | empilhamento do fluxo (proporção soma 1, absoluto soma o total, fluxo preserva as espessuras, ordem fixa entre os modos) e rótulos dentro das faixas só onde cabem |
+| `formato.test.ts` | decimais, porcentagens e pontos percentuais em pt-BR |
 | `dados/cubo.test.ts` | o filtro cruzado contra o gabarito do Python (`agregados.json`): tópico × ano × revista com e sem filtros, UFs, países e instituições fracionários, séries; 300 recortes aleatórios contra uma filtragem ingênua; exclusão de dimensões; lugares por documento; busca e laço |
 | `dados/documentos.test.ts` | decodificação do `documentos.json`: NDC com a mesma escala nos dois eixos, enquadramento que resiste a ilhas, vizinhos, índice |
 | `estado/url.test.ts` | `rota()`, `lerHash()` e a ida e volta dos filtros, inclusive `laco` e `vista` |

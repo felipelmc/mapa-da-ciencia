@@ -16,6 +16,7 @@ As decisões do marco M0 vêm de **spikes**: experimentos pequenos e descartáve
 | [0006](0006-armazenamento-parquet-duckdb.md) | Corpus em Parquet via DuckDB, refeito a partir de `brutos/` | aceita |
 | [0007](0007-parametros-dos-topicos.md) | Parâmetros do agrupamento em tópicos, calibrados no piloto | aceita |
 | [0009](0009-tendencia-dos-topicos.md) | Tendência dos tópicos por regressão logística quase-binomial | proposta |
+| [0010](0010-graficos-em-svg-proprio.md) | Gráficos em SVG próprio, com módulos pequenos do d3 | aceita |
 
 ## Modelo
 

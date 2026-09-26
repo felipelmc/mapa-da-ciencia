@@ -147,6 +147,24 @@ code {
 	border: 0;
 }
 
+/* Botão discreto das vistas (laço, limpar, modos); `aria-pressed` marca o que está ligado. */
+.botao {
+	font: inherit;
+	font-size: 0.8rem;
+	color: var(--texto);
+	background: var(--superficie-alta);
+	border: 1px solid var(--linha-forte);
+	border-radius: 0.4rem;
+	padding: 0.25rem 0.55rem;
+	cursor: pointer;
+}
+
+.botao[aria-pressed='true'] {
+	color: var(--fundo);
+	background: var(--acento);
+	border-color: var(--acento);
+}
+
 /* Transições discretas: só a troca de cores do tema e a entrada das páginas. */
 @media (prefers-reduced-motion: no-preference) {
 	body,

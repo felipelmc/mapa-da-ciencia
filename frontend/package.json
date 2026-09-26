@@ -24,7 +24,9 @@
     "@sveltejs/adapter-static": "3.0.10",
     "@sveltejs/kit": "2.70.3",
     "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@types/d3-array": "3.2.2",
     "@types/d3-contour": "3.0.6",
+    "@types/d3-shape": "3.2.0",
     "@types/node": "24.19.0",
     "json-schema-to-typescript": "16.0.0",
     "svelte": "5.57.1",
@@ -37,7 +39,9 @@
     "@fontsource-variable/fraunces": "5.3.0",
     "@fontsource-variable/instrument-sans": "5.3.0",
     "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "d3-array": "3.2.4",
     "d3-contour": "4.0.2",
+    "d3-shape": "3.2.0",
     "minisearch": "7.2.0",
     "regl-scatterplot": "1.16.0"
   }

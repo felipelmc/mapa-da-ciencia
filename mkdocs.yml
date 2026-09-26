@@ -129,5 +129,6 @@ nav:
       - "0006 · Armazenamento": decisoes/0006-armazenamento-parquet-duckdb.md
       - "0007 · Parâmetros dos tópicos": decisoes/0007-parametros-dos-topicos.md
       - "0009 · Tendência dos tópicos": decisoes/0009-tendencia-dos-topicos.md
+      - "0010 · Gráficos em SVG próprio": decisoes/0010-graficos-em-svg-proprio.md
   - Desenvolvimento:
       - desenvolvimento/index.md

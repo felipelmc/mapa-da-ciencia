@@ -2,6 +2,7 @@
 
 const inteiro = new Intl.NumberFormat('pt-BR');
 const porcentagem = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 0 });
+const porcentagemDecimal = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 1 });
 const data = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** `1500` → `1.500`. */
@@ -24,4 +25,18 @@ export function formatarData(iso: string): string {
 /** `1` → `1 documento`; `2` → `2 documentos` (com o número formatado). */
 export function contar(n: number, singular: string, plural = `${singular}s`): string {
 	return `${formatarInteiro(n)} ${n === 1 ? singular : plural}`;
+}
+
+/** `400.7499` → `400,7` (casas decimais fixas). */
+export function formatarDecimal(n: number, casas = 1): string {
+	return n.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
+}
+
+/** `0.0421` → `4,2%`. */
+export const formatarPorcentagemDecimal = (fracao: number): string => porcentagemDecimal.format(fracao);
+
+/** Pontos percentuais com sinal: `0.31` → `+0,31 p.p.`; `-1.2` → `−1,20 p.p.` (com o sinal de menos tipográfico). */
+export function formatarPp(v: number, casas = 2): string {
+	const texto = formatarDecimal(Math.abs(v), casas);
+	return `${v > 0 ? '+' : v < 0 ? '\u2212' : ''}${texto} p.p.`;
 }

@@ -415,8 +415,7 @@
 		gap: 0.5rem;
 	}
 
-	.recolher,
-	.botao {
+	.recolher {
 		font: inherit;
 		font-size: 0.8rem;
 		color: var(--texto);
@@ -425,12 +424,6 @@
 		border-radius: 0.4rem;
 		padding: 0.25rem 0.55rem;
 		cursor: pointer;
-	}
-
-	.botao[aria-pressed='true'] {
-		color: var(--fundo);
-		background: var(--acento);
-		border-color: var(--acento);
 	}
 
 	.acoes {
