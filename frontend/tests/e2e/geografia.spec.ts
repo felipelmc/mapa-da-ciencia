@@ -80,3 +80,25 @@ test('projeto vazio: estado vazio, sem pedir arquivos ausentes', async ({ page }
 	await expect(page.getByText('Este projeto ainda não tem geografia.')).toBeVisible();
 	expect(pedidos.filter((p) => p.endsWith('.json') && !p.endsWith('manifesto.json'))).toEqual([]);
 });
+
+test('a cobertura por ano avisa dos anos com muito peso sem afiliação', async ({ page }) => {
+	const documentos = ler('documentos.json');
+	const c = afiliacoes.colunas;
+	const porAno = new Map<number, [number, number]>();
+	c.doc.forEach((d: number, k: number) => {
+		const ano = documentos.colunas.ano[d];
+		const [sem, total] = porAno.get(ano) ?? [0, 0];
+		porAno.set(ano, [sem + (c.instituicao[k] < 0 ? c.peso[k] : 0), total + c.peso[k]]);
+	});
+	const fracos = [...porAno.entries()].filter(([, [s, t]]) => s / t > 0.2).map(([a]) => a).sort();
+	await page.goto(`${url('RAIZ')}#/geografia`);
+	const resumo = page.getByTestId('resumo-cobertura');
+	if (fracos.length) {
+		await expect(resumo).toContainText(`Em ${fracos[0]}`);
+		await expect(resumo).toContainText('pedem cuidado');
+	} else {
+		await expect(resumo).toContainText('Em todos os anos');
+	}
+	await page.getByTestId('figura-cobertura').getByRole('button', { name: 'Ver como tabela' }).click();
+	await expect(page.getByTestId('tabela-cobertura').locator('tbody tr')).toHaveCount(ler('topicos.json').anos.length);
+});

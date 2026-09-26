@@ -65,3 +65,15 @@ describe.each([
 		expect(contraste(t['seq-vazio'], tons[0])).toBeGreaterThan(1.1);
 	});
 });
+
+describe('cobertura por ano', async () => {
+	const { anosFracos } = await import('./CoberturaAnos.svelte');
+	it('junta os anos seguidos com muito peso sem afiliação', () => {
+		const ano = (a: number, sem: number) => ({ ano: a, identificada: 1 - sem, naoIdentificada: 0, semAfiliacao: sem });
+		expect(anosFracos([ano(2010, 0.3), ano(2011, 0.25), ano(2012, 0.1), ano(2013, 0.5), ano(2014, 0)])).toEqual([
+			[2010, 2011],
+			[2013, 2013]
+		]);
+		expect(anosFracos([ano(2010, 0.2)])).toEqual([]);
+	});
+});

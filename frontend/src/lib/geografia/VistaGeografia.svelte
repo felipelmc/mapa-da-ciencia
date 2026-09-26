@@ -18,6 +18,7 @@
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { NOME_UF, nomePais } from './lugares';
 	import { malhaMundo, malhaUF, projecaoBrasil, projecaoMundo, type PropsPais, type PropsUF, type Regiao } from './malhas';
+	import CoberturaAnos, { anosFracos, LIMIAR_AVISO, type CoberturaAno } from './CoberturaAnos.svelte';
 	import MapaRegioes from './MapaRegioes.svelte';
 	import RankingInstituicoes, { type ItemRanking } from './RankingInstituicoes.svelte';
 
@@ -67,6 +68,39 @@
 	);
 	const noBrasil = $derived(paises.get('BR') ?? 0);
 	const comPais = $derived([...paises.values()].reduce((s, v) => s + v, 0));
+
+	// ---- cobertura por ano (o período inteiro: ignora o filtro de anos, como o fluxo dos tópicos)
+	const anos = $derived(aberto.topicos.anos);
+	const cobertura = $derived.by((): CoberturaAno[] => {
+		const primeiro = anos[0];
+		const t = cubo.t;
+		const somas = cubo.somarAfiliacoesPor(falhas, D.ANO, anos.length * 3, (l) => {
+			const j = t.ano[a.doc[l]] - primeiro;
+			if (j < 0 || j >= anos.length) return -1;
+			const categoria = a.inst[l] < 0 ? 2 : a.inst[l] === a.naoIdentificada ? 1 : 0;
+			return j * 3 + categoria;
+		});
+		return anos.map((ano, j) => ({
+			ano,
+			identificada: somas[j * 3],
+			naoIdentificada: somas[j * 3 + 1],
+			semAfiliacao: somas[j * 3 + 2]
+		}));
+	});
+	const fracos = $derived(anosFracos(cobertura));
+	const resumoCobertura = $derived(
+		fracos.length
+			? `Em ${fracos.map(([x, y]) => (x === y ? `${x}` : `${x}–${y}`)).join(', ')}, mais de ` +
+					`${formatarPorcentagem(LIMIAR_AVISO)} do peso de cada ano fica com autores sem afiliação informada: ` +
+					'a geografia desses anos é mais incompleta, e comparações com os outros pedem cuidado.'
+			: `Em todos os anos, pelo menos ${formatarPorcentagem(1 - LIMIAR_AVISO)} do peso tem afiliação informada.`
+	);
+	const linhasCobertura = $derived(
+		cobertura.map((c) => {
+			const soma = c.identificada + c.naoIdentificada + c.semAfiliacao || 1;
+			return [String(c.ano), ...[c.identificada, c.naoIdentificada, c.semAfiliacao].map((v) => formatarPorcentagem(v / soma))];
+		})
+	);
 
 	// ---- malhas (carregadas quando a vista abre)
 	let malhaUfs = $state<Regiao<PropsUF>[] | null>(null);
@@ -204,6 +238,20 @@
 		{/if}
 	</Figura>
 
+	<Figura
+		id="cobertura"
+		titulo="Cobertura por ano"
+		resumo={resumoCobertura}
+		colunas={['Ano', 'Instituição identificada', 'Afiliação não identificada', 'Sem afiliação']}
+		linhas={linhasCobertura}
+	>
+		<CoberturaAnos anos={cobertura} />
+		<p class="nota">
+			Nos artigos mais antigos, as fontes trazem menos afiliações, e as que trazem vêm como texto livre. Os
+			mapas acima contam só o peso com lugar conhecido; o "sem afiliação" não entra em nenhuma UF nem país.
+		</p>
+	</Figura>
+
 	<p class="creditos">
 		Malhas: UFs do <a href="https://www.ibge.gov.br/geociencias/organizacao-do-territorio/malhas-territoriais.html">IBGE</a>,
 		países do <a href="https://www.naturalearthdata.com">Natural Earth</a>. Projeções que preservam as áreas.
@@ -243,6 +291,12 @@
 	}
 
 	.aviso {
+		color: var(--texto-suave);
+	}
+
+	.nota {
+		margin: 0.6rem 0 0;
+		font-size: 0.85rem;
 		color: var(--texto-suave);
 	}
 
