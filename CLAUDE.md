@@ -29,7 +29,7 @@ uv run python scripts/calibrar_topicos.py projetos/cp-scielo  # grade UMAP × HD
 
 Os testes nunca acessam a rede: `tests/conftest.py` tem a fixture `apis_falsas` (respx), que responde ArticleMeta e OpenAlex com as fixtures de `tests/fixtures/` e também um Ollama falso (`OLLAMA_HOST=http://ollama.teste:11434`, com embeddings de saco de palavras via `vetor_falso`) (geradas por `scripts/recortar_fixtures.py`, com e-mails trocados por `anonimo@exemplo.invalid`). `tests/test_tutorial.py` roda os comandos das duas partes do tutorial (`docs/tutoriais/primeiro-mapa.md` e `primeiro-mapa-topicos.md`); linhas com `# fora do CI` são puladas, e na parte 2 o corpus sintético (`tests/corpus_sintetico.py`) entra no lugar da coleta.
 
-Frontend (SvelteKit), em `frontend/`: veja `frontend/README.md`. Depois de mudar os schemas, rode `npm run tipos`.
+Frontend (SvelteKit), em `frontend/`: veja `frontend/README.md`. Depois de mudar os schemas, rode `npm run tipos`. As capturas da documentação (`docs/imagens/`) saem de `node scripts/capturas.ts ../projetos/cp-scielo`, rodado na pasta `frontend/` depois do build; refaça-as quando o mapa mudar de aparência.
 
 ## Arquitetura
 

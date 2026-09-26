@@ -2,6 +2,11 @@
 
 O **Mapa** do painel mostra cada documento do corpus como um ponto. Esta página explica o que o mapa quer dizer, o que ele não quer dizer, e como usar os controles. Para saber como as posições e os tópicos são calculados, veja [Como os tópicos são construídos](../explicacoes/topicos.md).
 
+<figure markdown="span">
+  ![O mapa do piloto: milhares de pontos coloridos por tópico, com contornos em volta dos tópicos e os rótulos dos macrotemas; à esquerda, o painel de controles com a busca, o laço e a legenda](../imagens/mapa.png){ loading=lazy }
+  <figcaption>O piloto: 4.275 artigos de dez revistas de ciência política, de 2010 a 2025, coloridos por tópico. Os rótulos são as palavras-chave de cada macrotema (gerado com <code>--sem-rotulos</code>).</figcaption>
+</figure>
+
 ## O que o mapa mostra
 
 - **Cada ponto é um documento.** Pontos próximos são textos parecidos: título e resumo tratam de assuntos vizinhos.
@@ -28,7 +33,17 @@ O **Mapa** do painel mostra cada documento do corpus como um ponto. Esta página
 
 <kbd>Esc</kbd> fecha o cartão ou desliga o laço, e <kbd>?</kbd> abre a lista de atalhos na Ajuda.
 
+<figure markdown="span">
+  ![O mapa com um laço desenhado: só os documentos de dentro continuam coloridos, e o painel mostra quantos são](../imagens/mapa-laco.png){ loading=lazy }
+  <figcaption>Com o laço, o mapa fica só com os documentos da região desenhada; o painel mostra quantos são e permite tirar o laço.</figcaption>
+</figure>
+
 ## O cartão do documento
+
+<figure markdown="span">
+  ![O mapa aproximado sobre um grupo de artigos de política externa, com o cartão de um artigo aberto à direita: revista, título, autoria, tópico, resumo, palavras-chave, DOI, licença e os artigos mais parecidos](../imagens/mapa-cartao.png){ loading=lazy }
+  <figcaption>O cartão de um artigo: resumo, palavras-chave, DOI, licença e os cinco documentos mais parecidos. Com o zoom aproximado, os rótulos passam a ser dos tópicos.</figcaption>
+</figure>
 
 Clique num ponto para abrir o cartão, com a revista, o ano, os autores, o resumo, as palavras-chave, o DOI e os cinco documentos mais parecidos (clique num deles para abri-lo). O cartão também diz como o documento chegou ao tópico:
 

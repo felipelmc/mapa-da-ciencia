@@ -122,7 +122,14 @@ Se você coletar de novo e o corpus mudar, essa linha avisa que os tópicos fica
 uv run mapa painel  # fora do CI
 ```
 
-Abra a vista **Mapa**. Cada ponto é um artigo, e artigos parecidos ficam perto uns dos outros. Experimente:
+Abra a vista **Mapa**. Cada ponto é um artigo, e artigos parecidos ficam perto uns dos outros. A imagem abaixo é o mapa do projeto piloto, com dez revistas; o da *Opinião Pública* tem menos pontos e menos tópicos, mas se lê do mesmo jeito.
+
+<figure markdown="span">
+  ![O mapa do piloto, com os pontos coloridos por tópico, os contornos dos tópicos e os rótulos dos macrotemas](../imagens/mapa.png){ loading=lazy }
+  <figcaption>O mapa do piloto de ciência política. Os contornos envolvem os tópicos; os rótulos, com o zoom afastado, são os dos macrotemas.</figcaption>
+</figure>
+
+Experimente:
 
 - **Aproxime** com a roda do mouse ou com o gesto de pinça. Com o zoom afastado aparecem os rótulos dos macrotemas; ao aproximar, os dos tópicos.
 - **Clique num ponto.** O cartão ao lado mostra o título, os autores, o resumo e os cinco artigos mais parecidos, que também são clicáveis.
