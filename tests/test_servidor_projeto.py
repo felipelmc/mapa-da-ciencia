@@ -37,10 +37,15 @@ def test_estado_das_etapas(cliente, projeto):
     mapa.classificar(projeto, limite=3, progresso=False)
     e = cliente.get("/api/projeto/etapas").json()
     assert e["coleta"]["estado"] == "em_dia" and e["coleta"]["ultima"]["contagens"]["documentos"] == 25
-    assert e["topicos"]["estado"] == "pendente" and e["classificacao"]["estado"] == "desatualizada"  # parcial
+    assert e["topicos"]["estado"] == "pendente" and e["classificacao"]["estado"] == "incompleta"  # parcial
     mapa.amostra_de_validacao(projeto, n=10)
     e = cliente.get("/api/projeto/etapas").json()
-    assert e["validacao"] == {"estado": "desatualizada", "ultima": None, "amostra": {"n": 10, "codificados": 0}}
+    assert e["validacao"] == {"estado": "incompleta", "ultima": None, "amostra": {"n": 10, "codificados": 0}}
+    # um codebook novo deixa a classificação desatualizada, não só incompleta
+    cb = projeto.raiz / "codebook.yaml"
+    cb.write_text(cb.read_text(encoding="utf-8").replace('versao: "0.1"', 'versao: "0.2"'), encoding="utf-8")
+    projeto._codebook = None
+    assert cliente.get("/api/projeto/etapas").json()["classificacao"]["estado"] == "desatualizada"
 
 
 def test_modelos_e_download(cliente, projeto, apis_falsas):

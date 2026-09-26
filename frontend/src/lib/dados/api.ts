@@ -6,7 +6,7 @@ import { pedirApi, urlDaApi } from './pedir';
 
 /** As etapas que o painel roda como jobs. */
 export type NomeEtapa = 'coleta' | 'topicos' | 'geografia' | 'classificacao';
-export type EstadoEtapa = 'pendente' | 'em_dia' | 'desatualizada';
+export type EstadoEtapa = 'pendente' | 'em_dia' | 'incompleta' | 'desatualizada';
 
 export interface EtapaDoProjeto {
 	estado: EstadoEtapa;

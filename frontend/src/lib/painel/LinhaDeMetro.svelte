@@ -34,8 +34,9 @@
 
 <script lang="ts">
 	/**
-	 * As etapas do pipeline numa linha de metrô: cada estação mostra se a etapa nunca rodou, está em dia ou ficou
-	 * para trás (o corpus, o codebook ou as correções mudaram depois), a última execução e o botão de rodar. A
+	 * As etapas do pipeline numa linha de metrô: cada estação mostra se a etapa nunca rodou, está em dia, parou no
+	 * meio (incompleta: meio círculo) ou ficou para trás (desatualizada, tracejada: o corpus, o codebook ou as
+	 * correções mudaram depois), a última execução e o botão de rodar. A
 	 * estação da etapa que está rodando pulsa. A validação não é um job: ela leva à codificação da amostra.
 	 */
 	import type { EtapasDoProjeto } from '$lib/dados/api';
@@ -59,14 +60,16 @@
 
 	let tamanhoAmostra = $state(200);
 
-	const NOMES = { pendente: 'Nunca rodou', em_dia: 'Em dia', desatualizada: 'Desatualizada' } as const;
-	const acao = (estado: string) => (estado === 'pendente' ? 'Rodar' : estado === 'desatualizada' ? 'Atualizar' : 'Rodar de novo');
+	const NOMES = { pendente: 'Nunca rodou', em_dia: 'Em dia', incompleta: 'Incompleta', desatualizada: 'Desatualizada' } as const;
+	const acao = (estado: string) =>
+		estado === 'pendente' ? 'Rodar' : estado === 'desatualizada' ? 'Atualizar' : estado === 'incompleta' ? 'Continuar' : 'Rodar de novo';
 	const resumoContagens = (c: Record<string, number>) => {
 		const [chave, n] = Object.entries(c).find(([k]) => ['documentos', 'classificados', 'vinculos', 'topicos'].includes(k)) ?? [];
 		return chave ? `${formatarInteiro(n!)} ${chave}` : '';
 	};
 </script>
 
+<div class="caixa-metro">
 <ol class="metro" aria-label="Etapas do pipeline" data-testid="linha-metro">
 	{#each ESTACOES as e (e.id)}
 		{@const info = etapas[e.id]}
@@ -79,8 +82,9 @@
 				<p class="estado" data-testid="estado-{e.id}">{estado === 'rodando' ? 'Rodando…' : NOMES[info.estado]}</p>
 				{#if info.ultima}
 					<p class="ultima">
-						{formatarData(info.ultima.fim)} · {formatarDuracao(info.ultima.duracao_s)}{#if resumoContagens(info.ultima.contagens)}
-							· {resumoContagens(info.ultima.contagens)}{/if}
+						{[formatarData(info.ultima.fim), formatarDuracao(info.ultima.duracao_s), resumoContagens(info.ultima.contagens)]
+							.filter(Boolean)
+							.join(' · ')}
 					</p>
 				{/if}
 				{#if e.id === 'validacao'}
@@ -108,8 +112,14 @@
 		</li>
 	{/each}
 </ol>
+</div>
 
 <style>
+	/* a linha deita ou fica de pé conforme o espaço da vista, não o da janela (o trilho ocupa uma parte) */
+	.caixa-metro {
+		container-type: inline-size;
+	}
+
 	.metro {
 		display: grid;
 		grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -161,6 +171,11 @@
 	[data-estado='desatualizada'] .ponto {
 		border-color: var(--acento);
 		border-style: dashed;
+	}
+
+	[data-estado='incompleta'] .ponto {
+		border-color: var(--acento);
+		background: linear-gradient(90deg, var(--acento) 50%, var(--fundo) 50%);
 	}
 
 	[data-estado='rodando'] .ponto {
@@ -250,7 +265,7 @@
 		cursor: default;
 	}
 
-	@media (max-width: 900px) {
+	@container (max-width: 820px) {
 		.metro {
 			grid-template-columns: minmax(0, 1fr);
 			gap: 1.2rem;

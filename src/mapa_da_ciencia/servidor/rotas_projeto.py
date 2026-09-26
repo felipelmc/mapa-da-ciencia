@@ -1,7 +1,7 @@
 """Rotas do projeto no painel: o estado das etapas, os modelos, a estimativa da classificação, a configuração e o
 codebook.
 
-- `GET /api/projeto/etapas`: cada etapa do pipeline como `pendente`, `em_dia` ou `desatualizada`, com a última
+- `GET /api/projeto/etapas`: cada etapa do pipeline como `pendente`, `em_dia`, `incompleta` ou `desatualizada`, com a última
   execução (a linha de metrô da vista Projeto);
 - `GET /api/modelos`: a memória da máquina, o perfil sugerido, os perfis, os modelos instalados no Ollama e os do
   projeto (instalados ou não, com o tamanho do download);
@@ -57,8 +57,9 @@ def etapa_baixar_modelo(projeto: Projeto, opcoes: dict[str, Any], progresso) -> 
 
 
 def estados_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any]]:
-    """Cada etapa: `pendente` (nunca rodou), `em_dia` ou `desatualizada` (o corpus, o codebook ou as correções
-    mudaram depois), com a última execução."""
+    """Cada etapa: `pendente` (nunca rodou), `em_dia`, `incompleta` (a classificação parou antes do fim, a amostra
+    não foi toda codificada) ou `desatualizada` (o corpus, o codebook ou as correções mudaram depois), com a última
+    execução."""
     from ..armazenamento import ARQUIVO, ler_documentos
     from ..classificacao.pipeline import classificacao_em_dia
     from ..geografia.pipeline import geografia_em_dia
@@ -73,14 +74,23 @@ def estados_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any]]:
         topicos = r.assinatura == assinatura_corpus([d.id for d in ler_documentos(projeto.dados / ARQUIVO)])
     amostra = ler_amostra(projeto)
     codificados = len({c["doc"] for c in codificacoes(projeto)} & set(amostra.docs)) if amostra else 0
-    em_dia = {
+    classificacao: bool | str | None = None
+    if tem_corpus:
+        from ..classificacao.resultado import PASTA as PASTA_CLS
+        from ..classificacao.resultado import Resultado as ResultadoCls
+
+        cfg = projeto.config.modelos.classificacao
+        r_cls = ResultadoCls.ler(projeto.dados / PASTA_CLS, cfg.modelo, projeto.codebook.hash())
+        em_dia_cls = classificacao_em_dia(projeto)
+        classificacao = "incompleta" if r_cls is not None and r_cls.parcial else em_dia_cls
+    em_dia: dict[str, bool | str | None] = {
         "coleta": True if tem_corpus else None,
         "topicos": topicos,
         "geografia": geografia_em_dia(projeto) if tem_corpus else None,
-        "classificacao": classificacao_em_dia(projeto) if tem_corpus else None,
-        "validacao": None if not amostra else codificados >= len(amostra.docs),
+        "classificacao": classificacao,
+        "validacao": None if not amostra else (True if codificados >= len(amostra.docs) else "incompleta"),
     }
-    nomes = {None: "pendente", True: "em_dia", False: "desatualizada"}
+    nomes = {None: "pendente", True: "em_dia", False: "desatualizada", "incompleta": "incompleta"}
     saida = {}
     for etapa, estado in em_dia.items():
         m = ultimas.get(etapa)
