@@ -88,11 +88,26 @@ def test_para_quando_a_memoria_acaba(classificador, monkeypatch):
         list(classificador().classificar(TEXTOS[:1]))
 
 
-def test_chave_muda_com_o_codebook_e_o_modelo(classificador, tmp_path, apis_falsas):
+def test_chave_muda_com_o_que_o_modelo_le_e_com_o_modelo(classificador, tmp_path, apis_falsas):
     list(classificador().classificar(TEXTOS[:1]))
-    outro = CODEBOOK.model_copy(update={"versao": "0.2"})
-    c = Classificador(ModeloLLM(modelo="qwen3.5:9b"), outro, tmp_path / "estado.sqlite")
-    assert c.pendentes(TEXTOS[:1]) == TEXTOS[:1]
+
+    def com(codebook):
+        return Classificador(ModeloLLM(modelo="qwen3.5:9b"), codebook, tmp_path / "estado.sqlite")
+
+    v = CODEBOOK.variaveis[0]
+    c0 = v.categorias[0]
+    definicao = c0.model_copy(update={"definicao": c0.definicao + " Inclui experimentos."})
+    rotulo = c0.model_copy(update={"rotulo": "Quantitativa (rótulo novo)"})
+
+    def trocar(categoria):
+        variavel = v.model_copy(update={"categorias": [categoria, *v.categorias[1:]]})
+        return CODEBOOK.model_copy(update={"variaveis": [variavel, *CODEBOOK.variaveis[1:]]})
+
+    assert com(trocar(definicao)).pendentes(TEXTOS[:1]) == TEXTOS[:1]  # o modelo lê a definição
+    # o rótulo de exibição e a versão não chegam ao modelo: a resposta guardada continua valendo
+    assert com(trocar(rotulo)).pendentes(TEXTOS[:1]) == []
+    assert com(CODEBOOK.model_copy(update={"versao": "0.2"})).pendentes(TEXTOS[:1]) == []
+    assert trocar(rotulo).hash() != CODEBOOK.hash()  # mas o resultado é de outro codebook (o hash muda)
     apis_falsas.digests["qwen3.5:9b"] = "abcdef012345"  # modelo atualizado
     assert classificador().pendentes(TEXTOS[:1]) == TEXTOS[:1]
 

@@ -10,6 +10,9 @@ de valer.
 
 from __future__ import annotations
 
+import hashlib
+import json
+
 from ..config import Codebook
 from .codebook import EVIDENCIA_MAXIMA
 
@@ -39,6 +42,17 @@ def mensagem_sistema(codebook: Codebook) -> str:
             linhas += [f"  - exemplo: {e.strip()}" for e in c.exemplos]
         linhas.append("")
     return "\n".join(linhas).strip()
+
+
+def assinatura(codebook: Codebook) -> str:
+    """Hash do que o modelo lê: a mensagem de sistema e o esquema da resposta. É o que entra na chave do cache: os
+    rótulos de exibição das categorias ficam de fora, e mudá-los não refaz a classificação."""
+    from .codebook import esquema
+
+    conteudo = json.dumps(
+        {"sistema": mensagem_sistema(codebook), "esquema": esquema(codebook)}, sort_keys=True, ensure_ascii=False
+    )
+    return hashlib.sha256(conteudo.encode("utf-8")).hexdigest()[:16]
 
 
 def mensagem_documento(titulo: str | None, resumo: str) -> str:

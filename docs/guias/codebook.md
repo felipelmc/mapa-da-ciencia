@@ -25,8 +25,11 @@ variaveis:
       - valor: qualitativa
         definicao: Análise baseada principalmente em dados não numéricos.
       - valor: nao_informado
+        rotulo: Não informado    # opcional: como a categoria aparece no painel
         definicao: O resumo não permite identificar a abordagem.
 ```
+
+O `valor` de cada categoria é um identificador sem acentos nem espaços; o `rotulo`, opcional, é como ela aparece no painel e nos relatórios (sem ele, o painel mostra o `valor` com espaços no lugar dos `_`).
 
 Há quatro tipos de variável:
 
@@ -51,8 +54,10 @@ Para cada variável, o modelo devolve um par **evidência + valor**, nessa ordem
 - **Inclua uma saída** como `nao_informado` ou `outra`. Resumos são curtos: sem uma categoria para "não dá para saber", o modelo é forçado a chutar.
 - **Escreva para quem nunca viu o seu projeto.** Se uma pessoa da sua área não conseguiria codificar só com as definições, o modelo também não vai conseguir.
 - **Poucas variáveis bem definidas** valem mais que muitas vagas. Cada variável é validada separadamente, e as de baixa concordância precisam de revisão.
-- **Teste em poucos resumos antes do corpus todo.** A classificação vai ter a opção `--limite` (marco M5) justamente para isso.
+- **Teste em poucos resumos antes do corpus todo:** `mapa classificar --limite 20` (veja [Classificar os resumos](classificar.md)).
 
 ## Versões e reprodutibilidade
 
 Mude o campo `versao` sempre que alterar uma definição. O `mapa` calcula um *hash* do conteúdo inteiro do codebook, e toda classificação fica associada a esse hash. Assim, resultados de versões diferentes do codebook nunca se misturam, e o manifesto de cada execução registra qual versão foi usada (veja [Reprodutibilidade](../explicacoes/reprodutibilidade.md)).
+
+As respostas do modelo ficam guardadas pelo que ele lê: as instruções, as perguntas, as definições e os exemplos. Mudar só o que ele não lê (a `versao`, os rótulos das categorias) cria um resultado novo, mas a próxima `mapa classificar` o monta a partir das respostas guardadas, em segundos. Mudar uma definição refaz a classificação inteira.

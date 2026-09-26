@@ -30,7 +30,7 @@ from ..llm.ollama import Ollama
 from ..progresso import Progresso, ProgressoNulo
 from .codebook import esquema, sem_informacao, validar
 from .evidencia import Conferencia, conferir
-from .prompt import VERSAO_PROMPT, mensagem_correcao, mensagem_documento, mensagem_sistema
+from .prompt import VERSAO_PROMPT, assinatura, mensagem_correcao, mensagem_documento, mensagem_sistema
 
 TAREFA = "classificacao"
 
@@ -94,6 +94,7 @@ class Classificador:
     ) -> None:
         self.cfg = cfg
         self.codebook = codebook
+        self._assinatura = assinatura(codebook)
         self.estado = estado
         self.ollama = ollama or Ollama()
         self.progresso = progresso or ProgressoNulo()
@@ -136,7 +137,7 @@ class Classificador:
     # ------------------------------------------------------------ um documento
     def chave(self, texto: Texto) -> str:
         parametros = (self.cfg.num_ctx, self.cfg.temperatura, self.cfg.semente, self.cfg.pensar)
-        return chave_de(VERSAO_PROMPT, self.codebook.hash(), self.modelo, parametros, texto.titulo, texto.resumo)
+        return chave_de(VERSAO_PROMPT, self._assinatura, self.modelo, parametros, texto.titulo, texto.resumo)
 
     def _conferir(self, texto: Texto, valores: dict[str, Any], evidencias: dict[str, str]) -> dict[str, Conferencia]:
         return {
