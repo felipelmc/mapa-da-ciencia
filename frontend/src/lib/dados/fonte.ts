@@ -5,9 +5,9 @@
  *
  * - `FonteEstatica`: lê `./dados/*.json` relativo à página. É o modo do site publicado e,
  *   por enquanto, também do painel local.
- * - `FonteApi`: a do painel local (`mapa painel`), onde `manifesto.api` é verdadeiro. Por
- *   enquanto só herda a estática e declara `escrita: true`; os métodos de escrita chegam
- *   com a API.
+ * - `FonteApi`: a do painel local (`mapa painel`), onde `manifesto.api` é verdadeiro. Lê o contrato como a
+ *   estática e, além disso, fala com a API do painel (etapas como jobs ao vivo, modelos, configuração e
+ *   codebook). As vistas que dependem dela conferem `capacidades` antes.
  *
  * O manifesto é sempre lido primeiro. Os outros arquivos só são pedidos se estiverem em
  * `manifesto.arquivos`; os ausentes dão `null` sem requisição. Um projeto recém-criado
@@ -30,7 +30,7 @@ import type {
 export interface Capacidades {
 	/** Pode gravar (codebook, codificação humana, configuração). Só no painel local. */
 	escrita: boolean;
-	/** Recebe atualizações enquanto o pipeline roda. Chega com a API. */
+	/** Acompanha as etapas do pipeline ao vivo (SSE). Só no painel local. */
 	aoVivo: boolean;
 }
 
