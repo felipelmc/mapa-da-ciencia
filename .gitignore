@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node / frontend
+node_modules/
+frontend/.svelte-kit/
+frontend/build/
+test-results/
+playwright-report/
+
+# Build do frontend empacotado no wheel (gerado no CI)
+src/mapa_da_ciencia/web/estatico/
+
+# Documentação gerada
+site/
+
+# Segredos
+.env
+.env.*
+!.env.exemplo
+
+# Dados de projetos e saídas de spikes (nunca versionar)
+brutos/
+estado.sqlite*
+saida/
+spikes/saida/
+spikes/frontend/node_modules/
+spikes/frontend/.svelte-kit/
+spikes/frontend/build/
+
+# Sistema
+.DS_Store
