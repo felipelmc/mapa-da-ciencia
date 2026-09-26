@@ -51,7 +51,7 @@ Quando a ArticleMeta não traz resumo de um artigo e o OpenAlex traz, o resumo d
 
 ## E o search.scielo.org?
 
-O buscador do SciELO, usado pelo antigo SciELO-Summarizer, hoje bloqueia acessos automatizados com um desafio anti-robô. Por isso o `mapa-da-ciencia` não o usa diretamente. Você pode buscar no navegador, exportar o resultado (CSV ou RIS) e importar o arquivo no projeto (marco M2).
+O buscador do SciELO, usado pelo antigo SciELO-Summarizer, hoje bloqueia acessos automatizados com um desafio anti-robô. Por isso o `mapa-da-ciencia` não o usa diretamente. Você pode buscar no navegador, exportar o resultado (RIS, CSV ou BibTeX) e importar o arquivo no projeto: veja [Importar uma busca do SciELO](../guias/importar.md).
 
 ## Como os registros são casados
 

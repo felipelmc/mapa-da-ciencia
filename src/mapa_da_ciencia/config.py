@@ -33,7 +33,9 @@ class FonteScielo(_Base):
     """Coleta pela ArticleMeta do SciELO, revista a revista."""
 
     colecao: str = Field("scl", description="Coleção do SciELO (`scl` = Brasil).")
-    revistas: list[Issn] = Field(min_length=1, description="ISSNs das revistas, como aparecem no SciELO.")
+    revistas: list[Issn] = Field(
+        default_factory=list, description="ISSNs das revistas; vazio num projeto só com artigos importados."
+    )
     tipos: list[str] = Field(
         ["research-article", "review-article"],
         description="Tipos de documento incluídos (`document_type` da ArticleMeta).",
@@ -54,14 +56,9 @@ class Fontes(_Base):
     openalex: FonteOpenAlex = FonteOpenAlex()
     importar: list[Path] = Field(
         default_factory=list,
-        description="Arquivos CSV/RIS exportados do search.scielo.org ou listas de DOIs (.txt).",
+        description="Arquivos RIS, CSV ou BibTeX exportados do search.scielo.org, ou listas de DOIs (.txt), "
+        "relativos à pasta do projeto. Os da pasta `importados/` entram sempre, sem precisar listar aqui.",
     )
-
-    @model_validator(mode="after")
-    def _alguma_fonte(self) -> Fontes:
-        if self.scielo is None and not self.importar and not self.openalex.consulta:
-            raise ValueError("defina ao menos uma fonte: `scielo`, `importar` ou `openalex.consulta`")
-        return self
 
 
 class Recorte(_Base):

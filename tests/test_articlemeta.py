@@ -3,7 +3,14 @@ import asyncio
 from conftest import casos_especiais, registros_articlemeta
 
 from mapa_da_ciencia.fontes import revistas
-from mapa_da_ciencia.fontes.articlemeta import RevistaRef, ano_do_pid, buscar_registros, listar_pids, normalizar
+from mapa_da_ciencia.fontes.articlemeta import (
+    RevistaRef,
+    ano_do_pid,
+    buscar_registros,
+    listar_pids,
+    normalizar,
+    revista_do_registro,
+)
 from mapa_da_ciencia.fontes.base import Buscador
 from mapa_da_ciencia.texto import contem_email
 
@@ -11,7 +18,7 @@ OP = RevistaRef.de_revista(revistas.por_issn("0104-6276"))
 
 
 def _revista_do(pid: str) -> RevistaRef:
-    return RevistaRef.de_revista(revistas.por_issn(pid[1:10]))
+    return revista_do_registro(registros_articlemeta()[pid])
 
 
 async def _listar_e_buscar(brutos, anos=(2024, 2024)):
@@ -89,7 +96,19 @@ def test_casos_especiais():
 
 def test_palavras_chave_varias_por_idioma():
     registros = registros_articlemeta()
-    com_varias = [normalizar(r, _revista_do(p)) for p, r in registros.items() if len(r["article"].get("v85") or []) > 2]
+    com_varias = [
+        normalizar(r, revista_do_registro(r)) for p, r in registros.items() if len(r["article"].get("v85") or []) > 2
+    ]
     assert com_varias
     doc = com_varias[0]
     assert len([k for k in doc.palavras_chave if k.idioma == doc.palavras_chave[0].idioma]) > 1
+
+
+def test_revista_de_outra_colecao_vem_do_registro():
+    registros = registros_articlemeta()
+    arg = revista_do_registro(registros["S1514-79912026000100130"])
+    assert arg.colecao == "arg" and arg.issn == "1514-7991" and arg.prefixo_cache.startswith("arg-")
+    doc = normalizar(registros["S1514-79912026000100130"], arg)
+    assert doc.colecao == "arg" and doc.revista_titulo and doc.revista_issn == "1514-7991"
+    op = revista_do_registro(next(r for p, r in registros.items() if p.startswith("S0104-6276")))
+    assert op.acronimo == "op" and op.titulo == "Opinião Pública"  # do retrato, para o SciELO Brasil

@@ -34,6 +34,11 @@ ESPECIAIS = {
 }
 
 
+# Artigos das exportações reais do search.scielo.org (tests/fixtures/importar/), buscados ao vivo
+IMPORTADOS_AM = [("S0101-28002026000202001", "scl"), ("S1514-79912026000100130", "arg")]
+IMPORTADOS_DOIS = ["10.1590/SciELOPreprints.17844", "10.1590/2175-8239-jbn-2026-sa01en", "10.24215/18536387e128"]
+
+
 def ler(caminho: Path):
     with gzip.open(caminho, "rt", encoding="utf-8") as f:
         return json.load(f)
@@ -91,6 +96,25 @@ def escolher_casos(artigos: Path) -> dict[str, str]:
     return casos
 
 
+def buscar_importados() -> dict[str, dict]:
+    """Registros da ArticleMeta de artigos que aparecem nas exportações de teste (outras coleções inclusive)."""
+    import sys
+
+    sys.path.insert(0, str(RAIZ / "src"))
+    from mapa_da_ciencia import rede
+
+    saida = {}
+    with rede.cliente(timeout=60) as http:
+        for pid, colecao in IMPORTADOS_AM:
+            r = http.get(
+                "https://articlemeta.scielo.org/api/v1/article/",
+                params={"collection": colecao, "code": pid, "format": "json"},
+            )
+            r.raise_for_status()
+            saida[pid] = enxugar(r.json())
+    return saida
+
+
 def recortar_openalex(casos: dict[str, str], pids_op: list[str]) -> None:
     """Busca no OpenAlex (1 crédito por revista-ano) só as páginas que os testes usam, e guarda as obras."""
     import sys
@@ -116,6 +140,13 @@ def recortar_openalex(casos: dict[str, str], pids_op: list[str]) -> None:
                     obras[o["id"]] = anonimizar(o)
             for o in [o for o in resultados if o["id"] not in alvo][:3]:  # distratores
                 obras.setdefault(o["id"], anonimizar(o))
+        r = http.get(
+            "https://api.openalex.org/works",
+            params={"filter": "doi:" + "|".join(IMPORTADOS_DOIS), "select": CAMPOS, "per-page": 50},
+        )
+        r.raise_for_status()
+        for o in r.json()["results"]:
+            obras[o["id"]] = anonimizar(o)
     with gzip.open(DESTINO / "openalex" / "obras.jsonl.gz", "wt", encoding="utf-8") as f:
         for oid in sorted(obras):
             f.write(json.dumps(obras[oid], ensure_ascii=False) + "\n")
@@ -143,6 +174,7 @@ def main() -> None:
     registros = {o["code"]: enxugar(ler(artigos / f"{o['code']}.json.gz")) for o in de_2024}
     for pid in casos:
         registros[pid] = enxugar(ler(artigos / f"{pid}.json.gz"))
+    registros |= buscar_importados()
     with gzip.open(saida / "artigos.jsonl.gz", "wt", encoding="utf-8") as f:
         for pid in sorted(registros):
             f.write(json.dumps({"pid": pid, "registro": registros[pid]}, ensure_ascii=False) + "\n")

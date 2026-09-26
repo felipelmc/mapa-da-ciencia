@@ -16,10 +16,25 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from mapa_da_ciencia.documento import Casamento, Documento, Texto, mais_restritiva, normalizar_licenca
+from mapa_da_ciencia.documento import (
+    Afiliacao,
+    Autor,
+    Casamento,
+    Documento,
+    Texto,
+    mais_restritiva,
+    normalizar_licenca,
+)
 from mapa_da_ciencia.fontes.articlemeta import RevistaRef
 from mapa_da_ciencia.fontes.base import Buscador
-from mapa_da_ciencia.texto import limpar, normalizar_doi, normalizar_titulo, similaridade_titulo
+from mapa_da_ciencia.texto import (
+    limpar,
+    normalizar_doi,
+    normalizar_orcid,
+    normalizar_titulo,
+    remover_emails,
+    similaridade_titulo,
+)
 
 URL = "https://api.openalex.org"
 CAMPOS = (
@@ -79,6 +94,90 @@ async def listar_por_revista(
     filtro = f"primary_location.source.issn:{issns},publication_year:{anos[0]}-{anos[1]}"
     return await listar_paginas(
         buscador, filtro, f"revistas/{revista.prefixo_cache}", api_key=api_key, atualizar=atualizar
+    )
+
+
+async def buscar_por_dois(buscador: Buscador, dois: list[str], *, api_key: str | None = None) -> list[dict]:
+    """Trabalhos do OpenAlex para uma lista de DOIs, em lotes de 50 (1 crédito por lote)."""
+    unicos = sorted({d for d in dois if d})
+    obras: list[dict] = []
+    for i in range(0, len(unicos), 50):
+        filtro = "doi:" + "|".join(unicos[i : i + 50])
+        obras += await listar_paginas(buscador, filtro, "dois/lote", api_key=api_key)
+    return obras
+
+
+def pid_da_obra(obra: dict) -> str | None:
+    """O PID do SciELO que o OpenAlex guarda nos endereços do trabalho, se houver."""
+    for loc in obra.get("locations") or []:
+        if m := _PID_NA_URL.search(loc.get("landing_page_url") or ""):
+            return m.group(1).upper()
+    return None
+
+
+TIPOS_OPENALEX = {
+    "article": "research-article",
+    "review": "review-article",
+    "preprint": "preprint",
+    "editorial": "editorial",
+    "letter": "letter",
+    "erratum": "correction",
+    "book-chapter": "book-chapter",
+}
+
+
+def documento_de_obra(obra: dict, origem: str) -> Documento:
+    """Documento montado só com o OpenAlex, para artigos importados que não estão na ArticleMeta."""
+    oid = obra["id"].rsplit("/", 1)[-1]
+    doi = normalizar_doi(obra.get("doi"))
+    fonte = (obra.get("primary_location") or {}).get("source") or {}
+    licenca = normalizar_licenca((obra.get("primary_location") or {}).get("license"))
+    autores, afiliacoes = [], []
+    for i, autoria in enumerate(obra.get("authorships") or []):
+        nome = remover_emails(limpar((autoria.get("author") or {}).get("display_name")))
+        partes = nome.rsplit(" ", 1)
+        ids_af = []
+        for j, inst in enumerate(autoria.get("institutions") or []):
+            ids_af.append(f"oa{i}-{j}")
+            afiliacoes.append(
+                Afiliacao(
+                    id=f"oa{i}-{j}",
+                    instituicao=remover_emails(limpar(inst.get("display_name"))) or None,
+                    pais=inst.get("country_code"),
+                    fonte="openalex",
+                )
+            )
+        autores.append(
+            Autor(
+                nome=partes[0] if len(partes) == 2 else None,
+                sobrenome=partes[-1] or None,
+                orcid=normalizar_orcid((autoria.get("author") or {}).get("orcid")),
+                afiliacoes=ids_af,
+            )
+        )
+    resumo = reconstruir_resumo(obra.get("abstract_inverted_index"))
+    titulo = limpar(obra.get("title"))
+    return Documento(
+        id=f"doi:{doi}" if doi else f"openalex:{oid}",
+        doi=doi,
+        openalex_id=oid,
+        fonte="openalex",
+        origens=[origem],
+        tipo=TIPOS_OPENALEX.get(obra.get("type") or "", obra.get("type")),
+        ano=int(obra.get("publication_year") or 0),
+        idioma_original=obra.get("language"),
+        revista_issn=(fonte.get("issn") or [None])[0],
+        revista_titulo=fonte.get("display_name"),
+        titulos=[Texto(idioma=obra.get("language"), texto=titulo, origem="openalex")] if titulo else [],
+        resumos=[Texto(idioma=obra.get("language"), texto=resumo, origem="openalex")] if resumo else [],
+        autores=autores,
+        afiliacoes=afiliacoes,
+        afiliacoes_fonte="openalex" if afiliacoes else "nenhuma",
+        url=(obra.get("primary_location") or {}).get("landing_page_url"),
+        citacoes=obra.get("cited_by_count"),
+        licenca=licenca or "desconhecida",
+        licenca_fonte="openalex" if licenca else "nenhuma",
+        licenca_openalex=licenca,
     )
 
 

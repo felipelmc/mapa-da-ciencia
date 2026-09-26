@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from mapa_da_ciencia.documento import Afiliacao, Autor, Documento, Texto, mais_restritiva, normalizar_licenca
+from mapa_da_ciencia.fontes import revistas
 from mapa_da_ciencia.fontes.base import Buscador
 from mapa_da_ciencia.fontes.revistas import Revista
 from mapa_da_ciencia.texto import EMAIL, limpar, normalizar_doi, normalizar_orcid, remover_emails
@@ -63,6 +64,31 @@ class RevistaRef:
     @property
     def prefixo_cache(self) -> str:
         return self.acronimo if self.colecao == "scl" else f"{self.colecao}-{self.acronimo}"
+
+
+def revista_do_registro(registro: dict, colecao: str | None = None) -> RevistaRef:
+    """A revista de um artigo a partir do próprio registro. Serve para revistas fora do retrato do SciELO
+    Brasil, como as de outras coleções (Argentina, Colômbia...) que chegam por importação."""
+    colecao = colecao or registro.get("collection") or "scl"
+    titulo = registro.get("title") or {}
+
+    def primeiro(campo: str) -> str | None:
+        valores = titulo.get(campo) or []
+        return valores[0].get("_") if valores else None
+
+    pid = registro.get("code") or ""
+    issn = primeiro("v400") or pid[1:10]
+    if colecao == "scl" and (conhecida := revistas.por_issn(issn)):
+        return RevistaRef.de_revista(conhecida)
+    issns = tuple(dict.fromkeys([issn, *(x.get("_") for x in titulo.get("v435") or [] if x.get("_"))]))
+    return RevistaRef(
+        issn=issn,
+        acronimo=primeiro("v68") or issn,
+        titulo=primeiro("v100") or issn,
+        licenca=primeiro("v541"),
+        colecao=colecao,
+        issns=issns,
+    )
 
 
 def ano_do_pid(pid: str) -> int | None:

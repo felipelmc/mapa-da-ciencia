@@ -2,16 +2,13 @@ import pytest
 from conftest import casos_especiais, registros_articlemeta
 
 from mapa_da_ciencia.documento import Autor, Documento, Texto
-from mapa_da_ciencia.fontes import revistas
-from mapa_da_ciencia.fontes.articlemeta import RevistaRef, normalizar
+from mapa_da_ciencia.fontes.articlemeta import normalizar, revista_do_registro
 from mapa_da_ciencia.fontes.dedup import deduplicar
 
 
 @pytest.fixture(scope="module")
 def docs() -> dict[str, Documento]:
-    return {
-        p: normalizar(r, RevistaRef.de_revista(revistas.por_issn(p[1:10]))) for p, r in registros_articlemeta().items()
-    }
+    return {p: normalizar(r, revista_do_registro(r)) for p, r in registros_articlemeta().items()}
 
 
 def _doc(id_, fonte="articlemeta", **kw) -> Documento:

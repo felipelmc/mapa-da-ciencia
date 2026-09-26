@@ -5,8 +5,7 @@ from conftest import casos_especiais, obras_openalex, registros_articlemeta
 
 from mapa_da_ciencia.coleta import OpcoesColeta, coletar
 from mapa_da_ciencia.documento import Documento, Texto
-from mapa_da_ciencia.fontes import revistas
-from mapa_da_ciencia.fontes.articlemeta import RevistaRef, normalizar
+from mapa_da_ciencia.fontes.articlemeta import normalizar, revista_do_registro
 from mapa_da_ciencia.fontes.openalex import casar_todos, conferir, enriquecer, reconstruir_resumo
 from mapa_da_ciencia.llm.perfis import PERFIS
 from mapa_da_ciencia.projeto import Projeto
@@ -14,9 +13,7 @@ from mapa_da_ciencia.projeto import Projeto
 
 @pytest.fixture(scope="module")
 def casados() -> dict[str, Documento]:
-    docs = [
-        normalizar(r, RevistaRef.de_revista(revistas.por_issn(p[1:10]))) for p, r in registros_articlemeta().items()
-    ]
+    docs = [normalizar(r, revista_do_registro(r)) for p, r in registros_articlemeta().items()]
     return {d.id: d for d in casar_todos(docs, obras_openalex())}
 
 

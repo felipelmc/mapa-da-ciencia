@@ -93,3 +93,18 @@ mapa coletar [OPÇÕES]
 | `--atualizar` | Baixa de novo as listas de artigos (para pegar publicações novas). |  |
 | `--offline` | Não acessa a internet: usa só o que está em brutos/. |  |
 | `--sem-openalex` | Não enriquece com o OpenAlex (citações, licença por artigo). |  |
+
+## `mapa importar`
+
+Acrescenta ao projeto artigos de uma busca exportada do search.scielo.org (ou de uma lista de DOIs).
+
+```
+mapa importar [OPÇÕES] arquivos
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `arquivos` | Arquivos RIS, CSV ou BibTeX do search.scielo.org, ou listas de DOIs (.txt). | **obrigatório** |
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--nao-coletar` | Só copia os arquivos para importados/, sem rodar a coleta. |  |
+| `--sem-openalex` | Não usa o OpenAlex na coleta. |  |

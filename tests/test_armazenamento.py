@@ -2,15 +2,11 @@ from conftest import registros_articlemeta
 
 from mapa_da_ciencia.armazenamento import ESQUEMA, cobertura, conectar, gravar_documentos, ler_documentos
 from mapa_da_ciencia.documento import Documento
-from mapa_da_ciencia.fontes import revistas
-from mapa_da_ciencia.fontes.articlemeta import RevistaRef, normalizar
+from mapa_da_ciencia.fontes.articlemeta import normalizar, revista_do_registro
 
 
 def _documentos() -> list[Documento]:
-    return [
-        normalizar(r, RevistaRef.de_revista(revistas.por_issn(pid[1:10])))
-        for pid, r in sorted(registros_articlemeta().items(), reverse=True)
-    ]
+    return [normalizar(r, revista_do_registro(r)) for pid, r in sorted(registros_articlemeta().items(), reverse=True)]
 
 
 def test_esquema_cobre_todos_os_campos_do_documento():
