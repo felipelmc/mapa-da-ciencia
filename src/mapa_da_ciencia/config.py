@@ -88,6 +88,14 @@ class ModeloEmbeddings(_Base):
 
     provedor: Literal["ollama"] = Field("ollama", description="No MVP, só o Ollama local.")
     modelo: str = Field("qwen3-embedding:0.6b", description="Nome do modelo no Ollama (ver ADR 0004).")
+    num_ctx: int = Field(
+        2048,
+        ge=512,
+        le=32768,
+        description="Contexto em tokens. Título e resumo cabem com folga em 2.048; o que passar é truncado. "
+        "Contextos maiores ocupam mais memória.",
+    )
+    lote: int = Field(32, ge=1, le=256, description="Textos por requisição ao Ollama.")
 
 
 class ModeloLLM(_Base):

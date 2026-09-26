@@ -66,6 +66,7 @@ class ApisFalsas:
         self.total_forcado: int | None = None  # para simular buscas enormes
         # Ollama: modelos "instalados" (tamanhos pequenos, para a checagem de memória passar em qualquer máquina)
         self.modelos_ollama = {"qwen3-embedding:0.6b": 0.6, "qwen3.5:4b": 0.5, "qwen3.5:9b": 0.5}
+        self.digests: dict[str, str] = {}  # para simular um modelo atualizado
         self.carregados: set[str] = set()
         self.textos_embutidos: list[str] = []
         router.get(f"{OLLAMA_FALSO}/api/version").respond(json={"version": "0.34.2"})
@@ -79,7 +80,7 @@ class ApisFalsas:
 
     def _tags(self, _: httpx.Request) -> httpx.Response:
         modelos = [
-            {"name": n, "size": int(t * GB), "digest": f"{zlib.crc32(n.encode()):08x}0000000000000000"}
+            {"name": n, "size": int(t * GB), "digest": self.digests.get(n, f"{zlib.crc32(n.encode()):08x}00000000")}
             for n, t in self.modelos_ollama.items()
         ]
         return httpx.Response(200, json={"models": modelos})

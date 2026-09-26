@@ -76,6 +76,8 @@ Modelo que transforma título e resumo em vetores (base dos tópicos e do mapa).
 |---|---|---|---|
 | `provedor` | `"ollama"` | `"ollama"` | No MVP, só o Ollama local. |
 | `modelo` | texto | `"qwen3-embedding:0.6b"` | Nome do modelo no Ollama (ver ADR 0004). |
+| `num_ctx` | inteiro | `2048` | Contexto em tokens. Título e resumo cabem com folga em 2.048; o que passar é truncado. Contextos maiores ocupam mais memória. |
+| `lote` | inteiro | `32` | Textos por requisição ao Ollama. |
 
 ### ModeloLLM
 

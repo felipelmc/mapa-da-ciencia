@@ -15,7 +15,7 @@ Funciona dentro do Jupyter e do Colab: a coleta roda numa thread quando já há 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import duckdb
 
@@ -34,6 +34,9 @@ from mapa_da_ciencia.manifesto import status_das_etapas
 from mapa_da_ciencia.progresso import ProgressoNulo, ProgressoRich
 from mapa_da_ciencia.projeto import Projeto
 
+if TYPE_CHECKING:
+    from mapa_da_ciencia.embeddings import Embeddings
+
 __all__ = [
     "Projeto",
     "abrir",
@@ -42,6 +45,7 @@ __all__ = [
     "conectar",
     "consultar",
     "documentos",
+    "embeddings",
     "etapas",
     "importar",
     "novo",
@@ -203,3 +207,19 @@ def cobertura(projeto: Projeto | str | Path = ".") -> dict[str, Any]:
 def etapas(projeto: Projeto | str | Path = ".") -> dict[str, dict[str, Any] | None]:
     """Manifesto da última execução de cada etapa (`None` para as pendentes), como na tabela do `mapa status`."""
     return status_das_etapas(_projeto(projeto))
+
+
+def embeddings(projeto: Projeto | str | Path = ".", *, refazer: bool = False, progresso: bool = True) -> Embeddings:
+    """Um vetor por documento (título e resumo no idioma de análise), calculado pelo Ollama e guardado em cache.
+
+    O resultado tem `ids` e `matriz` (numpy, uma linha por documento, normalizada), além da marca de cada texto
+    (`textos[i].fonte`: `resumo`, `reserva` ou `so_titulo`). Na segunda vez, vem inteiro do cache.
+    """
+    from mapa_da_ciencia.embeddings import calcular_embeddings
+
+    p = _projeto(projeto)
+    if not progresso:
+        return calcular_embeddings(p, refazer=refazer, progresso=ProgressoNulo())
+    from rich.console import Console
+
+    return calcular_embeddings(p, refazer=refazer, progresso=ProgressoRich(Console()))

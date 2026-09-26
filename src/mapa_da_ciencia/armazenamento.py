@@ -102,7 +102,9 @@ def _linhas(con: duckdb.DuckDBPyConnection, sql: str, params: list[Any] | None =
 def ler_documentos(caminho: Path) -> list[Documento]:
     con = duckdb.connect()
     try:
-        return [Documento.model_validate(d) for d in _linhas(con, "SELECT * FROM read_parquet(?)", [str(caminho)])]
+        # sempre na ordem dos ids: o UMAP e os caches dependem da ordem das linhas
+        sql = "SELECT * FROM read_parquet(?) ORDER BY id"
+        return [Documento.model_validate(d) for d in _linhas(con, sql, [str(caminho)])]
     finally:
         con.close()
 

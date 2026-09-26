@@ -61,6 +61,8 @@ O Parquet também pode ser lido direto pelo pandas ou pelo polars (`pd.read_parq
 
 ::: mapa_da_ciencia.api.documentos
 
+::: mapa_da_ciencia.api.embeddings
+
 ::: mapa_da_ciencia.api.consultar
 
 ::: mapa_da_ciencia.api.conectar
