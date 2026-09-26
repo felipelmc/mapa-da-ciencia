@@ -89,9 +89,27 @@ class Resposta:
         return not self.problemas
 
 
+def conferir_valor(v: Variavel, valor: Any) -> tuple[Any, str | None]:
+    """O valor normalizado (listas sem repetição, textos sem espaços sobrando) e o problema dele, se houver."""
+    categorias = {c.valor for c in v.categorias}
+    if v.tipo == "categorica" and (not isinstance(valor, str) or valor not in categorias):
+        return valor, f"{valor!r} não é uma das categorias"
+    if v.tipo == "multipla":
+        if not isinstance(valor, list) or not all(isinstance(x, str) and x in categorias for x in valor):
+            return valor, "o valor precisa ser uma lista de categorias"
+        return list(dict.fromkeys(valor)), None
+    if v.tipo == "booleana" and not isinstance(valor, bool):
+        return valor, "o valor precisa ser verdadeiro ou falso"
+    if v.tipo == "texto":
+        if not isinstance(valor, str):
+            return valor, "o valor precisa ser um texto"
+        return " ".join(valor.split()), None
+    return valor, None
+
+
 def validar(resposta: Any, codebook: Codebook) -> Resposta:
-    """Confere a resposta do modelo contra o codebook e a normaliza (listas sem repetição, textos sem espaços
-    sobrando). Os problemas vão em `problemas`, uma frase por variável, para a mensagem de nova tentativa."""
+    """Confere a resposta do modelo contra o codebook e a normaliza (ver `conferir_valor`). Os problemas vão em
+    `problemas`, uma frase por variável, para a mensagem de nova tentativa."""
     saida = Resposta()
     if not isinstance(resposta, dict):
         saida.problemas.append("a resposta não é um objeto JSON")
@@ -101,27 +119,14 @@ def validar(resposta: Any, codebook: Codebook) -> Resposta:
         if not isinstance(item, dict) or "valor" not in item:
             saida.problemas.append(f"`{v.id}`: faltou a variável")
             continue
-        valor, evidencia = item["valor"], item.get("evidencia")
+        evidencia = item.get("evidencia")
         if not isinstance(evidencia, str):
             saida.problemas.append(f"`{v.id}`: a evidência precisa ser um texto")
             continue
-        categorias = {c.valor for c in v.categorias}
-        if v.tipo == "categorica" and valor not in categorias:
-            saida.problemas.append(f"`{v.id}`: {valor!r} não é uma das categorias")
+        valor, problema = conferir_valor(v, item["valor"])
+        if problema:
+            saida.problemas.append(f"`{v.id}`: {problema}")
             continue
-        if v.tipo == "multipla":
-            if not isinstance(valor, list) or not set(valor) <= categorias:
-                saida.problemas.append(f"`{v.id}`: o valor precisa ser uma lista de categorias")
-                continue
-            valor = list(dict.fromkeys(valor))
-        if v.tipo == "booleana" and not isinstance(valor, bool):
-            saida.problemas.append(f"`{v.id}`: o valor precisa ser verdadeiro ou falso")
-            continue
-        if v.tipo == "texto":
-            if not isinstance(valor, str):
-                saida.problemas.append(f"`{v.id}`: o valor precisa ser um texto")
-                continue
-            valor = " ".join(valor.split())
         saida.valores[v.id] = valor
         saida.evidencias[v.id] = " ".join(evidencia.split())
     extras = set(resposta) - {v.id for v in codebook.variaveis}
