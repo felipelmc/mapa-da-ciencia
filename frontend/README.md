@@ -115,6 +115,12 @@ const detalhe = await fonte.detalhe(id); // Detalhe | null (resumo, autores, evi
 
 A interface esconde o que a fonte não pode fazer. Por exemplo, a seção **Projeto** só aparece no trilho quando `manifesto.api` é verdadeiro.
 
+## O cubo do filtro cruzado
+
+`src/lib/dados/cubo.ts` responde, para o recorte da URL, quais documentos passam e quantos há por ano, tópico, revista e lugar. Cada dimensão (ano, revista, tópico, busca, laço, UF, país, instituição) tem um bit, e `falhas[i]` guarda as dimensões que o documento *não* atende. Cada vista agrega **excluindo a própria dimensão** (`exceto`): o fluxo por ano mostra o período inteiro com o intervalo destacado, e o mapa das UFs mantém as outras UFs clicáveis. Os filtros de lugar valem por documento (basta uma afiliação); o peso fracionário só entra nas somas geográficas.
+
+`src/lib/dados/corpus.ts` abre o corpus uma vez por fonte (`abrirCubo`): tabela de documentos, tópicos, afiliações (se houver) e o cubo, compartilhado pelas vistas e pela barra de recorte. A busca (`dados/busca.ts`) monta o índice uma vez (`indiceDe`).
+
 ## Estado na URL
 
 `src/lib/estado/url.ts` define o formato do endereço:
@@ -184,6 +190,7 @@ Um só sistema de tokens (`src/lib/estilos/tokens.css`) com dois temas, escolhid
 |---|---|
 | `dados/fragmentos.test.ts` | `fragmentoDe` igual ao Python; os 64 fragmentos cobertos; cada documento do exemplo no fragmento certo |
 | `dados/estatica.test.ts` | cache; detalhe no fragmento certo; escolha da fonte por `api`; projeto vazio sem nenhuma requisição além do manifesto (`fetch` falso); erro e nova tentativa; versão do contrato |
+| `dados/cubo.test.ts` | o filtro cruzado contra o gabarito do Python (`agregados.json`): tópico × ano × revista com e sem filtros, UFs, países e instituições fracionários, séries; 300 recortes aleatórios contra uma filtragem ingênua; exclusão de dimensões; lugares por documento; busca e laço |
 | `dados/documentos.test.ts` | decodificação do `documentos.json`: NDC com a mesma escala nos dois eixos, enquadramento que resiste a ilhas, vizinhos, índice |
 | `estado/url.test.ts` | `rota()`, `lerHash()` e a ida e volta dos filtros, inclusive `laco` e `vista` |
 | `estado/sem-resolve.test.ts` | nenhum `resolve()` nem link absoluto em `src/` |

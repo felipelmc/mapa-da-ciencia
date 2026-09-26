@@ -15,6 +15,7 @@
  */
 import type {
 	Afiliacoes,
+	Agregados,
 	Classificacoes,
 	CodebookContrato,
 	Detalhe,
@@ -58,6 +59,8 @@ export interface FonteDeDados {
 	codebook(): Promise<CodebookContrato | null>;
 	classificacoes(): Promise<Classificacoes | null>;
 	validacao(): Promise<Validacao | null>;
+	/** O gabarito dos agregados, calculado no Python (os testes conferem o cubo contra ele). */
+	agregados(): Promise<Agregados | null>;
 	/** Resumo, autores, licença e evidências de um documento, ou `null` se não houver. */
 	detalhe(id: string): Promise<Detalhe | null>;
 }

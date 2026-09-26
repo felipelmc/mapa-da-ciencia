@@ -9,6 +9,8 @@
 	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import type { Topicos } from '$lib/contrato/tipos';
+	import { buscar, indiceDe } from '$lib/dados/busca';
+	import type { Cubo } from '$lib/dados/cubo';
 	import { deNdc, paraNdc, type TabelaDocumentos } from '$lib/dados/documentos';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { tema } from '$lib/estado/tema.svelte';
@@ -17,14 +19,17 @@
 	import { simplificar, type Ponto } from '$lib/graficos/geometria';
 	import Nuvem, { type Anotacao, type Camera } from '$lib/graficos/Nuvem.svelte';
 	import Rotulos, { type Caixa, type ItemRotulo } from '$lib/graficos/Rotulos.svelte';
-	import { buscar, indexar, type IndiceBusca } from './busca';
 	import Cartao from './Cartao.svelte';
 	import { calcularContornos, centroDePeso } from './contornos';
 	import { colorir, type ItemLegenda } from './cores';
-	import { visiveis } from './filtro';
 	import LinhaDoTempo from './LinhaDoTempo.svelte';
 
-	let { tabela, topicos, versaoMapa }: { tabela: TabelaDocumentos; topicos: Topicos; versaoMapa: string } = $props();
+	let {
+		tabela,
+		topicos,
+		cubo,
+		versaoMapa
+	}: { tabela: TabelaDocumentos; topicos: Topicos; cubo: Cubo; versaoMapa: string } = $props();
 
 	const filtros = $derived(filtrosDaPagina());
 
@@ -42,8 +47,7 @@
 
 	const coloracao = $derived(colorir(tabela, topicos, filtros.cor, cinza));
 
-	// ---- busca (índice montado na primeira vez)
-	let indiceBusca: IndiceBusca | null = null;
+	// ---- busca (o índice é montado na primeira vez e compartilhado com o cubo)
 	let campoBusca = $state<HTMLInputElement>();
 	// svelte-ignore state_referenced_locally
 	let textoBusca = $state(filtros.busca);
@@ -53,17 +57,10 @@
 		clearTimeout(temporizadorBusca);
 		temporizadorBusca = setTimeout(() => mudarFiltros({ busca: texto }, { substituir: true, em: '/mapa' }), 250);
 	}
-	const buscados = $derived.by(() => {
-		if (!filtros.busca) return null;
-		indiceBusca ??= indexar(tabela);
-		return buscar(indiceBusca, filtros.busca);
-	});
+	const buscados = $derived(filtros.busca ? buscar(indiceDe(tabela), filtros.busca) : null);
 
-	// ---- laço: polígono na URL em coordenadas dos dados; aqui, em NDC
+	// ---- laço: polígono na URL em coordenadas dos dados (o cubo o converte para NDC)
 	let modoLaco = $state(false);
-	const lacoNdc = $derived(
-		filtros.laco ? filtros.laco.pontos.map(([x, y]) => paraNdc(tabela.escala, x, y) as Ponto) : null
-	);
 	const lacoAntigo = $derived(!!filtros.laco && filtros.laco.versao !== versaoMapa);
 	function aoLaco(vertices: Ponto[]) {
 		modoLaco = false;
@@ -71,9 +68,8 @@
 		mudarFiltros({ laco: { versao: versaoMapa, pontos } });
 	}
 
-	const indicesVisiveis = $derived(
-		visiveis(tabela, filtros, { buscados: buscados ? new Set(buscados) : null, laco: lacoNdc })
-	);
+	// o recorte inteiro (anos, revistas, tópicos, busca, laço e lugares) sai do cubo compartilhado
+	const indicesVisiveis = $derived(cubo.indices(cubo.falhas(filtros), 0));
 	const nVisiveis = $derived(indicesVisiveis?.length ?? tabela.n);
 	// A câmera do link vale só na montagem; depois, quem manda na câmera é quem usa o mapa.
 	// svelte-ignore state_referenced_locally

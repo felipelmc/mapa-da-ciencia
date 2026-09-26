@@ -1,24 +1,14 @@
 <script lang="ts">
 	import EstadoVazio from '$lib/componentes/EstadoVazio.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
-	import { decodificar } from '$lib/dados/documentos';
+	import { abrirCubo, versaoDoMapa } from '$lib/dados/corpus';
 	import VistaMapa from '$lib/mapa/VistaMapa.svelte';
 
 	const { fonte, manifesto } = usarProjeto();
-
-	// Versão do mapa: muda quando os tópicos são regenerados. Um laço de um link antigo abre com aviso.
-	function versaoDoMapa(texto: string): string {
-		let h = 0x811c9dc5;
-		for (let i = 0; i < texto.length; i += 1) h = Math.imul(h ^ texto.charCodeAt(i), 0x01000193) >>> 0;
-		return h.toString(36).slice(0, 6);
-	}
-	const versaoMapa = versaoDoMapa(`${manifesto.gerado_em}|${manifesto.contagens.topicos}`);
+	const versaoMapa = versaoDoMapa(manifesto);
 
 	// documentos.json e topicos.json só existem depois de `mapa topicos`; sem eles, nenhum pedido é feito
-	const dados = (async () => {
-		const [documentos, topicos] = await Promise.all([fonte.documentos(), fonte.topicos()]);
-		return documentos && topicos ? { tabela: decodificar(documentos), topicos } : null;
-	})();
+	const dados = abrirCubo(fonte);
 </script>
 
 <svelte:head>
@@ -29,7 +19,7 @@
 	<p class="aviso" role="status">Carregando o mapa…</p>
 {:then d}
 	{#if d}
-		<VistaMapa tabela={d.tabela} topicos={d.topicos} {versaoMapa} />
+		<VistaMapa tabela={d.tabela} topicos={d.topicos} cubo={d.cubo} {versaoMapa} />
 	{:else}
 		<div class="vazio">
 			<h1>Mapa</h1>
