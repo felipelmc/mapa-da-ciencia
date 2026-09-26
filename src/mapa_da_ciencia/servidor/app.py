@@ -3,8 +3,8 @@
 Rotas:
 - `/`             interface compilada (`web/estatico/`); sem build, uma página explica como gerá-lo
 - `/dados/…`      arquivos do contrato (de `saida/dados/` do projeto, ou do exemplo sintético)
-- `/api/…`        API do painel (cresce a cada marco: etapas, codificação, modelos); a codificação da amostra
-                  de validação está em `servidor/validacao.py`
+- `/api/…`        API do painel: as etapas como jobs com progresso ao vivo (`rotas_jobs.py`, `jobs.py`) e a
+                  codificação da amostra de validação (`validacao.py`); só com projeto aberto
 
 O `manifesto.json` é servido dinamicamente para marcar `api: true` no painel. No site
 publicado (`mapa publicar`) ele vai com `api: false` e a interface fica só de leitura.
@@ -13,6 +13,7 @@ publicado (`mapa publicar`) ele vai com `api: false` e a interface fica só de l
 from __future__ import annotations
 
 import json
+from contextlib import asynccontextmanager
 from importlib import resources
 from pathlib import Path
 
@@ -51,8 +52,25 @@ def criar_app(
     projeto: Projeto | None = None,
     api: bool = True,
     estatico: Path | None = None,
+    etapas: dict | None = None,
 ) -> FastAPI:
-    app = FastAPI(title="mapa-da-ciencia", version=__version__, docs_url="/api/docs", redoc_url=None)
+    """A aplicação do painel. `etapas` troca o registro das etapas que rodam como jobs (os testes usam etapas
+    falsas)."""
+    jobs = None
+    if projeto is not None and api:
+        from mapa_da_ciencia.servidor.etapas import ETAPAS_DO_PAINEL
+        from mapa_da_ciencia.servidor.jobs import Jobs
+
+        jobs = Jobs(projeto, etapas if etapas is not None else ETAPAS_DO_PAINEL)
+
+    @asynccontextmanager
+    async def ciclo(_: FastAPI):
+        yield
+        if jobs is not None:
+            jobs.fechar()
+
+    app = FastAPI(title="mapa-da-ciencia", version=__version__, docs_url="/api/docs", redoc_url=None, lifespan=ciclo)
+    app.state.jobs = jobs
     estatico = estatico if estatico is not None else pasta_estatico()
 
     @app.get("/api/saude")
@@ -74,10 +92,13 @@ def criar_app(
             "etapas": etapas,
         }
 
-    if projeto is not None and api:
+    if projeto is not None and jobs is not None:
+        from mapa_da_ciencia.servidor.etapas import OPCOES
+        from mapa_da_ciencia.servidor.rotas_jobs import rotas_jobs
         from mapa_da_ciencia.servidor.validacao import rotas_validacao
 
         app.include_router(rotas_validacao(projeto))
+        app.include_router(rotas_jobs(jobs, OPCOES if etapas is None else {}))
 
     @app.get("/dados/manifesto.json")
     def manifesto() -> JSONResponse:

@@ -23,6 +23,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
   - a vista **Validação › Concordância**: os participantes com o tipo (aviso quando há codificador de referência), o par escolhido com concordância, kappa (barra com hachura abaixo de 0,6) e IC 95%, PABAK e alfa por variável; a variável escolhida com a matriz de confusão, P/R/F1 por categoria e as divergências com a evidência do modelo; McNemar entre modelos e evidência literal. No painel local, as métricas vêm da API, calculadas na hora;
   - API local da codificação no painel: `GET /api/validacao/fila` (a amostra embaralhada por codificador, cega, com o codebook e as respostas já dadas), `PUT /api/validacao/codificacoes/{doc}` (gravação parcial ou completa, só a partir desta máquina: `Host` e `Origin` locais) e `GET /api/validacao/metricas` (concordância na hora, com as divergências de todos os codificadores);
 
+### Adicionado no M6 (painel completo)
+
+- jobs do painel (`servidor/jobs.py`): as etapas rodam em segundo plano, uma por vez, guardadas no `estado.sqlite` com o progresso como eventos numerados; `POST /api/etapas/{etapa}` (coleta, tópicos, geografia, classificação, com as opções validadas), `GET /api/jobs`, `GET /api/jobs/{id}`, `DELETE /api/jobs/{id}` (cancela na próxima atualização de progresso) e `GET /api/jobs/{id}/eventos`, em Server-Sent Events com retomada pelo `Last-Event-ID`; um job que ficou rodando numa sessão anterior aparece como interrompido; as rotas de escrita conferem `Host` e `Origin` (`servidor/origem.py`);
+
 ## [0.4.0] - 2026-09-26
 
 Os tópicos no tempo e a geografia: o painel mostra como os assuntos do corpus mudam ano a ano, quais estão em alta e em queda, e de onde vêm os autores, por UF, país e instituição, com contagem fracionária. No piloto (4.275 artigos), 13 dos 57 tópicos têm tendência distinguível do acaso, 93,9% dos vínculos de autoria são ligados a uma de 639 instituições com precisão de 99,8% numa amostra lida à mão, e a geografia leva 2 segundos.

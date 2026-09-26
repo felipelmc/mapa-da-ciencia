@@ -8,8 +8,7 @@
 - `GET /api/validacao/metricas`: a concordância calculada agora, no formato de `validacao.json`, com as
   divergências de todos os codificadores (no contrato publicado, só as de codificadores de referência).
 
-As rotas de escrita só aceitam pedidos feitos desta máquina: o `Host` precisa ser local e o `Origin`, quando
-existe, também. Assim uma página aberta em outro site não consegue gravar no projeto pelo navegador.
+As rotas de escrita só aceitam pedidos feitos desta máquina (ver `origem.py`).
 """
 
 from __future__ import annotations
@@ -17,22 +16,13 @@ from __future__ import annotations
 import hashlib
 import random
 from typing import Any
-from urllib.parse import urlsplit
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.projeto import Projeto
-
-HOSTS_LOCAIS = {"127.0.0.1", "localhost", "::1", "[::1]"}
-
-
-def conferir_origem(request: Request) -> None:
-    host = request.url.hostname
-    origem = request.headers.get("origin")
-    if host not in HOSTS_LOCAIS or (origem is not None and urlsplit(origem).hostname not in HOSTS_LOCAIS):
-        raise HTTPException(403, "Gravação recusada: o painel só aceita escrita a partir desta máquina.")
+from mapa_da_ciencia.servidor.origem import conferir_origem
 
 
 class RespostaVariavel(BaseModel):
