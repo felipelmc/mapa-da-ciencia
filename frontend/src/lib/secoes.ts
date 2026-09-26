@@ -81,7 +81,8 @@ export const SECOES: readonly Secao[] = [
 		resumo:
 			'Como os resumos foram codificados segundo o codebook: a distribuição de cada variável, os cruzamentos e o trecho literal que sustenta cada código.',
 		chegada: 'no marco M5',
-		arquivos: ['codebook', 'classificacoes', 'documentos']
+		arquivos: ['codebook', 'classificacoes', 'documentos'],
+		recorte: true
 	},
 	{
 		id: 'geografia',

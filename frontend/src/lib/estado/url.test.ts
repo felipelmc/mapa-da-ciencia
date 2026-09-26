@@ -186,6 +186,15 @@ describe('recorte e parâmetros das vistas do M4', () => {
 		expect([f.uf, f.pais, f.inst, f.modo, f.macro, f.topico]).toEqual([['MG'], [], [], 'fluxo', null, null]);
 	});
 
+	it('a variável e o cruzamento da Classificação vão antes do documento, sem mexer nas outras chaves', () => {
+		const f = lerFiltros(new URLSearchParams('doc=S1&cruzar=revista&variavel=abordagem&topico=2'));
+		expect([f.variavel, f.cruzar]).toEqual(['abordagem', 'revista']);
+		expect(escreverFiltros(f).toString()).toBe('topico=2&variavel=abordagem&cruzar=revista&doc=S1');
+		const invalido = lerFiltros(new URLSearchParams('variavel=Abordagem!&cruzar=pizza'));
+		expect([invalido.variavel, invalido.cruzar]).toEqual([null, 'macrotema']);
+		expect(escreverFiltros(lerFiltros(new URLSearchParams('cruzar=macrotema'))).toString()).toBe('');
+	});
+
 	it('o recorte leva só as chaves compartilhadas', () => {
 		const f = lerFiltros(new URLSearchParams('anos=2015-2020&uf=SP&cor=ano&vista=0.1,0.2,2&doc=S1&modo=absoluto&topico=4'));
 		expect(escreverFiltros(recorteDe(f)).toString()).toBe('anos=2015-2020&uf=SP');

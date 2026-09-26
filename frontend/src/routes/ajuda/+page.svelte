@@ -96,6 +96,21 @@
 			</p>
 		</section>
 
+		<section aria-labelledby="ajuda-classificacao">
+			<h2 id="ajuda-classificacao">Como ler a classificação</h2>
+			<p>
+				O modelo leu o título e o resumo de cada documento e respondeu às perguntas do codebook, copiando do resumo um
+				trecho que justifica cada resposta. As proporções contam só os documentos classificados; os sem resumo ficam
+				de fora.
+			</p>
+			<p>
+				O <strong>selo κ</strong> ao lado de cada variável é a concordância do modelo com a codificação da amostra
+				de validação. Com hachura, ela está abaixo de 0,6: leia aquela variável com cuidado. Com borda tracejada, a
+				comparação é com um codificador de referência, que não é uma pessoa. Escolha uma célula para ler os
+				documentos e o trecho marcado no resumo.
+			</p>
+		</section>
+
 		<section aria-labelledby="ajuda-links">
 			<h2 id="ajuda-links">Links que guardam a vista</h2>
 			<p>
