@@ -35,6 +35,7 @@ from mapa_da_ciencia.progresso import ProgressoNulo, ProgressoRich
 from mapa_da_ciencia.projeto import Projeto
 
 if TYPE_CHECKING:
+    from mapa_da_ciencia.classificacao.pipeline import ResumoClassificacao
     from mapa_da_ciencia.embeddings import Embeddings
     from mapa_da_ciencia.geografia.pipeline import ResumoGeografia
     from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
@@ -166,7 +167,8 @@ def documentos(projeto: Projeto | str | Path = ".") -> list[Documento]:
 
 def conectar(projeto: Projeto | str | Path = ".") -> duckdb.DuckDBPyConnection:
     """Conexão DuckDB com as views `documentos`, `textos`, `autores`, `afiliacoes`; depois de `topicos()`,
-    `atribuicoes`; depois de `geografia()`, `vinculos`, `pesos` e `instituicoes`.
+    `atribuicoes`; depois de `geografia()`, `vinculos`, `pesos` e `instituicoes`; depois de `classificar()`,
+    `classificacoes`.
 
     Use com `with` para fechar ao fim:
 
@@ -276,3 +278,30 @@ def geografia(projeto: Projeto | str | Path = ".", *, progresso: bool = True) ->
     from rich.console import Console
 
     return gerar_geografia(p, ProgressoRich(Console()))
+
+
+def classificar(
+    projeto: Projeto | str | Path = ".",
+    *,
+    estimar: bool = False,
+    limite: int | None = None,
+    modelo: str | None = None,
+    progresso: bool = True,
+) -> ResumoClassificacao:
+    """Classifica os resumos pelo codebook, como `mapa classificar`, e devolve o resumo.
+
+    O resultado fica em `dados/classificacao/` e pode ser consultado pela view `classificacoes` (uma linha por
+    documento × variável, com o valor, a evidência e o status da conferência; a coluna `execucao` diz o modelo e o
+    codebook), por exemplo: `consultar(p, "SELECT valor, count(*) FROM classificacoes WHERE variavel = 'abordagem'
+    GROUP BY valor")`.
+    """
+    from mapa_da_ciencia.classificacao.pipeline import OpcoesClassificacao
+    from mapa_da_ciencia.classificacao.pipeline import classificar as rodar
+
+    p = _projeto(projeto)
+    opcoes = OpcoesClassificacao(estimar=estimar, limite=limite, modelo=modelo)
+    if not progresso:
+        return rodar(p, opcoes, ProgressoNulo())
+    from rich.console import Console
+
+    return rodar(p, opcoes, ProgressoRich(Console()))

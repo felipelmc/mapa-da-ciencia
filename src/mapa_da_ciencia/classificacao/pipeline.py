@@ -1,0 +1,226 @@
+"""A etapa de classificação de ponta a ponta (`mapa classificar`).
+
+corpus → textos (resumo no idioma de exibição) → executor (cache, nova tentativa, memória) → conferência das
+evidências → `dados/classificacao/` → manifesto da etapa → exportação para o painel.
+
+É a etapa mais longa do pipeline: no piloto, horas. Por isso `--estimar` mede o tempo com 5 documentos antes,
+`--limite` classifica só os primeiros, e uma execução interrompida retoma de onde parou.
+"""
+
+from __future__ import annotations
+
+import statistics
+import time
+from collections import Counter
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+
+from ..armazenamento import ARQUIVO, ler_documentos
+from ..config import ErroConfig
+from ..contrato.exportar import exportar
+from ..formatar import num
+from ..llm.ollama import Ollama
+from ..manifesto import registrar_execucao
+from ..progresso import Progresso, ProgressoNulo
+from ..projeto import Projeto
+from ..topicos.resultado import assinatura_corpus
+from .executor import Classificacao, Classificador, textos_para_classificar
+from .prompt import VERSAO_PROMPT
+from .resultado import PASTA, Resultado, resultados, valor_como_texto
+
+AMOSTRA_ESTIMATIVA = 5
+
+
+@dataclass
+class OpcoesClassificacao:
+    estimar: bool = False
+    limite: int | None = None
+    modelo: str | None = None  # outro modelo, para comparar (padrão: modelos.classificacao.modelo)
+
+
+@dataclass
+class ResumoClassificacao:
+    """O que a etapa fez. `print(resumo)` mostra os números principais numa frase."""
+
+    modelo: str
+    documentos: int
+    classificados: int
+    do_cache: int
+    novos: int
+    falhas: list[str]
+    sem_resumo: int
+    json_valido_na_primeira: float | None
+    evidencia: dict[str, float]
+    segundos_por_documento: float | None
+    pendentes: int  # ainda não classificados depois desta execução
+    estimativa_restante_s: float | None
+    duracao_s: float
+    parcial: bool
+    avisos: list[str] = field(default_factory=list)
+
+    def __str__(self) -> str:
+        literal = self.evidencia.get("literal")
+        partes = [
+            f"{num(self.classificados, 0)} de {num(self.documentos, 0)} documentos com resumo classificados por "
+            f"{self.modelo.split('@', 1)[0]}"
+        ]
+        if literal is not None:
+            partes.append(f"evidência literal em {num(100 * literal, 0)}%")
+        partes.append(f"{num(self.novos, 0)} novos e {num(self.do_cache, 0)} do cache, em {num(self.duracao_s, 0)} s")
+        return "; ".join(partes) + "."
+
+
+def _linhas(c: Classificacao, variaveis: list[str]) -> list[dict]:
+    return [
+        {
+            "doc": c.doc,
+            "variavel": v,
+            "valor": valor_como_texto(c.valores[v]),
+            "evidencia": c.evidencias[v],
+            "status": c.conferencias[v].status,
+            "campo": c.conferencias[v].campo,
+            "inicio": c.conferencias[v].inicio,
+            "fim": c.conferencias[v].fim,
+            "tentativas": c.tentativas,
+            "valida_na_primeira": c.valida_na_primeira,
+            "segundos": c.segundos,
+        }
+        for v in variaveis
+        if v in c.valores
+    ]
+
+
+def classificar(
+    projeto: Projeto, opcoes: OpcoesClassificacao | None = None, progresso: Progresso | None = None
+) -> ResumoClassificacao:
+    opcoes = opcoes or OpcoesClassificacao()
+    progresso = progresso or ProgressoNulo()
+    inicio, t0 = datetime.now(UTC), time.perf_counter()
+    caminho = projeto.dados / ARQUIVO
+    if not caminho.exists():
+        raise ErroConfig("O projeto ainda não tem corpus. Rode `mapa coletar` antes de `mapa classificar`.")
+    cfg = projeto.config
+    modelo_cfg = cfg.modelos.classificacao
+    if opcoes.modelo:
+        modelo_cfg = modelo_cfg.model_copy(update={"modelo": opcoes.modelo})
+    codebook = projeto.codebook
+    docs = ler_documentos(caminho)
+    idiomas = [cfg.recorte.idioma_exibicao, cfg.recorte.idioma_analise]
+    textos, sem_resumo = textos_para_classificar(docs, idiomas)
+
+    classificador = Classificador(modelo_cfg, codebook, projeto.estado, ollama=Ollama(), progresso=progresso)
+    alvo, parcial = textos, False
+    if opcoes.estimar or opcoes.limite is not None:
+        pendentes = classificador.pendentes(textos)
+        ja = [t for t in textos if t not in set(pendentes)]
+        extra = AMOSTRA_ESTIMATIVA if opcoes.estimar else max(0, (opcoes.limite or 0) - len(ja))
+        alvo = ja + pendentes[:extra]
+        parcial = len(alvo) < len(textos)
+
+    resultados: list[Classificacao] = []
+    try:
+        for c in classificador.classificar(alvo):
+            resultados.append(c)
+    finally:
+        classificador.fim()
+        progresso.fim()
+    k = classificador.contadores
+
+    variaveis = [v.id for v in codebook.variaveis]
+    linhas = [linha for c in sorted(resultados, key=lambda c: c.doc) for linha in _linhas(c, variaveis)]
+    status = Counter(linha["status"] for linha in linhas if linha["status"] != "dispensada")
+    total_status = sum(status.values()) or 1
+    evidencia = {s: round(status[s] / total_status, 4) for s in ("literal", "aproximada", "ausente")}
+    por_variavel = {}
+    for v in variaveis:
+        dessa = [linha["status"] for linha in linhas if linha["variavel"] == v and linha["status"] != "dispensada"]
+        if dessa:
+            por_variavel[v] = round(dessa.count("literal") / len(dessa), 4)
+    segundos = [c.segundos for c in resultados]
+    mediana = round(statistics.median(segundos), 2) if segundos else None
+    json_ok = round(sum(c.valida_na_primeira for c in resultados) / len(resultados), 4) if resultados else None
+    faltam = len(textos) - len(resultados)
+    estimativa = None
+    if opcoes.estimar and k.segundos:
+        estimativa = round(statistics.median(k.segundos) * faltam / max(1, modelo_cfg.concorrencia), 0)
+
+    resultado = Resultado(
+        modelo=classificador.modelo,
+        codebook=f"{codebook.nome} {codebook.versao}",
+        hash_codebook=codebook.hash(),
+        assinatura=assinatura_corpus([d.id for d in docs]),
+        gerado_em=datetime.now(UTC).isoformat(timespec="seconds"),
+        documentos=len(textos),
+        classificados=len(resultados),
+        sem_resumo=len(sem_resumo),
+        falhas=k.falhas,
+        json_valido_na_primeira=json_ok,
+        evidencia=evidencia,
+        evidencia_por_variavel=por_variavel,
+        segundos_por_documento=mediana,
+        parcial=parcial or bool(k.falhas),
+    )
+    resultado.gravar(projeto.dados / PASTA, linhas)
+    resumo = ResumoClassificacao(
+        modelo=classificador.modelo,
+        documentos=len(textos),
+        classificados=len(resultados),
+        do_cache=k.do_cache,
+        novos=k.novos,
+        falhas=k.falhas,
+        sem_resumo=len(sem_resumo),
+        json_valido_na_primeira=json_ok,
+        evidencia=evidencia,
+        segundos_por_documento=mediana,
+        pendentes=faltam,
+        estimativa_restante_s=estimativa,
+        duracao_s=round(time.perf_counter() - t0, 2),
+        parcial=resultado.parcial,
+    )
+    if k.falhas:
+        resumo.avisos.append(
+            f"{num(len(k.falhas), 0)} documento(s) sem resposta válida depois de duas tentativas (por exemplo "
+            f"{', '.join(k.falhas[:3])}); rode a etapa de novo para tentar outra vez."
+        )
+    registrar_execucao(
+        projeto,
+        "classificacao",
+        inicio=inicio,
+        fim=datetime.now(UTC),
+        contagens={
+            "classificados": len(resultados),
+            "documentos": len(textos),
+            "novos": k.novos,
+            "chamadas": k.chamadas,
+            "falhas": len(k.falhas),
+            "sem_resumo": len(sem_resumo),
+        },
+        modelos={"classificacao": classificador.modelo},
+        parametros={
+            "num_ctx": modelo_cfg.num_ctx,
+            "temperatura": modelo_cfg.temperatura,
+            "semente": modelo_cfg.semente,
+            "pensar": modelo_cfg.pensar,
+            "concorrencia": modelo_cfg.concorrencia,
+            "versao_prompt": VERSAO_PROMPT,
+            "parcial": resultado.parcial,
+        },
+    )
+    if not opcoes.modelo or opcoes.modelo == cfg.modelos.classificacao.modelo:
+        resumo.avisos += exportar(projeto)
+    return resumo
+
+
+def classificacao_em_dia(projeto: Projeto) -> bool | None:
+    """True se a classificação do modelo principal cobre o corpus e o codebook atuais; False se está desatualizada
+    ou incompleta; None se nunca rodou."""
+    cfg = projeto.config.modelos.classificacao
+    resultado = Resultado.ler(projeto.dados / PASTA, cfg.modelo, projeto.codebook.hash())
+    if resultado is None:  # nunca rodou com este modelo, ou rodou com outro codebook
+        principal = cfg.modelo.removesuffix(":latest")
+        anteriores = [r for r in resultados(projeto.dados / PASTA) if r.modelo.split("@")[0] == principal]
+        return False if anteriores else None
+    if resultado.parcial:
+        return False
+    ids = [d.id for d in ler_documentos(projeto.dados / ARQUIVO)]
+    return resultado.assinatura == assinatura_corpus(ids)

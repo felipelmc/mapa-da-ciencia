@@ -136,5 +136,6 @@ nav:
       - "0008 · Geografia das afiliações": decisoes/0008-geografia-casamento-das-afiliacoes.md
       - "0009 · Tendência dos tópicos": decisoes/0009-tendencia-dos-topicos.md
       - "0010 · Gráficos em SVG próprio": decisoes/0010-graficos-em-svg-proprio.md
+      - "0011 · Classificação ancorada em evidência": decisoes/0011-classificacao-ancorada-em-evidencia.md
   - Desenvolvimento:
       - desenvolvimento/index.md

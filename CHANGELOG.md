@@ -10,6 +10,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
   - o codebook vira o JSON Schema da resposta do modelo, com a evidência (até 200 caracteres) antes do valor em cada variável, e as respostas são validadas contra ele; a mensagem de sistema é fixa (o Ollama reaproveita o prefixo) e traz as regras da evidência curta;
   - conferência da evidência: `literal` (a menos de maiúsculas, espaços, aspas e travessões), `aproximada` (90% dos caracteres casando em blocos), `ausente` ou `dispensada` (vazia numa resposta "sem informação"), com os *offsets* do trecho no resumo exibido;
   - executor da classificação retomável: cada resposta válida vai para o cache do `estado.sqlite` (chave com o texto, o codebook, o modelo com o digest, a versão do prompt e os parâmetros), uma nova tentativa quando a resposta foge do codebook ou a evidência não está no texto, guarda de memória entre documentos, concorrência configurável e o modelo descarregado no fim;
+  - `mapa classificar [--estimar] [--limite N] [--modelo X]` e `api.classificar()`: a etapa grava `dados/classificacao/` (um resultado por modelo e codebook, para comparar modelos), registra o manifesto com o hash do codebook e aparece no `mapa status`, com aviso quando está incompleta ou é de outro codebook; a view `classificacoes` em `conectar()`; ADR 0011 (proposta);
 
 ## [0.4.0] - 2026-09-26
 
