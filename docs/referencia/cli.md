@@ -92,3 +92,4 @@ mapa coletar [OPÇÕES]
 | `--limite` | Coleta só os N primeiros artigos (para testar). |  |
 | `--atualizar` | Baixa de novo as listas de artigos (para pegar publicações novas). |  |
 | `--offline` | Não acessa a internet: usa só o que está em brutos/. |  |
+| `--sem-openalex` | Não enriquece com o OpenAlex (citações, licença por artigo). |  |

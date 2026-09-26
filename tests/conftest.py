@@ -13,6 +13,12 @@ import respx
 
 FIXTURES = Path(__file__).parent / "fixtures"
 AM = "https://articlemeta.scielo.org/api/v1"
+OA = "https://api.openalex.org"
+
+
+def obras_openalex() -> list[dict]:
+    with gzip.open(FIXTURES / "openalex" / "obras.jsonl.gz", "rt", encoding="utf-8") as f:
+        return [json.loads(linha) for linha in f]
 
 
 def registros_articlemeta() -> dict[str, dict]:
@@ -38,6 +44,28 @@ class ApisFalsas:
         self.identificadores = {"0104-6276": identificadores_op()}
         router.get(f"{AM}/article/identifiers/").mock(side_effect=self._identificadores)
         router.get(f"{AM}/article/").mock(side_effect=self._artigo)
+        self.obras = obras_openalex()
+        router.get(f"{OA}/works").mock(side_effect=self._obras)
+
+    def _obras(self, request: httpx.Request) -> httpx.Response:
+        """Entende os filtros usados pelo mapa: ISSN (com |), intervalo de anos e lista de DOIs."""
+        self.chamadas["openalex"] += 1
+        filtros = dict(f.split(":", 1) for f in request.url.params.get("filter", "").split(",") if ":" in f)
+        obras = self.obras
+        if "primary_location.source.issn" in filtros:
+            issns = set(filtros["primary_location.source.issn"].split("|"))
+            obras = [o for o in obras if issns & set(_issns_da_fonte(o))]
+        if "publication_year" in filtros:
+            a, _, b = filtros["publication_year"].partition("-")
+            obras = [o for o in obras if int(a) <= (o.get("publication_year") or 0) <= int(b or a)]
+        if "doi" in filtros:
+            dois = {d.lower().removeprefix("https://doi.org/") for d in filtros["doi"].split("|")}
+            obras = [o for o in obras if (o.get("doi") or "").lower().removeprefix("https://doi.org/") in dois]
+        return httpx.Response(
+            200,
+            json={"meta": {"count": len(obras), "next_cursor": None}, "results": obras},
+            headers={"x-ratelimit-remaining": "990"},
+        )
 
     def _identificadores(self, request: httpx.Request) -> httpx.Response:
         self.chamadas["articlemeta"] += 1
@@ -57,3 +85,7 @@ class ApisFalsas:
 def apis_falsas():
     with respx.mock(assert_all_called=False) as router:
         yield ApisFalsas(router)
+
+
+def _issns_da_fonte(obra: dict) -> list[str]:
+    return ((obra.get("primary_location") or {}).get("source") or {}).get("issn") or []

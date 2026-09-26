@@ -74,7 +74,46 @@ def escolher_casos(artigos: Path) -> dict[str, str]:
     for motivo, pid in precisa.items():
         if pid:
             casos[pid] = motivo
+    # um artigo por passo da cascata de casamento (e um sem casamento), a partir do corpus do spike
+    corpus = [json.loads(linha) for linha in (CACHE.parent / "corpus.jsonl").open(encoding="utf-8")]
+    for passo in ("2_pid_url", "3_doi_derivado", "4_titulo_ano", "sem_casamento"):
+        achado = next(
+            (d for d in corpus if d["casamento"] == passo and d["tipo"] == "research-article" and d["resumos"]), None
+        )
+        if achado:
+            casos[achado["pid"]] = f"casamento {passo}"
     return casos
+
+
+def recortar_openalex(casos: dict[str, str], pids_op: list[str]) -> None:
+    """Busca no OpenAlex (1 crédito por revista-ano) só as páginas que os testes usam, e guarda as obras."""
+    import sys
+
+    sys.path.insert(0, str(RAIZ / "src"))
+    from mapa_da_ciencia import rede
+    from mapa_da_ciencia.fontes import revistas
+    from mapa_da_ciencia.fontes.openalex import CAMPOS
+
+    corpus = {json.loads(linha)["pid"]: json.loads(linha) for linha in (CACHE.parent / "corpus.jsonl").open()}
+    pares = {("0104-6276", 2024)} | {(pid[1:10], int(pid[10:14])) for pid in casos}
+    obras = {}
+    with rede.cliente(timeout=60) as http:
+        for issn, ano in sorted(pares):
+            issns = "|".join(sorted(set(revistas.por_issn(issn).issns)))
+            filtro = f"primary_location.source.issn:{issns},publication_year:{ano}-{ano}"
+            r = http.get("https://api.openalex.org/works", params={"filter": filtro, "select": CAMPOS, "per-page": 200})
+            r.raise_for_status()
+            resultados = r.json()["results"]
+            alvo = {corpus[p]["openalex_id"] for p in casos if p[1:10] == issn and corpus.get(p, {}).get("openalex_id")}
+            for o in resultados:
+                if (issn == "0104-6276" and ano == 2024) or o["id"] in alvo:
+                    obras[o["id"]] = anonimizar(o)
+            for o in [o for o in resultados if o["id"] not in alvo][:3]:  # distratores
+                obras.setdefault(o["id"], anonimizar(o))
+    with gzip.open(DESTINO / "openalex" / "obras.jsonl.gz", "wt", encoding="utf-8") as f:
+        for oid in sorted(obras):
+            f.write(json.dumps(obras[oid], ensure_ascii=False) + "\n")
+    print(f"{len(obras)} obras do OpenAlex ({len(pares)} revistas-ano, {len(pares)} créditos)")
 
 
 def main() -> None:
@@ -102,6 +141,8 @@ def main() -> None:
         for pid in sorted(registros):
             f.write(json.dumps({"pid": pid, "registro": registros[pid]}, ensure_ascii=False) + "\n")
     (saida / "casos.json").write_text(json.dumps(casos, ensure_ascii=False, indent=1), encoding="utf-8")
+    (DESTINO / "openalex").mkdir(parents=True, exist_ok=True)
+    recortar_openalex(casos, [o["code"] for o in de_2024])
     tamanho = sum(p.stat().st_size for p in saida.iterdir())
     print(
         f"{len(lista)} identificadores, {len(registros)} registros ({len(casos)} casos especiais), {tamanho // 1024} KB"

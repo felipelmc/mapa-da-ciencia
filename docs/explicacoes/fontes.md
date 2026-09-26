@@ -37,7 +37,17 @@ O [OpenAlex](https://openalex.org) é um catálogo aberto (licença CC0) de publ
 - **buscar por termo** dentro das revistas do recorte, o que a ArticleMeta não faz;
 - no futuro, fornecer as referências para as redes de citação.
 
-Desde 2026 o OpenAlex cobra por uso. Sem chave, são mil créditos por dia; com a chave gratuita, dez vezes mais. Buscar um artigo por DOI não gasta créditos, e o enriquecimento do piloto inteiro gasta cerca de 26. A chave vai no `.env` do projeto (`OPENALEX_API_KEY`).
+Desde 2026 o OpenAlex cobra por uso. Sem chave, são mil créditos por dia; com a chave gratuita, dez vezes mais. A chave vai no `.env` do projeto (`OPENALEX_API_KEY`) e nunca é gravada junto com as respostas.
+
+| Chamada | Créditos |
+|---|---|
+| Uma página de lista (até 200 trabalhos de uma revista num período) | 1 |
+| Uma página de busca por termo | 10 |
+| Um trabalho buscado pelo DOI | 0 |
+
+O enriquecimento pede os trabalhos de cada revista no período, então custa cerca de 1 crédito por revista para cada 200 artigos: o piloto inteiro (10 revistas, 16 anos) fica em torno de 30 créditos. O `mapa coletar` mostra quantos foram gastos, e `--sem-openalex` pula essa etapa.
+
+Quando a ArticleMeta não traz resumo de um artigo e o OpenAlex traz, o resumo do OpenAlex entra como **reserva**, marcado com a origem (`openalex`).
 
 ## E o search.scielo.org?
 
@@ -51,6 +61,8 @@ A ArticleMeta nem sempre informa o DOI: no piloto, faltou em 27% dos registros. 
 2. o PID do SciELO dentro dos endereços que o OpenAlex guarda;
 3. o DOI derivado do PID (`10.1590/{PID}`), padrão de revistas brasileiras mais antigas;
 4. o título normalizado mais o ano.
+
+Antes de aceitar um candidato, o `mapa` **confere** se ele é mesmo o artigo: o ano precisa bater (com um ano de folga) e o título precisa ser parecido em algum idioma. Além disso, cada trabalho do OpenAlex só pode ser casado com um artigo. A conferência existe porque a própria ArticleMeta tem DOIs trocados: na *Dados* de 2014, dois artigos diferentes aparecem com o mesmo DOI. Sem a conferência, os dois seriam casados com o mesmo trabalho (e herdariam as citações e a licença um do outro). Com ela, só o artigo certo casa, e o outro fica sem casamento.
 
 O passo usado fica registrado em cada documento.
 

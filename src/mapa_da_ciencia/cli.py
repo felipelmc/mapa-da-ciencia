@@ -270,6 +270,9 @@ def coletar(
     offline: Annotated[
         bool, typer.Option("--offline", help="Não acessa a internet: usa só o que está em brutos/.")
     ] = False,
+    sem_openalex: Annotated[
+        bool, typer.Option("--sem-openalex", help="Não enriquece com o OpenAlex (citações, licença por artigo).")
+    ] = False,
 ) -> None:
     """Coleta os artigos do recorte e monta o corpus do projeto (dados/documentos.parquet)."""
     from mapa_da_ciencia import coleta as etapa
@@ -285,6 +288,7 @@ def coletar(
             limite=limite,
             atualizar=atualizar,
             offline=offline,
+            sem_openalex=sem_openalex,
         )
         progresso = ProgressoRich(console)
         try:
@@ -317,6 +321,13 @@ def coletar(
     req = resumo.requisicoes.get("articlemeta", 0)
     cache = resumo.do_cache.get("articlemeta", 0)
     console.print(f"[dim]ArticleMeta: {num(req, 0)} requisição(ões), {num(cache, 0)} resposta(s) do cache.[/]")
+    casados = sum(v for k, v in resumo.casamento.items() if k[0].isdigit())
+    if set(resumo.casamento) != {"nao_tentado"}:
+        console.print(
+            f"[dim]OpenAlex: {num(casados, 0)} de {num(resumo.documentos, 0)} casados; "
+            f"{num(resumo.requisicoes.get('openalex', 0), 0)} requisição(ões), "
+            f"{num(resumo.creditos_openalex, 0)} crédito(s).[/]"
+        )
     for aviso in resumo.avisos:
         console.print(f"[yellow]Aviso:[/] {aviso}")
     console.print("Próximo passo: [bold]mapa status[/] para ver a cobertura do corpus.")

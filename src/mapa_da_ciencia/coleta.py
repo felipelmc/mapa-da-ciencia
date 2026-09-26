@@ -21,9 +21,11 @@ from mapa_da_ciencia.documento import Documento
 from mapa_da_ciencia.fontes import revistas as retrato
 from mapa_da_ciencia.fontes.articlemeta import RevistaRef, buscar_registros, listar_pids, normalizar
 from mapa_da_ciencia.fontes.base import Buscador, limpar_temporarios
+from mapa_da_ciencia.fontes.openalex import casar_todos, listar_por_revista
 from mapa_da_ciencia.manifesto import registrar_execucao
 from mapa_da_ciencia.progresso import Progresso, ProgressoNulo
 from mapa_da_ciencia.projeto import Projeto
+from mapa_da_ciencia.rede import variavel
 
 
 @dataclass
@@ -35,6 +37,7 @@ class OpcoesColeta:
     limite: int | None = None
     atualizar: bool = False
     offline: bool = False
+    sem_openalex: bool = False
 
 
 @dataclass
@@ -43,6 +46,7 @@ class Plano:
     anos: tuple[int, int]
     tipos: list[str]
     avisos: list[str] = field(default_factory=list)
+    openalex: bool = True
 
 
 @dataclass
@@ -52,6 +56,7 @@ class ResumoColeta:
     fora_do_periodo: int
     excluidos_por_tipo: dict[str, int]
     nao_encontrados: int
+    casamento: dict[str, int]
     requisicoes: dict[str, int]
     do_cache: dict[str, int]
     creditos_openalex: int
@@ -110,7 +115,29 @@ def planejar(projeto: Projeto, opcoes: OpcoesColeta) -> Plano:
     if opcoes.anos and tuple(opcoes.anos) != tuple(cfg.recorte.anos):
         avisos.append(f"Os anos desta execução ({anos[0]}–{anos[1]}) diferem dos do mapa.yaml.")
     tipos = list(scielo.tipos) if scielo else ["research-article", "review-article"]
-    return Plano(revistas, anos, tipos, avisos)
+    return Plano(revistas, anos, tipos, avisos, openalex=cfg.fontes.openalex.enriquecer)
+
+
+async def _enriquecer(
+    buscador: Buscador,
+    projeto: Projeto,
+    plano: Plano,
+    documentos: list[Documento],
+    opcoes: OpcoesColeta,
+    progresso: Progresso,
+) -> list[Documento]:
+    """Casa os documentos de cada revista com os trabalhos do OpenAlex do mesmo período."""
+    api_key = variavel("OPENALEX_API_KEY", projeto.raiz)
+    progresso.etapa("OpenAlex", len(plano.revistas))
+    saida: list[Documento] = []
+    for revista in plano.revistas:
+        da_revista = [d for d in documentos if d.revista_issn == revista.issn]
+        if da_revista:
+            obras = await listar_por_revista(buscador, revista, plano.anos, api_key=api_key, atualizar=opcoes.atualizar)
+            saida += casar_todos(da_revista, obras)
+        progresso.avancar()
+    outros = [d for d in documentos if d.revista_issn not in {r.issn for r in plano.revistas}]
+    return saida + outros
 
 
 async def coletar_async(
@@ -142,27 +169,32 @@ async def coletar_async(
         progresso.etapa("Registros da ArticleMeta", len(pids))
         revista_do_pid = {p: r for r, p in pids}
         registros = await buscar_registros(buscador, [p for _, p in pids], ao_avancar=lambda _pid: progresso.avancar())
+
+        progresso.etapa("Normalizando", len(registros))
+        documentos: list[Documento] = []
+        excluidos: Counter[str] = Counter()
+        nao_encontrados = 0
+        for pid, registro in registros.items():
+            progresso.avancar()
+            if registro is None:
+                nao_encontrados += 1
+                continue
+            doc = normalizar(registro, revista_do_pid[pid])
+            if doc.tipo not in plano.tipos:
+                excluidos[doc.tipo or "sem tipo"] += 1
+                continue
+            documentos.append(doc)
+
+        if plano.openalex and not opcoes.sem_openalex:
+            documentos = await _enriquecer(buscador, projeto, plano, documentos, opcoes, progresso)
         contadores = buscador.contadores
 
-    progresso.etapa("Normalizando", len(registros))
-    documentos: list[Documento] = []
-    excluidos: Counter[str] = Counter()
-    nao_encontrados = 0
-    for pid, registro in registros.items():
-        progresso.avancar()
-        if registro is None:
-            nao_encontrados += 1
-            continue
-        doc = normalizar(registro, revista_do_pid[pid])
-        if doc.tipo not in plano.tipos:
-            excluidos[doc.tipo or "sem tipo"] += 1
-            continue
-        documentos.append(doc)
     n = gravar_documentos(documentos, projeto.dados / ARQUIVO)
     progresso.fim()
 
     resumo = ResumoColeta(
         documentos=n,
+        casamento=dict(sorted(Counter(d.casamento for d in documentos).items())),
         por_revista=dict(Counter(d.revista_acronimo or "?" for d in documentos).most_common()),
         fora_do_periodo=fora_do_periodo,
         excluidos_por_tipo=dict(excluidos.most_common()),
@@ -187,6 +219,7 @@ async def coletar_async(
             "requisicoes": resumo.total_requisicoes,
             "do_cache": sum(resumo.do_cache.values()),
             "creditos_openalex": resumo.creditos_openalex,
+            "casados_openalex": sum(v for k, v in resumo.casamento.items() if k[0].isdigit()),
         },
         parametros=_parametros(plano, opcoes),
     )
@@ -201,6 +234,7 @@ def _parametros(plano: Plano, opcoes: OpcoesColeta) -> dict[str, Any]:
         "limite": opcoes.limite,
         "offline": opcoes.offline,
         "atualizar": opcoes.atualizar,
+        "openalex": plano.openalex and not opcoes.sem_openalex,
     }
 
 
