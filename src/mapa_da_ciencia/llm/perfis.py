@@ -56,6 +56,19 @@ PERFIS: dict[NomePerfil, Perfil] = {
 }
 
 
+TAMANHOS_GB: dict[str, float] = {
+    "qwen3-embedding:0.6b": 0.64,
+    "bge-m3": 1.2,
+    "embeddinggemma:300m": 0.62,
+    "qwen3.5:4b": 3.4,
+    "qwen3.5:9b": 6.6,
+    "gemma4:12b": 7.6,
+    "gemma4:26b": 17.0,
+    "qwen3.5:35b-a3b": 24.0,
+}
+"""Tamanho do download de modelos conhecidos (biblioteca do Ollama, 2026-09-25)."""
+
+
 def ram_total_gb() -> float:
     return psutil.virtual_memory().total / 1024**3
 

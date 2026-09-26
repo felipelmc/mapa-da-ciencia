@@ -19,9 +19,10 @@ from rich.table import Table
 
 from mapa_da_ciencia import __version__
 from mapa_da_ciencia.config import ErroConfig
+from mapa_da_ciencia.diagnostico import DICAS_OLLAMA, diagnosticar
 from mapa_da_ciencia.llm.perfis import PERFIS, ram_total_gb, sugerir_perfil
 from mapa_da_ciencia.manifesto import status_das_etapas
-from mapa_da_ciencia.projeto import MODELOS_DE_PROJETO, Projeto
+from mapa_da_ciencia.projeto import MODELOS_DE_PROJETO, Projeto, ProjetoNaoEncontrado
 
 app = typer.Typer(
     name="mapa",
@@ -129,3 +130,35 @@ def status(projeto: OpcaoProjeto = Path(".")) -> None:
         contagens = ", ".join(f"{k}={v}" for k, v in manifesto["contagens"].items())
         tabela.add_row(etapa, "[green]concluída[/]", quando, f"{manifesto['duracao_s']:.0f} s", contagens)
     console.print(tabela)
+
+
+@app.command()
+def diagnostico(
+    projeto: OpcaoProjeto = Path("."),
+    sem_rede: Annotated[
+        bool, typer.Option("--sem-rede", help="Não testa a conexão com ArticleMeta e OpenAlex.")
+    ] = False,
+) -> None:
+    """Confere memória, disco, o Ollama, os modelos do projeto e a conexão com as fontes."""
+    with _erros_amigaveis():
+        try:
+            p: Projeto | None = Projeto.abrir(projeto)
+        except ProjetoNaoEncontrado:
+            p = None
+        checagens = diagnosticar(p, checar_rede=not sem_rede)
+
+    simbolo = {"ok": "[green]✓[/]", "aviso": "[yellow]![/]", "erro": "[red]✗[/]"}
+    grupo_atual = None
+    for c in checagens:
+        if c.grupo != grupo_atual:
+            grupo_atual = c.grupo
+            console.print(f"\n[bold]{c.grupo}[/]")
+        console.print(f"  {simbolo[c.estado]} {c.item}: {c.detalhe}")
+        if c.dica:
+            console.print(f"      [dim]{c.dica}[/]")
+    console.print(f"\n[dim]{DICAS_OLLAMA}[/]")
+    erros = sum(c.estado == "erro" for c in checagens)
+    if erros:
+        console.print(f"\n[bold red]{erros} problema(s) impedem rodar o pipeline.[/]")
+        raise typer.Exit(1)
+    console.print("\n[bold green]Tudo pronto.[/]")
