@@ -102,3 +102,16 @@ def test_env_do_projeto(tmp_path, monkeypatch):
 
 def test_erro_provedor_e_runtimeerror():
     assert issubclass(ErroProvedor, RuntimeError)
+
+
+@respx.mock
+def test_modelo_ja_carregado_nao_vira_aviso_de_memoria(projeto, monkeypatch):
+    """Lição do spike M0b: um modelo carregado já está descontado da memória livre."""
+    from mapa_da_ciencia import recursos
+
+    _mock_ollama(respx.mock, {"qwen3-embedding:0.6b": 0.6, "qwen3.5:9b": 6.6}, carregados={"qwen3.5:9b": 6.6})
+    monkeypatch.setattr(recursos, "memoria", lambda: recursos.Memoria(24, 3.0, 4.0, 5.0))
+    checagens = {c.item: c for c in diagnosticar(projeto, ollama=Ollama(OLLAMA), checar_rede=False)}
+    carregado = checagens["qwen3.5:9b (classificação, rótulos)"]
+    assert carregado.estado == "ok"
+    assert "carregado agora" in carregado.detalhe

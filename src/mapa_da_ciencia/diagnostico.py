@@ -102,6 +102,7 @@ def _modelos(ollama: Ollama, projeto: Projeto | None) -> list[Checagem]:
         papeis = {"embeddings": perfil.embeddings, "classificação": perfil.classificacao, "rótulos": perfil.rotulos}
         grupo = f"Modelos do perfil {perfil.nome}"
 
+    carregados = {m.nome.removesuffix(":latest") for m in ollama.modelos_carregados()}
     vistos: dict[str, list[str]] = {}
     for papel, nome in papeis.items():
         vistos.setdefault(nome, []).append(papel)
@@ -112,6 +113,10 @@ def _modelos(ollama: Ollama, projeto: Projeto | None) -> list[Checagem]:
             tam = TAMANHOS_GB.get(nome)
             tamanho = f" (download de ~{gb(tam)})" if tam else ""
             saida.append(Checagem(grupo, item, "erro", "não instalado", f"Rode: ollama pull {nome}{tamanho}"))
+            continue
+        if nome.removesuffix(":latest") in carregados:
+            # já está na memória: a memória livre já desconta o modelo, então não há o que conferir
+            saida.append(Checagem(grupo, item, "ok", f"instalado e carregado agora, {gb(inst.tamanho_gb)}"))
             continue
         folga = cabe_na_memoria(inst.tamanho_gb)
         saida.append(
