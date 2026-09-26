@@ -110,6 +110,18 @@ for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 	});
 }
 
+test('o trilho leva o recorte às vistas de análise, e só o recorte', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa?anos=2015-2020&revistas=dados&uf=SP&cor=ano&doc=exemplo:00001`);
+	await esperarMapa(page);
+	const link = (nome: string) => trilho(page).getByRole('link', { name: nome, exact: true });
+	await expect(link('Tópicos')).toHaveAttribute('href', '#/topicos?anos=2015-2020&revistas=dados&uf=SP');
+	await expect(link('Geografia')).toHaveAttribute('href', '#/geografia?anos=2015-2020&revistas=dados&uf=SP');
+	await expect(link('Validação')).toHaveAttribute('href', '#/validacao');
+	await expect(link('Início')).toHaveAttribute('href', '#/');
+	await link('Geografia').click();
+	await expect(page).toHaveURL(/#\/geografia\?anos=2015-2020&revistas=dados&uf=SP$/);
+});
+
 test.describe('tema', () => {
 	test('alterna, lembra a escolha e salva as telas nos dois temas', async ({ page }) => {
 		// Sem movimento, para as capturas não pegarem uma transição no meio.

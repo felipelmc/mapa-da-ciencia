@@ -34,6 +34,8 @@ export interface Secao {
 	soNoPainel?: boolean;
 	/** A vista ocupa toda a área de conteúdo, sem margens nem largura máxima (o mapa). */
 	telaCheia?: boolean;
+	/** Vista de análise: recebe o recorte comum (anos, revistas, tópicos, laço, lugares) pelo trilho. */
+	recorte?: boolean;
 }
 
 // Os marcos seguem o plano do projeto (docs/desenvolvimento/index.md): mapa no M3;
@@ -57,7 +59,8 @@ export const SECOES: readonly Secao[] = [
 			'Cada documento vira um ponto, e textos parecidos ficam perto. Dá para filtrar por ano, revista e tópico, colorir por categoria e selecionar grupos com o laço.',
 		chegada: 'no marco M3',
 		arquivos: ['documentos', 'topicos'],
-		telaCheia: true
+		telaCheia: true,
+		recorte: true
 	},
 	{
 		id: 'topicos',
@@ -67,7 +70,8 @@ export const SECOES: readonly Secao[] = [
 		resumo:
 			'Os tópicos do corpus, agrupados em macrotemas, com palavras-chave, documentos representativos e a evolução de cada um ao longo dos anos.',
 		chegada: 'no marco M4',
-		arquivos: ['topicos', 'documentos']
+		arquivos: ['topicos', 'documentos'],
+		recorte: true
 	},
 	{
 		id: 'classificacao',
@@ -87,7 +91,8 @@ export const SECOES: readonly Secao[] = [
 		resumo:
 			'Onde a produção acontece: documentos por UF, país e instituição, com contagem fracionária das afiliações.',
 		chegada: 'no marco M4',
-		arquivos: ['afiliacoes', 'documentos']
+		arquivos: ['afiliacoes', 'documentos'],
+		recorte: true
 	},
 	{
 		id: 'validacao',

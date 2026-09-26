@@ -126,7 +126,17 @@ A interface esconde o que a fonte não pode fazer. Por exemplo, a seção **Proj
 | `topicos` | `3,12` (`-1` = sem tópico) | todos |
 | `cor` | `topico`, `macrotema`, `revista`, `ano` | `topico` |
 | `busca` | `coalizão` | vazio |
+| `laco` | `a1b2~0.1,0.2~0.3,0.1~…` (versão do mapa e vértices em coordenadas dos dados) | nenhum |
+| `uf` | `SP,RJ` (documentos com alguma afiliação nessas UFs) | todas |
+| `pais` | `AR,US` (ISO alfa-2) | todos |
+| `inst` | `ror:036rp1748` | todas |
+| `modo` | `fluxo`, `absoluto`, `proporcao` (vista Tópicos) | `fluxo` |
+| `macro` | `3` (macrotema aberto na vista Tópicos) | nenhum |
+| `vista` | `0.12,-0.3,2.5` (câmera do mapa: centro e zoom) | a câmera inicial |
+| `topico` | `12` (gaveta do tópico; não confundir com `topicos`, que filtra) | nenhum |
 | `doc` | `exemplo:00042` | nenhum |
+
+O **recorte** (`CHAVES_RECORTE`: `anos`, `revistas`, `topicos`, `busca`, `laco`, `uf`, `pais`, `inst`) é o que as vistas de análise compartilham: o trilho o leva de uma seção a outra (seções com `recorte: true` em `secoes.ts`). Os demais parâmetros são de cada vista e ficam para trás.
 
 `escreverFiltros()` omite os valores padrão e usa ordem fixa, então o mesmo estado gera sempre o mesmo link. `lerFiltros()` ignora valores inválidos sem erro. O teste de ida e volta (`url.test.ts`) cobre filtros → URL → filtros, URL canônica → filtros → mesma URL e 300 combinações aleatórias com semente fixa.
 

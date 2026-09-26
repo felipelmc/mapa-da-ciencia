@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import type { ProjetoAberto } from '$lib/dados/contexto';
-	import { rota } from '$lib/estado/url';
+	import { filtrosDaPagina } from '$lib/estado/filtros';
+	import { escreverFiltros, recorteDe, rota } from '$lib/estado/url';
 	import { formatarData } from '$lib/formato';
 	import type { Secao } from '$lib/secoes';
 	import Icone from './Icone.svelte';
@@ -10,6 +11,9 @@
 
 	const manifesto = $derived(projeto.manifesto);
 	const ativa = (s: Secao) => page.route.id === s.caminho;
+	// as vistas de análise recebem o recorte atual (anos, revistas, tópicos, laço, lugares); as outras, não
+	const recorte = $derived(escreverFiltros(recorteDe(filtrosDaPagina())));
+	const destino = (s: Secao) => rota(s.caminho, s.recorte ? recorte : undefined);
 </script>
 
 <aside class="lateral transicao-tema">
@@ -33,7 +37,7 @@
 							<span class="visualmente-oculto">(desativada; chega {s.chegada})</span>
 						</span>
 					{:else}
-						<a class="item" href={rota(s.caminho)} aria-current={ativa(s) ? 'page' : undefined}>
+						<a class="item" href={destino(s)} aria-current={ativa(s) ? 'page' : undefined}>
 							<Icone nome={s.icone} />
 							<span class="rotulo">{s.rotulo}</span>
 						</a>
