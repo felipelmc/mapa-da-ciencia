@@ -2,11 +2,13 @@
 // (adaptado de spikes/frontend/tests/servidor.mjs):
 //   diretório com barra → index.html; diretório sem barra → 301 para a versão com barra;
 //   arquivo → 200; o resto → 404.
-// Escuta só em 127.0.0.1, numa porta livre, e registra cada requisição em `log`.
+// Escuta só em 127.0.0.1, numa porta livre, e registra cada requisição em `log`. Com `api`, as rotas `/api/…`
+// vão para ela (a API falsa do painel, em `api-falsa.ts`).
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { extname, join, normalize, sep } from 'node:path';
+import type { ManipuladorApi } from './api-falsa.ts';
 
 const MIME: Record<string, string> = {
 	'.html': 'text/html; charset=utf-8',
@@ -24,12 +26,16 @@ export interface Servidor {
 	fechar: () => Promise<void>;
 }
 
-export function servir(raiz: string): Promise<Servidor> {
+export function servir(raiz: string, api?: ManipuladorApi): Promise<Servidor> {
 	const raizNormalizada = normalize(raiz + sep);
 	const log: Servidor['log'] = [];
 
 	const servidor = http.createServer((req, res) => {
 		const url = new URL(req.url ?? '/', 'http://localhost');
+		if (api && url.pathname.includes('/api/') && api(req, res, url)) {
+			log.push({ caminho: url.pathname, status: res.statusCode });
+			return;
+		}
 		const responder = (status: number, cabecalhos: Record<string, string> = {}, corpo = '') => {
 			log.push({ caminho: url.pathname, status });
 			res.writeHead(status, cabecalhos);

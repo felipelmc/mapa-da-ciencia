@@ -10,7 +10,8 @@
 	let { secoes, projeto }: { secoes: Secao[]; projeto: ProjetoAberto } = $props();
 
 	const manifesto = $derived(projeto.manifesto);
-	const ativa = (s: Secao) => page.route.id === s.caminho;
+	// a seção e as subrotas dela (Validação › Codificar)
+	const ativa = (s: Secao) => page.route.id === s.caminho || (s.caminho !== '/' && !!page.route.id?.startsWith(`${s.caminho}/`));
 	// as vistas de análise recebem o recorte atual (anos, revistas, tópicos, laço, lugares); as outras, não
 	const recorte = $derived(escreverFiltros(recorteDe(filtrosDaPagina())));
 	const destino = (s: Secao) => rota(s.caminho, s.recorte ? recorte : undefined);

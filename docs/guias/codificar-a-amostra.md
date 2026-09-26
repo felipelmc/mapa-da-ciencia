@@ -31,6 +31,27 @@ O comando também grava `validacao/amostra.jsonl`, com uma linha por documento e
 
 Nenhuma resposta do modelo vai nesse arquivo: a codificação é **cega**.
 
+## Codificar no painel
+
+Com o painel aberto (`mapa painel`), vá a **Validação › Codificar a amostra**, escreva o seu nome (sem acentos nem espaços, como `maria`) e comece. A ficha mostra o título e o resumo à esquerda e as variáveis do codebook à direita, uma de cada vez. Tudo funciona pelo teclado:
+
+| Tecla | O que faz |
+|---|---|
+| ++1++ a ++9++ | Escolhe a opção da variável atual e passa para a próxima. Nas booleanas, ++1++ é Sim e ++2++ é Não. Na múltipla escolha, liga ou desliga a opção. |
+| ++tab++, ++down++, ++up++ | Troca de variável. Numa variável de texto, digite a resposta e aperte ++enter++. |
+| ++enter++ | Confirma a ficha (todas as variáveis respondidas) e abre a próxima. |
+| ++left++, ++right++ | Ficha anterior e próxima, sem confirmar. |
+| ++s++ | Marca a resposta como incerta. |
+| ++n++ | Escreve uma nota sobre a resposta. |
+| ++e++ | Usa o trecho selecionado no resumo (com o mouse) como evidência. |
+| ++d++ | Mostra as definições das categorias. |
+| ++question++ | Mostra a ajuda. |
+
+- A codificação é **cega**: a ficha nunca mostra o que o modelo respondeu.
+- Cada pessoa tem a própria ordem na fila, sempre a mesma, e a amostra inteira passa por todas.
+- Tudo é gravado sozinho, primeiro no navegador e depois no projeto. Se o painel cair, as respostas ficam guardadas no navegador e são enviadas quando ele voltar. Ao reabrir, a fila continua da primeira ficha incompleta.
+- A evidência é opcional para pessoas: ela ajuda a discutir as divergências depois.
+
 ## Importar codificações feitas fora do painel
 
 Quem codificou numa planilha, num script ou com outro anotador entrega um JSONL com uma linha por documento:
