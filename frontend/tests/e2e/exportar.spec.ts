@@ -64,3 +64,19 @@ test('uma figura sem gráfico em SVG só exporta CSV', async ({ page }) => {
 	await expect(f.getByLabel('SVG')).toBeDisabled();
 	await expect(f.getByLabel('CSV (dados)')).toBeEnabled();
 });
+
+test('modo apresentação: P esconde o trilho e as barras, Esc volta', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	const trilho = page.getByRole('navigation', { name: /seções/i });
+	await expect(trilho).toBeVisible();
+	await page.keyboard.press('p');
+	await expect(page.getByTestId('modo-apresentacao')).toBeVisible();
+	await expect(trilho).toBeHidden();
+	expect(await page.evaluate(() => document.documentElement.dataset.apresentacao)).toBe('sim');
+	await page.keyboard.press('Escape');
+	await expect(trilho).toBeVisible();
+	// na codificação, P é só uma tecla
+	await page.goto(`${url('PAINEL')}#/validacao/codificar`);
+	await page.getByLabel(/Seu nome/).fill('p');
+	await expect(page.getByTestId('modo-apresentacao')).toHaveCount(0);
+});

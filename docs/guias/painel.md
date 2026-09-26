@@ -38,6 +38,8 @@ O navegador abre em `http://127.0.0.1:8765/`. Para encerrar, aperte ++ctrl+c++ n
 | Projeto | As etapas do pipeline numa linha de metrô (em dia, desatualizadas ou pendentes), rodar e cancelar cada uma com o progresso ao vivo, a estimativa da classificação e os modelos do Ollama (só no painel local) | agora |
 | Redes | Coautoria e citação | v2 |
 
+Para projetar numa aula ou numa apresentação, aperte ++p++: o **modo apresentação** esconde o trilho e as barras e aumenta a letra; ++esc++ (ou ++p++ de novo) volta.
+
 A interface tem dois temas: **Observatório** (escuro, bom para projetar) e **Prancha** (claro, bom para figuras de artigo). Ela segue o tema do sistema, e o botão na barra superior alterna entre os dois.
 
 ## Projeto novo, painel vazio

@@ -36,6 +36,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 ### Adicionado no M7 (publicação, figuras e oficina)
 
 - **Exportar figuras** (`lib/exportar/`): cada gráfico do painel baixa em SVG (com título, recorte, fonte, n e data, as cores do tema resolvidas e as fontes embutidas), PNG (rasterizado na resolução do tamanho) ou CSV (os dados da tabela); tamanhos Artigo (85 ou 174 mm, 300 ou 600 dpi, tema Prancha), Slide (1.920 px) e Telão (3.840 px, Observatório); guia "Exportar figuras";
+- **modo apresentação** (tecla ++p++, em todas as vistas menos a codificação): esconde o trilho e as barras e aumenta a letra, para projetar; ++esc++ sai; atalho na Ajuda;
 
 ## [0.4.0] - 2026-09-26
 
