@@ -1,0 +1,64 @@
+# variantes que o CLDR não traz (paises.csv tem os nomes oficiais em pt, en e es); editável à mão
+variante,iso2
+USA,US
+U.S.A.,US
+US,US
+EUA,US
+E.U.A.,US
+Estados Unidos da América,US
+Estados Unidos de América,US
+United States of America,US
+UK,GB
+U.K.,GB
+Great Britain,GB
+Grã-Bretanha,GB
+United Kingdom of Great Britain and Northern Ireland,GB
+Inglaterra,GB
+England,GB
+Escócia,GB
+Scotland,GB
+País de Gales,GB
+Wales,GB
+Irlanda do Norte,GB
+Northern Ireland,GB
+Holanda,NL
+Holland,NL
+The Netherlands,NL
+Deutschland,DE
+Österreich,AT
+Schweiz,CH
+Suisse,CH
+Svizzera,CH
+Republic of Korea,KR
+Korea,KR
+Coréia do Sul,KR
+Corea,KR
+People's Republic of China,CN
+República Popular da China,CN
+Hong Kong,HK
+Macau,MO
+Macao,MO
+Russian Federation,RU
+Federação Russa,RU
+Czech Republic,CZ
+República Tcheca,CZ
+República Checa,CZ
+Viet Nam,VN
+Vietname,VN
+Turkey,TR
+Ivory Coast,CI
+Palestine,PS
+Palestina,PS
+Macedonia,MK
+Macedônia,MK
+Swaziland,SZ
+Suazilândia,SZ
+Burma,MM
+Birmânia,MM
+Congo,CG
+República Democrática do Congo,CD
+Democratic Republic of the Congo,CD
+Estado Plurinacional da Bolívia,BO
+Estado Plurinacional de Bolivia,BO
+Plurinational State of Bolivia,BO
+Federación de Rusia,RU
