@@ -120,6 +120,7 @@ class ApisFalsas:
         router.post(f"{OLLAMA_FALSO}/api/embed").mock(side_effect=self._embed)
         router.post(f"{OLLAMA_FALSO}/api/generate").mock(side_effect=self._generate)
         router.post(f"{OLLAMA_FALSO}/api/chat").mock(side_effect=self._chat)
+        router.post(f"{OLLAMA_FALSO}/api/pull").mock(side_effect=self._pull)
         self.pedidos_chat: list[dict] = []
         # os testes trocam esta função para simular respostas (JSON inválido, rótulo sem acento...)
         self.responder_chat = resposta_chat_padrao
@@ -172,6 +173,21 @@ class ApisFalsas:
         return httpx.Response(
             200, json={"model": corpo["model"], "message": {"role": "assistant", "content": conteudo}}
         )
+
+    def _pull(self, request: httpx.Request) -> httpx.Response:
+        """`ollama pull` falso: um fluxo de linhas JSON com duas camadas; o modelo passa a estar instalado."""
+        modelo = json.loads(request.content)["model"]
+        if modelo.startswith("nao-existe"):
+            linhas = [{"status": "pulling manifest"}, {"error": "pull model manifest: file does not exist"}]
+        else:
+            linhas = [{"status": "pulling manifest"}]
+            for camada, total in (("sha256:aaaaaaaaaaaaaaaa", 30_000_000), ("sha256:bbbbbbbbbbbbbbbb", 2_000_000)):
+                linhas += [{"status": f"pulling {camada[7:19]}", "digest": camada, "total": total, "completed": c}
+                           for c in (0, total // 2, total)]  # fmt: skip
+            linhas += [{"status": "verifying sha256 digest"}, {"status": "success"}]
+            self.modelos_ollama[modelo] = 1.5
+        corpo = "\n".join(json.dumps(linha) for linha in linhas) + "\n"
+        return httpx.Response(200, content=corpo.encode(), headers={"content-type": "application/x-ndjson"})
 
     def _generate(self, request: httpx.Request) -> httpx.Response:
         corpo = json.loads(request.content)

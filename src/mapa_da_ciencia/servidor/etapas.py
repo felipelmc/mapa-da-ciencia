@@ -1,4 +1,5 @@
-"""As etapas que o painel roda como jobs, com as opções que cada uma aceita.
+"""As etapas que o painel roda como jobs, com as opções que cada uma aceita (e o download de um modelo, que
+também é um job).
 
 Cada etapa é uma função `(projeto, opções, progresso) -> resumo`, a mesma que a CLI chama. As opções chegam da
 interface em JSON e são validadas aqui (campos desconhecidos são recusados). Os testes trocam este registro por
@@ -66,10 +67,27 @@ def _classificacao(p: Projeto, o: dict[str, Any], progresso: Progresso) -> Any:
     return classificar(p, OpcoesClassificacao(**OpcoesClassificacaoPainel(**o).model_dump()), progresso)
 
 
+def _modelo(p: Projeto, o: dict[str, Any], progresso: Progresso) -> Any:
+    from .rotas_projeto import etapa_baixar_modelo
+
+    return etapa_baixar_modelo(p, o, progresso)
+
+
+class OpcoesModeloPainel(_Opcoes):
+    modelo: str = Field(pattern=r"^[\w.:/-]{1,80}$", description="Nome do modelo no Ollama, como `qwen3.5:9b`.")
+
+
 OPCOES = {
     "coleta": OpcoesColetaPainel,
     "topicos": OpcoesTopicosPainel,
     "geografia": OpcoesGeografiaPainel,
     "classificacao": OpcoesClassificacaoPainel,
+    "modelo": OpcoesModeloPainel,
 }
-ETAPAS_DO_PAINEL = {"coleta": _coleta, "topicos": _topicos, "geografia": _geografia, "classificacao": _classificacao}
+ETAPAS_DO_PAINEL = {
+    "coleta": _coleta,
+    "topicos": _topicos,
+    "geografia": _geografia,
+    "classificacao": _classificacao,
+    "modelo": _modelo,
+}

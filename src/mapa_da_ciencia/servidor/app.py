@@ -95,10 +95,12 @@ def criar_app(
     if projeto is not None and jobs is not None:
         from mapa_da_ciencia.servidor.etapas import OPCOES
         from mapa_da_ciencia.servidor.rotas_jobs import rotas_jobs
+        from mapa_da_ciencia.servidor.rotas_projeto import rotas_projeto
         from mapa_da_ciencia.servidor.validacao import rotas_validacao
 
         app.include_router(rotas_validacao(projeto))
         app.include_router(rotas_jobs(jobs, OPCOES if etapas is None else {}))
+        app.include_router(rotas_projeto(projeto, jobs))
 
     @app.get("/dados/manifesto.json")
     def manifesto() -> JSONResponse:
