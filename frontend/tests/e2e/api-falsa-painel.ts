@@ -53,6 +53,7 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 	};
 	let codebook: Record<string, unknown> = { ...codebookInicial, hash: 'h0' };
 	const instalados = new Set(['qwen3-embedding:0.6b', 'qwen3.5:4b']);
+	let amostra: { n: number; codificados: number } | null = null;
 	const agora = () => new Date().toISOString();
 	const semEventos = (j: JobFalso) => {
 		const { eventos, ouvintes, timer, conexoes, ...resto } = j;
@@ -157,7 +158,7 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 				topicos: { estado: estado('topicos', 'em_dia'), ultima },
 				geografia: { estado: estado('geografia', 'em_dia'), ultima },
 				classificacao: { estado: estado('classificacao', 'desatualizada'), ultima },
-				validacao: { estado: 'pendente', ultima: null, amostra: { n: 60, codificados: 12 } }
+				validacao: { estado: 'pendente', ultima: null, ...(amostra ? { amostra } : {}) }
 			});
 			return true;
 		}
@@ -216,6 +217,13 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 		}
 		if (metodo === 'GET' && caminho === 'estimativa/classificacao') {
 			json(res, 200, { modelo: 'qwen3.5:9b', documentos: 1480, classificados: 200, pendentes: 1280, segundos_por_documento: 11, estimativa_s: 14080 });
+			return true;
+		}
+		if (metodo === 'POST' && caminho === 'validacao/amostra') {
+			void corpoDe(req).then((c) => {
+				amostra = { n: Number(c.n ?? 200), codificados: 0 };
+				json(res, 200, { n: amostra.n, estratificar_por: 'topico', estratos: 7, semente: 7, avisos: [] });
+			});
 			return true;
 		}
 		if (metodo === 'GET' && caminho === 'revistas') {

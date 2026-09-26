@@ -69,6 +69,16 @@
 		}
 	}
 
+	async function aoSortear(n: number) {
+		aviso = null;
+		try {
+			await fonte.sortearAmostra(n);
+			etapas = await fonte.etapas();
+		} catch (e) {
+			aviso = e instanceof ErroDaApi ? e.message : `Não foi possível sortear a amostra: ${(e as Error).message}`;
+		}
+	}
+
 	onMount(async () => {
 		try {
 			await atualizar();
@@ -123,7 +133,7 @@
 	{/if}
 
 	{#if etapas}
-		<LinhaDeMetro {etapas} rodando={ocupado ? (aoVivo?.etapa ?? null) : null} {ocupado} aoRodar={(e, o) => rodar(e, o)} />
+		<LinhaDeMetro {etapas} rodando={ocupado ? (aoVivo?.etapa ?? null) : null} {ocupado} aoRodar={(e, o) => rodar(e, o)} {aoSortear} />
 	{:else}
 		<p class="suave" role="status">Carregando as etapas…</p>
 	{/if}

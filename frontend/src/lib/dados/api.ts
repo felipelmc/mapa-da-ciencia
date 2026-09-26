@@ -128,6 +128,11 @@ export class FonteApi extends FonteEstatica {
 		return pedirApi(`api/revistas?${q}`);
 	}
 
+	/** Sorteia a amostra de validação (como `mapa validar amostra`). */
+	sortearAmostra(n?: number, refazer = false): Promise<{ n: number; estratificar_por: string; estratos: number }> {
+		return pedirApi('api/validacao/amostra', { method: 'POST', body: JSON.stringify({ n, refazer }) });
+	}
+
 	configuracao(): Promise<Configuracao> {
 		return pedirApi('api/configuracao');
 	}

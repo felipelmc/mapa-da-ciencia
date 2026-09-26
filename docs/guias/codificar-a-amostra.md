@@ -10,6 +10,8 @@ uv run mapa validar amostra
 
 A amostra é sorteada uma vez e fica guardada no `estado.sqlite` do projeto. Rodar o comando de novo mostra a mesma amostra; para sortear outra, use `--refazer` (e `--n` para mudar o tamanho só neste sorteio, sem editar o `mapa.yaml`) (as codificações já feitas continuam guardadas, mas só as dos documentos da amostra nova entram nas métricas).
 
+No painel local, a estação **Validação** da vista Projeto faz o mesmo: escolha o tamanho e clique em **Sortear a amostra**.
+
 O sorteio segue a seção `validacao` do `mapa.yaml`:
 
 ```yaml

@@ -46,14 +46,18 @@
 		etapas,
 		rodando,
 		ocupado,
-		aoRodar
+		aoRodar,
+		aoSortear
 	}: {
 		etapas: EtapasDoProjeto;
 		/** A etapa do job em andamento, se houver. */
 		rodando: string | null;
 		ocupado: boolean;
 		aoRodar: (etapa: NomeEtapa, opcoes: Record<string, unknown>) => void;
+		aoSortear: (n: number) => void;
 	} = $props();
+
+	let tamanhoAmostra = $state(200);
 
 	const NOMES = { pendente: 'Nunca rodou', em_dia: 'Em dia', desatualizada: 'Desatualizada' } as const;
 	const acao = (estado: string) => (estado === 'pendente' ? 'Rodar' : estado === 'desatualizada' ? 'Atualizar' : 'Rodar de novo');
@@ -82,8 +86,16 @@
 				{#if e.id === 'validacao'}
 					{#if info.amostra}
 						<p class="ultima">{contar(info.amostra.codificados, 'documento')} de {formatarInteiro(info.amostra.n)} codificados</p>
+						<a class="botao" href={rota('/validacao/codificar')}>Codificar a amostra</a>
+					{:else}
+						<label class="tamanho">
+							Documentos na amostra
+							<input type="number" min="10" max="1000" bind:value={tamanhoAmostra} data-testid="tamanho-amostra" />
+						</label>
+						<button type="button" class="botao" disabled={ocupado} onclick={() => aoSortear(tamanhoAmostra)} data-testid="sortear-amostra">
+							Sortear a amostra
+						</button>
 					{/if}
-					<a class="botao" href={rota('/validacao/codificar')}>Codificar a amostra</a>
 				{:else}
 					<button type="button" class="botao" disabled={ocupado} onclick={() => aoRodar(e.id as NomeEtapa, {})} data-testid="rodar-{e.id}">
 						{acao(info.estado)}
@@ -203,6 +215,23 @@
 		font-size: 0.85rem;
 		text-decoration: none;
 		cursor: pointer;
+	}
+
+	.tamanho {
+		display: grid;
+		gap: 0.2rem;
+		font-size: 0.78rem;
+		color: var(--texto-suave);
+	}
+
+	.tamanho input {
+		width: 6rem;
+		padding: 0.2rem 0.4rem;
+		border: 1px solid var(--linha-forte);
+		border-radius: var(--raio-pequeno);
+		background: var(--fundo);
+		color: var(--texto);
+		font: inherit;
 	}
 
 	.variacao {

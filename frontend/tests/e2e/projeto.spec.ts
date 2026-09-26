@@ -29,6 +29,15 @@ test('a linha de metrô, a estimativa e os modelos', async ({ page }) => {
 	expect(problemas).toEqual([]);
 });
 
+test('sortear a amostra de validação pela estação', async ({ page }) => {
+	await page.goto(`${url('PAINEL')}#/projeto`);
+	const estacao = page.getByTestId('estacao-validacao');
+	await estacao.getByTestId('tamanho-amostra').fill('40');
+	await estacao.getByTestId('sortear-amostra').click();
+	await expect(estacao).toContainText('0 documentos de 40 codificados');
+	await expect(estacao.getByRole('link', { name: 'Codificar a amostra' })).toBeVisible();
+});
+
 test('rodar uma etapa: progresso ao vivo, mesmo com a conexão caindo, e a estação fica em dia', async ({ page }) => {
 	const problemas = vigiar(page);
 	const conexoes: string[] = [];

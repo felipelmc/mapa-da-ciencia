@@ -30,6 +30,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - a `FonteApi` do painel fala com a API: estado das etapas, rodar e cancelar uma etapa, acompanhá-la ao vivo (`EventSource`, que reconecta sozinho pedindo só o que perdeu; o estado ignora eventos repetidos), modelos, download, estimativa, configuração e codebook;
 - a vista **Projeto** no painel local: as etapas numa linha de metrô (pendente, em dia, desatualizada ou rodando, com a última execução), rodar cada uma (com piloto de 20 documentos, estimativa ou só a amostra, onde cabe), o job ao vivo com cancelar, que retoma o acompanhamento depois de um reload, a estimativa da classificação, os modelos do projeto com o download do que falta e as últimas execuções; e2e contra uma API falsa cuja primeira conexão SSE cai de propósito;
 - o **assistente do projeto** no painel, em 5 passos (fontes com a busca nas revistas do SciELO, recorte, modelos com o perfil sugerido pela memória e o que falta baixar, codebook num formulário e revisão com o que muda e o que isso refaz); salvar grava o `mapa.yaml` e o `codebook.yaml` sem perder os comentários, e "Salvar e rodar um piloto" coleta 20 documentos; `GET /api/revistas`;
+- sortear a amostra de validação pelo painel: `POST /api/validacao/amostra` e, na estação Validação da linha de metrô, o tamanho e o botão "Sortear a amostra";
 
 ## [0.4.0] - 2026-09-26
 

@@ -80,7 +80,7 @@ export default async function preparar() {
 			servir(join(tmp, 'painel'), (() => {
 				const validacao = criarApiFalsa(EXEMPLO);
 				const painel = criarPainelFalso(JSON.parse(readFileSync(join(EXEMPLO, 'codebook.json'), 'utf8')));
-				return (req, res, url) => validacao(req, res, url) || painel(req, res, url);
+				return (req, res, url) => painel(req, res, url) || validacao(req, res, url);
 			})())
 		]);
 		servidores.push(raiz, sub, vazio, painel);

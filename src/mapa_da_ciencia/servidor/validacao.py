@@ -5,6 +5,7 @@
   nunca as respostas de um modelo (a codificação é cega).
 - `PUT /api/validacao/codificacoes/{doc}`: grava as respostas de um documento. Com `completa: false` (o
   salvamento automático), as variáveis ainda não respondidas não são erro.
+- `POST /api/validacao/amostra`: sorteia a amostra (como `mapa validar amostra`);
 - `GET /api/validacao/metricas`: a concordância calculada agora, no formato de `validacao.json`, com as
   divergências de todos os codificadores (no contrato publicado, só as de codificadores de referência).
 
@@ -30,6 +31,11 @@ class RespostaVariavel(BaseModel):
     evidencia: str = ""
     incerto: bool = False
     nota: str = Field("", max_length=2000)
+
+
+class PedidoAmostra(BaseModel):
+    n: int | None = Field(None, ge=1, description="Tamanho da amostra (padrão: `validacao.n` do `mapa.yaml`).")
+    refazer: bool = False
 
 
 class Codificacao(BaseModel):
@@ -110,6 +116,25 @@ def rotas_validacao(projeto: Projeto) -> APIRouter:
             raise HTTPException(422, {"problemas": problemas})
         ja = {c["variavel"] for c in va.codificacoes(projeto, nome) if c["doc"] == doc}
         return {"ok": True, "completa": ja >= {v.id for v in projeto.codebook.variaveis}}
+
+    @rotas.post("/amostra", dependencies=[Depends(conferir_origem)])
+    def sortear(corpo: PedidoAmostra) -> dict[str, Any]:
+        """Sorteia a amostra de validação (como `mapa validar amostra`) e exporta os textos para codificar. Com uma
+        amostra já sorteada, só `refazer` sorteia outra."""
+        if va.ler(projeto) is not None and not corpo.refazer:
+            raise HTTPException(409, "A amostra já foi sorteada. Mande `refazer: true` para sortear outra.")
+        try:
+            a = va.sortear(projeto, refazer=corpo.refazer, n=corpo.n)
+            va.exportar(projeto, a)
+        except ErroConfig as e:
+            raise HTTPException(422, str(e)) from e
+        return {
+            "n": len(a.docs),
+            "estratificar_por": a.estratificar_por,
+            "estratos": len(a.por_estrato()),
+            "semente": a.semente,
+            "avisos": a.avisos,
+        }
 
     @rotas.get("/metricas")
     def metricas() -> dict[str, Any]:
