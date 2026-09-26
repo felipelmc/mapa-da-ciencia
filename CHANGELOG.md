@@ -4,6 +4,11 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Marco M5 (classificação por codebook e validação)**:
+  - o codebook vira o JSON Schema da resposta do modelo, com a evidência (até 200 caracteres) antes do valor em cada variável, e as respostas são validadas contra ele; a mensagem de sistema é fixa (o Ollama reaproveita o prefixo) e traz as regras da evidência curta;
+
 ## [0.4.0] - 2026-09-26
 
 Os tópicos no tempo e a geografia: o painel mostra como os assuntos do corpus mudam ano a ano, quais estão em alta e em queda, e de onde vêm os autores, por UF, país e instituição, com contagem fracionária. No piloto (4.275 artigos), 13 dos 57 tópicos têm tendência distinguível do acaso, 93,9% dos vínculos de autoria são ligados a uma de 639 instituições com precisão de 99,8% numa amostra lida à mão, e a geografia leva 2 segundos.
