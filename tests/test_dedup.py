@@ -86,3 +86,41 @@ def test_mesmo_doi_titulos_compativeis_funde():
 def test_sem_doi_mesmo_titulo_ano_autor_em_fontes_diferentes_funde():
     saida, rel = deduplicar([_doc("S1"), _doc("openalex:W2", fonte="openalex")])
     assert len(saida) == 1 and rel.fundidos == [("openalex:W2", "S1")]
+
+
+def _com_resumo(id_, texto, origem="articlemeta", titulo=None) -> Documento:
+    return _doc(
+        id_,
+        doi=f"10.1590/{id_}",
+        titulos=[Texto(idioma="pt", texto=titulo or f"Um título bem diferente para o documento {id_}")],
+        resumos=[
+            Texto(idioma="pt", texto="Resumo próprio do artigo " + id_),
+            Texto(idioma="es", texto=texto, origem=origem),
+        ],
+    )
+
+
+def test_resumo_padrao_do_openalex_em_varios_documentos_e_descartado():
+    padrao = "Americanae nace como un proyecto conjunto de la Red Europea de Información y Documentación."
+    docs = [_com_resumo(f"S{i}", padrao, "openalex") for i in range(2)] + [_com_resumo("S9", "Outro resumo.")]
+    mantidos, rel = deduplicar(docs)
+    assert [len(d.resumos) for d in mantidos] == [1, 1, 2]
+    assert all("Americanae" not in r.texto for d in mantidos for r in d.resumos)
+    assert sorted(i for i, _ in rel.resumos_descartados) == ["S0", "S1"]
+
+
+def test_resumo_da_articlemeta_repetido_em_duas_partes_fica_e_em_tres_sai():
+    duas = [_com_resumo(f"P{i}", "O conceito de público foi posto na agenda por Habermas.") for i in (1, 2)]
+    mantidos, rel = deduplicar(duas)
+    assert [len(d.resumos) for d in mantidos] == [2, 2] and not rel.resumos_descartados
+    tres = [_com_resumo(f"P{i}", "Texto de apresentação do número especial.") for i in (1, 2, 3)]
+    mantidos, rel = deduplicar(tres)
+    assert [len(d.resumos) for d in mantidos] == [1, 1, 1] and len(rel.resumos_descartados) == 3
+
+
+def test_resumo_do_openalex_igual_ao_de_outro_artigo_sai_so_do_openalex():
+    texto = "Este artigo discute a coordenação federativa das políticas de saúde."
+    docs = [_com_resumo("A", texto, "articlemeta"), _com_resumo("B", texto.upper(), "openalex")]
+    mantidos, rel = deduplicar(docs)
+    assert {d.id: len(d.resumos) for d in mantidos} == {"A": 2, "B": 1}
+    assert [i for i, _ in rel.resumos_descartados] == ["B"]

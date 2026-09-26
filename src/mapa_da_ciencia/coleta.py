@@ -446,6 +446,12 @@ async def coletar_async(
         f"{doc}: o DOI {doi} é de outro artigo ({dono}, confirmado pelo OpenAlex); o documento ficou sem DOI."
         for doc, doi, dono in dedup.dois_removidos
     ]
+    if dedup.resumos_descartados:
+        exemplos = ", ".join(sorted({doc for doc, _ in dedup.resumos_descartados})[:5])
+        avisos.append(
+            f"{num(len(dedup.resumos_descartados), 0)} resumo(s) descartado(s) por se repetirem em documentos "
+            f"diferentes (um texto padrão, e não o resumo do artigo), por exemplo em {exemplos}."
+        )
     n = gravar_documentos(documentos, projeto.dados / ARQUIVO)
     progresso.fim()
 
@@ -482,9 +488,14 @@ async def coletar_async(
             "casados_openalex": sum(v for k, v in resumo.casamento.items() if k[0].isdigit()),
             "fundidos": resumo.fundidos,
             "possiveis_duplicatas": len(resumo.possiveis_duplicatas),
+            "resumos_descartados": len(dedup.resumos_descartados),
         },
         parametros=_parametros(plano, opcoes)
-        | {"duplicatas_fundidas": dedup.fundidos, "dois_removidos": dedup.dois_removidos},
+        | {
+            "duplicatas_fundidas": dedup.fundidos,
+            "dois_removidos": dedup.dois_removidos,
+            "resumos_descartados": dedup.resumos_descartados,
+        },
     )
     avisos += exportar(projeto)  # manifesto e revistas; tópicos que ficaram de outro corpus, com aviso
     return resumo

@@ -17,6 +17,12 @@ fundidos vão para o manifesto da coleta. Dentro da mesma fonte, dois documentos
 título, ano e 1º autor **sem** DOI em comum viram só uma **suspeita** (`possivel_duplicata_de`):
 sem a confirmação do DOI, apagar é decisão do pesquisador. Títulos curtos e genéricos
 ("Apresentação") nunca contam como duplicata.
+
+Por fim, **resumos repetidos em documentos diferentes** são descartados, porque não são resumos: o OpenAlex
+às vezes guarda como resumo um texto raspado da página do artigo (no piloto, a mesma apresentação da biblioteca
+Americanae em 10 artigos da *Novos Estudos CEBRAP*). Um resumo do OpenAlex que aparece em outro documento sai
+sempre; um da ArticleMeta só sai quando se repete em três ou mais documentos, porque artigos em duas partes
+podem ter o mesmo resumo. O documento fica com os resumos que sobrarem, ou só com o título.
 """
 
 from __future__ import annotations
@@ -28,6 +34,7 @@ from mapa_da_ciencia.texto import normalizar_titulo, similaridade_titulo
 
 TITULO_MINIMO = 20  # caracteres do título normalizado para valer como chave de duplicata
 SIMILARIDADE_MINIMA = 0.6
+REPETICOES_ARTICLEMETA = 3  # documentos com o mesmo resumo da ArticleMeta para ele ser descartado
 
 
 @dataclass
@@ -35,6 +42,7 @@ class RelatorioDedup:
     fundidos: list[tuple[str, str]] = field(default_factory=list)  # (removido, mantido)
     suspeitas: list[tuple[str, str]] = field(default_factory=list)  # (documento, possível original)
     dois_removidos: list[tuple[str, str, str]] = field(default_factory=list)  # (documento, DOI, dono do DOI)
+    resumos_descartados: list[tuple[str, str]] = field(default_factory=list)  # (documento, início do texto)
 
 
 def _chave(doc: Documento) -> tuple[str, int, str] | None:
@@ -99,6 +107,7 @@ def deduplicar(documentos: list[Documento]) -> tuple[list[Documento], RelatorioD
         if chave:
             por_chave.setdefault(chave, doc.id)
     _conferir_dois_repetidos(mantidos, relatorio)
+    _descartar_resumos_repetidos(mantidos, relatorio)
     return sorted(mantidos.values(), key=lambda d: d.id), relatorio
 
 
@@ -115,3 +124,24 @@ def _conferir_dois_repetidos(mantidos: dict[str, Documento], relatorio: Relatori
         for i in sorted(set(ids) - set(confirmados)):
             mantidos[i] = mantidos[i].model_copy(update={"doi": None})
             relatorio.dois_removidos.append((i, doi, confirmados[0]))
+
+
+def _descartar_resumos_repetidos(mantidos: dict[str, Documento], relatorio: RelatorioDedup) -> None:
+    """Tira os resumos que se repetem em documentos diferentes (textos padrão, e não resumos)."""
+    por_texto: dict[str, dict[str, set[str]]] = {}  # texto normalizado → origem → documentos
+    for doc in mantidos.values():
+        for r in doc.resumos:
+            por_texto.setdefault(" ".join(r.texto.casefold().split()), {}).setdefault(r.origem, set()).add(doc.id)
+    descartar: set[tuple[str, str]] = set()  # (documento, texto normalizado)
+    for texto, origens in por_texto.items():
+        todos = set().union(*origens.values())
+        if len(todos) < 2:
+            continue
+        descartar |= {(i, texto) for i in origens.get("openalex", set())}
+        if len(origens.get("articlemeta", set())) >= REPETICOES_ARTICLEMETA:
+            descartar |= {(i, texto) for i in origens["articlemeta"]}
+    for i, texto in sorted(descartar):
+        doc = mantidos[i]
+        resumos = [r for r in doc.resumos if " ".join(r.texto.casefold().split()) != texto]
+        mantidos[i] = doc.model_copy(update={"resumos": resumos})
+        relatorio.resumos_descartados.append((i, texto[:60]))

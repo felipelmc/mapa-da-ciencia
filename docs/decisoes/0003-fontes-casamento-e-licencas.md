@@ -124,4 +124,6 @@ A investigação pedida acima para a *Novos Estudos* (38 sem casamento no spike)
 
 **Consequência para o M3.** 96 documentos (2,3%) não têm resumo em inglês, quase todos porque o resumo veio só do OpenAlex, no idioma original. A etapa de tópicos precisa decidir o que fazer com eles (título em inglês, tradução ou exclusão marcada), sem misturar idiomas em silêncio (ADR 0004).
 
+**Correção no M3.** Dez desses resumos de reserva, todos iguais, não eram resumos: o OpenAlex guardava para dez artigos da *Novos Estudos CEBRAP* a apresentação da biblioteca virtual Americanae. A coleta passou a descartar resumos repetidos em documentos diferentes ([Fontes de dados](../explicacoes/fontes.md#openalex)); no piloto, ficam 4.247 artigos com resumo (99,3%) e 4.159 com resumo em inglês.
+
 Reprodução: `mapa novo projetos/cp-scielo` e `mapa coletar -P projetos/cp-scielo`. A tabela sai de `mapa status` e de uma consulta com `mapa_da_ciencia.api.consultar`.
