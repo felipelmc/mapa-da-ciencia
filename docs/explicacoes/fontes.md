@@ -66,6 +66,16 @@ Antes de aceitar um candidato, o `mapa` **confere** se ele é mesmo o artigo: o 
 
 O passo usado fica registrado em cada documento.
 
+## Duplicatas
+
+O mesmo artigo pode chegar mais de uma vez: de fontes diferentes (coletado da revista e também importado de uma busca) ou da própria ArticleMeta, que tem artigos carregados duas vezes com identificadores diferentes (na *Dados* e na *Lua Nova*, em 2025). O `mapa` junta os registros quando tem certeza:
+
+- **mesmo PID**;
+- **mesmo DOI e títulos compatíveis**. DOI igual com títulos diferentes não basta, por causa dos DOIs trocados;
+- **sem DOI, mesmo título, ano e sobrenome do primeiro autor**, vindos de fontes diferentes.
+
+Quando junta, fica a versão da ArticleMeta, as origens se somam, e o par fica registrado no manifesto da coleta. Quando só desconfia (mesmo título, ano e autor dentro da mesma fonte, sem DOI em comum), o documento é mantido e marcado como **possível duplicata**, para você decidir. Títulos curtos e genéricos, como "Apresentação", nunca contam como duplicata.
+
 ## Cobertura no piloto
 
 Ciência política no SciELO Brasil, 10 revistas, de 2010 a 2025 (coletado em 26/09/2026):

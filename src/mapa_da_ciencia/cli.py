@@ -328,6 +328,10 @@ def coletar(
             f"{num(resumo.requisicoes.get('openalex', 0), 0)} requisição(ões), "
             f"{num(resumo.creditos_openalex, 0)} crédito(s).[/]"
         )
+    if resumo.fundidos:
+        console.print(f"[dim]Duplicatas entre fontes fundidas: {num(resumo.fundidos, 0)}.[/]")
+    for doc, original in resumo.possiveis_duplicatas:
+        console.print(f"[yellow]Possível duplicata:[/] {doc} parece repetir {original} (mesmo título, ano e 1º autor).")
     for aviso in resumo.avisos:
         console.print(f"[yellow]Aviso:[/] {aviso}")
     console.print("Próximo passo: [bold]mapa status[/] para ver a cobertura do corpus.")

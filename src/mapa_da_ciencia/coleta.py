@@ -21,6 +21,7 @@ from mapa_da_ciencia.documento import Documento
 from mapa_da_ciencia.fontes import revistas as retrato
 from mapa_da_ciencia.fontes.articlemeta import RevistaRef, buscar_registros, listar_pids, normalizar
 from mapa_da_ciencia.fontes.base import Buscador, limpar_temporarios
+from mapa_da_ciencia.fontes.dedup import deduplicar
 from mapa_da_ciencia.fontes.openalex import casar_todos, listar_por_revista
 from mapa_da_ciencia.manifesto import registrar_execucao
 from mapa_da_ciencia.progresso import Progresso, ProgressoNulo
@@ -57,6 +58,8 @@ class ResumoColeta:
     excluidos_por_tipo: dict[str, int]
     nao_encontrados: int
     casamento: dict[str, int]
+    fundidos: int
+    possiveis_duplicatas: list[tuple[str, str]]
     requisicoes: dict[str, int]
     do_cache: dict[str, int]
     creditos_openalex: int
@@ -189,12 +192,15 @@ async def coletar_async(
             documentos = await _enriquecer(buscador, projeto, plano, documentos, opcoes, progresso)
         contadores = buscador.contadores
 
+    documentos, dedup = deduplicar(documentos)
     n = gravar_documentos(documentos, projeto.dados / ARQUIVO)
     progresso.fim()
 
     resumo = ResumoColeta(
         documentos=n,
         casamento=dict(sorted(Counter(d.casamento for d in documentos).items())),
+        fundidos=len(dedup.fundidos),
+        possiveis_duplicatas=dedup.suspeitas,
         por_revista=dict(Counter(d.revista_acronimo or "?" for d in documentos).most_common()),
         fora_do_periodo=fora_do_periodo,
         excluidos_por_tipo=dict(excluidos.most_common()),
@@ -220,8 +226,10 @@ async def coletar_async(
             "do_cache": sum(resumo.do_cache.values()),
             "creditos_openalex": resumo.creditos_openalex,
             "casados_openalex": sum(v for k, v in resumo.casamento.items() if k[0].isdigit()),
+            "fundidos": resumo.fundidos,
+            "possiveis_duplicatas": len(resumo.possiveis_duplicatas),
         },
-        parametros=_parametros(plano, opcoes),
+        parametros=_parametros(plano, opcoes) | {"duplicatas_fundidas": dedup.fundidos},
     )
     return resumo
 

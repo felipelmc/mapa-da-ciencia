@@ -25,6 +25,12 @@ FALSO = "anonimo@exemplo.invalid"
 ESPECIAIS = {
     "S0011-52582014000200007": "DOI repetido na ArticleMeta (par com ...008)",
     "S0011-52582014000200008": "DOI repetido na ArticleMeta (par com ...007)",
+    "S0011-52582025000400225": "duplicata real na ArticleMeta (par com ...230)",
+    "S0011-52582025000400230": "duplicata real na ArticleMeta (par com ...225)",
+    "S0102-64452025000200303": "duplicata real na ArticleMeta (par com ...312)",
+    "S0102-64452025000200312": "duplicata real na ArticleMeta (par com ...303)",
+    "S0102-64452011000300001": "título genérico 'Apresentação' (não é duplicata)",
+    "S0103-33522011000100001": "título genérico 'Apresentação' (não é duplicata)",
 }
 
 
