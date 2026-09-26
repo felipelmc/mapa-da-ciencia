@@ -1,0 +1,74 @@
+/*
+ * Tokens de design: um só sistema, dois temas.
+ *
+ * - Observatório (escuro, padrão): céu noturno, acento âmbar.
+ * - Prancha (claro): papel de atlas, tinta azul-noite, acento vermelhão.
+ *
+ * O tema ativo vem de `data-tema` no <html>, aplicado por src/app.html e por
+ * src/lib/estado/tema.svelte.ts. Os componentes usam só as variáveis abaixo, nunca cores
+ * soltas. Os pares de texto sobre fundo passam no AA (4,5:1); `contraste.test.ts` confere
+ * cada par listado lá. Regras que o teste garante:
+ * - `--acento` como texto só sobre `--fundo` e `--superficie`;
+ * - `--texto-fraco` só em itens desativados e ornamentos (mínimo 3:1).
+ *
+ * Mantenha cada bloco de tema como uma lista simples de `--nome: #RRGGBB;` (ou rgb/rgba),
+ * porque o teste de contraste lê este arquivo.
+ */
+
+:root {
+	--fonte-titulo: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
+	--fonte-interface: 'Instrument Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--fonte-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+
+	--trilho-largura: 14rem;
+	--barra-altura: 4rem;
+	--conteudo-largura: 76rem;
+	--raio: 6px;
+	--raio-pequeno: 3px;
+
+	--duracao: 180ms;
+	--curva: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+:root,
+:root[data-tema='observatorio'] {
+	color-scheme: dark;
+	--fundo: #0a0e1f;
+	--superficie: #111733;
+	--superficie-alta: #1a2150;
+	--texto: #eceaf4;
+	--texto-suave: #a9abc9;
+	--texto-fraco: #7e82a6;
+	--linha: #232b55;
+	--linha-forte: #3b4579;
+	--acento: #ffb547;
+	--acento-suave: rgb(255 181 71 / 0.12);
+	--sobre-acento: #0a0e1f;
+	--foco: #ffb547;
+	--estrela: rgb(236 234 244 / 0.7);
+	--brilho: rgb(255 181 71 / 0.07);
+	--brilho-frio: rgb(91 141 239 / 0.08);
+	--grade: rgb(236 234 244 / 0);
+	--sombra: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 18px 40px -24px rgb(0 0 0 / 0.8);
+}
+
+:root[data-tema='prancha'] {
+	color-scheme: light;
+	--fundo: #f6f2e9;
+	--superficie: #fbf8f2;
+	--superficie-alta: #ede6d6;
+	--texto: #161a2b;
+	--texto-suave: #55586b;
+	--texto-fraco: #8c8778;
+	--linha: #dcd3c2;
+	--linha-forte: #b9ac93;
+	--acento: #c2410c;
+	--acento-suave: rgb(194 65 12 / 0.09);
+	--sobre-acento: #ffffff;
+	--foco: #c2410c;
+	--estrela: rgb(22 26 43 / 0);
+	--brilho: rgb(194 65 12 / 0);
+	--brilho-frio: rgb(120 100 60 / 0.07);
+	--grade: rgb(22 26 43 / 0.035);
+	--sombra: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 14px 30px -24px rgb(60 45 20 / 0.45);
+}
