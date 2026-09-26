@@ -397,7 +397,7 @@ def coletar(
     plano = resumo.plano
     console.print(
         f"\n[bold green]Coleta concluída[/] em {num(resumo.duracao_s)} s: [bold]{num(resumo.documentos, 0)}[/] "
-        f"documento(s) de {len(plano.revistas)} revista(s), {periodo(plano.anos)}."
+        f"documento(s) de {len(resumo.por_revista)} revista(s), {periodo(plano.anos)}."
     )
     if resumo.por_revista:
         tabela = Table("Revista", "Documentos")
