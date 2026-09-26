@@ -4,6 +4,11 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Marco M4 (tópicos no tempo e geografia)**:
+  - tendência de cada tópico (em alta, em queda, estável) por regressão logística quase-binomial da participação anual, com `scripts/tendencias.py` para comparar os modelos (ADR 0009);
+
 ### Corrigido
 
 - Revistas sem acrônimo (vindas de importações) têm a mesma chave, o ISSN, em `revistas.json`, nos documentos, nas séries por revista e nos agregados; antes, algumas contagens usavam "?".
