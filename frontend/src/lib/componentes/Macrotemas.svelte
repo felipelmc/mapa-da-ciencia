@@ -1,8 +1,13 @@
 <script lang="ts">
 	import type { Topicos } from '$lib/contrato/tipos';
-	import { contar, formatarPorcentagem } from '$lib/formato';
+	import { escreverFiltros, FILTROS_PADRAO, rota } from '$lib/estado/url';
+	import { contar, formatarDecimal, formatarPorcentagem } from '$lib/formato';
+	import Sparkline from '$lib/graficos/Sparkline.svelte';
 
-	/** Legenda dos macrotemas: cor, número de tópicos e peso no corpus. */
+	/**
+	 * Legenda dos macrotemas: cor, participação ano a ano (a mini-série), tendência, número de tópicos e peso no
+	 * corpus. O nome leva à vista Tópicos com o macrotema aberto.
+	 */
 	let { topicos, totalDocumentos }: { topicos: Topicos; totalDocumentos: number } = $props();
 
 	const linhas = $derived.by(() => {
@@ -36,7 +41,23 @@
 		{#each linhas as m (m.id)}
 			<li style:--cor={m.cor}>
 				<span class="astro" aria-hidden="true"></span>
-				<span class="nome">{m.rotulo}</span>
+				<a class="nome" href={rota('/topicos', escreverFiltros({ ...FILTROS_PADRAO, macro: m.id }))}>{m.rotulo}</a>
+				<span class="serie">
+					{#if m.serie}
+						<Sparkline
+							observado={m.serie.prop}
+							largura={96}
+							altura={24}
+							cor={m.cor}
+							rotulo="Participação de {m.rotulo} por ano, de {topicos.anos[0]} a {topicos.anos[topicos.anos.length - 1]}"
+						/>
+					{/if}
+					{#if m.tendencia && (m.tendencia.direcao === 'alta' || m.tendencia.direcao === 'queda') && m.tendencia.pp_periodo != null}
+						<span class="tendencia" data-testid="tendencia-macro" title="Variação da participação no período, pela tendência ajustada">
+							{m.tendencia.direcao === 'alta' ? '↑' : '↓'} {formatarDecimal(Math.abs(m.tendencia.pp_periodo), 1)} p.p.
+						</span>
+					{/if}
+				</span>
 				<span class="topicos numero">{contar(m.topicos.length, 'tópico')}</span>
 				<span class="barra" aria-hidden="true"><span style:width="{m.largura}%"></span></span>
 				<span class="docs numero">
@@ -83,7 +104,7 @@
 
 	li {
 		display: grid;
-		grid-template-columns: 1.25rem minmax(12rem, 1.4fr) 6.5rem minmax(6rem, 1fr) 12.5rem;
+		grid-template-columns: 1.25rem minmax(12rem, 1.4fr) 11.5rem 6.5rem minmax(6rem, 1fr) 12.5rem;
 		align-items: center;
 		gap: 1rem;
 		padding: 0.75rem 0;
@@ -105,6 +126,26 @@
 
 	.nome {
 		font-weight: 500;
+		color: var(--texto);
+		text-decoration: none;
+	}
+
+	.nome:hover {
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+
+	.serie {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.tendencia {
+		font-family: var(--fonte-mono);
+		font-size: 0.72rem;
+		color: var(--texto-suave);
+		white-space: nowrap;
 	}
 
 	.topicos,
@@ -145,7 +186,8 @@
 			gap: 0.35rem 0.75rem;
 		}
 
-		.barra {
+		.barra,
+		.serie {
 			grid-column: 2 / -1;
 		}
 

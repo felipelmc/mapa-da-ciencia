@@ -4,6 +4,7 @@
 	import EstadoVazio from '$lib/componentes/EstadoVazio.svelte';
 	import Macrotemas from '$lib/componentes/Macrotemas.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
+	import { rota } from '$lib/estado/url';
 	import { contar, formatarData, formatarInteiro, formatarPeriodo, formatarPorcentagem } from '$lib/formato';
 
 	const { fonte, manifesto, revistas, ehExemplo } = usarProjeto();
@@ -19,6 +20,8 @@
 		valor: number | null;
 		texto: string;
 		nota: string;
+		/** A vista que detalha o número. */
+		href?: string;
 	}
 
 	// Os números da capa aparecem só se o projeto já os tiver.
@@ -59,12 +62,14 @@
 		});
 		if (manifesto.arquivos.includes('afiliacoes')) {
 			const com = contagens.com_afiliacao ?? 0;
+			const inst = contagens.com_instituicao ?? 0;
 			numeros.push({
 				id: 'afiliacao',
 				rotulo: 'Com afiliação',
 				valor: com / n,
 				texto: formatarPorcentagem(com / n),
-				nota: `${formatarInteiro(com)} de ${formatarInteiro(n)} documentos`
+				nota: `${formatarInteiro(com)} de ${formatarInteiro(n)} documentos; ${formatarInteiro(inst)} com instituição identificada`,
+				href: rota('/geografia')
 			});
 		}
 	}
@@ -131,7 +136,11 @@
 					<div class="numero-item">
 						<dt class="rotulo-miudo">{n.rotulo}</dt>
 						<dd>
-							<span class="valor" data-testid="numero-{n.id}" data-valor={n.valor ?? undefined}>{n.texto}</span>
+							{#if n.href}
+								<a class="valor" href={n.href} data-testid="numero-{n.id}" data-valor={n.valor ?? undefined}>{n.texto}</a>
+							{:else}
+								<span class="valor" data-testid="numero-{n.id}" data-valor={n.valor ?? undefined}>{n.texto}</span>
+							{/if}
 							<span class="nota">{n.nota}</span>
 						</dd>
 					</div>
@@ -266,6 +275,18 @@
 		display: grid;
 		gap: 0.35rem;
 		margin: 0;
+	}
+
+	a.valor {
+		color: var(--texto);
+		text-decoration: underline;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.12em;
+		text-decoration-color: var(--linha-forte);
+	}
+
+	a.valor:hover {
+		text-decoration-color: var(--acento);
 	}
 
 	.valor {

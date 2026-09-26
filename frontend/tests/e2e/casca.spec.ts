@@ -258,3 +258,27 @@ test.describe('projeto vazio (só o manifesto, como depois do `mapa novo`)', () 
 		expect(problemas).toEqual([]);
 	});
 });
+
+test('a capa leva aos macrotemas e à geografia; a Ajuda explica o recorte', async ({ page }) => {
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await page.goto(url('RAIZ'));
+	const lista = page.getByTestId('lista-macrotemas');
+	await expect(lista.getByRole('img', { name: /^Participação de/ })).toHaveCount(7);
+	const emAlta = topicos.macrotemas.filter((m: { tendencia?: { direcao: string } }) =>
+		['alta', 'queda'].includes(m.tendencia?.direcao ?? '')
+	).length;
+	await expect(page.getByTestId('tendencia-macro')).toHaveCount(emAlta);
+	const primeiro = topicos.macrotemas[0];
+	await lista.getByRole('link', { name: primeiro.rotulo }).click();
+	await expect(page).toHaveURL(new RegExp(`#/topicos\\?macro=${primeiro.id}$`));
+	await expect(page.getByTestId('macro-aberto')).toHaveText(primeiro.rotulo);
+
+	await page.goto(url('RAIZ'));
+	await page.getByTestId('numero-afiliacao').click();
+	await expect(page).toHaveURL(/#\/geografia$/);
+	await expect(h1(page)).toHaveText('Geografia');
+
+	await page.goto(`${url('RAIZ')}#/ajuda`);
+	await expect(page.getByTestId('ajuda-recorte')).toContainText('um documento passa se tiver ao menos uma afiliação');
+	await expect(page.getByRole('heading', { name: 'Como ler a geografia' })).toBeVisible();
+});
