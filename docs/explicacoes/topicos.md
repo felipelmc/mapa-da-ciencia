@@ -55,4 +55,6 @@ O [HDBSCAN](https://scikit-learn.org/stable/modules/clustering.html#hdbscan) pro
 - `topicos.min_samples`: quão conservador é o agrupamento. Valores maiores deixam mais documentos de fora.
 - `topicos.selecao`: `eom` prefere tópicos maiores; `leaf`, tópicos menores e mais numerosos.
 
+Os padrões foram calibrados no piloto ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)): 50 tópicos, com o mesmo número nas três sementes testadas e nenhum tópico acima de 6% do corpus.
+
 Os documentos que o HDBSCAN agrupa formam o **núcleo** de cada tópico. Os demais ficam como **ruído**: não pertencem claramente a nenhuma região densa. O ruído não é um erro, e sim uma informação: são trabalhos isolados, de fronteira ou que misturam assuntos. Com menos de 50 documentos, não há tópicos: a etapa para e sugere ampliar o recorte.

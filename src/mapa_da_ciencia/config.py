@@ -119,7 +119,8 @@ class Modelos(_Base):
 
 
 class ConfigTopicos(_Base):
-    """Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007)."""
+    """Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007); para outro
+    corpus, `scripts/calibrar_topicos.py` refaz a grade."""
 
     vizinhos: int = Field(
         15,

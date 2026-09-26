@@ -17,7 +17,7 @@ Conteúdo do `mapa.yaml`.
 | `fontes` | [Fontes](#fontes) | **obrigatório** | De onde vêm os artigos. Pode combinar mais de uma fonte. |
 | `recorte` | [Recorte](#recorte) | **obrigatório** | Período e idiomas do corpus. |
 | `modelos` | [Modelos](#modelos) | valores padrão da seção | Modelos locais de cada papel. `mapa novo` preenche conforme a memória da máquina. |
-| `topicos` | [ConfigTopicos](#configtopicos) | valores padrão da seção | Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007). |
+| `topicos` | [ConfigTopicos](#configtopicos) | valores padrão da seção | Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007); para outro |
 | `validacao` | [Validacao](#validacao) | valores padrão da seção | Amostra de resumos codificados por pessoas para medir a qualidade da classificação. |
 
 ### Fontes
@@ -96,7 +96,8 @@ Modelo de linguagem usado para classificar resumos ou nomear tópicos.
 
 ### ConfigTopicos
 
-Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007).
+Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007); para outro
+corpus, `scripts/calibrar_topicos.py` refaz a grade.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|

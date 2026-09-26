@@ -23,6 +23,7 @@ uv run python scripts/gerar_referencias.py   # regenera docs/referencia/{cli,con
 uv run mapa diagnostico                      # memória, Ollama, modelos, rede
 uv run mapa painel --exemplo                 # painel com dados sintéticos
 uv run mapa coletar -P projetos/op-2024      # coleta de verdade (projetos/ fica fora do git)
+uv run python scripts/calibrar_topicos.py projetos/cp-scielo  # grade UMAP × HDBSCAN com 3 sementes (ADR 0007)
 ```
 
 Os testes nunca acessam a rede: `tests/conftest.py` tem a fixture `apis_falsas` (respx), que responde ArticleMeta e OpenAlex com as fixtures de `tests/fixtures/` e também um Ollama falso (`OLLAMA_HOST=http://ollama.teste:11434`, com embeddings de saco de palavras via `vetor_falso`) (geradas por `scripts/recortar_fixtures.py`, com e-mails trocados por `anonimo@exemplo.invalid`). `tests/test_tutorial.py` roda os comandos do tutorial `docs/tutoriais/primeiro-mapa.md`; linhas com `# fora do CI` são puladas.
