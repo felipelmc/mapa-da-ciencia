@@ -80,6 +80,8 @@ O Parquet também pode ser lido direto pelo pandas ou pelo polars (`pd.read_parq
 
 ::: mapa_da_ciencia.api.codificacoes
 
+::: mapa_da_ciencia.api.validacao
+
 ::: mapa_da_ciencia.api.consultar
 
 ::: mapa_da_ciencia.api.conectar
@@ -107,6 +109,14 @@ O Parquet também pode ser lido direto pelo pandas ou pelo polars (`pd.read_parq
       members: [por_estrato]
 
 ::: mapa_da_ciencia.validacao.amostra.ResumoImportacao
+    options:
+      members: false
+
+::: mapa_da_ciencia.validacao.metricas.Validacao
+    options:
+      members: [metrica]
+
+::: mapa_da_ciencia.validacao.metricas.Metrica
     options:
       members: false
 

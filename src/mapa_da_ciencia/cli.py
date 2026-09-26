@@ -752,6 +752,61 @@ def validar_importar(
         raise typer.Exit(1)
 
 
+@validar_app.command("metricas")
+def validar_metricas(projeto: OpcaoProjeto = Path(".")) -> None:
+    """Concordância entre codificadores e modelos na amostra: kappa com IC 95%, PABAK e alfa, por variável."""
+    from mapa_da_ciencia.validacao.metricas import calcular
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        r = calcular(p)
+    _mostrar_validacao(r)
+
+
+def _f(valor: float | None, casas: int = 2) -> str:
+    return "—" if valor is None else num(valor, casas)
+
+
+def _mostrar_validacao(r) -> None:
+    tipos = {"humano": "pessoa", "referencia": "referência, não humano", "modelo": "modelo"}
+    console.print(
+        f"[bold]Validação[/] na amostra de {num(r.amostra['n'], 0)} documentos (estratificada por "
+        f"{r.amostra['estratificar_por']}, semente {r.amostra['semente']}), codebook {r.codebook}."
+    )
+    console.print(
+        "Participantes: "
+        + "; ".join(f"[bold]{x.nome}[/] ({tipos[x.tipo]}, {num(x.n, 0)} documentos)" for x in r.participantes)
+    )
+    if not r.metricas:
+        console.print(
+            "[yellow]Nada a comparar ainda.[/] É preciso ao menos dois participantes: codifique a amostra "
+            "([bold]mapa validar importar[/] ou o painel) e classifique-a "
+            "([bold]mapa classificar --somente-amostra[/])."
+        )
+        return
+    for par in dict.fromkeys((m.referencia, m.comparado) for m in r.metricas):
+        tabela = Table("Variável", "n", "Concordância", "Kappa (IC 95%)", "PABAK", "Alfa", title=" × ".join(par))
+        for m in (m for m in r.metricas if (m.referencia, m.comparado) == par):
+            ic = f" ({_f(m.kappa_ic95[0])} a {_f(m.kappa_ic95[1])})" if m.kappa_ic95 else ""
+            conc = "—" if m.concordancia is None else f"{num(100 * m.concordancia, 0)}%"
+            tabela.add_row(m.variavel, num(m.n, 0), conc, _f(m.kappa) + ic, _f(m.pabak), _f(m.alfa))
+        console.print(tabela)
+    diferentes = [c for c in r.comparacoes_modelos if c.p < 0.05]
+    for c in diferentes:
+        melhor = c.modelo_a if c.acertos_a > c.acertos_b else c.modelo_b
+        console.print(
+            f"McNemar ({c.variavel}, contra {c.referencia}): {melhor} acerta mais "
+            f"({num(c.acertos_a, 0)} × {num(c.acertos_b, 0)} de {num(c.n, 0)}; p = {num(c.p, 3)})."
+        )
+    if r.comparacoes_modelos and not diferentes:
+        console.print("[dim]McNemar: nenhuma diferença entre os modelos com p < 0,05.[/]")
+    if r.divergencias:
+        console.print(
+            f"{num(len(r.divergencias), 0)} divergência(s) entre os codificadores e o modelo principal: veja o "
+            "relatório ([bold]mapa validar relatorio[/]) ou a vista Concordância do painel."
+        )
+
+
 @app.command()
 def geografia(
     projeto: OpcaoProjeto = Path("."),

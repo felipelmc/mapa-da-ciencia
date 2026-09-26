@@ -59,4 +59,12 @@ A saída diz quantos documentos da amostra foram codificados, quais linhas eram 
 uv run mapa validar importar referencia.jsonl --codificador claude-opus --tipo referencia
 ```
 
-Em Python, `mapa.amostra_de_validacao(p)`, `mapa.importar_codificacoes(p, arquivo, "maria")` e `mapa.codificacoes(p)` fazem o mesmo (veja a [API Python](../referencia/api-python.md)).
+## Medir a concordância
+
+```bash
+uv run mapa validar metricas
+```
+
+Compara cada codificador com cada modelo que classificou a amostra, os codificadores entre si e os modelos entre si: concordância, kappa com intervalo de 95%, PABAK e alfa de Krippendorff, por variável. Veja [Ler kappa e PABAK](ler-kappa-e-pabak.md).
+
+Em Python, `mapa.amostra_de_validacao(p)`, `mapa.importar_codificacoes(p, arquivo, "maria")`, `mapa.codificacoes(p)` e `mapa.validacao(p)` fazem o mesmo (veja a [API Python](../referencia/api-python.md)).

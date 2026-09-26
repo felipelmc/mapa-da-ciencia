@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from mapa_da_ciencia.geografia.pipeline import ResumoGeografia
     from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
     from mapa_da_ciencia.validacao.amostra import Amostra, ResumoImportacao
+    from mapa_da_ciencia.validacao.metricas import Validacao
 
 __all__ = [
     "Projeto",
@@ -60,6 +61,7 @@ __all__ = [
     "novo",
     "revistas",
     "topicos",
+    "validacao",
 ]
 
 Anos = int | str | tuple[int, int]
@@ -344,3 +346,12 @@ def codificacoes(projeto: Projeto | str | Path = ".", codificador: str | None = 
     from mapa_da_ciencia.validacao import amostra as va
 
     return va.codificacoes(_projeto(projeto), codificador)
+
+
+def validacao(projeto: Projeto | str | Path = ".") -> Validacao:
+    """As métricas de concordância na amostra, como `mapa validar metricas`: por variável e por par de
+    participantes (codificadores e modelos), com kappa e IC 95%, PABAK, alfa, matriz de confusão e P/R/F1 por
+    classe; McNemar entre modelos e as divergências com o modelo principal."""
+    from mapa_da_ciencia.validacao.metricas import calcular
+
+    return calcular(_projeto(projeto))
