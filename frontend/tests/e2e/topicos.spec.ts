@@ -30,7 +30,7 @@ test('os modos mudam a URL, e a tabela bate com o topicos.json', async ({ page }
 	await expect(page).toHaveURL(/modo=proporcao/);
 	await expect(page.getByTestId('modo-proporcao')).toHaveAttribute('aria-pressed', 'true');
 	await expect(page.getByTestId('figura-fluxo').getByText('100%').first()).toBeVisible();
-	await page.getByRole('button', { name: 'Ver como tabela' }).click();
+	await page.getByTestId('figura-fluxo').getByRole('button', { name: 'Ver como tabela' }).click();
 	const tabela = page.getByTestId('tabela-fluxo');
 	await expect(tabela.locator('tbody tr')).toHaveCount(macros.length + 1);
 	const doTopico = new Map(topicos.topicos.map((t: { id: number; n: number }) => [t.id, t.n]));
@@ -65,6 +65,27 @@ test('o recorte da barra filtra os documentos do fluxo', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/topicos?revistas=${revista}`);
 	await expect(page.getByTestId('resumo-fluxo')).toContainText(`${inteiro(n)} documentos`);
 	await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(n));
+});
+
+test('em alta e em queda: sem recorte, a lista é a do gabarito do Python', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	const esperado = (direcao: string) =>
+		topicos.topicos
+			.filter((t: { tendencia: { direcao: string } }) => t.tendencia.direcao === direcao)
+			.map((t: { id: number }) => String(t.id))
+			.sort();
+	for (const direcao of ['alta', 'queda']) {
+		const itens = page.getByTestId(`lista-${direcao}`).locator('li');
+		await expect(itens).toHaveCount(esperado(direcao).length);
+		const ids = await itens.evaluateAll((els) => els.map((e) => e.getAttribute('data-id')!));
+		expect(ids.sort()).toEqual(esperado(direcao));
+	}
+	await page.screenshot({ path: join(TELAS, 'topicos-tendencias-1440x900.png'), fullPage: true });
+});
+
+test('com menos de 5 anos no recorte, a lista pede um período maior', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos?anos=2020-2022`);
+	await expect(page.getByTestId('tendencias-poucos-anos')).toBeVisible();
 });
 
 test('projeto vazio: estado vazio, sem pedir arquivos ausentes', async ({ page }) => {

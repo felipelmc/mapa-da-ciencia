@@ -9,10 +9,12 @@
 	import { D, type Cubo } from '$lib/dados/cubo';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { MODOS, type Modo } from '$lib/estado/url';
-	import { formatarInteiro, formatarPeriodo, formatarPorcentagem } from '$lib/formato';
+	import { formatarDecimal, formatarInteiro, formatarPeriodo, formatarPorcentagem, formatarPp } from '$lib/formato';
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { ordemDentroFora } from '$lib/graficos/fluxo';
 	import Fluxo from './Fluxo.svelte';
+	import Tendencias from './Tendencias.svelte';
+	import { metodoDe, separar, tendencias } from './tendencias';
 
 	let { topicos, cubo }: { topicos: Topicos; cubo: Cubo } = $props();
 
@@ -113,6 +115,37 @@
 			`No período inteiro, ${quem} é ${nivel.rotulos.get(maior.id)} (${formatarPorcentagem(maior.n / total)}).`
 		);
 	});
+	// ---- tendências no recorte: o filtro de anos vale (a regressão usa só o intervalo); o de tópicos, não
+	const porAnoTendencia = $derived(cubo.topicoPorAno(falhas, D.TOPICO));
+	const idsTendencia = $derived(macroAberto ? macroAberto.topicos : topicos.topicos.map((t) => t.id));
+	const listaTendencias = $derived(tendencias(porAnoTendencia, idsTendencia, metodoDe(topicos)));
+	const grupos = $derived(separar(listaTendencias));
+	const acaso = $derived(Math.max(1, Math.round(grupos.testados * 0.05)));
+	const anosNoRecorte = $derived(Array.from(porAnoTendencia.total).filter((v) => v > 0).length);
+	const minimoAnos = $derived(topicos.metodo_tendencia?.anos_minimos ?? 5);
+	const coresTopicos = $derived(new Map(topicos.topicos.map((t) => [t.id, t.cor])));
+	const rotulosTopicos = $derived(new Map(topicos.topicos.map((t) => [t.id, t.rotulo])));
+	const resumoTendencias = $derived.by(() => {
+		const { alta, queda } = grupos;
+		const nomes = (l: typeof alta) =>
+			l.slice(0, 2).map((t) => `${rotulosTopicos.get(t.id)} (${formatarPp(t.pp_periodo!)})`).join(' e ') +
+			(l.length > 2 ? ` e mais ${l.length - 2}` : '');
+		const partes = [];
+		if (alta.length) partes.push(`Em alta: ${nomes(alta)}.`);
+		if (queda.length) partes.push(`Em queda: ${nomes(queda)}.`);
+		if (!partes.length) partes.push('Nenhum tópico com tendência distinguível do acaso no recorte.');
+		return partes.join(' ');
+	});
+	const linhasTendencia = $derived(
+		[...grupos.alta, ...grupos.queda].map((t) => [
+			rotulosTopicos.get(t.id) ?? String(t.id),
+			t.direcao === 'alta' ? 'em alta' : 'em queda',
+			formatarPp(t.pp_periodo!),
+			`${formatarDecimal(100 * t.prop_inicio!)}% → ${formatarDecimal(100 * t.prop_fim!)}%`,
+			`${formatarDecimal(t.ic95![0], 3)} a ${formatarDecimal(t.ic95![1], 3)}`
+		])
+	);
+
 	const colunas = $derived([macroAberto ? 'Tópico' : 'Macrotema', ...topicos.anos.map(String), 'Total']);
 	const linhas = $derived(
 		nivel.ids.map((id, k) => [
@@ -189,6 +222,37 @@
 			{/if}
 			{#if !macroAberto}Clique num macrotema para ver os tópicos dele.{:else}Clique num tópico para ver os detalhes.{/if}
 		</p>
+	</Figura>
+
+	<Figura
+		id="tendencias"
+		titulo="Em alta e em queda"
+		resumo={resumoTendencias}
+		colunas={['Tópico', 'Tendência', 'Variação', 'Participação ajustada', 'IC 95% da inclinação']}
+		linhas={linhasTendencia}
+	>
+		{#if anosNoRecorte < minimoAnos}
+			<p class="nota" data-testid="tendencias-poucos-anos">
+				Escolha um período de pelo menos {minimoAnos} anos com documentos para ver as tendências.
+			</p>
+		{:else}
+			<Tendencias
+				alta={grupos.alta}
+				queda={grupos.queda}
+				cores={coresTopicos}
+				rotulos={rotulosTopicos}
+				destaque={new Set(filtros.topicos)}
+				aoAbrir={(id) => mudarFiltros({ topico: id }, { em })}
+			/>
+			<p class="nota">
+				Um tópico está em alta (ou em queda) quando a participação dele nos documentos de cada ano cresce (ou
+				cai) de forma distinguível do acaso: o intervalo de 95% da inclinação de uma regressão logística,
+				corrigido pela dispersão da série, não inclui zero. Com {formatarInteiro(grupos.testados)} tópicos testados,
+				{acaso === 1 ? 'cerca de 1 pode aparecer' : `cerca de ${formatarInteiro(acaso)} podem aparecer`} aqui por acaso.
+				{#if grupos.estaveis}{formatarInteiro(grupos.estaveis)} tópicos estão estáveis.{/if}
+				{#if grupos.insuficientes}{formatarInteiro(grupos.insuficientes)} não têm documentos suficientes no recorte.{/if}
+			</p>
+		{/if}
 	</Figura>
 </div>
 
