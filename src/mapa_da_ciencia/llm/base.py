@@ -2,11 +2,12 @@
 
 No MVP só existe o adaptador do Ollama (`llm/ollama.py`). Provedores na nuvem entram
 depois como novos adaptadores que implementam este mesmo protocolo. O protocolo cresce
-a cada marco: embeddings no M3, saída estruturada no M4/M5.
+a cada marco: embeddings e saída estruturada no M3 (tópicos e rótulos).
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -41,3 +42,14 @@ class ProvedorLLM(Protocol):
     def modelos_carregados(self) -> list[ModeloCarregado]: ...
 
     def descarregar(self, modelo: str) -> None: ...
+
+    def embutir_lotes(
+        self,
+        modelo: str,
+        textos: list[str],
+        *,
+        lote: int = 32,
+        num_ctx: int | None = None,
+        keep_alive: str = "10m",
+        ao_avancar: Callable[[int], None] | None = None,
+    ) -> Iterator[list[list[float]]]: ...

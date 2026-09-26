@@ -25,7 +25,7 @@ uv run mapa painel --exemplo                 # painel com dados sintéticos
 uv run mapa coletar -P projetos/op-2024      # coleta de verdade (projetos/ fica fora do git)
 ```
 
-Os testes nunca acessam a rede: `tests/conftest.py` tem a fixture `apis_falsas` (respx), que responde ArticleMeta e OpenAlex com as fixtures de `tests/fixtures/` (geradas por `scripts/recortar_fixtures.py`, com e-mails trocados por `anonimo@exemplo.invalid`). `tests/test_tutorial.py` roda os comandos do tutorial `docs/tutoriais/primeiro-mapa.md`; linhas com `# fora do CI` são puladas.
+Os testes nunca acessam a rede: `tests/conftest.py` tem a fixture `apis_falsas` (respx), que responde ArticleMeta e OpenAlex com as fixtures de `tests/fixtures/` e também um Ollama falso (`OLLAMA_HOST=http://ollama.teste:11434`, com embeddings de saco de palavras via `vetor_falso`) (geradas por `scripts/recortar_fixtures.py`, com e-mails trocados por `anonimo@exemplo.invalid`). `tests/test_tutorial.py` roda os comandos do tutorial `docs/tutoriais/primeiro-mapa.md`; linhas com `# fora do CI` são puladas.
 
 Frontend (SvelteKit), em `frontend/`: veja `frontend/README.md`. Depois de mudar os schemas, rode `npm run tipos`.
 
@@ -38,7 +38,7 @@ Frontend (SvelteKit), em `frontend/`: veja `frontend/README.md`. Depois de mudar
 - `servidor/app.py`: FastAPI. Interface em `/`, dados em `/dados`, API em `/api`. O manifesto é servido com `api: true` no painel. O site publicado usa os mesmos arquivos, com `api: false`.
 - Coleta: `coleta.py` orquestra, `fontes/` tem os adaptadores (`base.py` com o `Buscador`: cache em `brutos/*.json.gz` gravado de forma atômica, retentativas, contagem de créditos; `articlemeta.py`, `openalex.py`, `importar.py`, `dedup.py`). Tudo vira `documento.Documento`, gravado por `armazenamento.py` em `dados/documentos.parquet` via DuckDB (ADR 0006), com as views `documentos`, `textos`, `autores` e `afiliacoes`. `armazenamento.ESQUEMA` precisa bater com `Documento.model_fields` (há teste). No fim, `contrato/exportar.exportar_coleta` grava `saida/dados/manifesto.json` e `revistas.json`.
 - `api.py`: fachada para notebooks (mesmas etapas da CLI). Mantenha as assinaturas estáveis.
-- `llm/`: interface de provedor e adaptador do Ollama (httpx direto, sem SDK). No MVP não há nuvem.
+- `llm/`: interface de provedor e adaptador do Ollama (httpx direto, sem SDK). No MVP não há nuvem. `llm/memoria.garantir_modelo` é a checagem que toda etapa faz antes de carregar um modelo (já carregado → segue; senão, instalado e cabendo na memória livre).
 - Bibliotecas numéricas (numpy, scipy, scikit-learn, umap-learn/numba) só são importadas **dentro** das funções das etapas que as usam: `mapa --help`, a API e o gerador de referências abrem sem elas (`tests/test_importacao.py`). O numba não suporta Python novo logo que sai, por isso o teto em `requires-python`.
 - `rede.py`: **todo** HTTP externo passa por aqui (truststore, ADR 0001). `recursos.py`: memória, swap e disco.
 

@@ -16,10 +16,11 @@ import httpx
 from mapa_da_ciencia import rede
 from mapa_da_ciencia.formatar import gb
 from mapa_da_ciencia.llm.base import ErroProvedor
+from mapa_da_ciencia.llm.memoria import situacao
 from mapa_da_ciencia.llm.ollama import Ollama
 from mapa_da_ciencia.llm.perfis import TAMANHOS_GB, sugerir_perfil
 from mapa_da_ciencia.projeto import Projeto
-from mapa_da_ciencia.recursos import cabe_na_memoria, disco_livre_gb, memoria
+from mapa_da_ciencia.recursos import disco_livre_gb, memoria
 
 Estado = Literal["ok", "aviso", "erro"]
 
@@ -102,32 +103,23 @@ def _modelos(ollama: Ollama, projeto: Projeto | None) -> list[Checagem]:
         papeis = {"embeddings": perfil.embeddings, "classificação": perfil.classificacao, "rótulos": perfil.rotulos}
         grupo = f"Modelos do perfil {perfil.nome}"
 
-    carregados = {m.nome.removesuffix(":latest") for m in ollama.modelos_carregados()}
     vistos: dict[str, list[str]] = {}
     for papel, nome in papeis.items():
         vistos.setdefault(nome, []).append(papel)
     for nome, usos in vistos.items():
         item = f"{nome} ({', '.join(usos)})"
-        inst = ollama.instalado(nome)
-        if inst is None:
+        s = situacao(ollama, nome)
+        if s.instalado is None:
             tam = TAMANHOS_GB.get(nome)
             tamanho = f" (download de ~{gb(tam)})" if tam else ""
             saida.append(Checagem(grupo, item, "erro", "não instalado", f"Rode: ollama pull {nome}{tamanho}"))
-            continue
-        if nome.removesuffix(":latest") in carregados:
-            # já está na memória: a memória livre já desconta o modelo, então não há o que conferir
-            saida.append(Checagem(grupo, item, "ok", f"instalado e carregado agora, {gb(inst.tamanho_gb)}"))
-            continue
-        folga = cabe_na_memoria(inst.tamanho_gb)
-        saida.append(
-            Checagem(
-                grupo,
-                item,
-                "ok" if folga.cabe else "aviso",
-                f"instalado, {gb(inst.tamanho_gb)}",
-                "" if folga.cabe else folga.explicar(nome),
+        elif s.carregado:
+            saida.append(Checagem(grupo, item, "ok", f"instalado e carregado agora, {gb(s.instalado.tamanho_gb)}"))
+        else:
+            detalhe = f"instalado, {gb(s.instalado.tamanho_gb)}"
+            saida.append(
+                Checagem(grupo, item, "ok" if s.pronto else "aviso", detalhe, "" if s.pronto else s.explicar())
             )
-        )
     return saida
 
 
