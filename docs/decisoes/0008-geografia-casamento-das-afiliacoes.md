@@ -67,6 +67,18 @@ A precisão dos identificados, ponderada pelo tamanho de cada nível, é de 99,8
 
 Dos 30 vínculos não casados da amostra, 26 não tinham a instituição certa entre os candidatos: INCTs, grupos de pesquisa, a Câmara Municipal de São Paulo, universidades que não aparecem em nenhuma autoria do OpenAlex. Os 4 que tinham ficaram de fora por uma trava: o país da fonte diferente do registro ("University of Macau" com o país "China", "Vanderbilt University" com "Brasil"), um empate sem margem (um centro do CONICET) e o nome em inglês de uma instituição que só tem apelido em português (IESP). Nas rodadas de desenvolvimento apareceram outros do mesmo tipo: "Universidade Católica do Rio de Janeiro" (PUC-Rio, 0,81), "Centro de Formação da Câmara dos Deputados" (Cefor, 0,76).
 
+**Contagem fracionária** (`geografia/contagem.py`): cada documento vale 1, dividido entre os autores e, para cada autor, entre as afiliações dele; autores sem afiliação ficam com as afiliações que nenhum autor cita ou, sem elas, com "sem afiliação". No piloto, a soma dos pesos é exatamente 4.275 (um por documento), 223 (5,2%) vão para sem afiliação, e do peso com afiliação:
+
+| Medida | Piloto | Meta do plano |
+|---|---:|---:|
+| instituição identificada | 93,7% | — |
+| país conhecido | 98,7% | ≥ 97% |
+| UF conhecida (do peso brasileiro) | 99,2% | ≥ 95% |
+
+A UF sai, nesta ordem, da fonte, da cidade da fonte (município único, capital ou a UF que a `v240` do corpus dá à cidade), do `instituicoes.yaml`, da UF mais comum da instituição na `v240` do corpus, e da região ou da cidade do registro no OpenAlex (a região falta em 45% dos registros brasileiros).
+
+As 20 instituições com mais peso no piloto, conferidas uma a uma: USP, UnB, UFMG, UERJ, Unicamp, UFRJ, UFRGS, FGV, UFPR, UFPE, UFSC, PUC-Rio, UFSCar, UFF, Unesp, Unifesp, Cebrap, PUC Minas, UFBA e Ipea. A UERJ fica à frente da Unicamp por causa do IESP (antigo Iuperj), que a `v70` escreve de vários jeitos.
+
 ## Consequências
 
 - A `v70` fica abaixo da meta de 85% do plano (83,8%). O que falta é, na maior parte, instituição que o índice não conhece: resolve-se pelo `instituicoes.yaml` do projeto, com `mapa geografia --revisar` listando os textos mais frequentes. O piloto recebe o seu.
