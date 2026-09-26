@@ -120,5 +120,6 @@ nav:
       - "0003 · Fontes e licenças": decisoes/0003-fontes-casamento-e-licencas.md
       - "0004 · Embeddings e idioma": decisoes/0004-embeddings-e-idioma-de-analise.md
       - "0005 · Modelo de classificação": decisoes/0005-modelo-de-classificacao.md
+      - "0006 · Armazenamento": decisoes/0006-armazenamento-parquet-duckdb.md
   - Desenvolvimento:
       - desenvolvimento/index.md

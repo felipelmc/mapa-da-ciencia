@@ -25,6 +25,7 @@ dependencies = [
     "psutil>=7.0",
     "fastapi>=0.141",
     "uvicorn>=0.54",
+    "duckdb>=1.5",
 ]
 
 [project.scripts]
