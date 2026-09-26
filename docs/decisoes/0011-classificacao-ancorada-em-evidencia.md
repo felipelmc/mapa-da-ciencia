@@ -1,6 +1,6 @@
 # 0011. Classificação ancorada em evidência
 
-- **Status:** proposta (M5)
+- **Status:** aceita (M5)
 - **Data:** 2026-09-26
 - **Marco:** M5
 
@@ -24,10 +24,27 @@ A classificação precisa também servir à interface (destacar a evidência no 
 
 ## Evidência
 
-A preencher com a rodada do piloto: tempo por resumo com a evidência curta, JSON válido na primeira tentativa, taxa de evidência literal por variável e quantas vezes a nova tentativa foi usada.
+Amostra de validação do piloto (200 artigos, `qwen3.5:9b`, M4 Pro com 24 GB, a máquina em uso para outras tarefas):
+
+| Medida | Resultado |
+|---|---|
+| JSON válido na primeira tentativa | 100% |
+| Nova tentativa usada | 43 dos 200 documentos (21,5%), quase sempre por uma evidência fora do texto |
+| Evidência literal (sem as dispensadas) | 94,8%; aproximada 3,6%; ausente 1,6% |
+| Evidência literal por variável | abordagem 97,5%; técnica 98,5%; recorte 89,5%; Brasil como caso 97,3%; subárea 94,5%; período 93,0% |
+| Tempo por documento | 10,8 s (mediana); 16,6 s no 90º percentil |
+| Projeção para os 4.247 artigos com resumo | cerca de 13 h |
+
+A evidência curta não reduziu o tempo na proporção esperada (o ADR 0005 media 12,5 s com evidências longas; ficou em 10,8 s): o custo vem de escrever seis trechos por resumo, e não de um só trecho longo. A projeção de 7 h do ADR 0005 não se confirmou.
+
+A retomada foi testada com um `kill -9` no meio da rodada completa: a execução seguinte começou pelos 206 documentos já guardados, sem refazê-los, e a primeira regravação parcial mostrou 256 (206 + 50 novos). Uma parada com ++ctrl+c++ (SIGINT) gravou o resultado parcial antes de sair.
+
+Durante o M5, a chave do cache passou a usar a **assinatura do que o modelo lê** (mensagem de sistema e esquema) no lugar do *hash* do codebook inteiro: mudar só os rótulos de exibição das categorias ou a versão não refaz a classificação. As 200 respostas já guardadas foram migradas para a chave nova sem nova chamada ao modelo.
+
+No tutorial (*Opinião Pública*, 395 artigos com resumo), 10,6 s por documento e 1,1 h projetada.
 
 ## Consequências
 
-- A classificação do piloto deve ficar em torno de 7 h (ADR 0005), numa execução que pode ser interrompida e retomada.
+- A classificação do piloto leva cerca de 13 h, numa execução que pode ser interrompida e retomada; na prática, a amostra de validação vem primeiro e fica pronta em menos de uma hora.
 - A evidência curta limita o que o modelo pode citar; uma variável que dependa de juntar duas partes do resumo sai com evidência aproximada ou ausente, e isso aparece nas taxas por variável.
 - A acurácia contra codificação humana é medida na validação (ADR 0012).
