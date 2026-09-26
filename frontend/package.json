@@ -1,7 +1,7 @@
 {
   "name": "mapa-da-ciencia-frontend",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Interface do mapa-da-ciencia: visualiza os arquivos do contrato de dados gerados pelo pipeline em Python.",
   "type": "module",
   "engines": {

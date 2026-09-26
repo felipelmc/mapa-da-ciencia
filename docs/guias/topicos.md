@@ -13,7 +13,7 @@ Depois da coleta, `mapa topicos` descobre os assuntos do corpus, dá um nome a c
 mapa topicos
 ```
 
-A primeira execução no piloto (4.275 artigos) leva cerca de 4 minutos nos embeddings e mais alguns nos rótulos, com uma chamada ao modelo por tópico e por macrotema. As seguintes levam segundos: embeddings, reduções do UMAP e rótulos ficam em cache. A saída termina com os macrotemas e os números da etapa:
+A primeira execução no piloto (4.275 artigos) leva cerca de 4 minutos nos embeddings e uns 3 nos rótulos, com uma chamada ao modelo por tópico e por macrotema (64 no piloto). As seguintes levam segundos: embeddings, reduções do UMAP e rótulos ficam em cache. A saída termina com os macrotemas e os números da etapa:
 
 ```text
 Tópicos prontos: 57 tópicos em 7 macrotemas, 4.275 documentos: 2.845 no núcleo, 963 reatribuídos, 467 sem tópico (ARI 0,89), em 13 s.
