@@ -45,7 +45,7 @@ export function projecaoBrasil(largura: number, altura: number, regioes: Regiao<
 		.fitSize([largura, altura], { type: 'FeatureCollection', features: regioes });
 }
 
-/** Projeção do mundo (sem a Antártida, que só ocuparia espaço), ajustada à área de desenho. */
+/** Projeção do mundo, ajustada à área de desenho sem a Antártida (que só ocuparia espaço; a vista não a desenha). */
 export function projecaoMundo(largura: number, altura: number, regioes: Regiao<PropsPais>[]): GeoProjection {
 	const semAntartida = regioes.filter((r) => r.properties.iso !== 'AQ');
 	return geoEqualEarth().fitSize([largura, altura], { type: 'FeatureCollection', features: semAntartida });

@@ -71,7 +71,7 @@ frontend/
 │   │   ├── estilos/base.css          reset, tipografia, foco, fundo, movimento
 │   │   ├── componentes/              casca (Trilho, BarraSuperior…), estados vazios, carta da capa
 │   │   ├── recorte/                  barra do recorte (comum às vistas de análise) e linha do tempo
-│   │   ├── geografia/                malhas (TopoJSON versionado) e projeções equivalentes
+│   │   ├── geografia/                vista Geografia: mapas das UFs e do mundo, ranking, escala de cores, malhas
 │   │   ├── secoes.ts                 as seções: rótulo, rota, ícone, resumo, marco, arquivos usados
 │   │   └── formato.ts                números e datas em pt-BR
 │   └── routes/                       uma pasta por seção; +layout.svelte abre o projeto
@@ -82,7 +82,8 @@ frontend/
     ├── comum.ts                      ajudantes: vigiar o console, esperar o mapa, ler o exemplo
     ├── casca.spec.ts                 casca, capa, temas, projeto vazio
     ├── mapa.spec.ts                  a vista Mapa
-    └── topicos.spec.ts               a vista Tópicos
+    ├── topicos.spec.ts               a vista Tópicos
+    └── geografia.spec.ts             a vista Geografia
 ```
 
 Os testes unitários ficam ao lado do código (`*.test.ts`).
@@ -207,6 +208,8 @@ Um só sistema de tokens (`src/lib/estilos/tokens.css`) com dois temas, escolhid
 | `mapa/busca.test.ts` | busca por título e autor sem diferença de acentos |
 | `mapa/contornos.test.ts` | contornos que envolvem o núcleo de cada tópico, banda adaptada, ~80% dentro |
 | `mapa/cores.test.ts` | paletas de revista e de ano |
+| `geografia/escala.test.ts` | classes de cor em escala logarítmica com limites redondos; a escala sequencial (`--seq-*`) muda de claridade sempre no mesmo sentido, com tons vizinhos distinguíveis e o mais forte com contraste 3:1 sobre o fundo, nos dois temas |
+| `geografia/malhas.test.ts` | as 27 UFs do IBGE com a sigla, os países com ISO-2 único, projeções que cabem na área de desenho |
 
 **De ponta a ponta** (`npm run e2e`). O `tests/e2e/preparar.ts` copia o build para uma pasta temporária, com os dados de exemplo em `dados/` ao lado do `index.html`, e serve três sites com um estático sem reescrita:
 
@@ -228,6 +231,7 @@ Os testes cobrem:
 - tela estreita;
 - projeto vazio, sem pedir arquivos ausentes;
 - no Mapa (`mapa.spec.ts`): o desenho dos pontos, contornos e rótulos pelo zoom, legenda, cor por revista, cartão pelo link e pelo clique, busca, laço pelo link e pelo mouse, play da linha do tempo e atalhos.
+- na Geografia (`geografia.spec.ts`): o peso de cada UF igual ao gabarito do Python, o ranking pela instituição de maior peso, o Brasil fora da escala do mundo, o clique numa UF que vai para o recorte e dali para o Mapa, o teclado, "Ver como tabela", "Mostrar mais" e o projeto vazio.
 
 As capturas ficam em `test-results/` (ignorado pelo git): `tema-observatorio-1440x900.png`, `tema-prancha-1440x900.png` e `estreita-observatorio-390x844.png`.
 
