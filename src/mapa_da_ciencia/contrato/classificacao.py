@@ -139,7 +139,9 @@ def colunas_cls(
     return colunas, dicionarios
 
 
-def validacao_contrato(v: Validacao) -> m.Validacao:
+def validacao_contrato(v: Validacao, *, so_referencia: bool = True) -> m.Validacao:
+    """`validacao.json`. Com `so_referencia` (o padrão, para o contrato), as divergências de pessoas ficam de fora;
+    a API local do painel as inclui."""
     tipos = {p.nome: p.tipo for p in v.participantes}
     return m.Validacao(
         amostra=m.AmostraInfo(
@@ -184,7 +186,7 @@ def validacao_contrato(v: Validacao) -> m.Validacao:
                 incerto=d.incerto,
             )
             for d in v.divergencias
-            if tipos.get(d.codificador) == "referencia"
+            if not so_referencia or tipos.get(d.codificador) == "referencia"
         ],
         codificadores=[m.Participante(nome=p.nome, tipo=p.tipo, n=p.n) for p in v.participantes],
         modelo_principal=v.modelo_principal,

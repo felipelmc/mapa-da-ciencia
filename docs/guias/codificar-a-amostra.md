@@ -59,6 +59,18 @@ A saída diz quantos documentos da amostra foram codificados, quais linhas eram 
 uv run mapa validar importar referencia.jsonl --codificador claude-opus --tipo referencia
 ```
 
+### Pela API do painel
+
+Com o painel aberto (`mapa painel`), a codificação também pode ser gravada por um script, na própria máquina:
+
+| Rota | O que faz |
+|---|---|
+| `GET /api/validacao/fila?codificador=NOME` | A amostra na ordem da fila desse codificador (embaralhada a partir do nome, sempre a mesma), com título, resumo, o codebook e as respostas que ele já deu. Nunca traz respostas de modelos. |
+| `PUT /api/validacao/codificacoes/{doc}` | Grava as respostas de um documento: `{"codificador": "maria", "respostas": {...}, "completa": true}`. Com `completa: false`, as variáveis ainda não respondidas não são erro. |
+| `GET /api/validacao/metricas` | A concordância calculada na hora, no formato de `validacao.json`. |
+
+As rotas de escrita só aceitam pedidos feitos desta máquina (endereço `127.0.0.1` ou `localhost`), para que uma página aberta em outro site não consiga gravar no projeto pelo navegador.
+
 ## Medir a concordância
 
 ```bash

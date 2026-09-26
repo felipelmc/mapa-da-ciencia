@@ -3,7 +3,8 @@
 Rotas:
 - `/`             interface compilada (`web/estatico/`); sem build, uma página explica como gerá-lo
 - `/dados/…`      arquivos do contrato (de `saida/dados/` do projeto, ou do exemplo sintético)
-- `/api/…`        API do painel (cresce a cada marco: etapas, codificação, modelos)
+- `/api/…`        API do painel (cresce a cada marco: etapas, codificação, modelos); a codificação da amostra
+                  de validação está em `servidor/validacao.py`
 
 O `manifesto.json` é servido dinamicamente para marcar `api: true` no painel. No site
 publicado (`mapa publicar`) ele vai com `api: false` e a interface fica só de leitura.
@@ -72,6 +73,11 @@ def criar_app(
             "raiz": str(projeto.raiz),
             "etapas": etapas,
         }
+
+    if projeto is not None and api:
+        from mapa_da_ciencia.servidor.validacao import rotas_validacao
+
+        app.include_router(rotas_validacao(projeto))
 
     @app.get("/dados/manifesto.json")
     def manifesto() -> JSONResponse:
