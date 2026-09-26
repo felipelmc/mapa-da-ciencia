@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatarDecimal, formatarPorcentagemDecimal, formatarPp } from './formato';
+import { formatarDecimal, formatarDuracao, formatarPorcentagemDecimal, formatarPp } from './formato';
 
 describe('formato', () => {
 	it('decimais, porcentagens e pontos percentuais em pt-BR', () => {
@@ -9,5 +9,14 @@ describe('formato', () => {
 		expect(formatarPp(0.31)).toBe('+0,31 p.p.');
 		expect(formatarPp(-1.2)).toBe('−1,20 p.p.');
 		expect(formatarPp(0)).toBe('0,00 p.p.');
+	});
+});
+
+describe('formatarDuracao', () => {
+	it('escolhe a unidade', () => {
+		expect(formatarDuracao(12.4)).toBe('12 s');
+		expect(formatarDuracao(600)).toBe('10 min');
+		expect(formatarDuracao(14080)).toBe('3 h 55 min');
+		expect(formatarDuracao(7200)).toBe('2 h');
 	});
 });

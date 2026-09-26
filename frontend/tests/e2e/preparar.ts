@@ -5,7 +5,8 @@
 //   raiz        build + exemplo sintético, servido em /
 //   subcaminho  o mesmo, servido em /mapa-da-ciencia/demo/ (como no GitHub Pages)
 //   vazio       build + só um manifesto de projeto recém-criado (`mapa novo`), com api: true
-//   painel      build + exemplo sintético com api: true e a API de codificação falsa (`api-falsa.ts`)
+//   painel      build + exemplo sintético com api: true e as APIs falsas do painel (`api-falsa.ts`, a codificação;
+//               `api-falsa-painel.ts`, etapas, jobs com SSE, modelos, configuração e codebook)
 // As URLs vão para variáveis de ambiente, que os workers herdam. A função devolvida
 // derruba os servidores e apaga a pasta temporária.
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -13,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { criarApiFalsa } from './api-falsa.ts';
+import { criarPainelFalso } from './api-falsa-painel.ts';
 import { servir, type Servidor } from './servidor.ts';
 
 const RAIZ = fileURLToPath(new URL('../..', import.meta.url));
@@ -74,8 +76,12 @@ export default async function preparar() {
 		const [raiz, sub, vazio, painel] = await Promise.all([
 			servir(join(tmp, 'raiz')),
 			servir(join(tmp, 'sub')),
-			servir(join(tmp, 'vazio')),
-			servir(join(tmp, 'painel'), criarApiFalsa(EXEMPLO))
+			servir(join(tmp, 'vazio'), criarPainelFalso(JSON.parse(readFileSync(join(EXEMPLO, 'codebook.json'), 'utf8')))),
+			servir(join(tmp, 'painel'), (() => {
+				const validacao = criarApiFalsa(EXEMPLO);
+				const painel = criarPainelFalso(JSON.parse(readFileSync(join(EXEMPLO, 'codebook.json'), 'utf8')));
+				return (req, res, url) => validacao(req, res, url) || painel(req, res, url);
+			})())
 		]);
 		servidores.push(raiz, sub, vazio, painel);
 		process.env.E2E_URL_RAIZ = `${raiz.origem}/`;
