@@ -91,6 +91,7 @@ nav:
   - Tutoriais:
       - tutoriais/index.md
       - Explorar o exemplo em 5 minutos: tutoriais/explorar-exemplo.md
+      - "Seu primeiro mapa, parte 1: a coleta": tutoriais/primeiro-mapa.md
   - Guias:
       - guias/index.md
       - Instalar e escolher os modelos: guias/instalacao.md

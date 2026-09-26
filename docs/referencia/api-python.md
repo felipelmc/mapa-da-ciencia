@@ -8,16 +8,14 @@ import mapa_da_ciencia.api as mapa
 p = mapa.novo("op-2024", revistas=["op"], anos=2024)
 resumo = mapa.coletar(p)
 print(resumo)
-# 25 documento(s) de 1 revista(s), 2024, em 11,0 s. De fora: 544 fora do período, ...
+# 25 documento(s) de 1 revista(s), 2024, em 7,2 s. De fora: 544 fora do período, ...
 
-mapa.consultar(
-    p,
-    """
+por_idioma = """
     SELECT idioma, count(*) AS n
     FROM textos WHERE campo = 'resumo'
     GROUP BY idioma ORDER BY n DESC
-""",
-)
+"""
+mapa.consultar(p, por_idioma)
 # [{'idioma': 'pt', 'n': 25}, {'idioma': 'en', 'n': 25}, ...]
 ```
 

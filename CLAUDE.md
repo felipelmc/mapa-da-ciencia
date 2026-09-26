@@ -22,7 +22,10 @@ uv run python scripts/gerar_contrato.py      # regenera contrato/schema e contra
 uv run python scripts/gerar_referencias.py   # regenera docs/referencia/{cli,configuracao,codebook,contrato}.md
 uv run mapa diagnostico                      # memória, Ollama, modelos, rede
 uv run mapa painel --exemplo                 # painel com dados sintéticos
+uv run mapa coletar -P projetos/op-2024      # coleta de verdade (projetos/ fica fora do git)
 ```
+
+Os testes nunca acessam a rede: `tests/conftest.py` tem a fixture `apis_falsas` (respx), que responde ArticleMeta e OpenAlex com as fixtures de `tests/fixtures/` (geradas por `scripts/recortar_fixtures.py`, com e-mails trocados por `anonimo@exemplo.invalid`). `tests/test_tutorial.py` roda os comandos do tutorial `docs/tutoriais/primeiro-mapa.md`; linhas com `# fora do CI` são puladas.
 
 Frontend (SvelteKit), em `frontend/`: veja `frontend/README.md`. Depois de mudar os schemas, rode `npm run tipos`.
 
@@ -33,6 +36,8 @@ Frontend (SvelteKit), em `frontend/`: veja `frontend/README.md`. Depois de mudar
 - `projeto.py`: layout da pasta de projeto (`brutos/`, `dados/`, `execucoes/`, `saida/`). `manifesto.py` registra cada execução de etapa.
 - `contrato/modelos.py`: **fonte da verdade** do contrato de dados entre pipeline e interface. Deles saem os JSON Schemas e, daí, os tipos TS. Tabelas grandes são colunares, com dicionários, e os detalhes ficam em 64 fragmentos (`fragmento_de`, FNV-1a, espelhado no frontend).
 - `servidor/app.py`: FastAPI. Interface em `/`, dados em `/dados`, API em `/api`. O manifesto é servido com `api: true` no painel. O site publicado usa os mesmos arquivos, com `api: false`.
+- Coleta: `coleta.py` orquestra, `fontes/` tem os adaptadores (`base.py` com o `Buscador`: cache em `brutos/*.json.gz` gravado de forma atômica, retentativas, contagem de créditos; `articlemeta.py`, `openalex.py`, `importar.py`, `dedup.py`). Tudo vira `documento.Documento`, gravado por `armazenamento.py` em `dados/documentos.parquet` via DuckDB (ADR 0006), com as views `documentos`, `textos`, `autores` e `afiliacoes`. `armazenamento.ESQUEMA` precisa bater com `Documento.model_fields` (há teste). No fim, `contrato/exportar.exportar_coleta` grava `saida/dados/manifesto.json` e `revistas.json`.
+- `api.py`: fachada para notebooks (mesmas etapas da CLI). Mantenha as assinaturas estáveis.
 - `llm/`: interface de provedor e adaptador do Ollama (httpx direto, sem SDK). No MVP não há nuvem.
 - `rede.py`: **todo** HTTP externo passa por aqui (truststore, ADR 0001). `recursos.py`: memória, swap e disco.
 
@@ -48,5 +53,11 @@ Frontend (SvelteKit), em `frontend/`: veja `frontend/README.md`. Depois de mudar
 - O `uv` marca `.venv` como oculta no macOS, e às vezes os `.pth` herdam a marca. O Python 3.12+ os ignora e o import falha. Correção: `chflags nohidden .venv/lib/python3.*/site-packages/*.pth`.
 - Desde a 0.27, o Typer embute o Click (`typer._click`). Inspecione comandos com `typer.core.TyperGroup` e `TyperArgument`.
 - A ArticleMeta não filtra por ano de publicação (`from/until` é a data de processamento). Use o ano do PID (`pid[10:14]`).
+- Registros da ArticleMeta são grandes (as referências ocupam ~90%) e têm e-mails em muitos campos (`title.v64`, `v70`, `v170`, `citations`). Normalize cada um ao chegar (`buscar_registros(..., tratar=...)`) e extraia por lista branca: guardar os 4.947 brutos levava a coleta a 2,6 GB. PID desconhecido volta como `200 null`.
+- A ArticleMeta tem DOIs trocados (*Dados* 2014) e artigos carregados duas vezes (*Dados* e *Lua Nova* 2025). Não relaxe a conferência do casamento (`openalex.conferir`) nem a deduplicação sem rodar o piloto e comparar com o adendo do ADR 0003.
+- OpenAlex: `select` só aceita campos de raiz; a lista por revista usa `locations.source.issn` (a location principal às vezes é um repositório); o filtro `doi:` não acha trabalhos recentes, e o endereço direto `/works/doi:…` acha (e não custa créditos). Lista custa 1 crédito por página, busca 10. A `api_key` nunca vai para `brutos/` (`gravar_gz(..., ocultar=...)`).
+- Rotas novas do OpenAlex ou da ArticleMeta precisam de rota na `ApisFalsas`, senão os testes falham com "not mocked".
+- `ruff format` também formata Python dentro de Markdown: em exemplos com SQL, ponha a consulta numa variável, senão ele quebra a chamada em várias linhas.
+- O servidor do painel não sobe pelo `preview_start` do app (sem permissão para ler `~/Desktop`): rode `mapa painel --nao-abrir` pelo terminal e abra `http://localhost:8765` no navegador do app.
 - `search.scielo.org` bloqueia scripts (desafio anti-bot). Não tente raspá-lo.
 - No frontend, com o router por hash, nunca use `resolve()` para links, e o estado dos filtros fica dentro do hash (ADR 0002).

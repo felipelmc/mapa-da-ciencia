@@ -83,15 +83,17 @@ Se, depois disso, um DOI ainda aparece em dois documentos diferentes, ele fica s
 
 ## Cobertura no piloto
 
-Ciência política no SciELO Brasil, 10 revistas, de 2010 a 2025 (coletado em 26/09/2026):
+Ciência política no SciELO Brasil, 10 revistas, de 2010 a 2025 (coletado em 26/09/2026 com `mapa coletar`):
 
 | | Documentos | % |
 |---|---|---|
-| Registros na ArticleMeta | 4.947 | 100 |
-| Com resumo | 4.197 | 84,8 |
-| Artigos de pesquisa ou revisão | 4.277 | 86,5 |
-| Com DOI na ArticleMeta | 3.618 | 73,1 |
-| Com afiliação normalizada (`v240`) | 2.853 | 57,7 |
-| Casados com o OpenAlex | 4.864 | 98,3 |
+| Artigos de pesquisa ou revisão (o corpus) | 4.275 | 100 |
+| Com resumo | 4.257 | 99,6 |
+| Com resumo em inglês | 4.161 | 97,3 |
+| Com DOI | 4.262 | 99,7 |
+| Com afiliação normalizada (`v240`) | 2.523 | 59,0 |
+| Com afiliação só em texto livre (`v70`) | 1.418 | 33,2 |
+| Casados com o OpenAlex | 4.249 | 99,4 |
+| Com licença Creative Commons | 4.249 | 99,4 |
 
-Entre os 4.277 artigos de pesquisa, o **inglês** está disponível em 99,8% dos que têm resumo, e o **português** em 81,9%. Os números completos, por revista, estão no registro de decisão [0003](../decisoes/0003-fontes-casamento-e-licencas.md).
+A ArticleMeta tem 4.947 registros dessas revistas no período. Ficam de fora 670 de outros tipos (resenhas, editoriais, erratas...), e 2 artigos carregados duas vezes são fundidos. Os números por revista estão no adendo do registro de decisão [0003](../decisoes/0003-fontes-casamento-e-licencas.md#adendo-2026-09-26-marco-m2-a-coleta-de-producao).
