@@ -148,7 +148,11 @@ class ConfigTopicos(_Base):
         "se forem pelo menos estes (entre os `vizinhos` mais próximos). Menos que isso, fica sem tópico.",
     )
     selecao: Literal["eom", "leaf"] = Field(
-        "eom", description="`eom` prefere tópicos maiores e mais estáveis; `leaf`, tópicos menores e mais numerosos."
+        "leaf",
+        description=(
+            "`leaf` fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` "
+            "prefere tópicos maiores, mas pode trocar um tópico grande por vários pequenos com uma mudança mínima."
+        ),
     )
     macrotemas: int = Field(
         7,

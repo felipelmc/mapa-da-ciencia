@@ -9,7 +9,11 @@ servem para isso: comparam mal num espaço de embeddings e mudam com o modelo.
 - Um tópico casado mantém o id, a cor (se continuar no mesmo macrotema) e o rótulo.
 - Um tópico novo ganha um id nunca usado (`proximo_id`): ids aposentados não voltam, para um link antigo não
   apontar para outro assunto.
-- Os macrotemas têm identidade própria, casada pelos tópicos que os compõem.
+- Os macrotemas persistem: quando ao menos metade dos tópicos casou, cada tópico casado fica no macrotema que
+  tinha, e cada tópico novo entra no macrotema do tópico casado mais parecido (centros dos núcleos). Refazer a
+  aglomeração a cada execução mudaria de macrotema, e de cor, metade dos tópicos casados do piloto (ADR 0007).
+- Com menos da metade casada, os macrotemas vêm da aglomeração e são casados com os anteriores pelos tópicos
+  que os compõem.
 - Uma mudança de modelo, de idioma de análise ou do texto de análise invalida o casamento (os ids continuam de
   onde pararam).
 
@@ -23,11 +27,16 @@ import json
 import os
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from mapa_da_ciencia.topicos.paleta import cores_macrotemas, proxima_cor
 
+if TYPE_CHECKING:
+    import numpy as np
+
 ARQUIVO = "identidade.json"
 LIMIAR = 0.3  # Jaccard mínimo para dois tópicos (ou macrotemas) serem o mesmo
+FRACAO_PERSISTENTE = 0.5  # tópicos casados, no mínimo, para os macrotemas anteriores continuarem valendo
 
 
 @dataclass
@@ -111,6 +120,7 @@ class Estabilizados:
     casados: dict[int, int]  # índice do tópico novo → id anterior
     identidade: Identidade
     mesma_cor: int = 0  # casados que também mantiveram a cor (não mudaram de macrotema)
+    macrotemas_persistentes: bool = False  # os macrotemas vieram da execução anterior, e não da aglomeração
 
 
 def estabilizar(
@@ -120,12 +130,16 @@ def estabilizar(
     chave: dict,
     corpus: set[str],
     *,
+    centros: np.ndarray | None = None,
+    persistir_macrotemas: bool = True,
     limiar: float = LIMIAR,
 ) -> Estabilizados:
     """Dá ids, macrotemas e cores estáveis aos tópicos novos.
 
     `nucleos[i]` são os documentos do núcleo do tópico novo `i`; `grupos_macro[i]`, o grupo de macrotema dele
-    (de `agrupar_macrotemas`); `corpus`, todos os ids do corpus atual.
+    (de `agrupar_macrotemas`); `corpus`, todos os ids do corpus atual; `centros[i]`, o centro normalizado do
+    núcleo (de `macrotemas.centros`), para pôr os tópicos novos no macrotema do casado mais parecido. Com
+    `persistir_macrotemas=False`, os macrotemas sempre vêm de `grupos_macro`.
     """
     valida = anterior if anterior is not None and anterior.chave == chave else None
     proximo_id = anterior.proximo_id if anterior else 0
@@ -145,10 +159,16 @@ def estabilizar(
     for i in sorted((i for i in range(len(nucleos)) if i not in casados), key=lambda i: (-tamanhos[i], i)):
         ids[i], proximo_id = proximo_id, proximo_id + 1
 
-    # ---- macrotemas: casados pelos documentos dos tópicos casados que cada grupo herdou
-    n_grupos = max(grupos_macro, default=-1) + 1
+    # ---- macrotemas: os anteriores persistem se a maior parte dos tópicos casou; senão, os da aglomeração,
+    # casados pelos documentos dos tópicos casados que cada grupo herdou
     macro_do_grupo: dict[int, int] = {}
-    if valida and valida.macrotemas:
+    persistentes = bool(
+        persistir_macrotemas and valida and valida.macrotemas and len(casados) >= FRACAO_PERSISTENTE * len(nucleos)
+    )
+    if persistentes:
+        grupos_macro, macro_do_grupo = _macrotemas_anteriores(casados, valida, tamanhos, centros)  # type: ignore[arg-type]
+    n_grupos = max(grupos_macro, default=-1) + 1
+    if valida and valida.macrotemas and not persistentes:
         antigos_m = list(valida.macrotemas)
         docs_grupo = [sum(tamanhos[i] for i in range(len(nucleos)) if grupos_macro[i] == g) for g in range(n_grupos)]
         docs_antigo = {m: sum(len(t.membros) for t in valida.topicos.values() if t.macro == m) for m in antigos_m}
@@ -223,4 +243,29 @@ def estabilizar(
             rotulo_fonte=velho_m.rotulo_fonte if velho_m else None,
         )
     nova = Identidade(chave, proximo_id, proximo_macro, topicos, macrotemas)
-    return Estabilizados(ids, macros, cores, cores_macro, casados, nova, mesma_cor)
+    return Estabilizados(ids, macros, cores, cores_macro, casados, nova, mesma_cor, persistentes)
+
+
+def _macrotemas_anteriores(
+    casados: dict[int, int], anterior: Identidade, tamanhos: list[int], centros: np.ndarray | None
+) -> tuple[list[int], dict[int, int]]:
+    """Grupo de cada tópico novo pelos macrotemas anteriores (0 = o de mais documentos) e o macrotema de cada grupo.
+
+    Um tópico casado fica no macrotema que tinha; um novo vai para o do tópico casado de centro mais parecido
+    (sem centros, para o do maior tópico casado).
+    """
+    macro = {i: anterior.topicos[antigo].macro for i, antigo in casados.items()}
+    referencias = sorted(casados)
+    for i in range(len(tamanhos)):
+        if i in macro:
+            continue
+        if centros is not None:
+            parecido = max(referencias, key=lambda j: (float(centros[i] @ centros[j]), -j))
+        else:
+            parecido = max(referencias, key=lambda j: (tamanhos[j], -j))
+        macro[i] = macro[parecido]
+    peso: dict[int, int] = {}
+    for i, m in macro.items():
+        peso[m] = peso.get(m, 0) + tamanhos[i]
+    ordem = sorted(peso, key=lambda m: (-peso[m], m))
+    return [ordem.index(macro[i]) for i in range(len(tamanhos))], dict(enumerate(ordem))

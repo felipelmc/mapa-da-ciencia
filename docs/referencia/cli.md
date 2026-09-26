@@ -109,6 +109,7 @@ mapa topicos [OPÇÕES]
 | `--sem-rotulos` | Rótulos pelas palavras-chave, sem carregar o modelo de linguagem. |  |
 | `--refazer-embeddings` | Recalcula os embeddings de todos os documentos. |  |
 | `--semente` | Semente principal do UMAP (padrão: a primeira de topicos.sementes). |  |
+| `--refazer-macrotemas` | Agrupa os tópicos em macrotemas de novo, em vez de manter os da execução anterior (as cores mudam). |  |
 
 ## `mapa importar`
 

@@ -57,16 +57,16 @@ Na primeira vez leva alguns minutos. O `mapa`:
 A saída começa com os números principais, seguidos da tabela dos macrotemas com os rótulos escritos pelo modelo:
 
 ```text
-Tópicos prontos: 13 tópicos em 4 macrotemas, 396 documentos: 297 no núcleo, 81 reatribuídos, 18 sem
-tópico (ARI 0,62), …
+Tópicos prontos: 15 tópicos em 5 macrotemas, 396 documentos: 278 no núcleo, 86 reatribuídos, 32 sem
+tópico (ARI 0,77), …
 ```
 
 Os números podem mudar um pouco de uma máquina para outra, mas a leitura é a mesma:
 
-- **núcleo**: os 297 artigos que estão bem dentro de algum tópico. São eles que definem as palavras-chave e os contornos do mapa;
-- **reatribuídos**: 81 artigos que ficaram entre regiões e foram postos no tópico da maioria dos seus vizinhos mais parecidos;
-- **sem tópico**: 18 artigos que não se parecem o bastante com nenhum grupo. Não é erro: são temas raros no recorte e aparecem no mapa em cinza;
-- **ARI**: a estabilidade dos tópicos, de 0 a 1, quando o cálculo é repetido com outras sementes aleatórias. Com 400 artigos ela fica em 0,62: os temas grandes se repetem, mas as fronteiras entre temas vizinhos mudam. No projeto piloto, com 4.300 artigos de dez revistas, ela passa de 0,9.
+- **núcleo**: os 278 artigos que estão bem dentro de algum tópico. São eles que definem as palavras-chave e os contornos do mapa;
+- **reatribuídos**: 86 artigos que ficaram entre regiões e foram postos no tópico da maioria dos seus vizinhos mais parecidos;
+- **sem tópico**: 32 artigos que não se parecem o bastante com nenhum grupo. Não é erro: são temas raros no recorte e aparecem no mapa em cinza;
+- **ARI**: a estabilidade dos tópicos, de 0 a 1, quando o cálculo é repetido com outras sementes aleatórias. Com 400 artigos ela fica em 0,77: os temas grandes se repetem, mas as fronteiras entre temas vizinhos mudam. No projeto piloto, com 4.300 artigos de dez revistas, ela chega a 0,89.
 
 A página [Como os tópicos são construídos](../explicacoes/topicos.md) explica cada passo em detalhe.
 
@@ -74,14 +74,15 @@ A página [Como os tópicos são construídos](../explicacoes/topicos.md) explic
     Rode `uv run mapa topicos --sem-rotulos`. Os tópicos são os mesmos; só os rótulos passam a ser as três primeiras palavras-chave:
 
     ```text
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓
-    ┃ Macrotema                         ┃ Tópicos ┃ Documentos ┃
-    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━┩
-    │ ● voto, brasil, polarização       │ 5       │ 140        │
-    │ ● política, democracia, confiança │ 4       │ 104        │
-    │ ● pública, folha paulo, imprensa  │ 3       │ 42         │
-    │ ● deliberação, critérios, teoria  │ 1       │ 11         │
-    └───────────────────────────────────┴─────────┴────────────┘
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓
+    ┃ Macrotema                             ┃ Tópicos ┃ Documentos ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━┩
+    │ ● política, democracia, confiança     │ 4       │ 103        │
+    │ ● campanha, campanhas, twitter        │ 5       │ 87         │
+    │ ● pública, brasileira, folha paulo    │ 3       │ 42         │
+    │ ● deputados, ministérios, legislativo │ 2       │ 35         │
+    │ ● deliberação, critérios, teoria      │ 1       │ 11         │
+    └───────────────────────────────────────┴─────────┴────────────┘
     ```
 
     Quando a memória permitir, rode `uv run mapa topicos` de novo: só os rótulos são refeitos.
@@ -95,7 +96,7 @@ uv run mapa topicos
 Agora a etapa termina em segundos, e a saída diz:
 
 ```text
-13 tópico(s) mantiveram o número e a cor da execução anterior.
+15 tópico(s) mantiveram o número e a cor da execução anterior.
 Embeddings novos: 0 (os demais vieram do cache).
 ```
 
@@ -110,7 +111,7 @@ uv run mapa status
 A seção **Corpus** ganhou uma linha para os tópicos:
 
 ```text
-Tópicos: 13 em 4 macrotemas (ARI 0,62); núcleo 75%, reatribuídos 20%, sem tópico 5%; rótulos: llm.
+Tópicos: 15 em 5 macrotemas (ARI 0,77); núcleo 70%, reatribuídos 22%, sem tópico 8%; rótulos: llm.
 ```
 
 Se você coletar de novo e o corpus mudar, essa linha avisa que os tópicos ficaram desatualizados até a próxima execução de `mapa topicos`.
@@ -152,7 +153,7 @@ crescimento = """
 mapa.consultar(p, crescimento)
 ```
 
-O número do tópico é o mesmo do painel (o tópico −1 reúne os artigos sem tópico). No nosso teste, o que mais cresceu foi o de campanhas nas redes sociais, com Twitter e Facebook entre as palavras-chave: 5 artigos até 2017 e 23 desde 2018.
+O número do tópico é o mesmo do painel (o tópico −1 reúne os artigos sem tópico). No nosso teste, o que mais cresceu foi o de campanhas nas redes sociais, com Twitter e Facebook entre as palavras-chave: 5 artigos até 2017 e 23 desde 2018. Logo atrás veio um tópico sobre a direita e o eleitorado de Jair Bolsonaro, que não existia antes de 2018 (12 artigos).
 
 ## 8. Corrija um rótulo (opcional)
 
@@ -160,7 +161,7 @@ Os rótulos do modelo são um ponto de partida. Se algum não descreve bem o tó
 
 ```yaml
 topicos:
-  5: {rotulo: Campanhas nas redes sociais}
+  3: {rotulo: Campanhas nas redes sociais}
 ```
 
 Rode `uv run mapa topicos` de novo: o rótulo escrito à mão tem prioridade sobre o do modelo e fica marcado como manual.

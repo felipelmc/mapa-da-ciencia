@@ -52,11 +52,13 @@ O [HDBSCAN](https://scikit-learn.org/stable/modules/clustering.html#hdbscan) pro
 
 - `topicos.min_cluster_size`: menor tópico, em documentos. Vazio, é automático: 1 a cada 200 documentos, nunca menos de 10 (21 no piloto).
 - `topicos.min_samples`: quão conservador é o agrupamento. Valores maiores deixam mais documentos de fora.
-- `topicos.selecao`: `eom` prefere tópicos maiores; `leaf`, tópicos menores e mais numerosos.
+- `topicos.selecao`: `leaf`, o padrão, fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` prefere tópicos maiores, mas uma mudança pequena nos dados pode trocar um tópico grande por vários pequenos.
 
-Os padrões foram calibrados no piloto ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)): 50 tópicos, com o mesmo número nas três sementes testadas e nenhum tópico acima de 6% do corpus.
+Os padrões foram calibrados no piloto ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)): 57 tópicos, com números parecidos nas três sementes testadas e nenhum tópico acima de 3,5% do corpus.
 
 Os documentos que o HDBSCAN agrupa formam o **núcleo** de cada tópico. Os demais ficam como **ruído**: não pertencem claramente a nenhuma região densa. O ruído não é um erro, e sim uma informação: são trabalhos isolados, de fronteira ou que misturam assuntos. Com menos de 50 documentos, não há tópicos: a etapa para e sugere ampliar o recorte.
+
+Os documentos **só com título** nunca entram no núcleo. Textos curtos ficam parecidos entre si pela forma, e não pelo assunto: no piloto, os ensaios sem resumo formavam um "tópico" próprio. Eles ainda podem entrar num tópico pela vizinhança (próxima seção), marcados.
 
 ## 6. Reatribuição do ruído
 
@@ -66,15 +68,15 @@ No piloto, um terço dos documentos fica como ruído, com qualquer configuraçã
 - Os vizinhos que estão no núcleo de algum tópico votam no próprio tópico, com peso igual à similaridade.
 - O documento vai para o tópico vencedor se ele tiver ao menos 3 desses vizinhos (`topicos.votos_minimos`). Senão, fica **sem tópico**.
 
-No piloto, 67,5% dos documentos estão no núcleo, 21,5% são reatribuídos e 11% ficam sem tópico. Os reatribuídos ficam marcados (`atribuicao: vizinho`) e aparecem assim no cartão do mapa.
+No piloto, 66,5% dos documentos estão no núcleo, 22,5% são reatribuídos e 11% ficam sem tópico. Os reatribuídos ficam marcados (`atribuicao: vizinho`) e aparecem assim no cartão do mapa.
 
-O núcleo é a base de tudo o que descreve um tópico: palavras-chave, documentos representativos, contornos no mapa e estabilidade. Os reatribuídos entram nas contagens e nas séries no tempo. As séries quase não mudam com eles: a correlação entre a proporção anual de cada tópico só com o núcleo e com os reatribuídos tem mediana 0,93.
+O núcleo é a base de tudo o que descreve um tópico: palavras-chave, documentos representativos, contornos no mapa e estabilidade. Os reatribuídos entram nas contagens e nas séries no tempo. As séries quase não mudam com eles: a correlação entre a proporção anual de cada tópico só com o núcleo e com os reatribuídos tem mediana 0,94.
 
 ## 7. Estabilidade
 
 O UMAP depende de uma semente aleatória. Para saber se os tópicos são do corpus e não do acaso, o agrupamento roda com três sementes (`topicos.sementes`), e o `mapa` mede a concordância entre elas pelo **índice de Rand ajustado** (ARI), sobre os documentos que estão no núcleo nas duas execuções comparadas. O ARI vai de 0 (concordância de acaso) a 1 (os mesmos grupos).
 
-No piloto, o ARI é 0,90. Os tópicos publicados vêm da primeira semente; as outras só medem a estabilidade.
+No piloto, o ARI é 0,89. Os tópicos publicados vêm da primeira semente; as outras só medem a estabilidade.
 
 ## 8. Palavras-chave e documentos representativos
 
@@ -92,7 +94,7 @@ Os **documentos representativos** são os cinco do núcleo mais próximos do cen
 
 ## 9. Macrotemas
 
-Cinquenta tópicos com cinquenta cores seriam ilegíveis. Os tópicos próximos são agrupados em **macrotemas** (até 7 por padrão, no máximo 8: `topicos.macrotemas`), por aglomeração hierárquica (método de Ward) dos centros dos tópicos no espaço dos embeddings. Com poucos tópicos, os macrotemas são menos, para que cada um reúna em média ao menos três tópicos: 13 tópicos formam 4 macrotemas, e não 7 grupos de um ou dois tópicos.
+Dezenas de tópicos, cada um com uma cor, seriam ilegíveis. Os tópicos próximos são agrupados em **macrotemas** (até 7 por padrão, no máximo 8: `topicos.macrotemas`), por aglomeração hierárquica (método de Ward) dos centros dos tópicos no espaço dos embeddings. Com poucos tópicos, os macrotemas são menos, para que cada um reúna em média ao menos três tópicos: 13 tópicos formam 4 macrotemas, e não 7 grupos de um ou dois tópicos.
 
 Cada macrotema tem uma cor bem distinta das outras, inclusive para quem tem daltonismo, e os tópicos dele são variações dessa cor. As cores são geradas no espaço OKLCH, em que distâncias iguais parecem diferenças iguais, e conferidas em teste: contraste suficiente sobre os dois fundos da interface e diferença perceptível entre macrotemas sob simulação de protanopia, deuteranopia e tritanopia.
 
@@ -102,10 +104,10 @@ A cada execução, o HDBSCAN numera os tópicos de um jeito. Para que as cores, 
 
 - Um tópico casado mantém o número, o rótulo e, se continuar no mesmo macrotema, a cor.
 - Um tópico novo ganha um número nunca usado antes: um link antigo nunca aponta para outro assunto.
-- Os macrotemas também são casados, pelos tópicos que os compõem.
+- Os macrotemas persistem: um tópico casado continua no macrotema que tinha, e um tópico novo entra no macrotema do tópico casado mais parecido. A aglomeração só roda de novo quando menos da metade dos tópicos casa, ou com `mapa topicos --refazer-macrotemas`. Refazê-la a cada execução mudaria de cor metade dos tópicos do piloto.
 - Trocar o modelo de embeddings ou o idioma de análise recomeça o casamento (os números continuam de onde pararam).
 
-No piloto, rodar de novo com outra semente mantém 43 dos 50 tópicos e os 7 macrotemas; tirar os artigos de 2010 mantém 41 dos 53 tópicos encontrados.
+No piloto, rodar de novo com outra semente mantém o número e a cor de 50 dos 57 tópicos; tirar os artigos de 2010 também mantém 50 dos 57.
 
 ## 11. Rótulos
 

@@ -63,6 +63,22 @@ def agrupar(coords: np.ndarray, *, min_cluster_size: int, min_samples: int, sele
     return Agrupamento(modelo.labels_.astype("int64"), modelo.probabilities_.astype("float32"))
 
 
+def fora_do_nucleo(rotulos: np.ndarray, excluir: np.ndarray, *, min_cluster_size: int) -> np.ndarray:
+    """Tira do núcleo os documentos marcados em `excluir` e desfaz os tópicos que ficam menores que o mínimo.
+
+    Serve para os documentos só com título: textos curtos ficam parecidos entre si pela forma, e não pelo assunto,
+    e no piloto formavam um tópico próprio. Fora do núcleo, eles ainda podem entrar num tópico pela vizinhança
+    (`reatribuir`). Os tópicos que sobram são renumerados de 0 a k−1, na ordem original.
+    """
+    import numpy as np
+
+    saida = rotulos.copy()
+    saida[excluir] = -1
+    ids, tamanhos = np.unique(saida[saida >= 0], return_counts=True)
+    novos = {int(t): i for i, t in enumerate(ids[tamanhos >= min_cluster_size])}
+    return np.array([novos.get(int(t), -1) for t in saida], dtype=rotulos.dtype)
+
+
 def reatribuir(rotulos: np.ndarray, knn_indices: np.ndarray, knn_dist: np.ndarray, *, votos_minimos: int) -> np.ndarray:
     """Tópico de cada documento depois da reatribuição do ruído (−1 para quem não teve votos suficientes).
 

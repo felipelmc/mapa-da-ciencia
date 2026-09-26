@@ -14,6 +14,7 @@ from mapa_da_ciencia.topicos.agrupamento import (
     agrupar,
     conferir_tamanho,
     estabilidade,
+    fora_do_nucleo,
     min_cluster_size_automatico,
     reatribuir,
 )
@@ -127,3 +128,11 @@ def test_reatribuicao_no_corpus_sintetico(sintetico):
     voltaram = arrancados & (finais >= 0)
     assert voltaram.sum() >= 0.9 * arrancados.sum()
     assert adjusted_rand_score(sintetico["temas"][voltaram], finais[voltaram]) >= 0.85
+
+
+def test_documentos_so_com_titulo_nao_formam_nucleo():
+    rotulos = np.array([0, 0, 0, 1, 1, 1, 1, 2, 2, 2, -1])
+    so_titulo = np.array([False, False, False, True, True, True, False, False, False, True, False])
+    saida = fora_do_nucleo(rotulos, so_titulo, min_cluster_size=2)
+    # o tópico 1 (quase só títulos) se desfaz; o 2 perde um membro e vira o 1; a numeração fica contígua
+    assert saida.tolist() == [0, 0, 0, -1, -1, -1, -1, 1, 1, -1, -1]

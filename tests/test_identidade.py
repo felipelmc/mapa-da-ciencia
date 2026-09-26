@@ -73,17 +73,31 @@ def test_topico_que_muda_de_macrotema_muda_de_cor():
     nucleos, corpus, r = _primeira()
     grupos = list(GRUPOS)
     grupos[0] = 0  # o tópico 0 (id 3) passa do macrotema do grupo 1 para o do grupo 0
-    r2 = estabilizar(nucleos, grupos, r.identidade, CHAVE, corpus)
+    r2 = estabilizar(nucleos, grupos, r.identidade, CHAVE, corpus, persistir_macrotemas=False)
     assert r2.ids == r.ids and r2.macros[0] == r.macros[1] and r2.cores[0] != r.cores[0]
     assert r2.cores[1:] == r.cores[1:]
     assert len(r2.casados) == 6 and r2.mesma_cor == 5
+
+
+def test_macrotemas_persistem_e_topico_novo_vai_para_o_do_casado_mais_parecido():
+    nucleos, corpus, r = _primeira()
+    novo = {f"n{i:03d}" for i in range(35)}
+    centros = np.eye(7)
+    centros[6] = centros[4] * 0.9 + centros[0] * 0.1  # o tópico novo parece o tópico 4 (macrotema do grupo 2)
+    centros /= np.linalg.norm(centros, axis=1, keepdims=True)
+    embaralhados = [0, 0, 0, 1, 1, 1, 2]  # a aglomeração desta vez mudaria os macrotemas de quase todos
+    r2 = estabilizar([*nucleos, novo], embaralhados, r.identidade, CHAVE, corpus | novo, centros=centros)
+    assert r2.macrotemas_persistentes and r2.macros[:6] == r.macros and r2.macros[6] == r.macros[4]
+    assert r2.cores[:6] == r.cores and r2.mesma_cor == 6 and r2.cores[6] not in r.cores
+    r3 = estabilizar(nucleos, embaralhados[:6], r.identidade, CHAVE, corpus, persistir_macrotemas=False)
+    assert not r3.macrotemas_persistentes and r3.mesma_cor < 6
 
 
 def test_recem_chegado_grande_nao_toma_a_cor_de_quem_ficou():
     nucleos, corpus, r = _primeira()
     grupos = list(GRUPOS)
     grupos[1] = 1  # o maior tópico (90 documentos) vai para o macrotema dos tópicos 0 e 2, que ficam
-    r2 = estabilizar(nucleos, grupos, r.identidade, CHAVE, corpus)
+    r2 = estabilizar(nucleos, grupos, r.identidade, CHAVE, corpus, persistir_macrotemas=False)
     assert r2.cores[0] == r.cores[0] and r2.cores[2] == r.cores[2]
     assert r2.cores[1] not in (r.cores[0], r.cores[2], r.cores[1])
 

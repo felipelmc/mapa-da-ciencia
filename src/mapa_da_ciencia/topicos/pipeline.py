@@ -45,6 +45,7 @@ class OpcoesTopicos:
     sem_rotulos: bool = False
     refazer_embeddings: bool = False
     semente: int | None = None  # substitui a primeira de `topicos.sementes`
+    refazer_macrotemas: bool = False  # aglomera de novo, em vez de manter os macrotemas da execução anterior
 
 
 @dataclass
@@ -101,6 +102,7 @@ def gerar_topicos(
         agrupar,
         conferir_tamanho,
         estabilidade,
+        fora_do_nucleo,
         min_cluster_size_automatico,
         reatribuir,
     )
@@ -139,14 +141,22 @@ def gerar_topicos(
     mapa2d = reduzir(e.matriz, knn_umap, n_componentes=2, min_dist=ct.min_dist_mapa, semente=sementes[0], **reduzir_com)
     progresso.avancar()
     mcs = ct.min_cluster_size or min_cluster_size_automatico(n)
-    grupos = [agrupar(r, min_cluster_size=mcs, min_samples=ct.min_samples, selecao=ct.selecao) for r in reducoes]
-    brutos = grupos[0].rotulos
+    so_titulo = np.array([t.fonte == "so_titulo" for t in e.textos])
+    grupos = [
+        fora_do_nucleo(
+            agrupar(r, min_cluster_size=mcs, min_samples=ct.min_samples, selecao=ct.selecao).rotulos,
+            so_titulo,
+            min_cluster_size=mcs,
+        )
+        for r in reducoes
+    ]
+    brutos = grupos[0]
     if brutos.max() < 0:
         raise ErroConfig(
             f"O agrupamento não encontrou nenhum tópico em {n} documentos. Diminua `topicos.min_cluster_size` "
             "(ou `topicos.min_samples`) no mapa.yaml, ou amplie o recorte."
         )
-    ari = estabilidade([g.rotulos for g in grupos]) if len(grupos) > 1 else None
+    ari = estabilidade(grupos) if len(grupos) > 1 else None
     finais_brutos = reatribuir(brutos, *knn_umap, votos_minimos=ct.votos_minimos)
     progresso.avancar()
 
@@ -157,10 +167,19 @@ def gerar_topicos(
     idiomas = (cfg.recorte.idioma_exibicao, cfg.recorte.idioma_analise)
     palavras = palavras_chave([texto_de_exibicao(docs[i], *idiomas) for i in e.ids], brutos)
     reps = representativos(e.matriz, brutos, e.ids)
-    grupos_macro = agrupar_macrotemas(centros(e.matriz, brutos, list(range(k_brutos))), tamanhos, ct.macrotemas)
+    centros_topicos = centros(e.matriz, brutos, list(range(k_brutos)))
+    grupos_macro = agrupar_macrotemas(centros_topicos, tamanhos, ct.macrotemas)
     chave = {"modelo": e.rotulo_modelo, "idioma_analise": cfg.recorte.idioma_analise, "versao_texto": VERSAO_TEXTO}
     anterior = Identidade.ler(pasta)
-    est = estabilizar(nucleos, grupos_macro, anterior, chave, set(e.ids))
+    est = estabilizar(
+        nucleos,
+        grupos_macro,
+        anterior,
+        chave,
+        set(e.ids),
+        centros=centros_topicos,
+        persistir_macrotemas=not opcoes.refazer_macrotemas,
+    )
     progresso.avancar()
     progresso.fim()
 

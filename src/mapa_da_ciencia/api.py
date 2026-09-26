@@ -234,6 +234,7 @@ def topicos(
     sem_rotulos: bool = False,
     refazer_embeddings: bool = False,
     semente: int | None = None,
+    refazer_macrotemas: bool = False,
     progresso: bool = True,
 ) -> ResumoTopicos:
     """Descobre os tópicos, como `mapa topicos`, e devolve o resumo (`print(resumo)` mostra os números).
@@ -245,7 +246,12 @@ def topicos(
     from mapa_da_ciencia.topicos.pipeline import OpcoesTopicos, gerar_topicos
 
     p = _projeto(projeto)
-    opcoes = OpcoesTopicos(sem_rotulos=sem_rotulos, refazer_embeddings=refazer_embeddings, semente=semente)
+    opcoes = OpcoesTopicos(
+        sem_rotulos=sem_rotulos,
+        refazer_embeddings=refazer_embeddings,
+        semente=semente,
+        refazer_macrotemas=refazer_macrotemas,
+    )
     if not progresso:
         return gerar_topicos(p, opcoes, ProgressoNulo())
     from rich.console import Console

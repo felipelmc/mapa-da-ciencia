@@ -469,6 +469,13 @@ def topicos(
         int | None,
         typer.Option("--semente", help="Semente principal do UMAP (padrão: a primeira de topicos.sementes)."),
     ] = None,
+    refazer_macrotemas: Annotated[
+        bool,
+        typer.Option(
+            "--refazer-macrotemas",
+            help="Agrupa os tópicos em macrotemas de novo, em vez de manter os da execução anterior (as cores mudam).",
+        ),
+    ] = False,
 ) -> None:
     """Descobre os tópicos do corpus, dá um nome a cada um e prepara o mapa do painel."""
     from mapa_da_ciencia.progresso import ProgressoRich
@@ -478,7 +485,12 @@ def topicos(
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
         progresso = ProgressoRich(console)
-        opcoes = OpcoesTopicos(sem_rotulos=sem_rotulos, refazer_embeddings=refazer_embeddings, semente=semente)
+        opcoes = OpcoesTopicos(
+            sem_rotulos=sem_rotulos,
+            refazer_embeddings=refazer_embeddings,
+            semente=semente,
+            refazer_macrotemas=refazer_macrotemas,
+        )
         try:
             resumo = gerar_topicos(p, opcoes, progresso)
         except KeyboardInterrupt:
