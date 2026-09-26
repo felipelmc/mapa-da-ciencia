@@ -34,6 +34,7 @@ from mapa_da_ciencia.fontes.importar import colecao_da_url as colecao_da_url
 from mapa_da_ciencia.fontes.openalex import (
     buscar_por_dois,
     casar_todos,
+    consultar,
     documento_de_obra,
     listar_por_revista,
     pid_da_obra,
@@ -57,6 +58,7 @@ class OpcoesColeta:
     atualizar: bool = False
     offline: bool = False
     sem_openalex: bool = False
+    consulta: str | None = None
 
 
 @dataclass
@@ -67,6 +69,7 @@ class Plano:
     avisos: list[str] = field(default_factory=list)
     openalex: bool = True
     importados: list[Path] = field(default_factory=list)
+    consulta: str | None = None
 
 
 @dataclass
@@ -133,10 +136,13 @@ def planejar(projeto: Projeto, opcoes: OpcoesColeta) -> Plano:
     pasta = projeto.raiz / PASTA_IMPORTADOS
     if pasta.exists():
         importados += sorted(p for p in pasta.iterdir() if p.suffix.lower() in FORMATOS)
-    if not idents and not importados:
+    consulta = opcoes.consulta or cfg.fontes.openalex.consulta
+    if consulta and (opcoes.sem_openalex or not cfg.fontes.openalex.enriquecer):
+        raise ErroConfig("A busca por termo usa o OpenAlex: não combine `consulta` com --sem-openalex.")
+    if not idents and not importados and not consulta:
         raise ErroConfig(
             "Nenhuma fonte no recorte: preencha `fontes.scielo.revistas` no mapa.yaml, use --revista "
-            "ou importe uma lista de artigos com `mapa importar`."
+            "importe uma lista de artigos com `mapa importar` ou defina uma busca (`fontes.openalex.consulta`)."
         )
     revistas = resolver_revistas(idents, colecao) if idents else []
     anos = opcoes.anos or cfg.recorte.anos
@@ -145,7 +151,15 @@ def planejar(projeto: Projeto, opcoes: OpcoesColeta) -> Plano:
     if opcoes.anos and tuple(opcoes.anos) != tuple(cfg.recorte.anos):
         avisos.append(f"Os anos desta execução ({anos[0]}–{anos[1]}) diferem dos do mapa.yaml.")
     tipos = list(scielo.tipos) if scielo else ["research-article", "review-article"]
-    return Plano(revistas, anos, tipos, avisos, openalex=cfg.fontes.openalex.enriquecer, importados=importados)
+    return Plano(
+        revistas,
+        anos,
+        tipos,
+        avisos,
+        openalex=cfg.fontes.openalex.enriquecer,
+        importados=importados,
+        consulta=consulta,
+    )
 
 
 async def _enriquecer(
@@ -170,63 +184,126 @@ async def _enriquecer(
     return saida + outros
 
 
-async def _importar(
-    buscador: Buscador, projeto: Projeto, plano: Plano, opcoes: OpcoesColeta, progresso: Progresso
-) -> tuple[list[Documento], list[str], int]:
-    """Hidrata os artigos listados nos arquivos importados. Devolve (documentos, relatórios, não encontrados)."""
-    itens: list[tuple[Identificador, str]] = []
-    relatorios = []
-    for arquivo in plano.importados:
-        imp = ler_arquivo(arquivo)
-        relatorios.append(imp.resumo())
-        itens += [(i, arquivo.name) for i in imp.itens]
-    if not itens:
-        return [], relatorios, 0
-    progresso.etapa("Artigos importados", len(itens))
+def _colecao_da_obra(obra: dict) -> str | None:
+    return colecao_da_url(" ".join(loc.get("landing_page_url") or "" for loc in obra.get("locations") or []))
+
+
+async def _pid_da_obra(buscador: Buscador, obra: dict, dois_por_revista: dict[str, dict[str, str]]) -> str | None:
+    """O PID de uma obra do OpenAlex: nos endereços dela ou, para revistas do SciELO Brasil, pelo DOI na lista de
+    identificadores da revista na ArticleMeta (a mesma do cache da coleta; os endereços novos não trazem o PID)."""
+    if pid := pid_da_obra(obra):
+        return pid
+    doi = normalizar_doi(obra.get("doi"))
+    fonte = (obra.get("primary_location") or {}).get("source") or {}
+    for issn in fonte.get("issn") or []:
+        if doi is None or (revista := retrato.por_issn(issn)) is None:
+            continue
+        if revista.issn not in dois_por_revista:
+            lista = await listar_pids(buscador, RevistaRef.de_revista(revista), (0, 9999))
+            dois_por_revista[revista.issn] = lista.dois
+        if pid := dois_por_revista[revista.issn].get(doi):
+            return pid
+    return None
+
+
+async def _hidratar(
+    buscador: Buscador,
+    projeto: Projeto,
+    plano: Plano,
+    opcoes: OpcoesColeta,
+    itens: list[tuple[Identificador, str]],
+    *,
+    obras: list[dict] | None = None,
+) -> tuple[list[Documento], int]:
+    """Transforma identificadores (PID e/ou DOI, com a origem) em documentos. Devolve (documentos, não encontrados).
+
+    PID → ArticleMeta, na coleção de cada um. Só DOI → OpenAlex (ou `obras`, se já vieram de uma busca), que pode
+    apontar um PID; sem PID, o documento é montado com os dados do OpenAlex.
+    """
     usar_openalex = plano.openalex and not opcoes.sem_openalex
     api_key = variavel("OPENALEX_API_KEY", projeto.raiz)
 
-    # 1. Com PID: registro da ArticleMeta, na coleção de cada um
     origem_do_pid: dict[str, str] = {}
     por_colecao: dict[str, set[str]] = {}
-    for ident, arquivo in itens:
+    for ident, origem in itens:
         if ident.pid:
-            origem_do_pid.setdefault(ident.pid, arquivo)
+            origem_do_pid.setdefault(ident.pid, origem)
             por_colecao.setdefault(ident.colecao or "scl", set()).add(ident.pid)
     documentos: list[Documento] = []
     for colecao, pids in sorted(por_colecao.items()):
         for pid, registro in (await buscar_registros(buscador, sorted(pids), colecao)).items():
             if registro is not None:
                 doc = normalizar(registro, revista_do_registro(registro, colecao))
-                documentos.append(doc.model_copy(update={"origens": [f"importar:{origem_do_pid[pid]}"]}))
+                documentos.append(doc.model_copy(update={"origens": [origem_do_pid[pid]]}))
     encontrados = {d.pid for d in documentos}
 
-    # 2. Só DOI (ou PID que a ArticleMeta não conhece): OpenAlex, que pode apontar um PID
-    pendentes = [(i, a) for i, a in itens if not i.pid or i.pid not in encontrados]
-    dois = [i.doi for i, _ in pendentes if i.doi] + [d.doi for d in documentos if d.doi]
-    obras = await buscar_por_dois(buscador, dois, api_key=api_key) if usar_openalex and dois else []
+    pendentes = [(i, o) for i, o in itens if not i.pid or i.pid not in encontrados]
+    if obras is None:
+        dois = [i.doi for i, _ in pendentes if i.doi] + [d.doi for d in documentos if d.doi]
+        obras = await buscar_por_dois(buscador, dois, api_key=api_key) if usar_openalex and dois else []
     por_doi = {normalizar_doi(o.get("doi")): o for o in obras}
     nao_encontrados, so_openalex = 0, []
-    for ident, arquivo in pendentes:
+    dois_por_revista: dict[str, dict[str, str]] = {}
+    for ident, origem in pendentes:
         obra = por_doi.get(ident.doi) if ident.doi else None
         if obra is None:
             nao_encontrados += 1
             continue
-        pid = pid_da_obra(obra)
+        pid = await _pid_da_obra(buscador, obra, dois_por_revista)
         if pid and pid not in encontrados:
-            colecao = colecao_da_url(" ".join(loc.get("landing_page_url") or "" for loc in obra.get("locations") or []))
-            registro = (await buscar_registros(buscador, [pid], colecao or "scl"))[pid]
+            colecao = _colecao_da_obra(obra) or "scl"
+            registro = (await buscar_registros(buscador, [pid], colecao))[pid]
             if registro is not None:
                 doc = normalizar(registro, revista_do_registro(registro, colecao))
-                documentos.append(doc.model_copy(update={"origens": [f"importar:{arquivo}"]}))
+                documentos.append(doc.model_copy(update={"origens": [origem]}))
                 encontrados.add(pid)
                 continue
         if not pid or pid not in encontrados:
-            so_openalex.append(documento_de_obra(obra, f"importar:{arquivo}"))
+            so_openalex.append(documento_de_obra(obra, origem))
     if obras:
         documentos = casar_todos(documentos, obras)
+    return documentos + so_openalex, nao_encontrados
+
+
+async def _importar(
+    buscador: Buscador, projeto: Projeto, plano: Plano, opcoes: OpcoesColeta, progresso: Progresso
+) -> tuple[list[Documento], list[str], int]:
+    """Artigos dos arquivos importados. Devolve (documentos, relatórios de leitura, não encontrados)."""
+    itens: list[tuple[Identificador, str]] = []
+    relatorios = []
+    for arquivo in plano.importados:
+        imp = ler_arquivo(arquivo)
+        relatorios.append(imp.resumo())
+        itens += [(i, f"importar:{arquivo.name}") for i in imp.itens]
+    if not itens:
+        return [], relatorios, 0
+    progresso.etapa("Artigos importados", len(itens))
+    documentos, nao_encontrados = await _hidratar(buscador, projeto, plano, opcoes, itens)
     progresso.avancar(len(itens))
-    return documentos + so_openalex, relatorios, nao_encontrados
+    return documentos, relatorios, nao_encontrados
+
+
+async def _consultar(
+    buscador: Buscador, projeto: Projeto, plano: Plano, opcoes: OpcoesColeta, progresso: Progresso
+) -> tuple[list[Documento], int]:
+    """Artigos que respondem à busca por termo no OpenAlex, nas revistas do recorte (ou em todo o SciELO)."""
+    assert plano.consulta
+    progresso.etapa("Busca no OpenAlex", 1)
+    api_key = variavel("OPENALEX_API_KEY", projeto.raiz)
+    obras = await consultar(buscador, plano.consulta, plano.revistas, plano.anos, api_key=api_key)
+    origem = f"consulta:{plano.consulta}"
+    itens = [
+        (
+            Identificador(
+                pid_da_obra(o), _colecao_da_obra(o), normalizar_doi(o.get("doi")), o.get("title"), None, origem
+            ),
+            origem,
+        )
+        for o in obras
+    ]
+    documentos, nao_encontrados = await _hidratar(buscador, projeto, plano, opcoes, itens, obras=obras)
+    progresso.avancar()
+    return documentos, nao_encontrados
 
 
 async def coletar_async(
@@ -241,10 +318,12 @@ async def coletar_async(
     avisos = list(plano.avisos)
 
     async with Buscador(projeto.brutos, pasta_projeto=projeto.raiz, offline=opcoes.offline) as buscador:
-        progresso.etapa("Listas de PIDs", len(plano.revistas))
+        # Com busca por termo, as revistas só restringem a busca: não se coleta a revista inteira.
+        coletar_revistas = [] if plano.consulta else plano.revistas
+        progresso.etapa("Listas de PIDs", len(coletar_revistas))
         pids_por_revista: dict[str, list[str]] = {}
         fora_do_periodo = 0
-        for revista in plano.revistas:
+        for revista in coletar_revistas:
             lista = await listar_pids(buscador, revista, plano.anos, atualizar=opcoes.atualizar)
             pids_por_revista[revista.issn] = lista.pids
             fora_do_periodo += lista.fora_do_periodo
@@ -252,7 +331,7 @@ async def coletar_async(
                 avisos.append(f"{revista.titulo}: {lista.aviso}")
             progresso.avancar()
 
-        pids = [(r, p) for r in plano.revistas for p in pids_por_revista[r.issn]]
+        pids = [(r, p) for r in coletar_revistas for p in pids_por_revista[r.issn]]
         if opcoes.limite is not None:
             pids = pids[: opcoes.limite]
         progresso.etapa("Registros da ArticleMeta", len(pids))
@@ -274,8 +353,12 @@ async def coletar_async(
                 continue
             documentos.append(doc)
 
-        if plano.openalex and not opcoes.sem_openalex:
+        if documentos and plano.openalex and not opcoes.sem_openalex:
             documentos = await _enriquecer(buscador, projeto, plano, documentos, opcoes, progresso)
+        if plano.consulta:
+            da_busca, nao_achados = await _consultar(buscador, projeto, plano, opcoes, progresso)
+            documentos += da_busca
+            nao_encontrados += nao_achados
 
         importados, importacoes, nao_achados = await _importar(buscador, projeto, plano, opcoes, progresso)
         nao_encontrados += nao_achados
@@ -335,6 +418,7 @@ def _parametros(plano: Plano, opcoes: OpcoesColeta) -> dict[str, Any]:
     return {
         "revistas": [r.issn for r in plano.revistas],
         "importados": [p.name for p in plano.importados],
+        "consulta": plano.consulta,
         "anos": list(plano.anos),
         "tipos": plano.tipos,
         "limite": opcoes.limite,

@@ -75,6 +75,28 @@ O `mapa` lista os artigos de cada revista na ArticleMeta, baixa o registro de ca
 
 **Quanto tempo leva:** a ArticleMeta responde uns 3 registros por segundo com 4 requisições simultâneas. Uma revista-ano leva segundos; o piloto inteiro (cerca de 5 mil artigos), uns 30 minutos na primeira vez.
 
+## Busca por termo
+
+Às vezes o recorte é um tema, e não uma revista inteira. A busca por termo usa o OpenAlex para achar os artigos cujo **título ou resumo** mencionam o termo:
+
+```bash
+mapa coletar --consulta "reforma da previdência"
+```
+
+Para deixar a busca fixa no projeto, coloque-a no `mapa.yaml`:
+
+```yaml
+fontes:
+  openalex:
+    consulta: '"reforma da previdência" OR "previdência social"'
+```
+
+- **Com revistas no recorte**, a busca fica restrita a elas. **Sem revistas** (`revistas: []`), a busca cobre todo o SciELO.
+- **O corpus passa a ser o resultado da busca**, e não as revistas inteiras.
+- A sintaxe é a do OpenAlex: aspas para expressões exatas, e `AND`, `OR` e `NOT`.
+- Cada resultado do SciELO Brasil vira um registro completo da ArticleMeta. O `mapa` descobre o PID pelo DOI, na lista de artigos da revista.
+- **Custo:** cada página de até 200 resultados custa 10 créditos do OpenAlex. Buscas com mais de 2.000 resultados são recusadas antes de gastar créditos: refine os termos, as revistas ou os anos.
+
 ## 4. Conferir
 
 ```bash

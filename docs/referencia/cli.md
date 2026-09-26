@@ -93,6 +93,7 @@ mapa coletar [OPÇÕES]
 | `--atualizar` | Baixa de novo as listas de artigos (para pegar publicações novas). |  |
 | `--offline` | Não acessa a internet: usa só o que está em brutos/. |  |
 | `--sem-openalex` | Não enriquece com o OpenAlex (citações, licença por artigo). |  |
+| `--consulta` | Só os artigos cujo título ou resumo respondem a esta busca (via OpenAlex). |  |
 
 ## `mapa importar`
 

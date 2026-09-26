@@ -104,7 +104,8 @@ def test_importado_que_ja_foi_coletado_e_fundido(projeto, apis_falsas):
     _importar(projeto, "dois.txt")
     resumo = coletar(projeto)
     docs = {d.id: d for d in ler_documentos(projeto.dados / ARQUIVO)}
-    assert resumo.fundidos >= 2
+    # o DOI e o PID da lista são do mesmo artigo: viram um documento, fundido com o que veio da revista
+    assert resumo.fundidos == 1 and resumo.nao_encontrados == 0
     assert docs["S0104-62762024000100200"].origens == ["scielo:0104-6276", "importar:dois.txt"]
 
 

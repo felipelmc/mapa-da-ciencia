@@ -35,6 +35,7 @@ class ListaPids:
     total_na_api: int
     repetidos: int = 0
     fora_do_periodo: int = 0
+    dois: dict[str, str] = field(default_factory=dict)  # DOI → PID, de toda a revista (não só do período)
 
     @property
     def aviso(self) -> str | None:
@@ -124,6 +125,7 @@ async def listar_pids(
         total_na_api=total,
         repetidos=len(codigos) - len(unicos),
         fora_do_periodo=len(unicos) - len(no_periodo),
+        dois={doi: o["code"] for o in objetos if o.get("code") and (doi := normalizar_doi(o.get("doi")))},
     )
 
 

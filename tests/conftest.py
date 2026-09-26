@@ -45,6 +45,7 @@ class ApisFalsas:
         router.get(f"{AM}/article/identifiers/").mock(side_effect=self._identificadores)
         router.get(f"{AM}/article/").mock(side_effect=self._artigo)
         self.obras = obras_openalex()
+        self.total_forcado: int | None = None  # para simular buscas enormes
         router.get(f"{OA}/works").mock(side_effect=self._obras)
 
     def _obras(self, request: httpx.Request) -> httpx.Response:
@@ -58,12 +59,15 @@ class ApisFalsas:
         if "publication_year" in filtros:
             a, _, b = filtros["publication_year"].partition("-")
             obras = [o for o in obras if int(a) <= (o.get("publication_year") or 0) <= int(b or a)]
+        if "title_and_abstract.search" in filtros:
+            termo = filtros["title_and_abstract.search"].lower()
+            obras = [o for o in obras if termo in (o.get("title") or "").lower()]
         if "doi" in filtros:
             dois = {d.lower().removeprefix("https://doi.org/") for d in filtros["doi"].split("|")}
             obras = [o for o in obras if (o.get("doi") or "").lower().removeprefix("https://doi.org/") in dois]
         return httpx.Response(
             200,
-            json={"meta": {"count": len(obras), "next_cursor": None}, "results": obras},
+            json={"meta": {"count": self.total_forcado or len(obras), "next_cursor": None}, "results": obras},
             headers={"x-ratelimit-remaining": "990"},
         )
 

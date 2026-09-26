@@ -16,6 +16,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.documento import (
     Afiliacao,
     Autor,
@@ -58,8 +59,12 @@ async def listar_paginas(
     api_key: str | None = None,
     custo_pagina: int = 1,
     atualizar: bool = False,
+    maximo: int | None = None,
 ) -> list[dict]:
-    """Todos os trabalhos de um filtro, página a página (cursor), com cache por página."""
+    """Todos os trabalhos de um filtro, página a página (cursor), com cache por página.
+
+    Com `maximo`, confere o total na primeira página e para com uma mensagem se passar do limite.
+    """
     trabalhos: list[dict] = []
     cursor, pagina = "*", 0
     chave = _hash(filtro, CAMPOS)
@@ -76,10 +81,51 @@ async def listar_paginas(
             custo=custo_pagina,
         )
         resultados = dados.get("results") or []
+        total = (dados.get("meta") or {}).get("count") or 0
+        if pagina == 0 and maximo is not None and total > maximo:
+            paginas = -(-total // POR_PAGINA)
+            raise ErroConfig(
+                f"A busca encontrou {total} trabalhos no OpenAlex (~{paginas * custo_pagina} créditos). "
+                f"O limite é {maximo}: refine a consulta, restrinja as revistas ou use anos mais estreitos."
+            )
         trabalhos += resultados
         cursor = (dados.get("meta") or {}).get("next_cursor") if resultados else None
         pagina += 1
     return trabalhos
+
+
+MAXIMO_BUSCA = 2000  # 10 páginas de busca = 100 créditos
+
+
+async def consultar(
+    buscador: Buscador,
+    consulta: str,
+    revistas: list[RevistaRef],
+    anos: tuple[int, int],
+    *,
+    api_key: str | None = None,
+) -> list[dict]:
+    """Trabalhos cujo título ou resumo respondem à `consulta`, nas revistas dadas (ou em todo o SciELO).
+
+    Busca custa 10 créditos por página de 200. Aceita a sintaxe do OpenAlex: aspas, AND, OR, NOT.
+    """
+    termo = " ".join(consulta.replace(",", " ").split())
+    base = [f"title_and_abstract.search:{termo}", f"publication_year:{anos[0]}-{anos[1]}"]
+    if not revistas:
+        filtros = [",".join([*base, "primary_location.source.listed_in:scielo"])]
+    else:
+        issns = sorted({i for r in revistas for i in (r.issns or (r.issn,))})
+        filtros = [
+            ",".join([*base, "primary_location.source.issn:" + "|".join(issns[i : i + 100])])
+            for i in range(0, len(issns), 100)
+        ]
+    obras: dict[str, dict] = {}
+    for filtro in filtros:
+        for o in await listar_paginas(
+            buscador, filtro, "consultas/busca", api_key=api_key, custo_pagina=10, maximo=MAXIMO_BUSCA
+        ):
+            obras[o["id"]] = o
+    return list(obras.values())
 
 
 async def listar_por_revista(

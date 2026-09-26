@@ -273,6 +273,10 @@ def coletar(
     sem_openalex: Annotated[
         bool, typer.Option("--sem-openalex", help="Não enriquece com o OpenAlex (citações, licença por artigo).")
     ] = False,
+    consulta: Annotated[
+        str | None,
+        typer.Option("--consulta", help="Só os artigos cujo título ou resumo respondem a esta busca (via OpenAlex)."),
+    ] = None,
 ) -> None:
     """Coleta os artigos do recorte e monta o corpus do projeto (dados/documentos.parquet)."""
     from mapa_da_ciencia import coleta as etapa
@@ -289,6 +293,7 @@ def coletar(
             atualizar=atualizar,
             offline=offline,
             sem_openalex=sem_openalex,
+            consulta=consulta,
         )
         progresso = ProgressoRich(console)
         try:
