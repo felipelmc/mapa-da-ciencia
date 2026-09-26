@@ -71,3 +71,32 @@ def test_cli_e_status(projeto):
     cb.write_text(cb.read_text(encoding="utf-8").replace('versao: "0.1"', 'versao: "0.2"'), encoding="utf-8")
     s = runner.invoke(app, ["status", "-P", raiz], env={"COLUMNS": "160"})
     assert "de outro codebook" in s.output
+
+
+def test_grava_parcial_durante_a_rodada(projeto, monkeypatch):
+    import mapa_da_ciencia.classificacao.pipeline as pipeline
+    from mapa_da_ciencia.classificacao.executor import Classificador
+
+    gravacoes = []
+    original = Resultado.gravar
+    monkeypatch.setattr(pipeline, "GRAVAR_A_CADA", 2)
+    monkeypatch.setattr(
+        Resultado, "gravar", lambda self, *a: (gravacoes.append(self.classificados), original(self, *a))
+    )
+    mapa.classificar(projeto, limite=5, progresso=False)
+    assert gravacoes == [2, 4, 5]
+
+    # interrompida no meio: o que já foi classificado vai para o resultado, marcado como parcial
+    classificar = Classificador.classificar
+
+    def interrompe(self, textos):
+        for i, c in enumerate(classificar(self, textos)):
+            if i == 7:
+                raise KeyboardInterrupt
+            yield c
+
+    monkeypatch.setattr(Classificador, "classificar", interrompe)
+    with pytest.raises(KeyboardInterrupt):
+        mapa.classificar(projeto, progresso=False)
+    r = Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
+    assert r.classificados == 7 and r.parcial

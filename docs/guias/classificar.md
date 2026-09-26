@@ -22,7 +22,7 @@ Classifica 5 documentos, mostra os resultados e projeta quanto falta neste compu
 uv run mapa classificar
 ```
 
-Cada resposta é guardada no `estado.sqlite` assim que chega. Se a etapa for interrompida (++ctrl+c++, falta de memória, o computador que dormiu), rode o mesmo comando de novo: ela continua de onde parou, sem refazer nada.
+Cada resposta é guardada no `estado.sqlite` assim que chega, e o resultado em `dados/classificacao/` é regravado a cada 50 documentos, então o painel e as consultas já mostram o que foi classificado enquanto a etapa corre. Se a etapa for interrompida (++ctrl+c++, falta de memória, o computador que dormiu), rode o mesmo comando de novo: ela continua de onde parou, sem refazer nada.
 
 No fim, a saída mostra, por variável, os valores mais frequentes e a taxa de **evidência literal** (o trecho aparece no resumo tal como o modelo o copiou). Também mostra quantas respostas vieram em JSON válido na primeira tentativa e o tempo mediano por documento. Documentos sem resumo ficam de fora e aparecem na contagem.
 

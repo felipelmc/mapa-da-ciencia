@@ -11,6 +11,7 @@ do fim da classificação e para comparar modelos só na amostra.
 
 from __future__ import annotations
 
+import contextlib
 import statistics
 import time
 from collections import Counter
@@ -32,6 +33,7 @@ from .prompt import VERSAO_PROMPT
 from .resultado import PASTA, Resultado, resultados, valor_como_texto
 
 AMOSTRA_ESTIMATIVA = 5
+GRAVAR_A_CADA = 50
 
 
 @dataclass
@@ -131,50 +133,68 @@ def classificar(
         alvo = ja + pendentes[:extra]
         parcial = len(alvo) < len(textos)
 
+    variaveis = [v.id for v in codebook.variaveis]
+    k = classificador.contadores
+    assinatura = assinatura_corpus([d.id for d in docs])
+
+    def gravar(resultados: list[Classificacao], *, parcial: bool) -> Resultado:
+        """Grava o resultado com o que já foi classificado: no fim, e a cada `GRAVAR_A_CADA` documentos novos
+        (assim a rodada longa aparece no painel e em `classificacoes` enquanto corre)."""
+        linhas = [linha for c in sorted(resultados, key=lambda c: c.doc) for linha in _linhas(c, variaveis)]
+        status = Counter(linha["status"] for linha in linhas if linha["status"] != "dispensada")
+        total_status = sum(status.values()) or 1
+        por_variavel = {}
+        for v in variaveis:
+            dessa = [linha["status"] for linha in linhas if linha["variavel"] == v and linha["status"] != "dispensada"]
+            if dessa:
+                por_variavel[v] = round(dessa.count("literal") / len(dessa), 4)
+        segundos = [c.segundos for c in resultados]
+        resultado = Resultado(
+            modelo=classificador.modelo,
+            codebook=f"{codebook.nome} {codebook.versao}",
+            hash_codebook=codebook.hash(),
+            assinatura=assinatura,
+            gerado_em=datetime.now(UTC).isoformat(timespec="seconds"),
+            documentos=len(textos),
+            classificados=len(resultados),
+            sem_resumo=len(sem_resumo),
+            falhas=k.falhas,
+            json_valido_na_primeira=(
+                round(sum(c.valida_na_primeira for c in resultados) / len(resultados), 4) if resultados else None
+            ),
+            evidencia={s: round(status[s] / total_status, 4) for s in ("literal", "aproximada", "ausente")},
+            evidencia_por_variavel=por_variavel,
+            segundos_por_documento=round(statistics.median(segundos), 2) if segundos else None,
+            parcial=parcial or bool(k.falhas),
+        )
+        resultado.gravar(projeto.dados / PASTA, linhas)
+        return resultado
+
     resultados: list[Classificacao] = []
     try:
         for c in classificador.classificar(alvo):
             resultados.append(c)
+            if not c.do_cache and k.novos % GRAVAR_A_CADA == 0:
+                gravar(resultados, parcial=True)
+    except BaseException:
+        if k.novos:  # o cache já tem tudo; o resultado parcial deixa o painel em dia com ele
+            with contextlib.suppress(Exception):
+                gravar(resultados, parcial=True)
+        raise
     finally:
         classificador.fim()
         progresso.fim()
-    k = classificador.contadores
 
-    variaveis = [v.id for v in codebook.variaveis]
-    linhas = [linha for c in sorted(resultados, key=lambda c: c.doc) for linha in _linhas(c, variaveis)]
-    status = Counter(linha["status"] for linha in linhas if linha["status"] != "dispensada")
-    total_status = sum(status.values()) or 1
-    evidencia = {s: round(status[s] / total_status, 4) for s in ("literal", "aproximada", "ausente")}
-    por_variavel = {}
-    for v in variaveis:
-        dessa = [linha["status"] for linha in linhas if linha["variavel"] == v and linha["status"] != "dispensada"]
-        if dessa:
-            por_variavel[v] = round(dessa.count("literal") / len(dessa), 4)
-    segundos = [c.segundos for c in resultados]
-    mediana = round(statistics.median(segundos), 2) if segundos else None
-    json_ok = round(sum(c.valida_na_primeira for c in resultados) / len(resultados), 4) if resultados else None
     faltam = len(textos) - len(resultados)
     estimativa = None
     if opcoes.estimar and k.segundos:
         estimativa = round(statistics.median(k.segundos) * faltam / max(1, modelo_cfg.concorrencia), 0)
-
-    resultado = Resultado(
-        modelo=classificador.modelo,
-        codebook=f"{codebook.nome} {codebook.versao}",
-        hash_codebook=codebook.hash(),
-        assinatura=assinatura_corpus([d.id for d in docs]),
-        gerado_em=datetime.now(UTC).isoformat(timespec="seconds"),
-        documentos=len(textos),
-        classificados=len(resultados),
-        sem_resumo=len(sem_resumo),
-        falhas=k.falhas,
-        json_valido_na_primeira=json_ok,
-        evidencia=evidencia,
-        evidencia_por_variavel=por_variavel,
-        segundos_por_documento=mediana,
-        parcial=parcial or bool(k.falhas),
+    resultado = gravar(resultados, parcial=parcial)
+    json_ok, evidencia, mediana = (
+        resultado.json_valido_na_primeira,
+        resultado.evidencia,
+        resultado.segundos_por_documento,
     )
-    resultado.gravar(projeto.dados / PASTA, linhas)
     resumo = ResumoClassificacao(
         modelo=classificador.modelo,
         documentos=len(textos),
