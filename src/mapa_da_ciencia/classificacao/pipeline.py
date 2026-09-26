@@ -135,11 +135,12 @@ def classificar(
 
     variaveis = [v.id for v in codebook.variaveis]
     k = classificador.contadores
+    principal = not opcoes.modelo or opcoes.modelo == cfg.modelos.classificacao.modelo
     assinatura = assinatura_corpus([d.id for d in docs])
 
     def gravar(resultados: list[Classificacao], *, parcial: bool) -> Resultado:
-        """Grava o resultado com o que já foi classificado: no fim, e a cada `GRAVAR_A_CADA` documentos novos
-        (assim a rodada longa aparece no painel e em `classificacoes` enquanto corre)."""
+        """Grava o resultado com o que já foi classificado: no fim, e a cada `GRAVAR_A_CADA` documentos novos,
+        com uma exportação para o painel (assim a rodada longa aparece enquanto corre)."""
         linhas = [linha for c in sorted(resultados, key=lambda c: c.doc) for linha in _linhas(c, variaveis)]
         status = Counter(linha["status"] for linha in linhas if linha["status"] != "dispensada")
         total_status = sum(status.values()) or 1
@@ -176,6 +177,9 @@ def classificar(
             resultados.append(c)
             if not c.do_cache and k.novos % GRAVAR_A_CADA == 0:
                 gravar(resultados, parcial=True)
+                if principal:
+                    with contextlib.suppress(Exception):  # o painel acompanha; uma falha aqui não para a etapa
+                        exportar(projeto)
     except BaseException:
         if k.novos:  # o cache já tem tudo; o resultado parcial deixa o painel em dia com ele
             with contextlib.suppress(Exception):
@@ -241,7 +245,7 @@ def classificar(
             "somente_amostra": opcoes.somente_amostra,
         },
     )
-    if not opcoes.modelo or opcoes.modelo == cfg.modelos.classificacao.modelo:
+    if principal:
         resumo.avisos += exportar(projeto)
     return resumo
 

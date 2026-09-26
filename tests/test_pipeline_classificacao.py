@@ -83,8 +83,10 @@ def test_grava_parcial_durante_a_rodada(projeto, monkeypatch):
     monkeypatch.setattr(
         Resultado, "gravar", lambda self, *a: (gravacoes.append(self.classificados), original(self, *a))
     )
+    exportacoes = []
+    monkeypatch.setattr(pipeline, "exportar", lambda p: exportacoes.append(1) or [])
     mapa.classificar(projeto, limite=5, progresso=False)
-    assert gravacoes == [2, 4, 5]
+    assert gravacoes == [2, 4, 5] and len(exportacoes) == 3  # a cada 2 novos e no fim
 
     # interrompida no meio: o que já foi classificado vai para o resultado, marcado como parcial
     classificar = Classificador.classificar
