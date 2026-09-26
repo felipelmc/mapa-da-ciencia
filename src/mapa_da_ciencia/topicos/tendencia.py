@@ -156,3 +156,69 @@ def tendencia(n: list[int], total: list[int], anos: list[int], *, dispersao: Dis
         pp_por_ano=pp / (ultimo - primeiro),
         anos=(primeiro, ultimo),
     )
+
+
+def casos_de_referencia() -> list[dict]:
+    """Casos de entrada e saída para conferir outras implementações (a do navegador) contra esta.
+
+    Gravados em `contrato/casos/tendencia.json` por `scripts/gerar_contrato.py`. Séries fixas, escritas à mão ou
+    geradas com semente, cobrindo subida, queda, estabilidade, pico isolado, anos vazios, mínimos e divergência.
+    """
+    import random
+
+    anos16 = list(range(2010, 2026))
+
+    def binomial(p0: float, p1: float, totais: list[int], semente: int) -> list[int]:
+        rng = random.Random(semente)
+        lo0, lo1 = math.log(p0 / (1 - p0)), math.log(p1 / (1 - p1))
+        return [
+            sum(rng.random() < _expit(lo0 + (lo1 - lo0) * i / (len(totais) - 1)) for _ in range(t))
+            for i, t in enumerate(totais)
+        ]
+
+    totais = [241, 250, 262, 255, 270, 268, 281, 276, 290, 285, 300, 294, 288, 279, 296, 283]
+    pico = [4, 5, 3, 4, 6, 4, 5, 3, 4, 5, 6, 5, 7, 44, 6, 5]  # dossiê em 2023
+    entradas = [
+        ("subida", binomial(0.01, 0.07, totais, 1), totais, anos16, "quase"),
+        ("queda", binomial(0.08, 0.02, totais, 2), totais, anos16, "quase"),
+        ("estavel", [12] * 16, [300] * 16, anos16, "quase"),
+        ("ruidosa_pequena", binomial(0.01, 0.015, totais, 3), totais, anos16, "quase"),
+        ("pico_quase", pico, totais, anos16, "quase"),
+        ("pico_binomial", pico, totais, anos16, "binomial"),
+        (
+            "anos_vazios",
+            [3, 0, 5, 7, 0, 9, 11, 0],
+            [120, 0, 130, 140, 0, 150, 160, 0],
+            list(range(2015, 2023)),
+            "quase",
+        ),
+        ("janela", binomial(0.02, 0.06, totais[5:13], 4), totais[5:13], anos16[5:13], "quase"),
+        ("poucos_anos", [5, 6, 7, 8], [100] * 4, list(range(2010, 2014)), "quase"),
+        ("poucos_documentos", [0, 0, 3, 0, 2, 0, 4, 0, 0, 0], [100] * 10, list(range(2010, 2020)), "quase"),
+        ("sem_variacao", [50] * 6, [50] * 6, list(range(2010, 2016)), "quase"),
+        ("so_no_fim", [0] * 9 + [40], [100] * 10, list(range(2010, 2020)), "quase"),
+        ("sem_ruido", [round(1000 * (0.02 + 0.002 * i)) for i in range(16)], [1000] * 16, anos16, "quase"),
+    ]
+    casos = []
+    for nome, n, total, anos, dispersao in entradas:
+        t = tendencia(n, total, anos, dispersao=dispersao)
+        casos.append(
+            {
+                "nome": nome,
+                "entrada": {"n": n, "total": total, "anos": anos, "dispersao": dispersao},
+                "saida": {
+                    "direcao": t.direcao,
+                    "inclinacao": t.inclinacao,
+                    "erro_padrao": t.erro_padrao,
+                    "ic95": list(t.ic95) if t.ic95 else None,
+                    "dispersao": t.dispersao,
+                    "prop_inicio": t.prop_inicio,
+                    "prop_fim": t.prop_fim,
+                    "pp_periodo": t.pp_periodo,
+                    "pp_por_ano": t.pp_por_ano,
+                    "anos": list(t.anos) if t.anos else None,
+                    "motivo": t.motivo,
+                },
+            }
+        )
+    return casos

@@ -22,6 +22,29 @@
           "title": "Rotulo",
           "type": "string"
         },
+        "serie": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Serie"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Soma das séries dos tópicos do macrotema."
+        },
+        "tendencia": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Tendencia"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "topicos": {
           "items": {
             "type": "integer"
@@ -39,6 +62,49 @@
       "title": "Macrotema",
       "type": "object"
     },
+    "MetodoTendencia": {
+      "additionalProperties": false,
+      "description": "Como a tendência é calculada. O painel lê daqui os parâmetros para recalcular com os filtros.",
+      "properties": {
+        "anos_minimos": {
+          "default": 5,
+          "title": "Anos Minimos",
+          "type": "integer"
+        },
+        "dispersao": {
+          "default": "quase",
+          "enum": [
+            "quase",
+            "binomial"
+          ],
+          "title": "Dispersao",
+          "type": "string"
+        },
+        "docs_minimos": {
+          "default": 10,
+          "title": "Docs Minimos",
+          "type": "integer"
+        },
+        "modelo": {
+          "const": "logistica_binomial",
+          "default": "logistica_binomial",
+          "title": "Modelo",
+          "type": "string"
+        },
+        "nivel": {
+          "default": 0.95,
+          "title": "Nivel",
+          "type": "number"
+        },
+        "z": {
+          "default": 1.959963984540054,
+          "title": "Z",
+          "type": "number"
+        }
+      },
+      "title": "MetodoTendencia",
+      "type": "object"
+    },
     "Outliers": {
       "additionalProperties": false,
       "description": "Documentos que o agrupamento não encaixou em nenhum tópico.",
@@ -49,7 +115,7 @@
           "type": "integer"
         },
         "por_ano": {
-          "description": "Documentos sem tópico no HDBSCAN, por ano, alinhado a `anos`.",
+          "description": "Documentos que o HDBSCAN deixou de fora, por ano (inclui os reatribuídos depois), alinhado a `anos`.",
           "items": {
             "type": "integer"
           },
@@ -60,6 +126,14 @@
           "description": "Quantos deles foram atribuídos ao tópico mais próximo.",
           "title": "Reatribuidos",
           "type": "integer"
+        },
+        "sem_topico_por_ano": {
+          "description": "Documentos que ficaram sem tópico (−1) no fim, por ano.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Sem Topico Por Ano",
+          "type": "array"
         }
       },
       "required": [
@@ -95,6 +169,180 @@
         "prop"
       ],
       "title": "Serie",
+      "type": "object"
+    },
+    "Tendencia": {
+      "additionalProperties": false,
+      "description": "Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel.",
+      "properties": {
+        "anos": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Anos"
+        },
+        "direcao": {
+          "enum": [
+            "alta",
+            "queda",
+            "estavel",
+            "insuficiente"
+          ],
+          "title": "Direcao",
+          "type": "string"
+        },
+        "dispersao": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "φ de Pearson (1 na binomial pura).",
+          "title": "Dispersao"
+        },
+        "erro_padrao": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Erro-padrão da inclinação, já corrigido pela dispersão.",
+          "title": "Erro Padrao"
+        },
+        "ic95": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ic95"
+        },
+        "inclinacao": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inclinação na escala logit, por ano.",
+          "title": "Inclinacao"
+        },
+        "motivo": {
+          "anyOf": [
+            {
+              "enum": [
+                "poucos_anos",
+                "poucos_documentos",
+                "sem_variacao",
+                "sem_convergencia"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Por que não há tendência, quando é `insuficiente`.",
+          "title": "Motivo"
+        },
+        "pp_periodo": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Variação em pontos percentuais no período.",
+          "title": "Pp Periodo"
+        },
+        "pp_por_ano": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pp Por Ano"
+        },
+        "prop_fim": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Participação ajustada no último ano com documentos.",
+          "title": "Prop Fim"
+        },
+        "prop_inicio": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Participação ajustada no primeiro ano com documentos.",
+          "title": "Prop Inicio"
+        }
+      },
+      "required": [
+        "direcao"
+      ],
+      "title": "Tendencia",
       "type": "object"
     },
     "Topico": {
@@ -198,6 +446,17 @@
         },
         "serie": {
           "$ref": "#/$defs/Serie"
+        },
+        "tendencia": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Tendencia"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -245,6 +504,17 @@
       "title": "Macrotemas",
       "type": "array"
     },
+    "metodo_tendencia": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MetodoTendencia"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
     "outliers": {
       "$ref": "#/$defs/Outliers"
     },
@@ -280,7 +550,7 @@
       "type": "array"
     },
     "versao_contrato": {
-      "default": "1.1",
+      "default": "1.2",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",

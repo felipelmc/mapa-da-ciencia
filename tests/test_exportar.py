@@ -7,7 +7,7 @@ from corpus_sintetico import corpus_sintetico
 
 from mapa_da_ciencia.armazenamento import ARQUIVO, gravar_documentos
 from mapa_da_ciencia.contrato import modelos as m
-from mapa_da_ciencia.contrato.exportar import exportar
+from mapa_da_ciencia.contrato.exportar import exportar, tendencia_contrato
 from mapa_da_ciencia.llm.perfis import PERFIS
 from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.texto import EMAIL
@@ -54,6 +54,14 @@ def test_contrato_completo_depois_dos_topicos(projeto):
 
     agregados = _ler(projeto, "agregados", m.Agregados)
     assert sum(n for *_, n in agregados.topico_ano_revista) == docs.n and agregados.uf == {} == agregados.pais
+
+    # tendências e séries dos macrotemas (contrato 1.2)
+    assert topicos.metodo_tendencia == m.MetodoTendencia()
+    for t in [*topicos.topicos, *topicos.macrotemas]:
+        assert t.tendencia == tendencia_contrato(t.serie.n, topicos.total_por_ano, topicos.anos)
+    assert topicos.outliers.sem_topico_por_ano == [
+        topicos.total_por_ano[i] - sum(t.serie.n[i] for t in topicos.topicos) for i in range(len(topicos.anos))
+    ]
 
     # a mesma chave de revista em revistas.json, no dicionário dos documentos, em por_revista e nos agregados
     ids_revistas = {r.id for r in _ler(projeto, "revistas", m.Revistas).revistas}
