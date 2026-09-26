@@ -3,7 +3,7 @@
 Os tópicos do `mapa-da-ciencia` não vêm de uma lista pronta: eles saem dos próprios textos. Artigos que tratam de assuntos parecidos ficam perto uns dos outros num espaço de muitas dimensões, e o agrupamento encontra as regiões mais densas desse espaço. Esta página descreve cada passo e as escolhas por trás deles.
 
 !!! note "Em construção no marco M3"
-    Por enquanto, esta página descreve o texto de análise, os embeddings, a vizinhança, o UMAP, o HDBSCAN, a reatribuição do ruído, a estabilidade, as palavras-chave, os macrotemas e a identidade estável. Os rótulos entram ao longo do M3.
+    Por enquanto, esta página descreve o texto de análise, os embeddings, a vizinhança, o UMAP, o HDBSCAN, a reatribuição do ruído, a estabilidade, as palavras-chave, os macrotemas, a identidade estável e os rótulos. O comando `mapa topicos` e o mapa no painel chegam ao fim do M3.
 
 ## 1. O texto de análise
 
@@ -107,3 +107,28 @@ A cada execução, o HDBSCAN numera os tópicos de um jeito. Para que as cores, 
 - Trocar o modelo de embeddings ou o idioma de análise recomeça o casamento (os números continuam de onde pararam).
 
 No piloto, rodar de novo com outra semente mantém 43 dos 50 tópicos e os 7 macrotemas; tirar os artigos de 2010 mantém 41 dos 53 tópicos encontrados.
+
+## 11. Rótulos
+
+Cada tópico e cada macrotema ganha um **rótulo** curto e uma **descrição** em português, escritos pelo modelo de linguagem local do projeto (`modelos.rotulos`, o `qwen3.5:9b` no perfil padrão). O modelo recebe as 15 palavras-chave e os 5 títulos representativos do tópico; para um macrotema, recebe os rótulos dos seus tópicos. As respostas seguem um esquema JSON, com temperatura 0 e semente fixa.
+
+Alguns cuidados:
+
+- **Acentos.** Modelos pequenos às vezes perdem acentos ("Genero" em vez de "Gênero"). O rótulo é conferido contra as palavras-chave e os títulos; se uma palavra perdeu o acento, o modelo recebe um pedido que aponta a palavra. Se ainda assim faltar, o acento é corrigido pela forma do vocabulário.
+- **Estabilidade.** Um tópico que continua o mesmo de uma execução para outra (veja a seção anterior) e cujas palavras-chave mudaram pouco mantém o rótulo, sem chamar o modelo de novo.
+- **Cache.** As respostas ficam no `estado.sqlite`: rodar de novo sem mudanças não chama o modelo.
+- **Memória.** O modelo só é carregado se couber na memória livre, e a etapa para, sem perder o que já foi feito, se a memória acabar no meio.
+
+Os rótulos são um ponto de partida. Para corrigir um, crie o arquivo `rotulos.yaml` na pasta do projeto, com o número do tópico (ou do macrotema) que aparece no painel:
+
+```yaml
+topicos:
+  12:
+    rotulo: Judicialização da política
+    descricao: O Supremo Tribunal Federal e o Judiciário como atores políticos.
+macrotemas:
+  0:
+    rotulo: Instituições e eleições
+```
+
+O que está no `rotulos.yaml` tem prioridade sobre o modelo, e continua valendo nas execuções seguintes, porque o número do tópico é estável. Sem modelo de linguagem (`mapa topicos --sem-rotulos`), os rótulos são as três palavras-chave mais fortes.

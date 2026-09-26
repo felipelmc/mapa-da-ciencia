@@ -57,3 +57,11 @@ def garantir_modelo(ollama: ProvedorLLM, nome: str) -> ModeloInstalado:
         raise ErroProvedor(s.explicar())
     assert s.instalado is not None
     return s.instalado
+
+
+def memoria_critica(*, minimo_livre_gb: float = 0.5, minimo_swap_gb: float = 0.3) -> bool:
+    """A memória acabou: quase nada livre e o swap no fim. Etapas longas param aqui, limpas (ADR 0005)."""
+    from mapa_da_ciencia import recursos
+
+    m = recursos.memoria()
+    return m.disponivel_gb < minimo_livre_gb and (m.swap_total_gb - m.swap_usado_gb) < minimo_swap_gb
