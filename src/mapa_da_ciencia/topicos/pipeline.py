@@ -26,6 +26,7 @@ from mapa_da_ciencia.progresso import Progresso, ProgressoNulo
 from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.topicos.resultado import PASTA, MacroResultado, Resultado, TopicoResultado, assinatura_corpus
 from mapa_da_ciencia.topicos.rotulos import (
+    VERSAO_PROMPT,
     EntradaTopico,
     ResumoRotulos,
     Rotulador,
@@ -192,9 +193,9 @@ def gerar_topicos(
     for b in range(k_brutos):
         tid = est.ids[b]
         velho = anterior.topicos.get(est.casados[b]) if anterior and b in est.casados else None
-        rotulo_velho = (
-            Rotulo(velho.rotulo, velho.descricao or "", velho.rotulo_fonte) if velho and velho.rotulo else None
-        )
+        # um rótulo do modelo escrito por outra versão do prompt não é reaproveitado
+        vale = velho and velho.rotulo and (velho.rotulo_fonte != "llm" or velho.versao_rotulo == VERSAO_PROMPT)
+        rotulo_velho = Rotulo(velho.rotulo, velho.descricao or "", velho.rotulo_fonte) if vale else None
         entradas[tid] = EntradaTopico(
             [t for t, _ in palavras[b]], [titulo(i) for i in reps[b]], rotulo_velho, velho.palavras if velho else []
         )
@@ -221,6 +222,7 @@ def gerar_topicos(
     for tid, r in rotulos.items():
         t = est.identidade.topicos[tid]
         t.rotulo, t.descricao, t.rotulo_fonte, t.palavras = r.rotulo, r.descricao, r.fonte, entradas[tid].palavras
+        t.versao_rotulo = VERSAO_PROMPT if r.fonte == "llm" else None
     for m, r in rotulos_macro.items():
         mt = est.identidade.macrotemas[m]
         mt.rotulo, mt.descricao, mt.rotulo_fonte = r.rotulo, r.descricao, r.fonte
@@ -261,7 +263,10 @@ def gerar_topicos(
         MacroResultado(
             m, rotulos_macro[m].rotulo, rotulos_macro[m].descricao, rotulos_macro[m].fonte, cor, por_macro[m]
         )
-        for m, cor in sorted(est.cores_macro.items())
+        # do maior para o menor (com os macrotemas persistentes, o id não segue mais o tamanho)
+        for m, cor in sorted(
+            est.cores_macro.items(), key=lambda mc: (-sum(tamanho_de[t] for t in por_macro[mc[0]]), mc[0])
+        )
     ]
     modelos = {"embeddings": e.rotulo_modelo}
     if not opcoes.sem_rotulos and rotulador.resumo.chamadas + rotulador.resumo.do_cache:

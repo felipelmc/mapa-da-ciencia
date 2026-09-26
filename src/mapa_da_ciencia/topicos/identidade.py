@@ -49,6 +49,7 @@ class TopicoEstavel:
     descricao: str | None = None
     rotulo_fonte: str | None = None
     palavras: list[str] = field(default_factory=list)
+    versao_rotulo: int | None = None  # versão do prompt que escreveu o rótulo (`rotulos.VERSAO_PROMPT`)
 
 
 @dataclass
@@ -231,6 +232,7 @@ def estabilizar(
             descricao=velho.descricao if velho else None,
             rotulo_fonte=velho.rotulo_fonte if velho else None,
             palavras=velho.palavras if velho else [],
+            versao_rotulo=velho.versao_rotulo if velho else None,
         )
     macrotemas = {}
     for m, cor in cores_macro.items():

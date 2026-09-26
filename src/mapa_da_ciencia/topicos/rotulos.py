@@ -7,7 +7,9 @@ tópicos. Cuidados, do spike M0b (ADR 0005):
 - **Acentos.** Modelos pequenos às vezes perdem acentos ("Gnero", "Genero"). O rótulo é conferido contra as
   palavras-chave e os títulos; se uma palavra perdeu o acento, há uma nova tentativa com um pedido que aponta a
   palavra (repetir o mesmo pedido, com temperatura 0, daria a mesma resposta). Se ainda assim faltar, o acento
-  é corrigido pela forma do vocabulário.
+  é corrigido pela forma do vocabulário. Só contam palavras de 4 letras ou mais cuja forma sem acento não é
+  também uma palavra: senão "é" e "à" dos títulos virariam a forma certa de "e" e "a" (a versão 1 do prompt
+  errou assim no piloto).
 - **Estabilidade.** Um tópico casado com o da execução anterior (`identidade.py`) cujas palavras-chave mudaram
   pouco mantém o rótulo, sem chamar o modelo.
 - **Edição à mão.** `rotulos.yaml`, na pasta do projeto, tem prioridade sobre tudo (`rotulo_fonte: manual`).
@@ -37,7 +39,7 @@ from mapa_da_ciencia.llm.ollama import Ollama
 from mapa_da_ciencia.progresso import Progresso, ProgressoNulo
 
 TAREFA = "rotulos"
-VERSAO_PROMPT = 1
+VERSAO_PROMPT = 3  # 2: acentos sem os falsos positivos de "e"/"é" e "a"/"à"; 3: rótulos em caixa de frase
 ARQUIVO_MANUAL = "rotulos.yaml"
 REUSO_MINIMO = 0.5  # Jaccard das 10 palavras-chave para manter o rótulo de um tópico casado
 FonteRotulo = Literal["llm", "palavras", "manual"]
@@ -52,13 +54,15 @@ SISTEMA_TOPICO = (
     "Você nomeia tópicos de um mapa da literatura científica (ciência política, relações internacionais e áreas "
     "próximas). Dadas as palavras-chave e títulos representativos de um tópico, escreva em português do Brasil, "
     "com todos os acentos: um rótulo curto (no máximo 6 palavras, sem aspas nem ponto final) que nomeie o assunto, "
-    "e uma descrição de uma ou duas frases do que os trabalhos do tópico estudam. Não comece o rótulo com "
-    "'Estudos sobre', 'Tópico' ou 'Pesquisas'."
+    "e uma descrição de uma ou duas frases do que os trabalhos do tópico estudam. O rótulo vai em caixa de frase: "
+    "maiúscula só na primeira palavra, nas siglas e nos nomes próprios. Não comece o rótulo com 'Estudos sobre', "
+    "'Tópico' ou 'Pesquisas'."
 )
 SISTEMA_MACRO = (
     "Você nomeia grandes áreas de um mapa da literatura científica. Dados os rótulos dos tópicos de uma área, "
     "escreva em português do Brasil, com todos os acentos: um rótulo curto (no máximo 4 palavras, sem aspas nem "
-    "ponto final) que englobe os tópicos, e uma descrição de uma frase."
+    "ponto final, em caixa de frase: maiúscula só na primeira palavra, nas siglas e nos nomes próprios) que "
+    "englobe os tópicos, e uma descrição de uma frase."
 )
 
 
@@ -96,13 +100,76 @@ def _palavras(texto: str) -> list[str]:
     return re.findall(r"[^\W\d_]+", texto.lower())
 
 
+# formas sem acento que também são palavras (verbos, sobretudo): nunca contam como acento perdido
+SEM_ACENTO_VALIDAS = frozenset(
+    {
+        "esta",
+        "estas",
+        "para",
+        "pelo",
+        "pela",
+        "pode",
+        "pais",
+        "secretaria",
+        "secretarias",
+        "media",
+        "medias",
+        "sabia",
+        "valido",
+        "critica",
+        "criticas",
+        "pratica",
+        "praticas",
+        "analise",
+        "analises",
+        "publica",
+        "publicas",
+        "publico",
+        "publicos",
+        "numero",
+        "numeros",
+        "historia",
+        "historias",
+        "duvida",
+        "duvidas",
+        "copia",
+        "copias",
+        "fabrica",
+        "fabricas",
+        "ultimo",
+        "ultima",
+        "ultimos",
+        "ultimas",
+        "transito",
+        "influencia",
+        "influencias",
+        "referencia",
+        "referencias",
+        "evidencia",
+        "evidencias",
+        "potencia",
+        "potencias",
+        "agencia",
+        "agencias",
+        "sequencia",
+        "sequencias",
+    }
+)
+MINIMO_LETRAS = 4
+
+
 def acentos_perdidos(texto: str, vocabulario: list[str]) -> dict[str, str]:
-    """Palavras do texto sem o acento que têm no vocabulário: {"genero": "gênero"}."""
-    acentuadas = {}
-    for termo in vocabulario:
-        for p in _palavras(termo):
-            if _sem_acento(p) != p:
-                acentuadas.setdefault(_sem_acento(p), p)
+    """Palavras do texto sem o acento que têm no vocabulário: {"genero": "gênero"}.
+
+    Palavras curtas ("e"/"é", "a"/"à"), formas sem acento que também são palavras ("critica"/"crítica") e
+    palavras que aparecem das duas formas no próprio vocabulário não contam: não dá para saber qual é a certa.
+    """
+    formas = {p for termo in vocabulario for p in _palavras(termo)}
+    acentuadas: dict[str, str] = {}
+    for p in sorted(formas):
+        base = _sem_acento(p)
+        if base != p and len(base) >= MINIMO_LETRAS and base not in SEM_ACENTO_VALIDAS and base not in formas:
+            acentuadas.setdefault(base, p)
     return {p: acentuadas[p] for p in _palavras(texto) if p in acentuadas}
 
 

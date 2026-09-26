@@ -115,8 +115,9 @@ Cada tópico e cada macrotema ganha um **rótulo** curto e uma **descrição** e
 
 Alguns cuidados:
 
-- **Acentos.** Modelos pequenos às vezes perdem acentos ("Genero" em vez de "Gênero"). O rótulo é conferido contra as palavras-chave e os títulos; se uma palavra perdeu o acento, o modelo recebe um pedido que aponta a palavra. Se ainda assim faltar, o acento é corrigido pela forma do vocabulário.
-- **Estabilidade.** Um tópico que continua o mesmo de uma execução para outra (veja a seção anterior) e cujas palavras-chave mudaram pouco mantém o rótulo, sem chamar o modelo de novo.
+- **Acentos.** Modelos pequenos às vezes perdem acentos ("Genero" em vez de "Gênero"). O rótulo é conferido contra as palavras-chave e os títulos; se uma palavra perdeu o acento, o modelo recebe um pedido que aponta a palavra. Se ainda assim faltar, o acento é corrigido pela forma do vocabulário. Só contam palavras de quatro letras ou mais cuja forma sem acento não é também uma palavra: "e" e "é", "a" e "à" ou "critica" e "crítica" nunca são trocadas.
+- **Caixa de frase.** O modelo é orientado a usar maiúscula só na primeira palavra, nas siglas e nos nomes próprios, mas o `qwen3.5:9b` ainda devolve alguns rótulos com Iniciais Maiúsculas. O `rotulos.yaml` (abaixo) corrige os que incomodarem.
+- **Estabilidade.** Um tópico que continua o mesmo de uma execução para outra (veja a seção anterior) e cujas palavras-chave mudaram pouco mantém o rótulo, sem chamar o modelo de novo, desde que o rótulo tenha sido escrito pela versão atual das instruções ao modelo.
 - **Cache.** As respostas ficam no `estado.sqlite`: rodar de novo sem mudanças não chama o modelo.
 - **Memória.** O modelo só é carregado se couber na memória livre, e a etapa para, sem perder o que já foi feito, se a memória acabar no meio.
 

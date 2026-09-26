@@ -13,6 +13,7 @@ from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.topicos.identidade import Identidade
 from mapa_da_ciencia.topicos.pipeline import OpcoesTopicos, gerar_topicos
 from mapa_da_ciencia.topicos.resultado import PASTA, Resultado, ler_atribuicoes
+from mapa_da_ciencia.topicos.rotulos import VERSAO_PROMPT
 
 
 def _projeto(tmp_path, n_por_tema=50):
@@ -54,6 +55,13 @@ def test_topicos_de_ponta_a_ponta_e_segunda_execucao(tmp_path, apis_falsas):
     resultado2 = Resultado.ler(p.dados / PASTA)
     assert [(t.id, t.cor, t.rotulo) for t in resultado2.topicos] == [(t.id, t.cor, t.rotulo) for t in resultado.topicos]
     assert Identidade.ler(p.dados / PASTA).proximo_id == r.topicos
+
+    # rótulos escritos por outra versão do prompt não são reaproveitados (a versão 1 acentuava "e" e "a")
+    arquivo = p.dados / PASTA / "identidade.json"
+    texto = arquivo.read_text(encoding="utf-8")
+    arquivo.write_text(texto.replace(f'"versao_rotulo": {VERSAO_PROMPT}', '"versao_rotulo": 1'))
+    terceira = gerar_topicos(p)
+    assert terceira.rotulos.reaproveitados == 0 and terceira.rotulos.do_cache >= terceira.topicos
 
 
 def test_sem_rotulos_nao_chama_o_modelo(tmp_path, apis_falsas):

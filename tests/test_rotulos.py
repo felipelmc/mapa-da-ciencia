@@ -29,6 +29,15 @@ def test_acentos_perdidos_e_correcao():
     assert R._corrigir("Genero e politica", {"genero": "gênero", "politica": "política"}) == "Gênero e política"
 
 
+def test_acentos_ambiguos_nao_contam():
+    # "é" e "à" dos títulos não são a forma certa de "e" e "a" (o erro da versão 1 no piloto)
+    titulos = ["Democracia é o regime da maioria?", "Gramsci e à esquerda", "A crítica da razão"]
+    assert acentos_perdidos("Financiamento eleitoral e gênero; a esquerda", titulos) == {}
+    assert acentos_perdidos("Ele critica a esta hora", ["crítica", "está"]) == {}  # verbos sem acento
+    assert acentos_perdidos("politica e Politica", ["política", "politica"]) == {}  # as duas formas no vocabulário
+    assert acentos_perdidos("Genero", ["gênero é tema"]) == {"genero": "gênero"}
+
+
 def test_rotulos_pelo_modelo_e_cache(tmp_path, apis_falsas):
     r = _rotulador(tmp_path)
     saida = r.topicos(ENTRADAS, sem_llm=False, manuais=ler_manuais(tmp_path))
