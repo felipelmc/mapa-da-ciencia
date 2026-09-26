@@ -1,6 +1,8 @@
 // A vista do mapa (M3), sobre o build servido com o exemplo sintético.
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
-import { esperarMapa, h1, inteiro, ler, trilho, url, vigiar } from './comum';
+import { esperarMapa, h1, inteiro, ler, RAIZ, trilho, url, vigiar } from './comum';
 
 const documentos = ler('documentos.json');
 const topicos = ler('topicos.json');
@@ -95,4 +97,63 @@ test('projeto sem tópicos: o mapa explica o que fazer e não pede arquivos ause
 	await expect(page.getByRole('heading', { name: 'Este projeto ainda não tem mapa.' })).toBeVisible();
 	expect(dados).toEqual(['/dados/manifesto.json']);
 	expect(problemas).toEqual([]);
+});
+
+// ---- cartão do documento
+
+type Detalhe = { resumo: string | null; fonte_analise?: string; licenca: string };
+const detalhes: Record<string, Detalhe> = {};
+const pastaDetalhes = join(RAIZ, '..', 'contrato', 'exemplo', 'dados', 'detalhes');
+for (const arquivo of readdirSync(pastaDetalhes)) Object.assign(detalhes, ler(`detalhes/${arquivo}`).documentos);
+const ids: string[] = documentos.colunas.id;
+const titulo = (id: string) => documentos.colunas.titulo[ids.indexOf(id)];
+
+test('o link com doc= abre o cartão, e os vizinhos navegam', async ({ page }) => {
+	const problemas = vigiar(page);
+	const id = ids.find((i) => detalhes[i].fonte_analise === 'reserva')!;
+	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(id)}`);
+	await esperarMapa(page);
+	const cartao = page.getByTestId('cartao-documento');
+	await expect(cartao.getByRole('heading', { level: 2 })).toHaveText(titulo(id));
+	await expect(cartao.getByTestId('nota-analise')).toContainText('Sem resumo em inglês');
+	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.destaque)).toBe(ids.indexOf(id));
+
+	const vizinho = ids[documentos.colunas.vizinhos[ids.indexOf(id)][0]];
+	await cartao.getByTestId('vizinhos').getByRole('button').first().click();
+	await expect(page).toHaveURL(new RegExp(`doc=${encodeURIComponent(vizinho).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+	await expect(cartao.getByRole('heading', { level: 2 })).toHaveText(titulo(vizinho));
+
+	await page.keyboard.press('Escape');
+	await expect(cartao).toHaveCount(0);
+	await expect(page).not.toHaveURL(/doc=/);
+	expect(problemas).toEqual([]);
+});
+
+test('resumo sem licença para mostrar dá o aviso; o botão fecha o cartão', async ({ page }) => {
+	const id = ids.find((i) => detalhes[i].resumo === null && detalhes[i].fonte_analise !== 'so_titulo')!;
+	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(id)}`);
+	await esperarMapa(page);
+	const cartao = page.getByTestId('cartao-documento');
+	await expect(cartao).toContainText('não permite mostrá-lo aqui');
+	await cartao.getByRole('button', { name: 'Fechar o cartão' }).click();
+	await expect(cartao).toHaveCount(0);
+});
+
+test('clicar num ponto abre o cartão dele', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	const caixa = (await page.getByTestId('canvas-mapa').boundingBox())!;
+	// um ponto longe do painel da esquerda e dos rótulos
+	const alvo = await page.evaluate((largura) => {
+		const d = window.__mapaDebug!;
+		for (let i = 0; i < d.pontos; i += 1) {
+			const p = d.posicaoNaTela?.(i);
+			if (p && p[0] > 420 && p[0] < largura - 450 && p[1] > 80) return { i, p };
+		}
+		return null;
+	}, caixa.width);
+	expect(alvo).not.toBeNull();
+	await page.mouse.click(caixa.x + alvo!.p[0], caixa.y + alvo!.p[1]);
+	await expect(page.getByTestId('cartao-documento')).toBeVisible();
+	await expect(page).toHaveURL(/doc=/);
 });

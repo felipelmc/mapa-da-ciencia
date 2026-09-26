@@ -188,6 +188,7 @@
 				await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 				debug().msAtePrimeiroDesenho = performance.now() - t0;
 				debug().desenhado = true;
+				debug().posicaoNaTela = (i) => grafico?.getScreenPosition(i);
 				pronto = true;
 				avisarCamera();
 

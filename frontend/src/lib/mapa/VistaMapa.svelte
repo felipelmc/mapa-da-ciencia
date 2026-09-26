@@ -12,6 +12,7 @@
 	import Nuvem, { type Anotacao, type Camera } from '$lib/graficos/Nuvem.svelte';
 	import Rotulos, { type ItemRotulo } from '$lib/graficos/Rotulos.svelte';
 	import { calcularContornos, centroDePeso } from './contornos';
+	import Cartao from './Cartao.svelte';
 	import { colorir, type ItemLegenda } from './cores';
 	import { visiveis } from './filtro';
 
@@ -59,6 +60,16 @@
 	}
 
 	const temRecorte = $derived(!!(filtros.anos || filtros.revistas.length || filtros.topicos.length));
+
+	// ---- documento em destaque (cartão)
+	const destaque = $derived(filtros.doc ? (tabela.indice.get(filtros.doc) ?? null) : null);
+	const abrir = (i: number | null) => mudarFiltros({ doc: i === null ? null : tabela.ids[i] });
+
+	function tecla(evento: KeyboardEvent) {
+		const alvo = evento.target as HTMLElement | null;
+		if (alvo?.closest('input, select, textarea, [contenteditable]')) return;
+		if (evento.key === 'Escape' && filtros.doc) abrir(null);
+	}
 
 	// ---- contornos (uma vez) e rótulos (a cada movimento da câmera)
 	const ZOOM_TOPICOS = 1.8; // abaixo, rótulos dos macrotemas; acima, dos tópicos
@@ -122,14 +133,14 @@
 			cores={coloracao.cores}
 			visiveis={indicesVisiveis}
 			selecionados={[]}
-			destaque={null}
+			{destaque}
 			{fundo}
 			corLaco={acento}
 			modoLaco={false}
 			vista={vistaInicial}
 			{anotacoes}
 			{aoVer}
-			aoClicar={() => {}}
+			aoClicar={abrir}
 			aoLaco={() => {}}
 			aoMoverCamera={(v) => mudarFiltros({ vista: v }, { substituir: true, em: '/mapa' })}
 		/>
@@ -189,7 +200,15 @@
 			</ul>
 		{/if}
 	</aside>
+
+	{#if destaque !== null}
+		<div class="lado">
+			<Cartao {tabela} {topicos} indice={destaque} aoFechar={() => abrir(null)} aoAbrir={abrir} />
+		</div>
+	{/if}
 </div>
+
+<svelte:window onkeydown={tecla} />
 
 <style>
 	.mapa {
@@ -314,7 +333,26 @@
 		border-radius: 0.3rem;
 	}
 
+	.lado {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		bottom: 1rem;
+		width: min(24rem, calc(100% - 2rem));
+		display: flex;
+		flex-direction: column;
+	}
+
+	.lado > :global(*) {
+		max-height: 100%;
+	}
+
 	@media (max-width: 820px) {
+		.lado {
+			top: auto;
+			height: 55%;
+		}
+
 		.painel {
 			top: auto;
 			bottom: 1rem;

@@ -11,6 +11,8 @@ declare global {
 		modoLaco: boolean;
 		renderer: string | null;
 		erro: string | null;
+		/** Posição de um ponto na tela (px, relativa ao canvas), para os testes clicarem nele. */
+		posicaoNaTela?: (i: number) => [number, number] | undefined;
 		/** Zoom atual da câmera (1 = inicial). */
 		zoom?: number;
 		/** Contornos desenhados (anéis). */

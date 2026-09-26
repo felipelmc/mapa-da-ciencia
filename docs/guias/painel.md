@@ -30,7 +30,7 @@ O navegador abre em `http://127.0.0.1:8765/`. Para encerrar, aperte ++ctrl+c++ n
 | Vista | Mostra | Disponível |
 |---|---|---|
 | Início | Números do corpus e macrotemas | agora |
-| Mapa | Cada artigo como um ponto; artigos próximos tratam de assuntos próximos. Contornos e rótulos dos tópicos (dos macrotemas, de longe), colorir por tópico, macrotema, revista ou ano, e filtrar pela legenda ou pelos rótulos | agora (cartão do documento, busca e laço ainda no M3) |
+| Mapa | Cada artigo como um ponto; artigos próximos tratam de assuntos próximos. Contornos e rótulos dos tópicos (dos macrotemas, de longe), colorir por tópico, macrotema, revista ou ano, e filtrar pela legenda ou pelos rótulos. Clicar num ponto abre o cartão do documento, com o resumo e os 5 mais parecidos | agora (busca, laço e linha do tempo ainda no M3) |
 | Tópicos | Evolução dos tópicos no tempo, em alta e em queda | M4 |
 | Classificação | Distribuição das variáveis do codebook, com evidências | M5 |
 | Geografia | Produção por UF, país e instituição | M4 |
