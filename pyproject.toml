@@ -23,6 +23,8 @@ dependencies = [
     "httpx>=0.28",
     "truststore>=0.10",
     "psutil>=7.0",
+    "fastapi>=0.141",
+    "uvicorn>=0.54",
 ]
 
 [project.scripts]
@@ -37,6 +39,10 @@ dev = ["pytest>=9.1", "respx>=0.23", "ruff>=0.16"]
 [build-system]
 requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build]
+# A interface compilada não é versionada (é gerada no CI), mas precisa entrar no wheel.
+artifacts = ["src/mapa_da_ciencia/web/estatico/"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mapa_da_ciencia"]
@@ -54,4 +60,6 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+# Aviso do Starlette 1.7 sobre o cliente de testes; não afeta o código do projeto.
+filterwarnings = ["ignore:Using .httpx. with .starlette.testclient. is deprecated"]
 addopts = "-q"

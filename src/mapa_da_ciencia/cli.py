@@ -162,3 +162,57 @@ def diagnostico(
         console.print(f"\n[bold red]{erros} problema(s) impedem rodar o pipeline.[/]")
         raise typer.Exit(1)
     console.print("\n[bold green]Tudo pronto.[/]")
+
+
+def _porta_livre(porta: int) -> bool:
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(("127.0.0.1", porta)) != 0
+
+
+@app.command()
+def painel(
+    projeto: OpcaoProjeto = Path("."),
+    exemplo: Annotated[
+        bool, typer.Option("--exemplo", help="Mostra o exemplo sintético, sem precisar de um projeto.")
+    ] = False,
+    porta: Annotated[int, typer.Option("--porta", help="Porta local do servidor.")] = 8765,
+    abrir: Annotated[bool, typer.Option("--abrir/--nao-abrir", help="Abre o navegador automaticamente.")] = True,
+) -> None:
+    """Abre o painel no navegador: a interface do projeto, servida só nesta máquina."""
+    import tempfile
+    import threading
+    import webbrowser
+
+    import uvicorn
+
+    from mapa_da_ciencia.contrato.exemplo import gerar_exemplo
+    from mapa_da_ciencia.contrato.exportar import escrever_dados
+    from mapa_da_ciencia.servidor.app import criar_app
+
+    if not _porta_livre(porta):
+        console.print(f"[bold red]Erro:[/] a porta {porta} já está em uso. Use outra, por exemplo --porta {porta + 1}.")
+        raise typer.Exit(1)
+    temporario = None
+    with _erros_amigaveis():
+        if exemplo:
+            temporario = tempfile.TemporaryDirectory(prefix="mapa-exemplo-")
+            pasta = Path(temporario.name)
+            escrever_dados(pasta, *gerar_exemplo())
+            aplicacao = criar_app(pasta_dados=pasta, api=False)
+            descricao = "exemplo sintético (dados fictícios)"
+        else:
+            p = Projeto.abrir(projeto)
+            aplicacao = criar_app(pasta_dados=p.saida / "dados", projeto=p, api=True)
+            descricao = f"projeto {p.config.nome}"
+
+    url = f"http://127.0.0.1:{porta}/"
+    console.print(f"Painel do {descricao} em [bold]{url}[/]  (Ctrl+C para encerrar)")
+    if abrir:
+        threading.Timer(1.0, webbrowser.open, args=(url,)).start()
+    try:
+        uvicorn.run(aplicacao, host="127.0.0.1", port=porta, log_level="warning")
+    finally:
+        if temporario is not None:
+            temporario.cleanup()
