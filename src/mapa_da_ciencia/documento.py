@@ -63,6 +63,33 @@ class Autor(_Base):
     afiliacoes: list[str] = Field(default_factory=list, description="Ids das afiliações (`aff1`...).")
 
 
+class InstituicaoOpenAlex(_Base):
+    """Uma instituição que o OpenAlex associou a um autor (o id sem o prefixo `https://openalex.org/`)."""
+
+    id: str = Field(description="Id do OpenAlex, como `I17974374`.")
+    ror: str | None = Field(None, description="Id do ROR sem o prefixo, como `036rp1748`.")
+    nome: str | None = None
+    pais: str | None = Field(None, description="ISO 3166-1 alfa-2.")
+    tipo: str | None = Field(None, description="`education`, `government`, `nonprofit`…")
+    linhagem: list[str] = Field(default_factory=list, description="Instituições acima dela (sem ela própria).")
+
+
+class AfiliacaoOpenAlex(_Base):
+    """O texto de afiliação como o OpenAlex o recebeu, e as instituições que ele reconheceu nesse texto."""
+
+    texto: str
+    instituicoes: list[str] = Field(default_factory=list, description="Ids do OpenAlex.")
+
+
+class AutoriaOpenAlex(_Base):
+    """Um autor segundo o OpenAlex, na ordem da obra: base do casamento das afiliações na geografia (M4)."""
+
+    nome: str | None = None
+    instituicoes: list[InstituicaoOpenAlex] = Field(default_factory=list)
+    paises: list[str] = Field(default_factory=list)
+    afiliacoes: list[AfiliacaoOpenAlex] = Field(default_factory=list)
+
+
 class Documento(_Base):
     """Um documento do corpus, normalizado a partir de uma ou mais fontes."""
 
@@ -87,6 +114,9 @@ class Documento(_Base):
     autores: list[Autor] = Field(default_factory=list)
     afiliacoes: list[Afiliacao] = Field(default_factory=list)
     afiliacoes_fonte: FonteAfiliacao = "nenhuma"
+    autorias_openalex: list[AutoriaOpenAlex] = Field(
+        default_factory=list, description="Autores e instituições segundo o OpenAlex, para a geografia."
+    )
     url: str | None = None
     citacoes: int | None = Field(None, description="Citações recebidas, segundo o OpenAlex.")
     n_referencias: int | None = Field(None, description="Referências citadas pelo documento.")

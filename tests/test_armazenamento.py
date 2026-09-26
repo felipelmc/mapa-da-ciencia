@@ -53,3 +53,24 @@ def test_nenhum_email_no_parquet(tmp_path):
     assert (
         con.execute("SELECT count(*) FROM documentos WHERE CAST(documentos AS VARCHAR) LIKE '%@%'").fetchone()[0] == 0
     )
+
+
+def test_autorias_do_openalex_vao_e_voltam_e_parquet_antigo_e_detectado(tmp_path):
+    from mapa_da_ciencia.armazenamento import ARQUIVO, gravar_documentos, ler_documentos, tem_coluna
+    from mapa_da_ciencia.documento import AfiliacaoOpenAlex, AutoriaOpenAlex, Documento, InstituicaoOpenAlex
+
+    autoria = AutoriaOpenAlex(
+        nome="Ana",
+        instituicoes=[InstituicaoOpenAlex(id="I1", ror="0abc", nome="USP", pais="BR", tipo="education")],
+        paises=["BR"],
+        afiliacoes=[AfiliacaoOpenAlex(texto="USP", instituicoes=["I1"])],
+    )
+    doc = Documento(id="S1", fonte="articlemeta", tipo="research-article", ano=2020, autorias_openalex=[autoria])
+    gravar_documentos([doc], tmp_path / ARQUIVO)
+    assert ler_documentos(tmp_path / ARQUIVO)[0].autorias_openalex == [autoria]
+    assert tem_coluna(tmp_path / ARQUIVO, "autorias_openalex")
+    import duckdb
+
+    antigo = tmp_path / "antigo.parquet"
+    duckdb.execute(f"COPY (SELECT id, ano FROM read_parquet('{tmp_path / ARQUIVO}')) TO '{antigo}' (FORMAT parquet)")
+    assert not tem_coluna(antigo, "autorias_openalex")

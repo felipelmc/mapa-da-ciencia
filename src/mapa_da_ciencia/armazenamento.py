@@ -46,6 +46,11 @@ ESQUEMA: dict[str, str] = {
         "pais VARCHAR, fonte VARCHAR)[]"
     ),
     "afiliacoes_fonte": "VARCHAR",
+    "autorias_openalex": (
+        "STRUCT(nome VARCHAR, instituicoes STRUCT(id VARCHAR, ror VARCHAR, nome VARCHAR, pais VARCHAR, "
+        "tipo VARCHAR, linhagem VARCHAR[])[], paises VARCHAR[], "
+        "afiliacoes STRUCT(texto VARCHAR, instituicoes VARCHAR[])[])[]"
+    ),
     "url": "VARCHAR",
     "citacoes": "INTEGER",
     "n_referencias": "INTEGER",
@@ -97,6 +102,16 @@ def _linhas(con: duckdb.DuckDBPyConnection, sql: str, params: list[Any] | None =
     cursor = con.execute(sql, params or [])
     nomes = [d[0] for d in cursor.description]
     return [dict(zip(nomes, linha, strict=True)) for linha in cursor.fetchall()]
+
+
+def tem_coluna(caminho: Path, nome: str) -> bool:
+    """`True` se o Parquet tem a coluna: distingue um corpus gravado antes de um campo novo existir."""
+    con = duckdb.connect()
+    try:
+        colunas = [c[0] for c in con.execute("DESCRIBE SELECT * FROM read_parquet(?)", [str(caminho)]).fetchall()]
+    finally:
+        con.close()
+    return nome in colunas
 
 
 def ler_documentos(caminho: Path) -> list[Documento]:

@@ -24,9 +24,12 @@ from typing import Any
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.documento import (
     Afiliacao,
+    AfiliacaoOpenAlex,
     Autor,
+    AutoriaOpenAlex,
     Casamento,
     Documento,
+    InstituicaoOpenAlex,
     Texto,
     mais_restritiva,
     normalizar_licenca,
@@ -222,6 +225,55 @@ TIPOS_OPENALEX = {
 }
 
 
+def _curto(url: str | None) -> str | None:
+    """`https://openalex.org/I123` → `I123`; `https://ror.org/abc` → `abc`."""
+    return url.rstrip("/").rsplit("/", 1)[-1] if url else None
+
+
+def autorias_da_obra(obra: dict) -> list[AutoriaOpenAlex]:
+    """Os autores da obra com as instituições e os textos de afiliação, sem e-mails, na ordem do OpenAlex."""
+    saida = []
+    for autoria in obra.get("authorships") or []:
+        instituicoes = []
+        for inst in autoria.get("institutions") or []:
+            iid = _curto(inst.get("id"))
+            if not iid:
+                continue
+            instituicoes.append(
+                InstituicaoOpenAlex(
+                    id=iid,
+                    ror=_curto(inst.get("ror")),
+                    nome=remover_emails(limpar(inst.get("display_name"))) or None,
+                    pais=inst.get("country_code"),
+                    tipo=inst.get("type"),
+                    linhagem=[x for x in (_curto(u) for u in inst.get("lineage") or []) if x and x != iid],
+                )
+            )
+        afiliacoes = [
+            AfiliacaoOpenAlex(
+                texto=texto, instituicoes=[x for x in (_curto(u) for u in f.get("institution_ids") or []) if x]
+            )
+            for f in autoria.get("affiliations") or []
+            if (texto := remover_emails(limpar(f.get("raw_affiliation_string"))))
+        ]
+        if not afiliacoes:
+            afiliacoes = [
+                AfiliacaoOpenAlex(texto=texto)
+                for bruto in autoria.get("raw_affiliation_strings") or []
+                if (texto := remover_emails(limpar(bruto)))
+            ]
+        autor = autoria.get("author") or {}
+        saida.append(
+            AutoriaOpenAlex(
+                nome=remover_emails(limpar(autor.get("display_name") or autoria.get("raw_author_name"))) or None,
+                instituicoes=instituicoes,
+                paises=list(autoria.get("countries") or []),
+                afiliacoes=afiliacoes,
+            )
+        )
+    return saida
+
+
 def documento_de_obra(obra: dict, origem: str) -> Documento:
     """Documento montado só com o OpenAlex, para artigos importados que não estão na ArticleMeta."""
     oid = obra["id"].rsplit("/", 1)[-1]
@@ -270,6 +322,7 @@ def documento_de_obra(obra: dict, origem: str) -> Documento:
         autores=autores,
         afiliacoes=afiliacoes,
         afiliacoes_fonte="openalex" if afiliacoes else "nenhuma",
+        autorias_openalex=autorias_da_obra(obra),
         url=local.get("landing_page_url"),
         citacoes=obra.get("cited_by_count"),
         licenca=licenca or "desconhecida",
@@ -364,6 +417,7 @@ def enriquecer(doc: Documento, obra: dict | None, passo: Casamento) -> Documento
         "licenca_fonte": fonte,
         "casamento": passo,
         "doi": doc.doi or normalizar_doi(obra.get("doi")),
+        "autorias_openalex": autorias_da_obra(obra),
     }
     if not doc.resumos and (resumo := reconstruir_resumo(obra.get("abstract_inverted_index"))):
         mudancas["resumos"] = [Texto(idioma=obra.get("language"), texto=resumo, origem="openalex")]

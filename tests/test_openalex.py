@@ -175,3 +175,43 @@ def test_location_da_revista_quando_a_principal_e_um_repositorio():
     assert issns_da_obra(obra) == ["0101-3300", "1980-5403"]
     doc = documento_de_obra(obra, "importar:x.txt")
     assert doc.revista_issn == "0101-3300" and doc.url.startswith("http://www.scielo.br/")
+
+
+def test_autorias_da_obra_sem_prefixos_sem_emails_e_com_linhagem():
+    from mapa_da_ciencia.fontes.openalex import autorias_da_obra
+
+    obra = {
+        "authorships": [
+            {
+                "author": {"display_name": "Ana Souza"},
+                "institutions": [
+                    {
+                        "id": "https://openalex.org/I2",
+                        "display_name": "Hospital Universitário da USP",
+                        "ror": "https://ror.org/0abc",
+                        "country_code": "BR",
+                        "type": "healthcare",
+                        "lineage": ["https://openalex.org/I1", "https://openalex.org/I2"],
+                    }
+                ],
+                "countries": ["BR"],
+                "affiliations": [
+                    {
+                        "raw_affiliation_string": "HU-USP, São Paulo; ana@usp.br",
+                        "institution_ids": ["https://openalex.org/I2"],
+                    }
+                ],
+            },
+            {"author": {}, "raw_author_name": "B. Lima", "raw_affiliation_strings": ["Cebrap"], "institutions": []},
+        ]
+    }
+    a, b = autorias_da_obra(obra)
+    inst = a.instituicoes[0]
+    assert (inst.id, inst.ror, inst.pais, inst.tipo, inst.linhagem) == ("I2", "0abc", "BR", "healthcare", ["I1"])
+    assert a.afiliacoes[0].instituicoes == ["I2"] and "@" not in a.afiliacoes[0].texto
+    assert b.nome == "B. Lima" and [f.texto for f in b.afiliacoes] == ["Cebrap"] and b.instituicoes == []
+
+
+def test_enriquecer_guarda_as_autorias(casados):
+    com = [d for d in casados.values() if d.openalex_id]
+    assert com and all(d.autorias_openalex for d in com if d.autores)
