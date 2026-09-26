@@ -10,7 +10,8 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
   - fontes, casamento ArticleMeta↔OpenAlex e licenças ([ADR 0003](docs/decisoes/0003-fontes-casamento-e-licencas.md));
   - modelo de embeddings e idioma de análise ([ADR 0004](docs/decisoes/0004-embeddings-e-idioma-de-analise.md));
   - frontend com router por hash e regl-scatterplot ([ADR 0002](docs/decisoes/0002-frontend-router-hash-e-regl-scatterplot.md));
-  - certificados do sistema com `truststore` ([ADR 0001](docs/decisoes/0001-certificados-do-sistema-com-truststore.md)).
+  - certificados do sistema com `truststore` ([ADR 0001](docs/decisoes/0001-certificados-do-sistema-com-truststore.md));
+  - modelo local de classificação e parâmetros ([ADR 0005](docs/decisoes/0005-modelo-de-classificacao.md)).
 - **Marco M1 (esqueleto)**:
   - pacote Python e CLI `mapa` com os comandos `novo`, `status`, `diagnostico` e `painel`;
   - configuração do projeto (`mapa.yaml`) e do codebook (`codebook.yaml`), com erros explicados em português;

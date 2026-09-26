@@ -19,7 +19,7 @@ Provedores na nuvem podem entrar depois como uma opção a mais, sem mudar o res
 | Classificação dos resumos | `qwen3.5:9b` | Cabe numa máquina de 16 a 32 GB e segue um esquema JSON com evidência |
 | Rótulos dos tópicos | `qwen3.5:9b` ou `gemma4:26b` | São poucas chamadas (uma por tópico), então vale um modelo maior quando a memória permite |
 
-Os modelos foram escolhidos em testes com o corpus do piloto, registrados na seção [Decisões](../decisoes/README.md). A escolha do modelo de classificação sai do spike M0b (registro 0005, em andamento).
+Os modelos foram escolhidos em testes com o corpus do piloto, registrados na seção [Decisões](../decisoes/README.md): embeddings no [ADR 0004](../decisoes/0004-embeddings-e-idioma-de-analise.md), classificação no [ADR 0005](../decisoes/0005-modelo-de-classificacao.md).
 
 ## Memória: o cuidado principal
 
@@ -31,7 +31,7 @@ Um modelo precisa caber na memória **livre** na hora de rodar, e não só na me
 
 ## Velocidade
 
-Embeddings são rápidos: os 4,2 mil resumos do piloto levam uns 5 minutos num Mac M4 Pro. A classificação é a etapa lenta, com cerca de 10 a 15 segundos por resumo no mesmo Mac. O piloto inteiro leva uma noite. Por isso a classificação (marco M5) vai:
+Embeddings são rápidos: os 4,2 mil resumos do piloto levam uns 5 minutos num Mac M4 Pro. A classificação é a etapa lenta: no teste do M0, cerca de 12,5 segundos por resumo no mesmo Mac, a maior parte gasta escrevendo as evidências. Isso projeta umas 14 horas para o piloto, e a meta do M5 é baixar para ~7 horas com evidências mais curtas. Chamadas simultâneas não aceleram nada numa máquina de 24 GB, porque o Ollama atende uma de cada vez. Por isso a classificação (marco M5) vai:
 
 - estimar o tempo antes de começar (`--estimar`);
 - rodar numa amostra, se você pedir (`--limite`);
