@@ -12,7 +12,7 @@
           "type": "array"
         },
         "atribuicao": {
-          "description": "Índice em `dicionarios.atribuicao`.",
+          "description": "Índice em `dicionarios.atribuicao`: `cluster` (o HDBSCAN agrupou o documento) ou `vizinho` (o HDBSCAN o deixou sem tópico; os vizinhos o atribuíram, ou não, se `topico` = -1).",
           "items": {
             "type": "integer"
           },
@@ -199,8 +199,9 @@
       "type": "integer"
     },
     "versao_contrato": {
-      "const": "1.0",
-      "default": "1.0",
+      "default": "1.1",
+      "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
+      "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",
       "type": "string"
     }

@@ -38,7 +38,10 @@ export interface Afiliacoes {
 	colunas: ColunasAfiliacoes;
 	dicionarios: DicionariosAfiliacoes;
 	n: number;
-	versao_contrato?: '1.0';
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
 }
 /**
  * Colunas da tabela longa de afiliações (uma linha por documento × instituição).
@@ -100,7 +103,10 @@ export interface Agregados {
 	uf: {
 		[k: string]: number;
 	};
-	versao_contrato?: '1.0';
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
 }
 /**
  * Resumo da classificação por codebook: modelo, cobertura e contagens por categoria.
@@ -121,7 +127,10 @@ export interface Classificacoes {
 	evidencia_literal: number;
 	hash_codebook: string;
 	modelo: string;
-	versao_contrato?: '1.0';
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
 }
 /**
  * Cópia publicada do codebook, com o hash que identifica a versão usada.
@@ -132,7 +141,10 @@ export interface CodebookContrato {
 	nome: string;
 	variaveis: VariavelContrato[];
 	versao: string;
-	versao_contrato?: '1.0';
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
 }
 /**
  * Variável do codebook.
@@ -160,7 +172,10 @@ export interface Documentos {
 	colunas: ColunasDocumentos;
 	dicionarios: DicionariosDocumentos;
 	n: number;
-	versao_contrato?: '1.0';
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
 }
 /**
  * Colunas da tabela de documentos (todas com `n` itens, na mesma ordem).
@@ -168,7 +183,7 @@ export interface Documentos {
 export interface ColunasDocumentos {
 	ano: number[];
 	/**
-	 * Índice em `dicionarios.atribuicao`.
+	 * Índice em `dicionarios.atribuicao`: `cluster` (o HDBSCAN agrupou o documento) ou `vizinho` (o HDBSCAN o deixou sem tópico; os vizinhos o atribuíram, ou não, se `topico` = -1).
 	 */
 	atribuicao: number[];
 	/**
@@ -222,7 +237,10 @@ export interface Fragmento {
 		[k: string]: Detalhe;
 	};
 	fragmento: string;
-	versao_contrato?: '1.0';
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
 }
 /**
  * O que a interface mostra ao abrir um documento: resumo, autores, licença e evidências.
@@ -232,7 +250,15 @@ export interface Detalhe {
 	evidencias?: {
 		[k: string]: Evidencia;
 	};
+	/**
+	 * `resumo`: título e resumo no idioma de análise; `reserva`: resumo em outro idioma (não havia no de análise); `so_titulo`: o documento não tem resumo. O texto em si não é publicado.
+	 */
+	fonte_analise?: ('resumo' | 'reserva' | 'so_titulo') | null;
 	idioma: string | null;
+	/**
+	 * Idioma do texto usado nos embeddings e nos tópicos.
+	 */
+	idioma_analise?: string | null;
 	licenca: string;
 	licenca_fonte: string;
 	palavras_chave?: string[];
@@ -279,7 +305,10 @@ export interface Manifesto {
 	};
 	projeto: ProjetoInfo;
 	recorte: RecorteInfo;
-	versao_contrato?: '1.0';
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
 }
 /**
  * Números do corpus, usados na capa do painel.
@@ -342,7 +371,10 @@ export interface RecorteInfo {
  */
 export interface Revistas {
 	revistas: Revista[];
-	versao_contrato?: '1.0';
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
 }
 /**
  * Uma revista do corpus.
@@ -370,7 +402,10 @@ export interface Topicos {
 	};
 	topicos: Topico[];
 	total_por_ano: number[];
-	versao_contrato?: '1.0';
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
 }
 /**
  * Agrupamento de tópicos próximos, usado para a cor e a navegação.
@@ -390,6 +425,10 @@ export interface Outliers {
 	 */
 	n: number;
 	/**
+	 * Documentos sem tópico no HDBSCAN, por ano, alinhado a `anos`.
+	 */
+	por_ano?: number[];
+	/**
 	 * Quantos deles foram atribuídos ao tópico mais próximo.
 	 */
 	reatribuidos: number;
@@ -408,6 +447,10 @@ export interface Topico {
 	id: number;
 	macro_id: number;
 	n: number;
+	/**
+	 * Documentos do núcleo, que o HDBSCAN agrupou (os demais foram reatribuídos por vizinhança).
+	 */
+	n_nucleo?: number | null;
 	palavras_chave: [string, number][];
 	por_revista: {
 		[k: string]: number;
@@ -417,6 +460,10 @@ export interface Topico {
 	 */
 	representativos: string[];
 	rotulo: string;
+	/**
+	 * Quem escreveu o rótulo: o modelo de linguagem, as palavras-chave ou você (rotulos.yaml).
+	 */
+	rotulo_fonte?: 'llm' | 'palavras' | 'manual';
 	serie: Serie;
 }
 /**
@@ -440,7 +487,10 @@ export interface Validacao {
 	divergencias: Divergencia[];
 	metricas: MetricaVariavel[];
 	modelos: string[];
-	versao_contrato?: '1.0';
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
 }
 /**
  * Como a amostra de validação foi sorteada.

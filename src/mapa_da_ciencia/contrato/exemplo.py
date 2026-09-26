@@ -8,7 +8,6 @@ inventados; as revistas e instituições são reais só para o exemplo parecer f
 
 from __future__ import annotations
 
-import colorsys
 import math
 import random
 from collections import Counter, defaultdict
@@ -20,6 +19,7 @@ import yaml
 
 from mapa_da_ciencia.config import Codebook
 from mapa_da_ciencia.contrato import modelos as m
+from mapa_da_ciencia.topicos.paleta import cores_macrotemas, proxima_cor
 
 ANOS = list(range(2010, 2026))
 
@@ -40,7 +40,6 @@ REVISTAS = [
 @dataclass(frozen=True)
 class _Macro:
     rotulo: str
-    cor: str
     subarea: str
     revistas: tuple[str, ...]  # revistas preferidas
     topicos: tuple[tuple[str, str, float], ...]  # (rótulo, palavras-chave, tendência de -1 a 1)
@@ -49,7 +48,6 @@ class _Macro:
 MACROS = [
     _Macro(
         "Instituições políticas",
-        "#5B8DEF",
         "instituicoes_politicas",
         ("dados", "rbcpol", "bpsr", "rsocp"),
         (
@@ -73,7 +71,6 @@ MACROS = [
     ),
     _Macro(
         "Eleições e partidos",
-        "#E0A43B",
         "eleicoes_e_partidos",
         ("op", "dados", "rbcpol", "bpsr"),
         (
@@ -97,7 +94,6 @@ MACROS = [
     ),
     _Macro(
         "Opinião pública e cultura política",
-        "#D9667B",
         "comportamento_e_opiniao",
         ("op", "rbcsoc", "bpsr"),
         (
@@ -113,7 +109,6 @@ MACROS = [
     ),
     _Macro(
         "Políticas públicas",
-        "#4FB39E",
         "politicas_publicas",
         ("rsocp", "dados", "nec", "rbcsoc"),
         (
@@ -125,7 +120,6 @@ MACROS = [
     ),
     _Macro(
         "Relações internacionais",
-        "#8E7CE8",
         "relacoes_internacionais",
         ("cint", "rbpi"),
         (
@@ -137,7 +131,6 @@ MACROS = [
     ),
     _Macro(
         "Teoria política",
-        "#C9A06B",
         "teoria_politica",
         ("ln", "rbcsoc", "nec"),
         (
@@ -149,7 +142,6 @@ MACROS = [
     ),
     _Macro(
         "Sociedade civil e movimentos",
-        "#5FB7D4",
         "sociedade_civil_e_movimentos",
         ("rbcsoc", "ln", "nec", "rsocp"),
         (
@@ -286,16 +278,6 @@ RECORTES = {  # recorte -> frase de lugar
 }
 
 
-def _cor_variante(base: str, i: int, total: int) -> str:
-    r, g, b = (int(base[k : k + 2], 16) / 255 for k in (1, 3, 5))
-    h, lum, s = colorsys.rgb_to_hls(r, g, b)
-    passo = (i - (total - 1) / 2) / max(total - 1, 1)
-    h = (h + passo * 0.06) % 1
-    lum = min(max(lum + passo * 0.16, 0.25), 0.8)
-    r, g, b = colorsys.hls_to_rgb(h, lum, s)
-    return "#" + "".join(f"{round(c * 255):02X}" for c in (r, g, b))
-
-
 def _escolher(rng: random.Random, pesos: dict[str, float]) -> str:
     return rng.choices(list(pesos), weights=list(pesos.values()))[0]
 
@@ -310,16 +292,20 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
     rng = random.Random(semente)
     cb = _codebook()
 
-    # ---- tópicos: posição no plano, cor e tendência
+    # ---- tópicos: posição no plano, cor (a mesma paleta do pipeline) e tendência
+    cores_macro = cores_macrotemas(len(MACROS))
     topicos_def = []  # (id, macro_id, rotulo, palavras, tendência, centro, cor)
     for mi, macro in enumerate(MACROS):
         ang = 2 * math.pi * mi / len(MACROS)
         cx, cy = 6.5 * math.cos(ang), 6.5 * math.sin(ang)
+        usadas: list[str] = []
         for ti, (rotulo, palavras, tend) in enumerate(macro.topicos):
             a2 = ang + (ti - 1.5) * 0.9
             centro = (cx + 1.9 * math.cos(a2), cy + 1.9 * math.sin(a2))
-            cor = _cor_variante(macro.cor, ti, len(macro.topicos))
-            topicos_def.append((len(topicos_def), mi, rotulo, palavras.split(), tend, centro, cor))
+            usadas.append(proxima_cor(cores_macro[mi], usadas))
+            idx = len(topicos_def)
+            tid = idx + 2 * (idx // 5)  # ids não contíguos, como depois de execuções que aposentaram tópicos
+            topicos_def.append((tid, mi, rotulo, palavras.split(), tend, centro, usadas[-1]))
 
     # ---- documentos
     pesos_ano = [1 + 0.04 * (a - ANOS[0]) for a in ANOS]
@@ -332,8 +318,10 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
         macro = MACROS[mi]
         revista = rng.choice(macro.revistas) if rng.random() < 0.8 else rng.choice(REVISTAS)[0]
         idioma = "pt"  # os resumos sintéticos são todos em português
-        vizinho = rng.random() < 0.15
-        x, y = cx + rng.gauss(0, 0.5 if not vizinho else 0.9), cy + rng.gauss(0, 0.5 if not vizinho else 0.9)
+        vizinho = rng.random() < 0.15  # o HDBSCAN deixou sem tópico; a vizinhança atribuiu (ou não: -1)
+        sem_topico = vizinho and rng.random() < 0.12
+        espalhamento = 0.5 if not vizinho else (0.9 if not sem_topico else 1.6)
+        x, y = cx + rng.gauss(0, espalhamento), cy + rng.gauss(0, espalhamento)
         tecnica = _escolher(rng, TECNICAS_POR_MACRO[macro.subarea])
         abordagem = METODO[tecnica][0]
         if abordagem != "teorica_ensaistica" and rng.random() < 0.12:
@@ -353,7 +341,7 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
                 "idioma": idioma,
                 "x": round(x, 4),
                 "y": round(y, 4),
-                "topico": tid,
+                "topico": -1 if sem_topico else tid,
                 "atribuicao": "vizinho" if vizinho else "cluster",
                 "palavras": palavras,
                 "rotulo_topico": rotulo,
@@ -407,6 +395,7 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
                     valor=valor, evidencia=frase, status="literal", inicio=ini, fim=ini + len(frase)
                 )
         licenca = rng.choices(["cc-by", "cc-by-nc", "desconhecida"], [45, 50, 5])[0]
+        fonte_analise = "reserva" if rng.random() < 0.03 else "resumo"  # sem resumo em inglês: vai o português
         detalhes[d["id"]] = m.Detalhe(
             resumo=resumo if licenca != "desconhecida" else None,
             idioma=d["idioma"],
@@ -416,6 +405,8 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
             licenca=licenca,
             licenca_fonte="openalex" if licenca != "desconhecida" else "nenhuma",
             evidencias=evid,
+            idioma_analise="en" if fonte_analise == "resumo" else "pt",
+            fonte_analise=fonte_analise,
         )
 
     # ---- vizinhos mais próximos (força bruta basta para o exemplo)
@@ -483,9 +474,11 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
     topicos = []
     for tid, mi, rotulo, palavras, _, (cx, cy), cor in topicos_def:
         membros = [d for d in docs if d["topico"] == tid]
+        nucleo = [d for d in membros if d["atribuicao"] == "cluster"]
         por_ano = Counter(d["ano"] for d in membros)
-        centro_real = (sum(d["x"] for d in membros) / len(membros), sum(d["y"] for d in membros) / len(membros))
-        repr_ = sorted(membros, key=lambda d: (d["x"] - cx) ** 2 + (d["y"] - cy) ** 2)[:5]
+        base = nucleo or membros or [{"x": cx, "y": cy}]  # exemplos pequenos podem deixar um tópico vazio
+        centro_real = (sum(d["x"] for d in base) / len(base), sum(d["y"] for d in base) / len(base))
+        repr_ = sorted(nucleo, key=lambda d: (d["x"] - cx) ** 2 + (d["y"] - cy) ** 2)[:5]
         topicos.append(
             m.Topico(
                 id=tid,
@@ -502,13 +495,16 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
                 ),
                 por_revista=dict(sorted(Counter(d["revista"] for d in membros).items())),
                 representativos=[d["id"] for d in repr_],
+                rotulo_fonte="llm",
+                n_nucleo=len(nucleo),
             )
         )
     macrotemas = [
-        m.Macrotema(id=mi, rotulo=mc.rotulo, cor=mc.cor, topicos=[t[0] for t in topicos_def if t[1] == mi])
+        m.Macrotema(id=mi, rotulo=mc.rotulo, cor=cores_macro[mi], topicos=[t[0] for t in topicos_def if t[1] == mi])
         for mi, mc in enumerate(MACROS)
     ]
-    n_viz = sum(d["atribuicao"] == "vizinho" for d in docs)
+    ruido = [d for d in docs if d["atribuicao"] == "vizinho"]
+    ruido_ano = Counter(d["ano"] for d in ruido)
     topicos_arq = m.Topicos(
         anos=ANOS,
         total_por_ano=[total_ano[a] for a in ANOS],
@@ -516,7 +512,11 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
         estabilidade_ari=0.81,
         macrotemas=macrotemas,
         topicos=topicos,
-        outliers=m.Outliers(n=n_viz, reatribuidos=n_viz),
+        outliers=m.Outliers(
+            n=len(ruido),
+            reatribuidos=sum(d["topico"] != -1 for d in ruido),
+            por_ano=[ruido_ano[a] for a in ANOS],
+        ),
     )
 
     # ---- codebook, classificações e validação
