@@ -34,10 +34,12 @@ from mapa_da_ciencia.fontes.dedup import deduplicar
 from mapa_da_ciencia.fontes.importar import FORMATOS, Identificador, Importacao, ler_arquivo
 from mapa_da_ciencia.fontes.importar import colecao_da_url as colecao_da_url
 from mapa_da_ciencia.fontes.openalex import (
+    buscar_obra,
     buscar_por_dois,
     casar_todos,
     consultar,
     documento_de_obra,
+    issns_da_obra,
     listar_por_revista,
     pid_da_obra,
 )
@@ -191,9 +193,13 @@ async def _enriquecer(
     opcoes: OpcoesColeta,
     progresso: Progresso,
 ) -> list[Documento]:
-    """Casa os documentos de cada revista com os trabalhos do OpenAlex do mesmo período."""
+    """Casa os documentos de cada revista com os trabalhos do OpenAlex do mesmo período.
+
+    Os que sobram sem casamento são procurados pelo DOI (o da ArticleMeta e o derivado do PID): o OpenAlex
+    às vezes não liga o trabalho à revista (só a um repositório, como o DOAJ) ou registra o ano errado.
+    """
     api_key = variavel("OPENALEX_API_KEY", projeto.raiz)
-    progresso.etapa("OpenAlex", len(plano.revistas))
+    progresso.etapa("OpenAlex", len(plano.revistas) + 1)
     saida: list[Documento] = []
     for revista in plano.revistas:
         da_revista = [d for d in documentos if d.revista_issn == revista.issn]
@@ -201,6 +207,26 @@ async def _enriquecer(
             obras = await listar_por_revista(buscador, revista, plano.anos, api_key=api_key, atualizar=opcoes.atualizar)
             saida += casar_todos(da_revista, obras)
         progresso.avancar()
+
+    sobras = [d for d in saida if d.casamento == "sem_casamento"]
+    dois = [d.doi for d in sobras if d.doi] + [f"10.1590/{d.pid.lower()}" for d in sobras if d.pid]
+    if dois:
+        usados = {d.openalex_id for d in saida if d.openalex_id}
+        obras = [
+            o
+            for o in await buscar_por_dois(buscador, dois, api_key=api_key)
+            if o["id"].rsplit("/", 1)[-1] not in usados
+        ]
+        casados = {d.id: d for d in casar_todos(sobras, obras)}
+        # o filtro por DOI ainda não acha alguns trabalhos novos; o endereço direto acha e não custa créditos
+        ainda = [d for d in casados.values() if d.casamento == "sem_casamento" and d.doi]
+        diretas = await asyncio.gather(*(buscar_obra(buscador, d.doi, api_key=api_key) for d in ainda))
+        usados |= {d.openalex_id for d in casados.values() if d.openalex_id}
+        obras = [o for o in diretas if o and o["id"].rsplit("/", 1)[-1] not in usados]
+        if obras:
+            casados |= {d.id: d for d in casar_todos(ainda, obras)}
+        saida = [casados.get(d.id, d) for d in saida]
+    progresso.avancar()
     outros = [d for d in documentos if d.revista_issn not in {r.issn for r in plano.revistas}]
     return saida + outros
 
@@ -215,8 +241,7 @@ async def _pid_da_obra(buscador: Buscador, obra: dict, dois_por_revista: dict[st
     if pid := pid_da_obra(obra):
         return pid
     doi = normalizar_doi(obra.get("doi"))
-    fonte = (obra.get("primary_location") or {}).get("source") or {}
-    for issn in fonte.get("issn") or []:
+    for issn in issns_da_obra(obra):
         if doi is None or (revista := retrato.por_issn(issn)) is None:
             continue
         if revista.issn not in dois_por_revista:

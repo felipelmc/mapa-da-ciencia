@@ -13,6 +13,7 @@ Layout:
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 from dataclasses import dataclass, field
@@ -158,7 +159,11 @@ class Projeto:
 
 
 def _ajustar_recorte(config: str, revistas: list[str] | None, anos: tuple[int, int] | None) -> str:
-    """Troca a lista de revistas e/ou os anos no texto do YAML, sem perder os comentários do resto."""
+    """Troca a lista de revistas e/ou os anos no texto do YAML, sem perder os comentários do resto.
+
+    Com outras revistas, o título e a descrição do modelo deixam de valer: o título passa a ser o da
+    revista (ou "N revistas do SciELO Brasil") e a descrição fica vazia.
+    """
     if revistas:
         from mapa_da_ciencia.fontes.revistas import resolver
 
@@ -168,6 +173,11 @@ def _ajustar_recorte(config: str, revistas: list[str] | None, anos: tuple[int, i
             raise ErroConfig(f"Revista(s) não encontrada(s): {', '.join(faltam)}. Confira com `mapa revistas`.")
         linhas = "".join(f"      - {r.issn}           # {r.titulo}\n" for _, r in achadas if r)
         config = re.sub(r"(    revistas:[^\n]*\n)(      - [^\n]*\n)+", lambda m: m.group(1) + linhas, config, count=1)
+        titulos = [r.titulo for _, r in achadas if r]
+        titulo = titulos[0] if len(titulos) == 1 else f"{len(titulos)} revistas do SciELO Brasil"
+        config = re.sub(r"^titulo: .*$", lambda _: f"titulo: {json.dumps(titulo, ensure_ascii=False)}", config,
+                        count=1, flags=re.M)  # fmt: skip
+        config = re.sub(r"^descricao: (?:>\n(?:  [^\n]*\n)+|[^\n]*\n)", 'descricao: ""\n', config, count=1, flags=re.M)
     if anos:
         config = re.sub(r"(  anos: )\[\d{4}, \d{4}\]", lambda m: f"{m.group(1)}[{anos[0]}, {anos[1]}]", config, count=1)
     return config

@@ -1,7 +1,7 @@
 # Configuração do projeto. Referência completa: https://felipelmc.github.io/mapa-da-ciencia/referencia/configuracao/
 versao_config: 1
 nome: $nome
-titulo: Ciência política no SciELO Brasil, 2010–2025
+titulo: Ciência política no SciELO Brasil
 descricao: >
   Piloto do mapa-da-ciencia: artigos de dez revistas brasileiras de ciência política
   e relações internacionais indexadas no SciELO.

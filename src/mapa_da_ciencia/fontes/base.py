@@ -121,8 +121,12 @@ class Buscador:
         *,
         atualizar: bool = False,
         custo: int = 0,
+        ausente_se_404: bool = False,
     ) -> Any:
-        """Resposta JSON, do cache se existir. `custo` são os créditos do OpenAlex que a chamada consome."""
+        """Resposta JSON, do cache se existir. `custo` são os créditos do OpenAlex que a chamada consome.
+
+        Com `ausente_se_404`, um 404 vira `None` (e também vai para o cache), em vez de erro.
+        """
         caminho = self.brutos / cache
         if caminho.exists() and not atualizar:
             try:
@@ -133,7 +137,7 @@ class Buscador:
                 caminho.unlink(missing_ok=True)  # arquivo corrompido: busca de novo
         if self.offline:
             raise FaltaNoCache(f"Modo offline e sem cache para {url} ({caminho.relative_to(self.brutos)}).")
-        dados, resposta = await self._buscar(url, params)
+        dados, resposta = await self._buscar(url, params, ausente_se_404=ausente_se_404)
         self.contadores.requisicoes[fonte] += 1
         if fonte == "openalex":
             self.contadores.creditos_openalex += custo
@@ -143,7 +147,9 @@ class Buscador:
         gravar_gz(caminho, dados, ocultar=(str(params.get("api_key", "")),))
         return dados
 
-    async def _buscar(self, url: str, params: dict[str, Any]) -> tuple[Any, httpx.Response]:
+    async def _buscar(
+        self, url: str, params: dict[str, Any], *, ausente_se_404: bool = False
+    ) -> tuple[Any, httpx.Response]:
         assert self._cliente is not None, "use o Buscador dentro de `async with`"
         espera = self.espera_inicial
         ultimo_erro: Exception | None = None
@@ -155,6 +161,8 @@ class Buscador:
                     ultimo_erro = ErroFonte(f"{url} respondeu {r.status_code}")
                     retry_after = r.headers.get("retry-after", "")
                     await asyncio.sleep(float(retry_after) if retry_after.isdigit() else espera)
+                elif r.status_code == 404 and ausente_se_404:
+                    return None, r
                 elif r.status_code >= 400:
                     raise ErroFonte(f"{url} respondeu {r.status_code}: {r.text[:200]}")
                 else:

@@ -39,6 +39,14 @@ def test_novo_com_revista_e_anos_mantem_comentarios(projeto):
     assert "anos: [2024, 2024]" in texto
     assert "# Configuração do projeto" in texto  # comentários preservados
     assert projeto.config.fontes.scielo.revistas == ["0104-6276"]
+    assert projeto.config.titulo == "Opinião Pública" and projeto.config.descricao == ""
+
+
+def test_novo_com_varias_revistas_no_modelo_do_piloto(tmp_path):
+    p = Projeto.criar(tmp_path / "x", modelo="ciencia-politica", perfil=PERFIS["leve"], revistas=["op", "dados"])
+    assert p.config.titulo == "2 revistas do SciELO Brasil" and p.config.descricao == ""
+    assert p.config.fontes.scielo.revistas == ["0104-6276", "0011-5258"]
+    assert "# Configuração do projeto" in (p.raiz / "mapa.yaml").read_text()
 
 
 def test_novo_com_revista_desconhecida(tmp_path):

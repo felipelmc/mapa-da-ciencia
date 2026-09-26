@@ -6,7 +6,16 @@ from conftest import casos_especiais, obras_openalex, registros_articlemeta
 from mapa_da_ciencia.coleta import OpcoesColeta, coletar
 from mapa_da_ciencia.documento import Documento, Texto
 from mapa_da_ciencia.fontes.articlemeta import normalizar, revista_do_registro
-from mapa_da_ciencia.fontes.openalex import casar_todos, conferir, enriquecer, reconstruir_resumo
+from mapa_da_ciencia.fontes.openalex import (
+    casar_todos,
+    conferir,
+    documento_de_obra,
+    enriquecer,
+    issns_da_obra,
+    licenca_da_obra,
+    local_da_revista,
+    reconstruir_resumo,
+)
 from mapa_da_ciencia.llm.perfis import PERFIS
 from mapa_da_ciencia.projeto import Projeto
 
@@ -33,6 +42,16 @@ def test_conferir_rejeita_ano_e_titulo_distantes():
     assert conferir(doc, {"publication_year": 2015, "title": "Coalizoes"})
     assert not conferir(doc, {"publication_year": 2017, "title": "Coalizões"})
     assert not conferir(doc, {"publication_year": 2014, "title": "A política externa da China"})
+
+
+def test_conferir_aceita_ano_errado_no_openalex_com_titulo_longo_igual():
+    # Novos Estudos 2025: o OpenAlex registra 2005
+    titulo = "Análise comparativa do perfil da população internada em estabelecimentos de custódia"
+    doc = Documento(
+        id="S1", fonte="articlemeta", tipo="research-article", ano=2025, titulos=[Texto(idioma="pt", texto=titulo)]
+    )
+    assert conferir(doc, {"publication_year": 2005, "title": titulo.upper()})
+    assert not conferir(doc, {"publication_year": 2005, "title": "Análise comparativa de outra coisa"})
 
 
 @pytest.mark.parametrize("passo", ["2_pid_url", "3_doi_derivado", "4_titulo_ano", "sem_casamento"])
@@ -78,6 +97,29 @@ def test_coleta_com_openalex_e_cache(projeto, apis_falsas):
     assert coletar(projeto).total_requisicoes == 0
 
 
+def test_quem_sobra_e_procurado_pelo_doi(projeto, apis_falsas):
+    # O OpenAlex às vezes só liga o trabalho a um repositório (DOAJ): ele some da lista da revista
+    alvo = next(o for o in apis_falsas.obras if (o.get("doi") or "").endswith("1807-019120243011"))
+    repositorio = {"type": "repository", "issn": None, "display_name": "DOAJ"}
+    alvo["primary_location"] = {**alvo["primary_location"], "source": repositorio}
+    alvo["locations"] = [{**local, "source": repositorio} for local in alvo.get("locations") or []]
+    resumo = coletar(projeto)
+    assert resumo.casamento == {"1_doi": 25}
+    assert apis_falsas.chamadas["openalex"] == 2 and resumo.creditos_openalex == 2  # lista + busca por DOI
+
+
+def test_endereco_direto_acha_o_que_os_filtros_nao_acham(projeto, apis_falsas):
+    # Trabalho novo do OpenAlex, fora do índice de filtros e ligado só a um repositório
+    alvo = next(o for o in apis_falsas.obras if (o.get("doi") or "").endswith("1807-019120243011"))
+    alvo["primary_location"] = {**alvo["primary_location"], "source": {"type": "repository", "issn": None}}
+    alvo["locations"] = [{**lc, "source": {"type": "repository", "issn": None}} for lc in alvo.get("locations") or []]
+    apis_falsas.fora_dos_filtros.add("10.1590/1807-019120243011")
+    resumo = coletar(projeto)
+    assert resumo.casamento == {"1_doi": 25}
+    assert resumo.requisicoes["openalex"] == 3 and resumo.creditos_openalex == 2  # o endereço direto é grátis
+    assert coletar(projeto).total_requisicoes == 0  # a obra achada pelo endereço direto fica no cache
+
+
 def test_sem_openalex(projeto, apis_falsas):
     resumo = coletar(projeto, OpcoesColeta(sem_openalex=True))
     assert resumo.casamento == {"nao_tentado": 25} and apis_falsas.chamadas["openalex"] == 0
@@ -90,3 +132,36 @@ def test_chave_do_openalex_vai_na_requisicao_mas_nao_no_disco(projeto, apis_fals
     assert pedido.url.params["api_key"] == "CHAVE-SECRETA-123"
     for arq in (projeto.brutos / "openalex").rglob("*.json.gz"):
         assert "CHAVE-SECRETA-123" not in gzip.decompress(arq.read_bytes()).decode()
+
+
+def _obra_com_repositorio_principal(licenca_revista: str | None) -> dict:
+    """Como o OpenAlex guarda alguns artigos da Novos Estudos: a location principal é um repositório."""
+    repositorio = {
+        "source": {"type": "repository", "issn": None, "display_name": "LA Referencia"},
+        "license": "other-oa",
+    }
+    revista = {
+        "source": {"type": "journal", "issn": ["0101-3300", "1980-5403"], "display_name": "Novos Estudos - CEBRAP"},
+        "license": licenca_revista,
+        "landing_page_url": "http://www.scielo.br/pdf/nec/n102/1980-5403-nec-102-39.pdf",
+    }
+    return {
+        "id": "https://openalex.org/W2605550100",
+        "doi": "https://doi.org/10.25091/s0101-3300201500020004",
+        "title": "Cutucando onças com varas curtas",
+        "publication_year": 2015,
+        "type": "article",
+        "primary_location": repositorio,
+        "locations": [repositorio, revista],
+    }
+
+
+def test_location_da_revista_quando_a_principal_e_um_repositorio():
+    obra = _obra_com_repositorio_principal("cc-by-nc")
+    assert local_da_revista(obra, {"0101-3300"})["source"]["type"] == "journal"
+    assert local_da_revista(obra)["source"]["display_name"] == "Novos Estudos - CEBRAP"  # sem ISSN: a 1ª revista
+    assert licenca_da_obra(obra) == "cc-by-nc"
+    assert licenca_da_obra(_obra_com_repositorio_principal(None)) == "other-oa"  # a revista não informa
+    assert issns_da_obra(obra) == ["0101-3300", "1980-5403"]
+    doc = documento_de_obra(obra, "importar:x.txt")
+    assert doc.revista_issn == "0101-3300" and doc.url.startswith("http://www.scielo.br/")

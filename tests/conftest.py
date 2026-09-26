@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -46,15 +47,24 @@ class ApisFalsas:
         router.get(f"{AM}/article/").mock(side_effect=self._artigo)
         self.obras = obras_openalex()
         self.total_forcado: int | None = None  # para simular buscas enormes
+        self.fora_dos_filtros: set[str] = set()  # DOIs que só o endereço direto /works/doi:… acha
+        router.get(url__regex=rf"^{re.escape(OA)}/works/doi:").mock(side_effect=self._obra)
         router.get(f"{OA}/works").mock(side_effect=self._obras)
+
+    def _obra(self, request: httpx.Request) -> httpx.Response:
+        self.chamadas["openalex"] += 1
+        doi = request.url.path.split("/works/doi:", 1)[1].lower()
+        obra = next((o for o in self.obras if (o.get("doi") or "").lower().endswith(doi)), None)
+        return httpx.Response(200, json=obra) if obra else httpx.Response(404, json={"error": "not found"})
 
     def _obras(self, request: httpx.Request) -> httpx.Response:
         """Entende os filtros usados pelo mapa: ISSN (com |), intervalo de anos e lista de DOIs."""
         self.chamadas["openalex"] += 1
         filtros = dict(f.split(":", 1) for f in request.url.params.get("filter", "").split(",") if ":" in f)
-        obras = self.obras
-        if "primary_location.source.issn" in filtros:
-            issns = set(filtros["primary_location.source.issn"].split("|"))
+        obras = [o for o in self.obras if (o.get("doi") or "").lower().removeprefix("https://doi.org/")
+                 not in self.fora_dos_filtros]  # fmt: skip
+        if "locations.source.issn" in filtros:
+            issns = set(filtros["locations.source.issn"].split("|"))
             obras = [o for o in obras if issns & set(_issns_da_fonte(o))]
         if "publication_year" in filtros:
             a, _, b = filtros["publication_year"].partition("-")
@@ -92,4 +102,5 @@ def apis_falsas():
 
 
 def _issns_da_fonte(obra: dict) -> list[str]:
-    return ((obra.get("primary_location") or {}).get("source") or {}).get("issn") or []
+    locais = [obra.get("primary_location") or {}, *(obra.get("locations") or [])]
+    return [i for lc in locais for i in ((lc.get("source") or {}).get("issn") or [])]

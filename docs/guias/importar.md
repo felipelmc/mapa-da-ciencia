@@ -33,7 +33,7 @@ O arquivo é copiado para a pasta `importados/` do projeto e passa a entrar em *
 - **Recorte:** os artigos importados também passam pelo recorte de anos e de tipos do `mapa.yaml`. Preprints, por exemplo, ficam de fora, a menos que você acrescente `preprint` em `fontes.scielo.tipos`.
 - **Duplicatas:** um artigo que já veio da coleta por revista é reconhecido e fundido, e o documento passa a registrar as duas origens.
 
-A busca no OpenAlex por DOI custa 1 crédito a cada 50 artigos (veja [Fontes de dados](../explicacoes/fontes.md)).
+A busca no OpenAlex por DOI custa 1 crédito a cada 50 artigos (veja [Fontes de dados](../explicacoes/fontes.md#openalex)).
 
 ## Listas de DOIs ou PIDs
 

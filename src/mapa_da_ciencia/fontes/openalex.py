@@ -6,7 +6,12 @@ O casamento de cada documento da ArticleMeta com um trabalho do OpenAlex segue u
 existe porque a própria ArticleMeta tem DOIs trocados (ADR 0003, adendo).
 
 Custos (créditos do OpenAlex, 1.000 por dia sem chave): 1 por página de lista (até 200
-trabalhos), 10 por página de busca, 0 por trabalho buscado pelo DOI.
+trabalhos, inclusive a lista por DOIs, em lotes de 50), 10 por página de busca, 0 por trabalho
+buscado no endereço direto `/works/doi:…`.
+
+As listas por revista filtram por `locations.source.issn`, e não só pela location principal: o
+OpenAlex às vezes elege um repositório (LA Referencia, por exemplo) como location principal de um
+artigo de revista, e ele sumia da lista da revista (Novos Estudos, 2015–2018; ADR 0003, adendo).
 """
 
 from __future__ import annotations
@@ -44,7 +49,35 @@ CAMPOS = (
 )
 POR_PAGINA = 200
 SIMILARIDADE_MINIMA = 0.6
+TITULO_QUASE_IGUAL = 0.9  # aceita ano divergente (o OpenAlex tem anos errados: Novos Estudos 2025 → 2005)
+TITULO_MINIMO = 20  # caracteres do título normalizado para confirmar sozinho um casamento com ano divergente
 _PID_NA_URL = re.compile(r"pid=(S\d{4}-\d{3}[\dX]\d{13})", re.IGNORECASE)
+
+
+def local_da_revista(obra: dict, issns: set[str] | frozenset[str] = frozenset()) -> dict:
+    """A location do trabalho na revista: a que tem um dos `issns`, senão a primeira de uma revista,
+    senão a principal. Quando a principal é um repositório, é aqui que estão a revista e a licença dela."""
+    locais = obra.get("locations") or []
+    for local in locais:
+        if issns & set(((local.get("source") or {}).get("issn")) or []):
+            return local
+    principal = obra.get("primary_location") or {}
+    if ((principal.get("source") or {}).get("type")) == "journal":
+        return principal
+    return next((lc for lc in locais if (lc.get("source") or {}).get("type") == "journal"), principal)
+
+
+def licenca_da_obra(obra: dict, issns: set[str] | frozenset[str] = frozenset()) -> str | None:
+    """A licença informada na location da revista; se ela não informar, a da location principal."""
+    local = local_da_revista(obra, issns)
+    principal = obra.get("primary_location") or {}
+    return normalizar_licenca(local.get("license") or principal.get("license"))
+
+
+def issns_da_obra(obra: dict) -> list[str]:
+    """Todos os ISSNs das fontes onde o trabalho aparece, sem repetição."""
+    locais = [obra.get("primary_location") or {}, *(obra.get("locations") or [])]
+    return list(dict.fromkeys(i for lc in locais for i in ((lc.get("source") or {}).get("issn") or [])))
 
 
 def _hash(*partes: str) -> str:
@@ -116,7 +149,7 @@ async def consultar(
     else:
         issns = sorted({i for r in revistas for i in (r.issns or (r.issn,))})
         filtros = [
-            ",".join([*base, "primary_location.source.issn:" + "|".join(issns[i : i + 100])])
+            ",".join([*base, "locations.source.issn:" + "|".join(issns[i : i + 100])])
             for i in range(0, len(issns), 100)
         ]
     obras: dict[str, dict] = {}
@@ -137,7 +170,7 @@ async def listar_por_revista(
     atualizar: bool = False,
 ) -> list[dict]:
     issns = "|".join(sorted(set(revista.issns or (revista.issn,))))
-    filtro = f"primary_location.source.issn:{issns},publication_year:{anos[0]}-{anos[1]}"
+    filtro = f"locations.source.issn:{issns},publication_year:{anos[0]}-{anos[1]}"
     return await listar_paginas(
         buscador, filtro, f"revistas/{revista.prefixo_cache}", api_key=api_key, atualizar=atualizar
     )
@@ -151,6 +184,23 @@ async def buscar_por_dois(buscador: Buscador, dois: list[str], *, api_key: str |
         filtro = "doi:" + "|".join(unicos[i : i + 50])
         obras += await listar_paginas(buscador, filtro, "dois/lote", api_key=api_key)
     return obras
+
+
+async def buscar_obra(buscador: Buscador, doi: str, *, api_key: str | None = None) -> dict | None:
+    """Um trabalho pelo DOI, no endereço direto (`/works/doi:…`, sem custo em créditos), ou `None`.
+
+    O endereço direto acha trabalhos que o filtro `doi:` ainda não acha (IDs novos, fora do índice de filtros).
+    """
+    params: dict[str, Any] = {"select": CAMPOS}
+    if api_key:
+        params["api_key"] = api_key
+    return await buscador.json(
+        "openalex",
+        f"{URL}/works/doi:{doi}",
+        params,
+        f"openalex/obras/{_hash(doi, CAMPOS)}.json.gz",
+        ausente_se_404=True,
+    )
 
 
 def pid_da_obra(obra: dict) -> str | None:
@@ -176,8 +226,9 @@ def documento_de_obra(obra: dict, origem: str) -> Documento:
     """Documento montado só com o OpenAlex, para artigos importados que não estão na ArticleMeta."""
     oid = obra["id"].rsplit("/", 1)[-1]
     doi = normalizar_doi(obra.get("doi"))
-    fonte = (obra.get("primary_location") or {}).get("source") or {}
-    licenca = normalizar_licenca((obra.get("primary_location") or {}).get("license"))
+    local = local_da_revista(obra)
+    fonte = local.get("source") or {}
+    licenca = licenca_da_obra(obra)
     autores, afiliacoes = [], []
     for i, autoria in enumerate(obra.get("authorships") or []):
         nome = remover_emails(limpar((autoria.get("author") or {}).get("display_name")))
@@ -219,7 +270,7 @@ def documento_de_obra(obra: dict, origem: str) -> Documento:
         autores=autores,
         afiliacoes=afiliacoes,
         afiliacoes_fonte="openalex" if afiliacoes else "nenhuma",
-        url=(obra.get("primary_location") or {}).get("landing_page_url"),
+        url=local.get("landing_page_url"),
         citacoes=obra.get("cited_by_count"),
         licenca=licenca or "desconhecida",
         licenca_fonte="openalex" if licenca else "nenhuma",
@@ -255,14 +306,20 @@ def indexar(obras: list[dict]) -> Indice:
 
 
 def conferir(doc: Documento, obra: dict) -> bool:
-    """O trabalho do OpenAlex é mesmo este documento? Ano ±1 e título parecido em algum idioma."""
+    """O trabalho do OpenAlex é mesmo este documento? Ano ±1 e título parecido em algum idioma.
+
+    Com o ano fora da folga, só aceita título longo e praticamente igual: o identificador bateu e o
+    título confirma, então o ano errado é do OpenAlex. Títulos curtos ("Apresentação") não confirmam nada.
+    """
     ano = obra.get("publication_year")
-    if ano is not None and abs(int(ano) - doc.ano) > 1:
-        return False
+    ano_confere = ano is None or abs(int(ano) - doc.ano) <= 1
     titulo = obra.get("title")
     if not titulo or not doc.titulos:
-        return True  # sem título para comparar: fica com o que o identificador disse
-    return max(similaridade_titulo(t.texto, titulo) for t in doc.titulos) >= SIMILARIDADE_MINIMA
+        return ano_confere  # sem título para comparar: fica com o que o identificador disse
+    semelhanca = max(similaridade_titulo(t.texto, titulo) for t in doc.titulos)
+    if ano_confere:
+        return semelhanca >= SIMILARIDADE_MINIMA
+    return semelhanca >= TITULO_QUASE_IGUAL and len(normalizar_titulo(titulo)) >= TITULO_MINIMO
 
 
 def casar(doc: Documento, indice: Indice, usados: set[str]) -> tuple[dict | None, Casamento]:
@@ -297,7 +354,7 @@ def enriquecer(doc: Documento, obra: dict | None, passo: Casamento) -> Documento
     """Acrescenta ao documento o que o OpenAlex sabe: id, citações, licença e, se faltar, DOI e resumo."""
     if obra is None:
         return doc.model_copy(update={"casamento": passo})
-    licenca_oa = normalizar_licenca((obra.get("primary_location") or {}).get("license"))
+    licenca_oa = licenca_da_obra(obra, {doc.revista_issn} if doc.revista_issn else frozenset())
     licenca, fonte = mais_restritiva(licenca_oa, doc.licenca_revista)
     mudancas: dict[str, Any] = {
         "openalex_id": obra["id"].rsplit("/", 1)[-1],

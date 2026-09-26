@@ -127,7 +127,7 @@ def status(projeto: OpcaoProjeto = Path(".")) -> None:
     console.print(f"[bold]{cfg.titulo}[/]  ({cfg.nome})  —  {p.raiz}")
     if cfg.fontes.scielo:
         console.print(f"SciELO ({cfg.fontes.scielo.colecao}): {len(cfg.fontes.scielo.revistas)} revista(s)")
-    console.print(f"Anos: {cfg.recorte.anos[0]}–{cfg.recorte.anos[1]}")
+    console.print(f"Anos: {periodo(cfg.recorte.anos)}")
     m = cfg.modelos
     console.print(
         f"Modelos: embeddings [bold]{m.embeddings.modelo}[/], classificação [bold]{m.classificacao.modelo}[/], "

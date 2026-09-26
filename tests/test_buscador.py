@@ -97,3 +97,18 @@ def test_saldo_de_creditos_do_openalex(tmp_path):
 
     c = rodar(buscar())
     assert c.creditos_openalex == 1 and c.saldo_openalex == 973
+
+
+@respx.mock
+def test_404_vira_none_e_fica_no_cache_quando_pedido(tmp_path):
+    rota = respx.get(URL).respond(404, json={"error": "not found"})
+
+    async def buscar():
+        async with Buscador(tmp_path, espera_inicial=0) as b:
+            return await b.json("teste", URL, {}, "teste/ausente.json.gz", ausente_se_404=True), b.contadores
+
+    assert rodar(buscar())[0] is None
+    dados, contadores = rodar(buscar())
+    assert dados is None and contadores.total_requisicoes == 0 and rota.call_count == 1
+    with pytest.raises(ErroFonte, match="404"):
+        rodar(_buscar(tmp_path / "outro"))  # sem a opção, 404 continua sendo erro

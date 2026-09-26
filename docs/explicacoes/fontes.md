@@ -42,10 +42,11 @@ Desde 2026 o OpenAlex cobra por uso. Sem chave, são mil créditos por dia; com 
 | Chamada | Créditos |
 |---|---|
 | Uma página de lista (até 200 trabalhos de uma revista num período) | 1 |
+| Uma lista de até 50 DOIs | 1 |
 | Uma página de busca por termo | 10 |
-| Um trabalho buscado pelo DOI | 0 |
+| Um trabalho no endereço direto (`/works/doi:…`) | 0 |
 
-O enriquecimento pede os trabalhos de cada revista no período, então custa cerca de 1 crédito por revista para cada 200 artigos: o piloto inteiro (10 revistas, 16 anos) fica em torno de 30 créditos. O `mapa coletar` mostra quantos foram gastos, e `--sem-openalex` pula essa etapa.
+O enriquecimento pede os trabalhos de cada revista no período, então custa cerca de 1 crédito por revista para cada 200 artigos: o piloto inteiro (10 revistas, 16 anos) fica em torno de 32 créditos. O `mapa coletar` mostra quantos foram gastos, e `--sem-openalex` pula essa etapa.
 
 Quando a ArticleMeta não traz resumo de um artigo e o OpenAlex traz, o resumo do OpenAlex entra como **reserva**, marcado com a origem (`openalex`).
 
@@ -62,7 +63,9 @@ A ArticleMeta nem sempre informa o DOI: no piloto, faltou em 27% dos registros. 
 3. o DOI derivado do PID (`10.1590/{PID}`), padrão de revistas brasileiras mais antigas;
 4. o título normalizado mais o ano.
 
-Antes de aceitar um candidato, o `mapa` **confere** se ele é mesmo o artigo: o ano precisa bater (com um ano de folga) e o título precisa ser parecido em algum idioma. Além disso, cada trabalho do OpenAlex só pode ser casado com um artigo. A conferência existe porque a própria ArticleMeta tem DOIs trocados: na *Dados* de 2014, dois artigos diferentes aparecem com o mesmo DOI. Sem a conferência, os dois seriam casados com o mesmo trabalho (e herdariam as citações e a licença um do outro). Com ela, só o artigo certo casa, e o outro fica sem casamento e **sem DOI**: como o OpenAlex confirmou que o DOI pertence ao primeiro, ele é retirado do segundo, e a coleta avisa (veja [Duplicatas](#duplicatas)).
+Os candidatos vêm da lista de trabalhos da revista no período. A lista inclui os trabalhos em que a revista aparece em qualquer lugar, e não só como fonte principal: o OpenAlex às vezes registra um repositório (LA Referencia, DOAJ) como fonte principal de um artigo de revista. Quem sobra sem casamento é procurado pelo DOI, primeiro numa lista de DOIs e depois, um a um, no endereço direto do OpenAlex, que acha trabalhos recentes que a lista ainda não acha.
+
+Antes de aceitar um candidato, o `mapa` **confere** se ele é mesmo o artigo: o ano precisa bater (com um ano de folga) e o título precisa ser parecido em algum idioma. Com o ano fora da folga, só vale um título longo e praticamente igual, porque o OpenAlex também erra anos (artigos da *Novos Estudos* de 2025 aparecem como de 2005). Além disso, cada trabalho do OpenAlex só pode ser casado com um artigo. A conferência existe porque a própria ArticleMeta tem DOIs trocados: na *Dados* de 2014, dois artigos diferentes aparecem com o mesmo DOI. Sem a conferência, os dois seriam casados com o mesmo trabalho (e herdariam as citações e a licença um do outro). Com ela, só o artigo certo casa, e o outro fica sem casamento e **sem DOI**: como o OpenAlex confirmou que o DOI pertence ao primeiro, ele é retirado do segundo, e a coleta avisa (veja [Duplicatas](#duplicatas)).
 
 O passo usado fica registrado em cada documento.
 
