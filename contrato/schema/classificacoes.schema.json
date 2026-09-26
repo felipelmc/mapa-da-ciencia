@@ -1,0 +1,48 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "cobertura": {
+      "description": "Fração dos documentos com classificação válida.",
+      "title": "Cobertura",
+      "type": "number"
+    },
+    "contagens": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "type": "object"
+      },
+      "title": "Contagens",
+      "type": "object"
+    },
+    "evidencia_literal": {
+      "description": "Fração das evidências encontradas literalmente no resumo.",
+      "title": "Evidencia Literal",
+      "type": "number"
+    },
+    "hash_codebook": {
+      "title": "Hash Codebook",
+      "type": "string"
+    },
+    "modelo": {
+      "title": "Modelo",
+      "type": "string"
+    },
+    "versao_contrato": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "modelo",
+    "hash_codebook",
+    "cobertura",
+    "evidencia_literal",
+    "contagens"
+  ],
+  "title": "Classificacoes",
+  "type": "object"
+}

@@ -1,0 +1,212 @@
+{
+  "$defs": {
+    "Contagens": {
+      "additionalProperties": false,
+      "properties": {
+        "classificados": {
+          "default": 0,
+          "title": "Classificados",
+          "type": "integer"
+        },
+        "com_afiliacao": {
+          "default": 0,
+          "title": "Com Afiliacao",
+          "type": "integer"
+        },
+        "documentos": {
+          "title": "Documentos",
+          "type": "integer"
+        },
+        "topicos": {
+          "default": 0,
+          "title": "Topicos",
+          "type": "integer"
+        },
+        "validados": {
+          "default": 0,
+          "title": "Validados",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "documentos"
+      ],
+      "title": "Contagens",
+      "type": "object"
+    },
+    "ExecucaoInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "duracao_s": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Etapa → segundos da última execução.",
+          "title": "Duracao S",
+          "type": "object"
+        },
+        "hash_codebook": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hash Codebook"
+        },
+        "modelos": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Papel → `modelo@digest`.",
+          "title": "Modelos",
+          "type": "object"
+        },
+        "sementes": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Sementes",
+          "type": "object"
+        },
+        "versao_pacote": {
+          "title": "Versao Pacote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "versao_pacote"
+      ],
+      "title": "ExecucaoInfo",
+      "type": "object"
+    },
+    "ProjetoInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "descricao": {
+          "default": "",
+          "title": "Descricao",
+          "type": "string"
+        },
+        "nome": {
+          "title": "Nome",
+          "type": "string"
+        },
+        "titulo": {
+          "title": "Titulo",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nome",
+        "titulo"
+      ],
+      "title": "ProjetoInfo",
+      "type": "object"
+    },
+    "RecorteInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "anos": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Anos",
+          "type": "array"
+        },
+        "fontes": {
+          "description": "Ex.: ['scielo:scl', 'openalex'].",
+          "items": {
+            "type": "string"
+          },
+          "title": "Fontes",
+          "type": "array"
+        },
+        "idioma_analise": {
+          "title": "Idioma Analise",
+          "type": "string"
+        },
+        "idioma_exibicao": {
+          "title": "Idioma Exibicao",
+          "type": "string"
+        }
+      },
+      "required": [
+        "anos",
+        "fontes",
+        "idioma_analise",
+        "idioma_exibicao"
+      ],
+      "title": "RecorteInfo",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "api": {
+      "description": "True no painel local (há API); False no site estático publicado.",
+      "title": "Api",
+      "type": "boolean"
+    },
+    "arquivos": {
+      "description": "Arquivos do contrato presentes nesta pasta.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Arquivos",
+      "type": "array"
+    },
+    "contagens": {
+      "$ref": "#/$defs/Contagens"
+    },
+    "execucao": {
+      "$ref": "#/$defs/ExecucaoInfo"
+    },
+    "gerado_em": {
+      "format": "date-time",
+      "title": "Gerado Em",
+      "type": "string"
+    },
+    "licencas": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "description": "Licença → número de documentos.",
+      "title": "Licencas",
+      "type": "object"
+    },
+    "projeto": {
+      "$ref": "#/$defs/ProjetoInfo"
+    },
+    "recorte": {
+      "$ref": "#/$defs/RecorteInfo"
+    },
+    "versao_contrato": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "api",
+    "gerado_em",
+    "projeto",
+    "recorte",
+    "contagens",
+    "arquivos",
+    "execucao"
+  ],
+  "title": "Manifesto",
+  "type": "object"
+}

@@ -1,0 +1,258 @@
+{
+  "$defs": {
+    "Macrotema": {
+      "additionalProperties": false,
+      "properties": {
+        "cor": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Cor",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "integer"
+        },
+        "rotulo": {
+          "title": "Rotulo",
+          "type": "string"
+        },
+        "topicos": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Topicos",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "rotulo",
+        "cor",
+        "topicos"
+      ],
+      "title": "Macrotema",
+      "type": "object"
+    },
+    "Outliers": {
+      "additionalProperties": false,
+      "properties": {
+        "n": {
+          "description": "Documentos que o HDBSCAN deixou sem tópico.",
+          "title": "N",
+          "type": "integer"
+        },
+        "reatribuidos": {
+          "description": "Quantos deles foram atribuídos ao tópico mais próximo.",
+          "title": "Reatribuidos",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "n",
+        "reatribuidos"
+      ],
+      "title": "Outliers",
+      "type": "object"
+    },
+    "Serie": {
+      "additionalProperties": false,
+      "properties": {
+        "n": {
+          "description": "Documentos por ano, alinhado a `anos`.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "N",
+          "type": "array"
+        },
+        "prop": {
+          "description": "Proporção do total do ano.",
+          "items": {
+            "type": "number"
+          },
+          "title": "Prop",
+          "type": "array"
+        }
+      },
+      "required": [
+        "n",
+        "prop"
+      ],
+      "title": "Serie",
+      "type": "object"
+    },
+    "Topico": {
+      "additionalProperties": false,
+      "properties": {
+        "centroide": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Centroide",
+          "type": "array"
+        },
+        "cor": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Cor",
+          "type": "string"
+        },
+        "descricao": {
+          "title": "Descricao",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "integer"
+        },
+        "macro_id": {
+          "title": "Macro Id",
+          "type": "integer"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "palavras_chave": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Palavras Chave",
+          "type": "array"
+        },
+        "por_revista": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Por Revista",
+          "type": "object"
+        },
+        "representativos": {
+          "description": "Ids de documentos.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Representativos",
+          "type": "array"
+        },
+        "rotulo": {
+          "title": "Rotulo",
+          "type": "string"
+        },
+        "serie": {
+          "$ref": "#/$defs/Serie"
+        }
+      },
+      "required": [
+        "id",
+        "macro_id",
+        "rotulo",
+        "descricao",
+        "palavras_chave",
+        "n",
+        "centroide",
+        "cor",
+        "serie",
+        "por_revista",
+        "representativos"
+      ],
+      "title": "Topico",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "anos": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Anos",
+      "type": "array"
+    },
+    "estabilidade_ari": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Estabilidade Ari"
+    },
+    "macrotemas": {
+      "items": {
+        "$ref": "#/$defs/Macrotema"
+      },
+      "title": "Macrotemas",
+      "type": "array"
+    },
+    "outliers": {
+      "$ref": "#/$defs/Outliers"
+    },
+    "parametros": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      },
+      "title": "Parametros",
+      "type": "object"
+    },
+    "topicos": {
+      "items": {
+        "$ref": "#/$defs/Topico"
+      },
+      "title": "Topicos",
+      "type": "array"
+    },
+    "total_por_ano": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Total Por Ano",
+      "type": "array"
+    },
+    "versao_contrato": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "anos",
+    "total_por_ano",
+    "parametros",
+    "estabilidade_ari",
+    "macrotemas",
+    "topicos",
+    "outliers"
+  ],
+  "title": "Topicos",
+  "type": "object"
+}

@@ -1,0 +1,178 @@
+{
+  "$defs": {
+    "Detalhe": {
+      "additionalProperties": false,
+      "properties": {
+        "autores": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Autores",
+          "type": "array"
+        },
+        "evidencias": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Evidencia"
+          },
+          "title": "Evidencias",
+          "type": "object"
+        },
+        "idioma": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Idioma"
+        },
+        "licenca": {
+          "title": "Licenca",
+          "type": "string"
+        },
+        "licenca_fonte": {
+          "title": "Licenca Fonte",
+          "type": "string"
+        },
+        "palavras_chave": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Palavras Chave",
+          "type": "array"
+        },
+        "resumo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "None quando a licença não permite publicar o resumo.",
+          "title": "Resumo"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Url"
+        }
+      },
+      "required": [
+        "resumo",
+        "idioma",
+        "autores",
+        "url",
+        "licenca",
+        "licenca_fonte"
+      ],
+      "title": "Detalhe",
+      "type": "object"
+    },
+    "Evidencia": {
+      "additionalProperties": false,
+      "properties": {
+        "evidencia": {
+          "title": "Evidencia",
+          "type": "string"
+        },
+        "fim": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fim"
+        },
+        "inicio": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Posição do trecho no resumo exibido (caracteres), se localizado.",
+          "title": "Inicio"
+        },
+        "status": {
+          "enum": [
+            "literal",
+            "aproximada",
+            "ausente"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "valor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Valor"
+        }
+      },
+      "required": [
+        "valor",
+        "evidencia",
+        "status"
+      ],
+      "title": "Evidencia",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "documentos": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Detalhe"
+      },
+      "title": "Documentos",
+      "type": "object"
+    },
+    "fragmento": {
+      "title": "Fragmento",
+      "type": "string"
+    },
+    "versao_contrato": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fragmento",
+    "documentos"
+  ],
+  "title": "Fragmento",
+  "type": "object"
+}
