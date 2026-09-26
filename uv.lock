@@ -335,7 +335,7 @@ wheels = [
 
 [[package]]
 name = "mapa-da-ciencia"
-version = "0.1.0.dev0"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },

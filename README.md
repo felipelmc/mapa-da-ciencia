@@ -10,7 +10,7 @@ Os modelos rodam no seu computador, via [Ollama](https://ollama.com).
 
 *A literature observatory for scientific publishing, built on local language models: topic maps over time, codebook-based classification of abstracts with textual evidence and human validation, and the geography of research production. Documentation in Portuguese.*
 
-> **Status:** em desenvolvimento, marco M1 (esqueleto). A coleta chega no M2 e os tópicos no M3. Ainda não há versão publicada.
+> **Status:** versão 0.1.0, com o esqueleto (marco M1) pronto. A coleta chega no M2 e os tópicos no M3. Ainda não há versão no PyPI.
 
 ## Experimente
 

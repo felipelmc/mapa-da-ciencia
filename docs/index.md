@@ -9,7 +9,7 @@ O **mapa-da-ciencia** é um observatório da literatura científica. Ele coleta 
 Tudo aparece num painel interativo, que pode ser publicado como site estático para acompanhar um artigo ou uma apresentação.
 
 !!! warning "Em desenvolvimento"
-    O projeto está no **marco M1**: esqueleto, configuração, diagnóstico, contrato de dados e painel com dados de exemplo. A coleta de artigos chega no M2 e os tópicos no M3. Veja o [plano de marcos](desenvolvimento/index.md#marcos).
+    O projeto concluiu o **marco M1** (versão 0.1.0): esqueleto, configuração, diagnóstico, contrato de dados e painel com dados de exemplo. A coleta de artigos chega no M2 e os tópicos no M3. Veja o [plano de marcos](desenvolvimento/index.md#marcos).
 
 ## Por onde começar
 

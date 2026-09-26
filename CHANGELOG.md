@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [0.1.0] - 2026-09-26
+
+Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa artigos (isso começa no M2).
+
 ### Adicionado
 
 - **Marco M0 (spikes técnicos)**, com os resultados registrados em `docs/decisoes/`:
@@ -20,3 +24,6 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
   - contrato de dados v1 com JSON Schemas e um exemplo sintético determinístico;
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
+
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/felipelmc/mapa-da-ciencia/releases/tag/v0.1.0

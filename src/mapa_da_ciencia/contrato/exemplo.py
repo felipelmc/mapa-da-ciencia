@@ -18,7 +18,6 @@ from importlib import resources
 
 import yaml
 
-from mapa_da_ciencia import __version__
 from mapa_da_ciencia.config import Codebook
 from mapa_da_ciencia.contrato import modelos as m
 
@@ -606,7 +605,7 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
         ),
         arquivos=["manifesto", *arquivos, "detalhes"],
         execucao=m.ExecucaoInfo(
-            versao_pacote=__version__,
+            versao_pacote="exemplo",  # fixo: os dados de exemplo não mudam a cada versão
             modelos={"embeddings": "exemplo", "classificacao": "exemplo", "rotulos": "exemplo"},
             hash_codebook=cb.hash(),
             sementes={"exemplo": semente},
