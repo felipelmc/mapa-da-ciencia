@@ -1,0 +1,49 @@
+# Configuração do projeto. Referência completa: https://felipelmc.github.io/mapa-da-ciencia/referencia/configuracao/
+versao_config: 1
+nome: $nome
+titulo: Ciência política no SciELO Brasil, 2010–2025
+descricao: >
+  Piloto do mapa-da-ciencia: artigos de dez revistas brasileiras de ciência política
+  e relações internacionais indexadas no SciELO.
+
+fontes:
+  scielo:
+    colecao: scl            # SciELO Brasil
+    revistas:               # ISSN como aparece no SciELO
+      - 0103-3352           # Revista Brasileira de Ciência Política
+      - 0011-5258           # Dados
+      - 0104-6276           # Opinião Pública
+      - 0102-6445           # Lua Nova
+      - 0104-4478           # Revista de Sociologia e Política
+      - 1981-3821           # Brazilian Political Science Review
+      - 0102-8529           # Contexto Internacional
+      - 0034-7329           # Revista Brasileira de Política Internacional
+      - 0101-3300           # Novos Estudos CEBRAP
+      - 0102-6909           # Revista Brasileira de Ciências Sociais
+    tipos: [research-article, review-article]
+  openalex:
+    enriquecer: true        # citações e licença de cada artigo
+
+recorte:
+  anos: [2010, 2025]
+  idioma_analise: en        # embeddings em inglês: cobre quase todo o corpus (ADR 0004)
+  idioma_exibicao: pt       # resumos e palavras-chave mostrados em português
+
+# Modelos locais do Ollama, sugeridos pelo perfil "$perfil" desta máquina.
+# Veja `mapa diagnostico` para conferir memória e modelos instalados.
+modelos:
+  embeddings:
+    modelo: $modelo_embeddings
+  classificacao:
+    modelo: $modelo_classificacao
+    num_ctx: 8192
+    temperatura: 0
+    pensar: false
+    concorrencia: 1
+  rotulos:
+    modelo: $modelo_rotulos
+
+validacao:
+  n: 200                    # resumos codificados por você para medir a concordância
+  estratificar_por: topico
+  semente: 7
