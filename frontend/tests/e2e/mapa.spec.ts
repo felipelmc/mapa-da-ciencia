@@ -17,7 +17,7 @@ for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 		expect(d.erro).toBeNull();
 		expect(d.pontos).toBe(n);
 		expect(d.visiveis).toBe(n);
-		await expect(page.getByTestId('contador-mapa')).toContainText(inteiro(n));
+		await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(n));
 		console.log(`primeiro desenho: ${Math.round(d.msAtePrimeiroDesenho!)} ms`, d.etapasMs, d.renderer);
 		// No Mac do desenvolvimento, o critério do M3; no CI (WebGL por software), só o registro acima.
 		if (!process.env.CI) expect(d.msAtePrimeiroDesenho!).toBeLessThan(1500);
@@ -56,7 +56,7 @@ test('contornos e rótulos: macrotemas de longe, tópicos de perto', async ({ pa
 	expect(problemas).toEqual([]);
 });
 
-test('a legenda filtra por tópico, e "Limpar filtros" volta ao todo', async ({ page }) => {
+test('a legenda filtra por tópico, e "Limpar recorte" volta ao todo', async ({ page }) => {
 	const problemas = vigiar(page);
 	await page.goto(`${url('RAIZ')}#/mapa`);
 	await esperarMapa(page);
@@ -64,10 +64,10 @@ test('a legenda filtra por tópico, e "Limpar filtros" volta ao todo', async ({ 
 	await page.getByTestId('legenda-mapa').getByRole('button', { name: primeiro.rotulo }).click();
 	await expect(page).toHaveURL(new RegExp(`topicos=${primeiro.id}(&|$)`));
 	const doTopico = documentos.colunas.topico.filter((t: number) => t === primeiro.id).length;
-	await expect(page.getByTestId('contador-mapa')).toContainText(inteiro(doTopico));
+	await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(doTopico));
 	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBe(doTopico);
 
-	await page.getByRole('button', { name: 'Limpar filtros' }).click();
+	await page.getByRole('button', { name: 'Limpar recorte' }).click();
 	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBe(n);
 	await expect(page).toHaveURL(/#\/mapa$/);
 	expect(problemas).toEqual([]);

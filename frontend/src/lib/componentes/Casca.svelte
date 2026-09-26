@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { definirProjeto, type ProjetoAberto } from '$lib/dados/contexto';
 	import { lerHash } from '$lib/estado/url';
+	import BarraDeRecorte from '$lib/recorte/BarraDeRecorte.svelte';
 	import { secoesDoTrilho } from '$lib/secoes';
 	import BarraSuperior from './BarraSuperior.svelte';
 	import Trilho from './Trilho.svelte';
@@ -14,7 +15,10 @@
 	definirProjeto(projeto);
 
 	const secoes = $derived(secoesDoTrilho(projeto.manifesto));
-	const telaCheia = $derived(secoes.find((s) => s.caminho === lerHash(page.url.hash).caminho)?.telaCheia ?? false);
+	const secao = $derived(secoes.find((s) => s.caminho === lerHash(page.url.hash).caminho));
+	const telaCheia = $derived(secao?.telaCheia ?? false);
+	// a barra do recorte aparece nas vistas de análise, e só quando há documentos (projeto vazio: nenhum pedido)
+	const comRecorte = $derived(!!secao?.recorte && projeto.manifesto.arquivos.includes('documentos'));
 
 	let principal: HTMLElement;
 
@@ -29,9 +33,12 @@
 
 <a class="pular" href="#conteudo" onclick={pular}>Pular para o conteúdo</a>
 
-<div class="casca">
+<div class="casca" class:tela-cheia={telaCheia}>
 	<Trilho {secoes} {projeto} />
 	<BarraSuperior {projeto} />
+	{#if comRecorte}
+		<BarraDeRecorte />
+	{/if}
 	<main id="conteudo" class="conteudo" class:tela-cheia={telaCheia} tabindex="-1" bind:this={principal}>
 		{@render children()}
 	</main>
@@ -60,11 +67,17 @@
 	.casca {
 		display: grid;
 		grid-template-columns: var(--trilho-largura) minmax(0, 1fr);
-		grid-template-rows: var(--barra-altura) minmax(0, 1fr);
+		grid-template-rows: var(--barra-altura) auto minmax(0, 1fr);
 		grid-template-areas:
 			'trilho barra'
+			'trilho recorte'
 			'trilho conteudo';
 		min-height: 100dvh;
+	}
+
+	/* nas vistas de tela cheia (o mapa), a casca tem a altura da janela, e o conteúdo fica com o que sobra */
+	.casca.tela-cheia {
+		height: 100dvh;
 	}
 
 	.conteudo {
@@ -78,11 +91,11 @@
 		outline: none;
 	}
 
-	/* O mapa ocupa tudo: sem margens, sem largura máxima, na altura da janela */
+	/* O mapa ocupa tudo: sem margens, sem largura máxima, no espaço que sobra na janela */
 	.conteudo.tela-cheia {
 		max-width: none;
 		padding: 0;
-		height: calc(100dvh - var(--barra-altura));
+		min-height: 0;
 		overflow: hidden;
 	}
 
@@ -90,10 +103,15 @@
 	@media (max-width: 820px) {
 		.casca {
 			grid-template-columns: minmax(0, 1fr);
-			grid-template-rows: auto minmax(0, 1fr);
+			grid-template-rows: auto auto minmax(0, 1fr);
 			grid-template-areas:
 				'barra'
+				'recorte'
 				'conteudo';
+		}
+
+		.casca.tela-cheia {
+			height: calc(100dvh - 4.5rem - env(safe-area-inset-bottom));
 		}
 
 		.conteudo {
@@ -102,7 +120,6 @@
 
 		.conteudo.tela-cheia {
 			padding: 0;
-			height: calc(100dvh - var(--barra-altura) - 4.5rem - env(safe-area-inset-bottom));
 		}
 	}
 </style>

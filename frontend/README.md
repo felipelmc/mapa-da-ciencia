@@ -68,6 +68,7 @@ frontend/
 │   │   ├── estilos/tokens.css        cores e fontes dos dois temas
 │   │   ├── estilos/base.css          reset, tipografia, foco, fundo, movimento
 │   │   ├── componentes/              casca (Trilho, BarraSuperior…), estados vazios, carta da capa
+│   │   ├── recorte/                  barra do recorte (comum às vistas de análise) e linha do tempo
 │   │   ├── secoes.ts                 as seções: rótulo, rota, ícone, resumo, marco, arquivos usados
 │   │   └── formato.ts                números e datas em pt-BR
 │   └── routes/                       uma pasta por seção; +layout.svelte abre o projeto
