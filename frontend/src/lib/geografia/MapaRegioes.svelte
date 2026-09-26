@@ -55,7 +55,14 @@
 		if (k && fora.has(k)) return `url(#hachura-${id})`;
 		return corDaClasse(classe(k ? (valores.get(k) ?? 0) : 0, limites), nClasses);
 	};
-	const ativa = (k: string | null): k is string => !!k && (valores.get(k) ?? 0) > 0;
+	// com documentos, ou já no recorte (para poder sair dele pelo mapa mesmo quando outro filtro zerou o valor)
+	const ativa = (k: string | null): k is string => !!k && ((valores.get(k) ?? 0) > 0 || selecionados.has(k));
+	// lugares com peso que a malha não desenha (no mapa-múndi 1:110m, a Guiana Francesa e São Tomé e Príncipe)
+	const semPoligono = $derived(
+		[...valores.entries()]
+			.filter(([k, v]) => (v > 0 || selecionados.has(k)) && !chaves.includes(k) && !fora.has(k))
+			.sort((x, y) => y[1] - x[1])
+	);
 
 	let sobre = $state<string | null>(null);
 	let dica = $state<{ x: number; y: number } | null>(null);
@@ -140,6 +147,23 @@
 	{#if dica && linhasDica.length}
 		<Dica x={dica.x} y={dica.y} linhas={linhasDica} />
 	{/if}
+	{#if semPoligono.length}
+		<p class="sem-poligono">
+			Fora do desenho do mapa:
+			{#each semPoligono as [k, v] (k)}
+				<button
+					type="button"
+					class="link-lugar"
+					aria-pressed={selecionados.has(k)}
+					data-testid="{id}-sem-poligono"
+					data-chave={k}
+					onclick={() => aoEscolher(k)}
+				>
+					{nome(k)} ({formatarDecimal(v)})
+				</button>
+			{/each}
+		</p>
+	{/if}
 	<ul class="legenda" aria-label="Legenda: peso fracionário">
 		<li><span class="caixa" style:background="var(--seq-vazio)"></span>nenhum</li>
 		{#each legenda as item (item.texto)}
@@ -189,6 +213,28 @@
 
 	.apagada {
 		opacity: 0.45;
+	}
+
+	.sem-poligono {
+		margin: 0.5rem 0 0;
+		font-size: 0.78rem;
+		color: var(--texto-suave);
+	}
+
+	.link-lugar {
+		margin-left: 0.4rem;
+		padding: 0;
+		border: none;
+		background: none;
+		color: var(--acento);
+		font: inherit;
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+		cursor: pointer;
+	}
+
+	.link-lugar[aria-pressed='true'] {
+		font-weight: 600;
 	}
 
 	.legenda {

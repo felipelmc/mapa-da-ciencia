@@ -475,6 +475,8 @@ async def coletar_async(
         gravar_tabela(
             [linha_de_instituicao(r) for r in instituicoes], COLUNAS_INSTITUICOES, projeto.dados / ARQUIVO_INSTITUICOES
         )
+    else:  # sem registros nesta coleta: os de uma coleta anterior não valem para o corpus novo
+        (projeto.dados / ARQUIVO_INSTITUICOES).unlink(missing_ok=True)
     progresso.fim()
 
     resumo = ResumoColeta(

@@ -23,6 +23,9 @@ que a fonte escreveu.
 4. a UF mais comum da instituição nas afiliações `v240` do corpus;
 5. a região do registro da instituição no OpenAlex;
 6. a cidade do registro no OpenAlex, como no passo 2.
+
+Os passos 3 a 6 olham primeiro a unidade que casou (uma escola, um hospital) e só depois a instituição "mãe" para a
+qual ela subiu: a EAESP fica em São Paulo, mesmo que a FGV seja do Rio.
 """
 
 from __future__ import annotations
@@ -72,8 +75,8 @@ class Lugares:
                     continue
                 if v.cidade_fonte:
                     por_cidade[normalizar.chave(v.cidade_fonte)][v.uf_fonte] += 1
-                if v.instituicao:
-                    por_instituicao[v.instituicao][v.uf_fonte] += 1
+                for id_ in {v.casada, v.instituicao} - {None}:
+                    por_instituicao[id_][v.uf_fonte] += 1
         self._cidades = _consenso(por_cidade)
         self._instituicoes = _consenso(por_instituicao)
 
@@ -91,10 +94,15 @@ class Lugares:
             return v.uf_fonte
         if uf := self._da_cidade(v.cidade_fonte):
             return uf
-        r = self.indice.registros.get(v.instituicao) if v.instituicao else None
-        if r is None:
-            return None
-        return r.uf or self._instituicoes.get(r.id) or normalizar.uf(r.regiao) or self._da_cidade(r.cidade)
+        # primeiro a unidade que casou (a EAESP fica em SP, mesmo que a FGV, a "mãe", seja do RJ), depois a mãe
+        for id_ in dict.fromkeys(i for i in (v.casada, v.instituicao) if i):
+            r = self.indice.registros.get(id_)
+            if r is None:
+                continue
+            uf = r.uf or self._instituicoes.get(r.id) or normalizar.uf(r.regiao) or self._da_cidade(r.cidade)
+            if uf:
+                return uf
+        return None
 
 
 def contar(casamentos: list[Casamento], indice: Indice, lugares: Lugares | None = None) -> list[Parcela]:

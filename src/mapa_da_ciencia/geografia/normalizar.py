@@ -32,6 +32,7 @@ TAMANHO_MINIMO_APROXIMADO = 5
 _PARTES = re.compile(r"[,;/()\[\]]| - ")
 _PREFIXO_UF = re.compile(r"^(estado d[eoa]s?|state of|provincia d[eoa]|estado)\s+")
 _CODIGO = re.compile(r"^[A-Z]{2}$")
+_HIFEN_UF = re.compile(r"-\s*([A-Za-z]{2})\s*$")  # "Niterói-RJ": só uma sigla depois do hífen separa a UF
 
 
 # apóstrofos, aspas e travessões tipográficos viram espaço (senão "King’s" vira "kings", e "Iscte–Instituto",
@@ -173,7 +174,9 @@ def separar_cidade_uf(texto: str | None) -> tuple[str | None, str | None]:
     """ "Niterói, RJ" → ("Niterói", "RJ"); "São Paulo - SP" → ("São Paulo", "SP"); sem UF no fim, (texto, None)."""
     if not texto or not texto.strip():
         return None, None
-    partes = _partes(texto.replace("-", " - "))
+    if chave(texto) in _municipios():
+        return texto.strip(), None  # "Ji-Paraná" é um município, e não "Ji", no Paraná
+    partes = _partes(_HIFEN_UF.sub(r" - \1", texto))
     if len(partes) >= 2 and not uf(partes[-1]) and pais(partes[-1]) == "BR":
         partes = partes[:-1]  # "Recife, PE, Brasil"
     if len(partes) >= 2 and (sigla := uf(partes[-1])):

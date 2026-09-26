@@ -292,3 +292,11 @@ def test_casamento_na_opiniao_publica_2024(tmp_path, apis_falsas):
     # o veto pelo país descarta os dois
     por_texto = {v.texto: v for v in com_texto}
     assert por_texto["Funai"].instituicao is None and por_texto["Câmara dos Deputados"].instituicao is None
+
+
+def test_id_de_instituicao_propria_no_padrao_da_interface(tmp_path):
+    (tmp_path / "instituicoes.yaml").write_text(
+        "instituicoes:\n  fundação-x: {nome: Fundação X, pais: BR}\n", encoding="utf-8"
+    )
+    with pytest.raises(ErroConfig, match="id de instituição inválido"):
+        inst.ler_projeto(tmp_path)

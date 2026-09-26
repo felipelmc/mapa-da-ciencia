@@ -111,3 +111,15 @@ def test_invariantes_na_opiniao_publica_2024(tmp_path, apis_falsas):
         assert all(frac[k] <= len(inteira[k]) + 1e-9 for k in frac)
     c = cobertura(parcelas)
     assert c.documentos == len(docs) and c.pais_conhecido > 0.9 and c.uf_conhecida > 0.9
+
+
+def test_uf_da_unidade_que_casou_antes_da_mae():
+    registros = {
+        "FGV": Registro("FGV", "Fundação Getulio Vargas", pais="BR", regiao="Rio de Janeiro", tipo="education"),
+        "EAESP": Registro("EAESP", "Escola de Administração de Empresas de São Paulo", pais="BR",
+                          regiao="São Paulo", tipo="education", linhagem=("FGV",)),
+    }  # fmt: skip
+    v = Vinculo(autor=0, afiliacao=None, fonte="openalex", texto="EAESP", casada="EAESP", instituicao="FGV",
+                nivel="openalex")  # fmt: skip
+    (p,) = contar([Casamento("d", 1, [v])], Indice(registros))
+    assert (p.instituicao, p.uf) == ("FGV", "SP")

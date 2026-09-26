@@ -165,10 +165,24 @@ class _Instituicao(BaseModel):
         raise ValueError(f"UF desconhecida: {v!r}")
 
 
+_ID = re.compile(r"[A-Za-z0-9_.:-]{1,64}")  # o mesmo que o filtro `inst=` da interface aceita
+
+
 class _Arquivo(BaseModel):
     model_config = ConfigDict(extra="forbid")
     apelidos: dict[str, str] = Field(default_factory=dict)
     instituicoes: dict[str, _Instituicao] = Field(default_factory=dict)
+
+    @field_validator("instituicoes")
+    @classmethod
+    def _ids(cls, v: dict[str, _Instituicao]) -> dict[str, _Instituicao]:
+        ruins = [k for k in v if not _ID.fullmatch(str(k))]
+        if ruins:
+            raise ValueError(
+                f"id de instituição inválido: {', '.join(map(repr, ruins))} (use só letras sem acento, números, "
+                "`-`, `_`, `.` e `:`, até 64 caracteres, como `cem` ou `inct-ineu`)"
+            )
+        return v
 
     @field_validator("apelidos", "instituicoes", mode="before")
     @classmethod

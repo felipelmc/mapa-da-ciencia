@@ -181,3 +181,13 @@ def test_sem_cache_das_instituicoes_no_modo_offline_vira_aviso(projeto, apis_fal
         lote.unlink()
     resumo = coletar(projeto, OpcoesColeta(offline=True))
     assert any("instituições do OpenAlex indisponíveis" in a for a in resumo.avisos)
+
+
+def test_coleta_sem_openalex_nao_deixa_registros_antigos_das_instituicoes(projeto, apis_falsas):
+    from mapa_da_ciencia.armazenamento import ARQUIVO_INSTITUICOES
+    from mapa_da_ciencia.coleta import OpcoesColeta
+
+    coletar(projeto)
+    assert (projeto.dados / ARQUIVO_INSTITUICOES).exists()
+    coletar(projeto, OpcoesColeta(sem_openalex=True))
+    assert not (projeto.dados / ARQUIVO_INSTITUICOES).exists()

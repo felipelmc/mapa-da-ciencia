@@ -102,3 +102,22 @@ test('a cobertura por ano avisa dos anos com muito peso sem afiliação', async 
 	await page.getByTestId('figura-cobertura').getByRole('button', { name: 'Ver como tabela' }).click();
 	await expect(page.getByTestId('tabela-cobertura').locator('tbody tr')).toHaveCount(ler('topicos.json').anos.length);
 });
+
+test('com só uma instituição estrangeira, a frase do mundo cita o país dela', async ({ page }) => {
+	const estrangeira = afiliacoes.dicionarios.instituicao.find(
+		(i: { id: string; pais: string }) => i.pais && i.pais !== 'BR' && i.id !== 'nao-identificada'
+	);
+	await page.goto(`${url('RAIZ')}#/geografia?inst=${encodeURIComponent(estrangeira.id)}`);
+	const resumo = page.getByTestId('resumo-mundo');
+	await expect(resumo).toContainText('Fora dele,');
+	await expect(resumo).not.toContainText('nenhum país');
+});
+
+test('uma UF escolhida continua clicável quando outro filtro zera o peso dela', async ({ page }) => {
+	// Acre e o período de um ano só: é provável que o Acre fique sem peso; ele precisa continuar tirável pelo mapa
+	await page.goto(`${url('RAIZ')}#/geografia?uf=AC&anos=2010-2010`);
+	const ac = page.locator('[data-testid="uf"][data-chave="AC"]');
+	await expect(ac).toHaveAttribute('aria-pressed', 'true');
+	await ac.click();
+	await expect(page).not.toHaveURL(/uf=AC/);
+});

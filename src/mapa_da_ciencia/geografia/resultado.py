@@ -68,11 +68,16 @@ def _hash_arquivo(caminho: Path, h: Any) -> None:
 
 
 def assinatura_entradas(raiz: Path, dados: Path) -> str:
-    """Hash do que o casamento lê: o corpus, os registros das instituições, as correções e a versão."""
+    """Hash do que o casamento lê: o corpus, os registros das instituições, as correções, as tabelas do pacote
+    (países, UFs, municípios, apelidos) e a versão."""
     h = hashlib.sha256(f"versao={VERSAO}".encode())
     for caminho in (dados / ARQUIVO, dados / ARQUIVO_INSTITUICOES, raiz / ARQUIVO_PROJETO):
         _hash_arquivo(caminho, h)
-    h.update(resources.files("mapa_da_ciencia.geografia").joinpath("dados", "apelidos.csv").read_bytes())
+    tabelas = resources.files("mapa_da_ciencia.geografia").joinpath("dados")
+    for tabela in sorted(tabelas.iterdir(), key=lambda t: t.name):  # apelidos, variantes de países, UFs…
+        if tabela.name.endswith(".csv"):
+            h.update(tabela.name.encode())
+            h.update(tabela.read_bytes())
     return h.hexdigest()[:20]
 
 

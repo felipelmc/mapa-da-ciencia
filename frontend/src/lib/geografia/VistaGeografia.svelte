@@ -133,10 +133,13 @@
 			`(${maiores(ufs, 3, (k) => k)}) somam ${formatarPorcentagem(top3 / soma)}.`
 		);
 	});
+	const foraDoBrasil = $derived(new Map([...paises].filter(([k]) => k !== 'BR')));
 	const resumoMundo = $derived(
 		comPais
 			? `${formatarPorcentagem(noBrasil / comPais)} do peso com país conhecido é do Brasil. Fora dele, ` +
-					(paises.size > 1 ? `os maiores são ${maiores(new Map([...paises].filter(([k]) => k !== 'BR')), 3, nomePais)}.` : 'nenhum país.')
+					(foraDoBrasil.size
+						? `${foraDoBrasil.size === 1 ? 'o único é' : 'os maiores são'} ${maiores(foraDoBrasil, 3, nomePais)}.`
+						: 'nenhum país.')
 			: 'No recorte, nenhum documento tem afiliação com país conhecido.'
 	);
 	const resumoRanking = $derived(
