@@ -88,6 +88,35 @@ test('com menos de 5 anos no recorte, a lista pede um período maior', async ({ 
 	await expect(page.getByTestId('tendencias-poucos-anos')).toBeVisible();
 });
 
+test('a gaveta abre pelo link topico=, leva ao mapa com o tópico e fecha com Esc', async ({ page }) => {
+	const t = topicos.topicos[3];
+	await page.goto(`${url('RAIZ')}#/topicos?anos=2012-2024&topico=${t.id}`);
+	const gaveta = page.getByTestId('gaveta-topico');
+	await expect(gaveta.getByRole('heading', { level: 2 })).toHaveText(t.rotulo);
+	await expect(gaveta.getByRole('heading', { level: 2 })).toBeFocused();
+	await expect(gaveta.getByTestId('tendencia-gaveta')).toBeVisible();
+	await page.screenshot({ path: join(TELAS, 'topicos-gaveta-1440x900.png') });
+	await expect(gaveta.getByTestId('ver-no-mapa')).toHaveAttribute('href', `#/mapa?anos=2012-2024&topicos=${t.id}`);
+	await page.keyboard.press('Escape');
+	await expect(gaveta).toHaveCount(0);
+	await expect(page).not.toHaveURL(/topico=/);
+	// da lista de tendências também se abre a gaveta
+	await page.getByTestId('lista-alta').getByRole('button').first().click();
+	await expect(page).toHaveURL(/topico=\d+/);
+	await expect(page.getByTestId('gaveta-topico')).toBeVisible();
+});
+
+test('os pequenos múltiplos por revista filtram o recorte', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	const figura = page.getByTestId('figura-por-revista');
+	await expect(figura.locator('.multiplo')).toHaveCount(documentos.dicionarios.revista.length);
+	const primeira = figura.locator('.titulo-multiplo').first();
+	const id = (await primeira.textContent())!.trim().split(/\s/)[0];
+	await primeira.click();
+	await expect(page).toHaveURL(new RegExp(`revistas=${id}`));
+	await expect(primeira).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('projeto vazio: estado vazio, sem pedir arquivos ausentes', async ({ page }) => {
 	const pedidos: string[] = [];
 	page.on('request', (r) => pedidos.push(new URL(r.url()).pathname));

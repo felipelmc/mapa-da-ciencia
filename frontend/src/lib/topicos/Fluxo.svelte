@@ -24,7 +24,8 @@
 		janela,
 		aoEscolher,
 		altura = 380,
-		rotuloAcao = 'abrir'
+		rotuloAcao = 'abrir',
+		compacto = false
 	}: {
 		/** Uma linha por faixa (na ordem de `ids`), uma coluna por ano: documentos. */
 		matriz: Float64Array[];
@@ -43,10 +44,14 @@
 		altura?: number;
 		/** Verbo do clique, para o rótulo acessível ("abrir" um macrotema, "ver" um tópico). */
 		rotuloAcao?: string;
+		/** Pequeno múltiplo: sem rótulos nas faixas, sem eixo vertical, sem foco por faixa. */
+		compacto?: boolean;
 	} = $props();
 
 	let largura = $state(800);
-	const margem = $derived({ esq: modo === 'fluxo' ? 12 : 52, dir: 12, topo: 10, base: 28 });
+	const margem = $derived(
+		compacto ? { esq: 2, dir: 2, topo: 2, base: 18 } : { esq: modo === 'fluxo' ? 12 : 52, dir: 12, topo: 10, base: 28 }
+	);
 	const nAnos = $derived(anos.length);
 
 	// ---- empilhamento com transição entre modos: o Tween interpola um vetor plano [domínio, y0…, y1…]
@@ -91,7 +96,9 @@
 		return medidor.measureText(texto).width;
 	}
 	const textos = $derived(rotulos);
-	const rotulosFaixas = $derived(typeof document === 'undefined' ? [] : rotularFaixas(series, textos, x, y, medir));
+	const rotulosFaixas = $derived(
+		compacto || typeof document === 'undefined' ? [] : rotularFaixas(series, textos, x, y, medir)
+	);
 
 	// ---- dica
 	let sobre = $state<number | null>(null);
@@ -127,8 +134,8 @@
 				style:fill={cores.get(s.id) ?? 'var(--linha-forte)'}
 				class:apagada={apagada(s.id)}
 				role="button"
-				tabindex="0"
-				data-testid="faixa"
+				tabindex={compacto ? -1 : 0}
+				data-testid={compacto ? 'faixa-mini' : 'faixa'}
 				data-id={s.id}
 				aria-label="{rotulos.get(s.id)}: {formatarInteiro(totalFaixa(s.id))} documentos. Enter para {rotuloAcao}."
 				onpointermove={(e) => mover(e, s.id)}
@@ -155,8 +162,8 @@
 		{#each rotulosFaixas as r (r.id)}
 			<text class="rotulo" class:apagado={apagada(r.id)} x={r.x} y={r.y + 4} text-anchor="middle">{r.texto}</text>
 		{/each}
-		<Eixo orientacao="x" {anos} posicao={altura - margem.base} escala={x} comprimento={largura} />
-		{#if modo !== 'fluxo'}
+		<Eixo orientacao="x" anos={compacto ? [anos[0], anos[anos.length - 1]] : anos} posicao={altura - margem.base} escala={compacto ? (j) => x(j === 0 ? 0 : nAnos - 1) : x} comprimento={compacto ? 60 : largura} />
+		{#if modo !== 'fluxo' && !compacto}
 			<Eixo
 				orientacao="y"
 				posicao={margem.esq - 4}

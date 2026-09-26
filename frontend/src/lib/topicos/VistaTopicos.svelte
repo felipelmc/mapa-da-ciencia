@@ -13,6 +13,7 @@
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { ordemDentroFora } from '$lib/graficos/fluxo';
 	import Fluxo from './Fluxo.svelte';
+	import GavetaTopico from './GavetaTopico.svelte';
 	import Tendencias from './Tendencias.svelte';
 	import { metodoDe, separar, tendencias } from './tendencias';
 
@@ -146,6 +147,46 @@
 		])
 	);
 
+	// ---- gaveta do tópico
+	const topicoAberto = $derived(filtros.topico !== null ? (topicos.topicos.find((t) => t.id === filtros.topico) ?? null) : null);
+	const macroDoAberto = $derived(topicoAberto ? (macros.get(topicoAberto.macro_id) ?? null) : null);
+
+	// ---- pequenos múltiplos por revista: macrotemas por ano em cada revista (sem os filtros de revista, anos e
+	// tópicos, que o próprio gráfico mostra)
+	const porRevista = $derived.by(() => {
+		const t = cubo.t;
+		const lista = topicos.macrotemas;
+		const macroDe = new Map(lista.flatMap((m, k) => m.topicos.map((id) => [id, k] as const)));
+		const nLinhas = lista.length + 1;
+		const nRevistas = t.revistas.length;
+		const primeiro = topicos.anos[0];
+		const celulas = cubo.contarPor(falhas, D.REVISTA | D.ANO | D.TOPICO, nRevistas * nLinhas * nAnos, (i) => {
+			const coluna = t.ano[i] - primeiro;
+			if (coluna < 0 || coluna >= nAnos) return -1;
+			const linha = macroDe.get(t.topico[i]) ?? lista.length;
+			return (t.revista[i] * nLinhas + linha) * nAnos + coluna;
+		});
+		return t.revistas.map((id, r) => {
+			const matriz = Array.from({ length: nLinhas }, (_, linha) =>
+				celulas.subarray((r * nLinhas + linha) * nAnos, (r * nLinhas + linha + 1) * nAnos)
+			).map((a) => Float64Array.from(a));
+			const total = matriz.reduce((s, linha) => s + linha.reduce((a, b) => a + b, 0), 0);
+			return { id, matriz, total };
+		}).filter((x) => x.total > 0).sort((a, b) => b.total - a.total);
+	});
+	const idsMacro = $derived([...topicos.macrotemas.map((m) => m.id), SEM_TOPICO]);
+	const ordemMacro = $derived(
+		ordemDentroFora(
+			[...topicos.macrotemas.map((m) => m.serie?.n ?? []), topicos.outliers.sem_topico_por_ano ?? []],
+			[topicos.macrotemas.length]
+		)
+	);
+	const coresMacro = $derived(new Map(topicos.macrotemas.map((m) => [m.id, m.cor] as [number, string])));
+	const rotulosMacro = $derived(new Map([...topicos.macrotemas.map((m) => [m.id, m.rotulo] as [number, string]), [SEM_TOPICO, 'Sem tópico']]));
+	function alternarRevista(id: string) {
+		mudarFiltros({ revistas: filtros.revistas.includes(id) ? filtros.revistas.filter((r) => r !== id) : [...filtros.revistas, id] }, { em });
+	}
+
 	const colunas = $derived([macroAberto ? 'Tópico' : 'Macrotema', ...topicos.anos.map(String), 'Total']);
 	const linhas = $derived(
 		nivel.ids.map((id, k) => [
@@ -254,7 +295,52 @@
 			</p>
 		{/if}
 	</Figura>
+
+	{#if porRevista.length > 1}
+		<Figura
+			id="por-revista"
+			titulo="Os macrotemas em cada revista"
+			resumo="A participação de cada macrotema nos artigos de cada revista, ano a ano (cada ano soma 100%). Clique numa revista para filtrar o recorte por ela."
+			colunas={['Revista', ...topicos.macrotemas.map((m) => m.rotulo), 'Sem tópico', 'Documentos']}
+			linhas={porRevista.map((r) => [r.id, ...r.matriz.map((l) => formatarInteiro(l.reduce((a, b) => a + b, 0))), formatarInteiro(r.total)])}
+		>
+			<div class="multiplos">
+				{#each porRevista as r (r.id)}
+					<div class="multiplo" class:apagado={filtros.revistas.length > 0 && !filtros.revistas.includes(r.id)}>
+						<button type="button" class="titulo-multiplo" aria-pressed={filtros.revistas.includes(r.id)} onclick={() => alternarRevista(r.id)}>
+							{r.id} <span class="numero">{formatarInteiro(r.total)}</span>
+						</button>
+						<Fluxo
+							matriz={r.matriz}
+							ids={idsMacro}
+							ordem={ordemMacro}
+							modo="proporcao"
+							anos={topicos.anos}
+							cores={coresMacro}
+							rotulos={rotulosMacro}
+							destaque={new Set()}
+							janela={null}
+							aoEscolher={() => alternarRevista(r.id)}
+							altura={110}
+							compacto
+						/>
+					</div>
+				{/each}
+			</div>
+		</Figura>
+	{/if}
 </div>
+
+{#if topicoAberto}
+	<GavetaTopico
+		topico={topicoAberto}
+		macro={macroDoAberto}
+		{topicos}
+		{cubo}
+		{filtros}
+		aoFechar={() => mudarFiltros({ topico: null }, { em })}
+	/>
+{/if}
 
 <style>
 	.vista {
@@ -301,6 +387,40 @@
 	.modos {
 		display: flex;
 		gap: 0.3rem;
+	}
+
+	.multiplos {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+		gap: 1rem 1.25rem;
+	}
+
+	.multiplo.apagado {
+		opacity: 0.4;
+	}
+
+	.titulo-multiplo {
+		display: flex;
+		justify-content: space-between;
+		width: 100%;
+		margin-bottom: 0.2rem;
+		padding: 0;
+		border: none;
+		background: none;
+		color: var(--texto);
+		font: inherit;
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.titulo-multiplo[aria-pressed='true'] {
+		color: var(--acento);
+	}
+
+	.titulo-multiplo .numero {
+		font-weight: 400;
+		color: var(--texto-suave);
 	}
 
 	.nota {
