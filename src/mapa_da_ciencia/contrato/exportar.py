@@ -12,15 +12,20 @@ from pydantic import BaseModel
 from mapa_da_ciencia import __version__
 from mapa_da_ciencia.contrato.modelos import (
     ARQUIVOS,
+    NAO_IDENTIFICADA,
+    SIGLAS_UF,
     Afiliacoes,
     Agregados,
+    ColunasAfiliacoes,
     ColunasDocumentos,
     Contagens,
     Detalhe,
+    DicionariosAfiliacoes,
     DicionariosDocumentos,
     Documentos,
     ExecucaoInfo,
     Fragmento,
+    Instituicao,
     Macrotema,
     Manifesto,
     MetodoTendencia,
@@ -227,6 +232,60 @@ def agregados_geograficos(afiliacoes: Afiliacoes) -> dict[str, Any]:
     }
 
 
+def _id_instituicao(linha: dict[str, Any]) -> str:
+    """Id no contrato: `ror:…` quando há ROR, `openalex:I…` sem ele, o nome dado pelo projeto às próprias."""
+    if linha["ror"]:
+        return f"ror:{linha['ror']}"
+    if linha["id"].startswith("I") and linha["id"][1:].isdigit():
+        return f"openalex:{linha['id']}"
+    return linha["id"]
+
+
+def arquivo_de_afiliacoes(
+    pesos: list[dict[str, Any]], instituicoes: list[dict[str, Any]], indice_doc: dict[str, int]
+) -> tuple[Afiliacoes, int]:
+    """`afiliacoes.json` a partir de `dados/geografia/`, e quantos documentos têm uma instituição identificada.
+
+    As instituições vão da de maior peso à de menor (a "não identificada" no fim); as UFs são as 27, em ordem; os
+    países, os presentes. Uma linha por documento × (instituição, UF, país), com o peso somado.
+    """
+    from collections import defaultdict
+
+    ordem = sorted(instituicoes, key=lambda i: (-i["peso"], i["id"]))
+    insts = [
+        Instituicao(id=_id_instituicao(i), nome=i["nome"], sigla=i["sigla"], uf=i["uf"], pais=i["pais"] or "")
+        for i in ordem
+    ]
+    pos_inst = {i["id"]: k for k, i in enumerate(ordem)}
+    if any(p["instituicao"] == NAO_IDENTIFICADA for p in pesos):
+        pos_inst[NAO_IDENTIFICADA] = len(insts)
+        insts.append(Instituicao(id=NAO_IDENTIFICADA, nome="Instituição não identificada", pais=""))
+    paises = sorted({p["pais"] for p in pesos if p["pais"]})
+    linhas: dict[tuple[int, int, int, int], float] = defaultdict(float)
+    for p in pesos:
+        if p["doc"] not in indice_doc:
+            continue
+        chave = (
+            indice_doc[p["doc"]],
+            pos_inst[p["instituicao"]] if p["instituicao"] else -1,
+            SIGLAS_UF.index(p["uf"]) if p["uf"] else -1,
+            paises.index(p["pais"]) if p["pais"] else -1,
+        )
+        linhas[chave] += p["peso"]
+    colunas: dict[str, list] = defaultdict(list)
+    for (doc, inst, uf, pais), peso in sorted(linhas.items()):
+        for nome, valor in (("doc", doc), ("instituicao", inst), ("uf", uf), ("pais", pais), ("peso", round(peso, 6))):
+            colunas[nome].append(valor)
+    identificada = pos_inst.get(NAO_IDENTIFICADA)
+    com_instituicao = len({doc for (doc, inst, _, _) in linhas if inst >= 0 and inst != identificada})
+    afiliacoes = Afiliacoes(
+        n=len(linhas),
+        colunas=ColunasAfiliacoes(**{k: colunas.get(k, []) for k in ("doc", "instituicao", "uf", "pais", "peso")}),
+        dicionarios=DicionariosAfiliacoes(instituicao=insts, uf=list(SIGLAS_UF), pais=paises),
+    )
+    return afiliacoes, com_instituicao
+
+
 def _serie(por_ano: dict[int, int], total_ano: dict[int, int], anos: list[int]) -> Serie:
     return Serie(
         n=[por_ano.get(ano, 0) for ano in anos],
@@ -345,11 +404,36 @@ def _arquivos_de_topicos(
     )
 
 
+def _geografia(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[str]) -> int | None:
+    """Acrescenta `afiliacoes.json` e os agregados geográficos, se a geografia estiver em dia. Devolve quantos
+    documentos têm instituição identificada (ou None, sem geografia)."""
+    from mapa_da_ciencia.geografia.pipeline import geografia_em_dia
+    from mapa_da_ciencia.geografia.resultado import PASTA as PASTA_GEO
+    from mapa_da_ciencia.geografia.resultado import ler_instituicoes, ler_pesos
+
+    em_dia = geografia_em_dia(projeto)
+    if em_dia is None:
+        return None
+    if not em_dia:
+        avisos.append(
+            "A geografia é de antes da última coleta ou das últimas correções. Rode `mapa geografia` para atualizá-la."
+        )
+        return None
+    documentos = arquivos["documentos"]
+    indice_doc = {id_: i for i, id_ in enumerate(documentos.colunas.id)}  # type: ignore[attr-defined]
+    pasta = projeto.dados / PASTA_GEO
+    afiliacoes, com_instituicao = arquivo_de_afiliacoes(ler_pesos(pasta), ler_instituicoes(pasta), indice_doc)
+    arquivos["afiliacoes"] = afiliacoes
+    arquivos["agregados"] = arquivos["agregados"].model_copy(update=agregados_geograficos(afiliacoes))
+    return com_instituicao
+
+
 def exportar(projeto: Projeto) -> list[str]:
     """Reconstrói `saida/dados/` (o contrato que o painel lê) a partir de `dados/`. Devolve avisos.
 
     Sempre grava `manifesto.json` e `revistas.json`. Com tópicos em dia (gerados a partir do corpus atual), grava
-    também `documentos.json`, `topicos.json`, `agregados.json` e os fragmentos de `detalhes/`. Tudo é escrito
+    também `documentos.json`, `topicos.json`, `agregados.json` e os fragmentos de `detalhes/`; com a geografia
+    também em dia, `afiliacoes.json` e os campos geográficos de `agregados.json`. Tudo é escrito
     numa pasta nova, que substitui a antiga de uma vez: o painel nunca vê uma exportação pela metade, e
     arquivos de uma etapa desatualizada não sobram.
     """
@@ -384,6 +468,9 @@ def exportar(projeto: Projeto) -> list[str]:
             contagens = contagens.model_copy(update={"topicos": len(resultado.topicos)})
             modelos = {"rotulos": "nenhum (palavras-chave)", **resultado.modelos}
             sementes = {"umap": int(resultado.parametros["semente"])}
+            geo = _geografia(projeto, arquivos, avisos)
+            if geo is not None:
+                contagens = contagens.model_copy(update={"com_instituicao": geo})
 
     manifesto = manifesto_do_projeto(
         projeto,
@@ -393,7 +480,7 @@ def exportar(projeto: Projeto) -> list[str]:
     )
     duracoes = {
         etapa: round(m["duracao_s"], 1)
-        for etapa in ("coleta", "embeddings", "topicos")
+        for etapa in ("coleta", "embeddings", "topicos", "geografia")
         if (m := ultima_execucao(projeto, etapa))
     }
     execucao = manifesto.execucao.model_copy(

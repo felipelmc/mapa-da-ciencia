@@ -71,6 +71,45 @@ def test_contrato_completo_depois_dos_topicos(projeto):
     assert {r for *_, r, _ in agregados.topico_ano_revista} <= ids_revistas
 
 
+def test_afiliacoes_e_agregados_depois_da_geografia(projeto):
+    from collections import defaultdict
+
+    from mapa_da_ciencia.contrato.exportar import agregados_geograficos
+    from mapa_da_ciencia.geografia.pipeline import gerar_geografia
+
+    gerar_geografia(projeto)
+    manifesto = _ler(projeto, "manifesto", m.Manifesto)
+    assert "afiliacoes" in manifesto.arquivos and "geografia" in manifesto.execucao.duracao_s
+    af = _ler(projeto, "afiliacoes", m.Afiliacoes)
+    c, dic = af.colunas, af.dicionarios
+    assert dic.uf == list(m.SIGLAS_UF) and dic.pais == ["AR", "BR"]
+    ids = [i.id for i in dic.instituicao]
+    assert ids[-1] == m.NAO_IDENTIFICADA and set(ids[:-1]) == {f"openalex:I100{k}" for k in range(1, 5)}
+    por_doc: dict[int, float] = defaultdict(float)
+    for doc, peso in zip(c.doc, c.peso, strict=True):
+        por_doc[doc] += peso
+    assert len(por_doc) == 300 and all(v == pytest.approx(1) for v in por_doc.values())
+    # a cada 6 documentos, um sem afiliação (-1); a "não identificada" tem país e UF da fonte
+    sem = sum(p for i, p in zip(c.instituicao, c.peso, strict=True) if i == -1)
+    assert sem == pytest.approx(50)
+    nao = [(u, pa) for i, u, pa in zip(c.instituicao, c.uf, c.pais, strict=True) if i == len(ids) - 1]
+    assert nao and all(dic.uf[u] == "RJ" and dic.pais[pa] == "BR" for u, pa in nao)
+    # o gabarito de agregados.json sai da própria tabela longa
+    agregados = _ler(projeto, "agregados", m.Agregados)
+    assert agregados.model_dump(include=set(agregados_geograficos(af))) == agregados_geograficos(af)
+    assert agregados.uf["SP"] > 0 and agregados.sem_afiliacao == pytest.approx(50)
+    assert manifesto.contagens.com_instituicao == 300 - 50 - len(
+        {d for d, i in zip(c.doc, c.instituicao, strict=True) if i == len(ids) - 1}
+    )
+
+    # correções novas deixam a geografia para trás: o painel fica sem ela até `mapa geografia` rodar de novo
+    (projeto.raiz / "instituicoes.yaml").write_text("apelidos: {}\n", encoding="utf-8")
+    avisos = exportar(projeto)
+    assert any("mapa geografia" in a for a in avisos)
+    assert "afiliacoes" not in _ler(projeto, "manifesto", m.Manifesto).arquivos
+    assert _ler(projeto, "agregados", m.Agregados).uf == {}
+
+
 def test_detalhes_sem_o_texto_de_analise_e_sem_emails(projeto):
     pasta = projeto.saida / "dados"
     ids = _ler(projeto, "documentos", m.Documentos).colunas.id
