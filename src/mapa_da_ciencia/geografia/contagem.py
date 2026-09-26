@@ -97,9 +97,9 @@ class Lugares:
         return r.uf or self._instituicoes.get(r.id) or normalizar.uf(r.regiao) or self._da_cidade(r.cidade)
 
 
-def contar(casamentos: list[Casamento], indice: Indice) -> list[Parcela]:
+def contar(casamentos: list[Casamento], indice: Indice, lugares: Lugares | None = None) -> list[Parcela]:
     """A tabela longa, com uma linha por documento × (instituição, UF, país) e os pesos somados."""
-    lugares = Lugares(indice, casamentos)
+    lugares = lugares or Lugares(indice, casamentos)
     somas: dict[tuple[str, str | None, str | None, str | None], float] = defaultdict(float)
 
     def parcela(doc: str, v: Vinculo | None, peso: float) -> None:

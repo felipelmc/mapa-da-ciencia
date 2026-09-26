@@ -36,6 +36,7 @@ from mapa_da_ciencia.projeto import Projeto
 
 if TYPE_CHECKING:
     from mapa_da_ciencia.embeddings import Embeddings
+    from mapa_da_ciencia.geografia.pipeline import ResumoGeografia
     from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
 
 __all__ = [
@@ -164,8 +165,8 @@ def documentos(projeto: Projeto | str | Path = ".") -> list[Documento]:
 
 
 def conectar(projeto: Projeto | str | Path = ".") -> duckdb.DuckDBPyConnection:
-    """Conexão DuckDB com as views `documentos`, `textos`, `autores`, `afiliacoes` e, depois de `topicos()`,
-    `atribuicoes`.
+    """Conexão DuckDB com as views `documentos`, `textos`, `autores`, `afiliacoes`; depois de `topicos()`,
+    `atribuicoes`; depois de `geografia()`, `vinculos`, `pesos` e `instituicoes`.
 
     Use com `with` para fechar ao fim:
 
@@ -257,3 +258,21 @@ def topicos(
     from rich.console import Console
 
     return gerar_topicos(p, opcoes, ProgressoRich(Console()))
+
+
+def geografia(projeto: Projeto | str | Path = ".", *, progresso: bool = True) -> ResumoGeografia:
+    """Liga as afiliações às instituições, como `mapa geografia`, e devolve o resumo (`print(resumo)` mostra os
+    números).
+
+    O resultado fica em `dados/geografia/` e pode ser consultado pelas views `vinculos` (cada autor ligado a uma
+    instituição, com o texto da fonte e o nível do casamento), `pesos` (a contagem fracionária) e `instituicoes`,
+    por exemplo: `consultar(p, "SELECT uf, sum(peso) FROM pesos GROUP BY uf ORDER BY 2 DESC")`.
+    """
+    from mapa_da_ciencia.geografia.pipeline import gerar_geografia
+
+    p = _projeto(projeto)
+    if not progresso:
+        return gerar_geografia(p, ProgressoNulo())
+    from rich.console import Console
+
+    return gerar_geografia(p, ProgressoRich(Console()))

@@ -111,6 +111,18 @@ mapa topicos [OPÇÕES]
 | `--semente` | Semente principal do UMAP (padrão: a primeira de topicos.sementes). |  |
 | `--refazer-macrotemas` | Agrupa os tópicos em macrotemas de novo, em vez de manter os da execução anterior (as cores mudam). |  |
 
+## `mapa geografia`
+
+Liga cada afiliação a uma instituição, com UF e país, e faz a contagem fracionária da produção.
+
+```
+mapa geografia [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
 ## `mapa importar`
 
 Acrescenta ao projeto artigos de uma busca exportada do search.scielo.org (ou de uma lista de DOIs).

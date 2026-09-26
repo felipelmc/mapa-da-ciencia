@@ -25,6 +25,7 @@ instituicoes:
 from __future__ import annotations
 
 import csv
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from importlib import resources
@@ -64,6 +65,33 @@ class Registro:
         return self.id.startswith("I") and self.id[1:].isdigit()
 
 
+# países de língua portuguesa: o nome exibido é o português, quando o registro tem um
+_LUSOFONOS = frozenset({"BR", "PT", "AO", "MZ", "CV", "GW", "ST", "TL"})
+_PORTUGUES = re.compile(
+    r"\b(Universidade|Instituto|Fundação|Centro|Escola|Faculdade|Pontifícia|Ministério|Secretaria|Conselho|"
+    r"Empresa|Câmara|Senado|Tribunal|Banco|Associação|Sociedade|Hospital|Museu|Exército|Marinha)\b"
+)
+_SIGLA_NO_FIM = re.compile(r"\s*\(([^()]{2,15})\)\s*$")
+
+
+def nome_de_exibicao(r: Registro) -> tuple[str, str | None]:
+    """(nome, sigla) para mostrar: em português para instituições de países lusófonos (o OpenAlex às vezes dá o
+    nome em inglês: "Institute of Applied Economic Research" para o Ipea) e sem a sigla entre parênteses no fim
+    ("Universidade Estadual de Campinas (UNICAMP)" → "Universidade Estadual de Campinas", sigla "UNICAMP")."""
+    from .casamento import palavras  # o casamento importa este módulo
+
+    nome = r.nome
+    if r.pais in _LUSOFONOS and not _PORTUGUES.search(nome):
+        # entre os nomes em português, o que diz o mesmo que o nome em inglês (e não um nome antigo)
+        original = palavras(nome)
+        opcoes = [n for n in r.nomes if _PORTUGUES.search(n)]
+        nome = max(opcoes, key=lambda n: len(palavras(n) & original) / len(palavras(n) | original), default=nome)
+    sigla = r.siglas[0] if r.siglas else None
+    if m := _SIGLA_NO_FIM.search(nome):
+        nome, sigla = nome[: m.start()], sigla or m.group(1)
+    return nome, sigla
+
+
 def ler_openalex(dados: Path) -> dict[str, Registro]:
     """Os registros gravados pela coleta; vazio se a coleta não os buscou (corpus antigo ou sem OpenAlex)."""
     arquivo = dados / ARQUIVO_INSTITUICOES
@@ -74,7 +102,7 @@ def ler_openalex(dados: Path) -> dict[str, Registro]:
             id=r["id"],
             ror=r["ror"],
             nome=r["nome"] or r["id"],
-            siglas=tuple(r["siglas"] or ()),
+            siglas=tuple(x.strip() for x in r["siglas"] or () if x.strip()),  # o OpenAlex tem "FGV "
             nomes=tuple(dict.fromkeys([*(r["nomes"] or ()), *([r["nome_pt"]] if r.get("nome_pt") else [])])),
             pais=r["pais"],
             regiao=r["regiao"],

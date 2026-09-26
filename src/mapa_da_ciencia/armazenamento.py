@@ -109,20 +109,30 @@ def gravar_tabela(linhas: Iterable[dict[str, Any]], colunas: dict[str, str], des
     """Grava uma tabela qualquer em Parquet (zstd), ordenada por `ordem`, de forma atômica. Devolve quantas linhas."""
     destino.parent.mkdir(parents=True, exist_ok=True)
     tmp_parquet = destino.with_name(destino.name + ".tmp")
+    n = 0
+    # via JSON Lines, como em `gravar_documentos`: o `executemany` do DuckDB leva segundos para alguns milhares
+    with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False, encoding="utf-8") as f:
+        for linha in linhas:
+            f.write(json.dumps({k: linha.get(k) for k in colunas}, ensure_ascii=False) + "\n")
+            n += 1
+        jsonl = f.name
     con = duckdb.connect()
     try:
         definicao = ", ".join(f'"{k}" {v}' for k, v in colunas.items())
         con.execute(f"CREATE TABLE t ({definicao})")
-        lista = [[linha.get(k) for k in colunas] for linha in linhas]
-        if lista:
-            con.executemany(f"INSERT INTO t VALUES ({', '.join('?' * len(colunas))})", lista)
+        if n:
+            tipos = "{" + ", ".join(f"'{k}': '{v}'" for k, v in colunas.items()) + "}"
+            con.execute(
+                f"INSERT INTO t SELECT * FROM read_json(?, format='newline_delimited', columns={tipos})", [jsonl]
+            )
         con.execute(
             f"COPY (SELECT * FROM t ORDER BY \"{ordem}\") TO '{tmp_parquet}' (FORMAT parquet, COMPRESSION zstd)"
         )
     finally:
         con.close()
+        Path(jsonl).unlink(missing_ok=True)
     os.replace(tmp_parquet, destino)
-    return len(lista)
+    return n
 
 
 def ler_tabela(caminho: Path) -> list[dict[str, Any]]:
@@ -155,8 +165,8 @@ def ler_documentos(caminho: Path) -> list[Documento]:
 
 
 def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
-    """DuckDB em memória com as views do corpus: `documentos`, `textos`, `autores`, `afiliacoes` e, se a etapa
-    de tópicos já rodou, `atribuicoes`."""
+    """DuckDB em memória com as views do corpus: `documentos`, `textos`, `autores`, `afiliacoes`; se a etapa de
+    tópicos já rodou, `atribuicoes`; se a de geografia já rodou, `vinculos`, `pesos` e `instituicoes`."""
     con = duckdb.connect()
     con.execute(f"CREATE VIEW documentos AS SELECT * FROM read_parquet('{caminho}')")
     con.execute(
@@ -178,6 +188,10 @@ def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
     atribuicoes = caminho.parent / "topicos" / "atribuicoes.parquet"
     if atribuicoes.exists():  # depois de `mapa topicos`: tópico, coordenadas e vizinhos de cada documento
         con.execute(f"CREATE VIEW atribuicoes AS SELECT * FROM read_parquet('{atribuicoes}')")
+    for nome in ("vinculos", "pesos", "instituicoes"):  # depois de `mapa geografia`
+        arquivo = caminho.parent / "geografia" / f"{nome}.parquet"
+        if arquivo.exists():
+            con.execute(f"CREATE VIEW {nome} AS SELECT * FROM read_parquet('{arquivo}')")
     return con
 
 
