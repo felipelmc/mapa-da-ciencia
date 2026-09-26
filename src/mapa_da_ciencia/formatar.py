@@ -9,5 +9,11 @@ def num(valor: float, casas: int = 1) -> str:
     return texto.replace(",", "\0").replace(".", ",").replace("\0", ".")
 
 
+def periodo(anos: tuple[int, int] | list[int]) -> str:
+    """`(2024, 2024)` → `"2024"`; `(2010, 2025)` → `"2010–2025"`."""
+    inicio, fim = anos
+    return str(inicio) if inicio == fim else f"{inicio}–{fim}"
+
+
 def gb(valor: float) -> str:
     return f"{num(valor)} GB"

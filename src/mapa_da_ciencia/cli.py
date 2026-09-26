@@ -18,8 +18,11 @@ from rich.console import Console
 from rich.table import Table
 
 from mapa_da_ciencia import __version__
+from mapa_da_ciencia.coleta import interpretar_anos
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.diagnostico import DICAS_OLLAMA, diagnosticar
+from mapa_da_ciencia.fontes.base import ErroFonte
+from mapa_da_ciencia.llm.base import ErroProvedor
 from mapa_da_ciencia.llm.perfis import PERFIS, ram_total_gb, sugerir_perfil
 from mapa_da_ciencia.manifesto import status_das_etapas
 from mapa_da_ciencia.projeto import MODELOS_DE_PROJETO, Projeto, ProjetoNaoEncontrado
@@ -43,10 +46,10 @@ OpcaoProjeto = Annotated[
 
 @contextmanager
 def _erros_amigaveis() -> Iterator[None]:
-    """Mostra erros de configuração como mensagem, sem traceback, e sai com código 1."""
+    """Mostra erros de configuração, de fonte e de modelo como mensagem, sem traceback, e sai com código 1."""
     try:
         yield
-    except ErroConfig as e:
+    except (ErroConfig, ErroFonte, ErroProvedor) as e:
         console.print(f"[bold red]Erro:[/] {e}")
         raise typer.Exit(1) from e
 
@@ -85,13 +88,19 @@ def novo(
             help=f"Perfil de modelos locais: {', '.join(PERFIS)}. Padrão: sugerido pela memória da máquina.",
         ),
     ] = None,
+    revista: Annotated[
+        list[str] | None,
+        typer.Option("--revista", "-r", help="ISSN ou acrônimo de uma revista do recorte (repita para várias)."),
+    ] = None,
+    anos: Annotated[str | None, typer.Option("--anos", help="Período do recorte: 2024 ou 2010-2025.")] = None,
 ) -> None:
     """Cria um projeto novo, com [bold]mapa.yaml[/] e [bold]codebook.yaml[/] prontos para editar."""
     with _erros_amigaveis():
         if perfil is not None and perfil not in PERFIS:
             raise ErroConfig(f"Perfil desconhecido: {perfil}. Opções: {', '.join(PERFIS)}.")
         escolhido = PERFIS[perfil] if perfil else sugerir_perfil()  # type: ignore[index]
-        projeto = Projeto.criar(pasta, modelo=modelo, perfil=escolhido)
+        periodo = interpretar_anos(anos) if anos else None
+        projeto = Projeto.criar(pasta, modelo=modelo, perfil=escolhido, revistas=revista, anos=periodo)
 
     origem = "escolhido por você" if perfil else f"sugerido para {ram_total_gb():.0f} GB de memória"
     console.print(f"[bold green]Projeto criado[/] em {projeto.raiz}")
@@ -242,3 +251,72 @@ def revistas(
         f"[dim]{len(achadas)} revista(s). Retrato de {retrato().gerado_em}, só com revistas correntes do "
         "SciELO Brasil. Use --yaml para copiar os ISSNs para o mapa.yaml.[/]"
     )
+
+
+@app.command()
+def coletar(
+    projeto: OpcaoProjeto = Path("."),
+    revista: Annotated[
+        list[str] | None,
+        typer.Option("--revista", "-r", help="Coleta só esta revista (ISSN ou acrônimo); repita para várias."),
+    ] = None,
+    anos: Annotated[str | None, typer.Option("--anos", help="Coleta só este período: 2024 ou 2010-2025.")] = None,
+    limite: Annotated[
+        int | None, typer.Option("--limite", help="Coleta só os N primeiros artigos (para testar).")
+    ] = None,
+    atualizar: Annotated[
+        bool, typer.Option("--atualizar", help="Baixa de novo as listas de artigos (para pegar publicações novas).")
+    ] = False,
+    offline: Annotated[
+        bool, typer.Option("--offline", help="Não acessa a internet: usa só o que está em brutos/.")
+    ] = False,
+) -> None:
+    """Coleta os artigos do recorte e monta o corpus do projeto (dados/documentos.parquet)."""
+    from mapa_da_ciencia import coleta as etapa
+    from mapa_da_ciencia.fontes.base import limpar_temporarios
+    from mapa_da_ciencia.formatar import num, periodo
+    from mapa_da_ciencia.progresso import ProgressoRich
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        opcoes = etapa.OpcoesColeta(
+            revistas=revista or None,
+            anos=etapa.interpretar_anos(anos) if anos else None,
+            limite=limite,
+            atualizar=atualizar,
+            offline=offline,
+        )
+        progresso = ProgressoRich(console)
+        try:
+            resumo = etapa.coletar(p, opcoes, progresso)
+        except KeyboardInterrupt:
+            progresso.fim()
+            limpar_temporarios(p.brutos)
+            guardados = len(list((p.brutos / "articlemeta" / "artigos").glob("*.json.gz")))
+            console.print(
+                f"\n[yellow]Coleta interrompida.[/] {num(guardados, 0)} registro(s) já estão guardados em brutos/. "
+                "Rode [bold]mapa coletar[/] de novo para continuar de onde parou."
+            )
+            raise typer.Exit(130) from None
+
+    plano = resumo.plano
+    console.print(
+        f"\n[bold green]Coleta concluída[/] em {num(resumo.duracao_s)} s: [bold]{num(resumo.documentos, 0)}[/] "
+        f"documento(s) de {len(plano.revistas)} revista(s), {periodo(plano.anos)}."
+    )
+    if resumo.por_revista:
+        tabela = Table("Revista", "Documentos")
+        for acronimo, n in resumo.por_revista.items():
+            tabela.add_row(acronimo, num(n, 0))
+        console.print(tabela)
+    fora = [f"fora do período: {num(resumo.fora_do_periodo, 0)}"]
+    fora += [f"{tipo}: {num(n, 0)}" for tipo, n in resumo.excluidos_por_tipo.items()]
+    if resumo.nao_encontrados:
+        fora.append(f"não encontrados na API: {num(resumo.nao_encontrados, 0)}")
+    console.print("[dim]Ficaram de fora — " + "; ".join(fora) + ".[/]")
+    req = resumo.requisicoes.get("articlemeta", 0)
+    cache = resumo.do_cache.get("articlemeta", 0)
+    console.print(f"[dim]ArticleMeta: {num(req, 0)} requisição(ões), {num(cache, 0)} resposta(s) do cache.[/]")
+    for aviso in resumo.avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
+    console.print("Próximo passo: [bold]mapa status[/] para ver a cobertura do corpus.")

@@ -19,6 +19,8 @@ mapa novo [OPÇÕES] pasta
 | `pasta` | Pasta onde o projeto será criado. | **obrigatório** |
 | `--modelo`, `-m` | Modelo de projeto: ciencia-politica, vazio. | `ciencia-politica` |
 | `--perfil`, `-p` | Perfil de modelos locais: leve, padrao, forte. Padrão: sugerido pela memória da máquina. |  |
+| `--revista`, `-r` | ISSN ou acrônimo de uma revista do recorte (repita para várias). |  |
+| `--anos` | Período do recorte: 2024 ou 2010-2025. |  |
 
 ## `mapa status`
 
@@ -73,3 +75,20 @@ mapa revistas [OPÇÕES] busca
 | `busca` | Parte do título, acrônimo, categoria ou ISSN. | **obrigatório** |
 | `--area`, `-a` | Filtra pela grande área (ex.: humanas, saúde). | `` |
 | `--yaml` | Imprime as linhas prontas para colar em `fontes.scielo.revistas`. |  |
+
+## `mapa coletar`
+
+Coleta os artigos do recorte e monta o corpus do projeto (dados/documentos.parquet).
+
+```
+mapa coletar [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--revista`, `-r` | Coleta só esta revista (ISSN ou acrônimo); repita para várias. |  |
+| `--anos` | Coleta só este período: 2024 ou 2010-2025. |  |
+| `--limite` | Coleta só os N primeiros artigos (para testar). |  |
+| `--atualizar` | Baixa de novo as listas de artigos (para pegar publicações novas). |  |
+| `--offline` | Não acessa a internet: usa só o que está em brutos/. |  |

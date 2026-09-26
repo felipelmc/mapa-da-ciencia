@@ -67,4 +67,4 @@ O comando mostra o recorte, os modelos e em que ponto está cada etapa: coleta, 
 
 ## Próximo passo
 
-Revise o [codebook](codebook.md) antes de classificar. A coleta (`mapa coletar`) chega no marco M2.
+Ajuste o [recorte](recorte.md) e rode `mapa coletar`. Antes de classificar, revise o [codebook](codebook.md).

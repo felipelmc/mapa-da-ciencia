@@ -47,13 +47,41 @@ recorte:
 - **`anos`**: primeiro e último ano de publicação, inclusive. O ano sai do identificador do artigo no SciELO (o PID), porque a API não filtra por ano de publicação (veja [Fontes de dados](../explicacoes/fontes.md)).
 - **`tipos`**: por padrão, artigos de pesquisa e de revisão. Resenhas (`book-review`), editoriais (`editorial`), erratas (`correction`) e outros tipos ficam de fora. Para incluí-los, acrescente o tipo à lista.
 
-## 3. Conferir
+Para já criar o projeto com o recorte certo, sem editar o YAML:
+
+```bash
+mapa novo meu-projeto --revista op --revista dados --anos 2010-2025
+```
+
+## 3. Coletar
+
+Dentro da pasta do projeto:
+
+```bash
+mapa coletar
+```
+
+O `mapa` lista os artigos de cada revista na ArticleMeta, baixa o registro de cada um, normaliza e grava o corpus em `dados/documentos.parquet`. No fim, mostra quantos documentos entraram por revista e quantos ficaram de fora (outros anos, outros tipos).
+
+| Opção | Para quê |
+|---|---|
+| `--revista op` (repetível) | Coleta só estas revistas, nesta execução, sem mudar o `mapa.yaml` |
+| `--anos 2024` ou `--anos 2010-2025` | Coleta só este período, nesta execução |
+| `--limite 20` | Só os 20 primeiros artigos: bom para testar o caminho todo em segundos |
+| `--atualizar` | Baixa de novo as listas de artigos, para pegar publicações novas |
+| `--offline` | Não acessa a internet: monta o corpus só com o que já está guardado |
+
+**Pode interromper.** Cada registro é guardado assim que chega (em `brutos/`). Se a coleta for interrompida (Ctrl+C, queda de rede), rodar `mapa coletar` de novo continua de onde parou. Rodar depois de terminada não faz nenhuma requisição: tudo vem do que já foi guardado.
+
+**Quanto tempo leva:** a ArticleMeta responde uns 3 registros por segundo com 4 requisições simultâneas. Uma revista-ano leva segundos; o piloto inteiro (cerca de 5 mil artigos), uns 30 minutos na primeira vez.
+
+## 4. Conferir
 
 ```bash
 mapa status
 ```
 
-O comando mostra o número de revistas e o período do recorte. Depois da coleta, ele mostra também quantos documentos entraram e quantos ficaram de fora por tipo ou ano.
+O comando mostra o recorte e em que ponto está cada etapa. A tabela com a cobertura do corpus (resumos por idioma, DOI, afiliações, licenças) aparece depois da coleta.
 
 ## Dicas
 
