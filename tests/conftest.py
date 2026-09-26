@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import gzip
 import json
+import math
 import re
+import zlib
 from collections import Counter
 from pathlib import Path
 
@@ -15,6 +17,35 @@ import respx
 FIXTURES = Path(__file__).parent / "fixtures"
 AM = "https://articlemeta.scielo.org/api/v1"
 OA = "https://api.openalex.org"
+OLLAMA_FALSO = "http://ollama.teste:11434"
+DIM_FALSA = 64
+GB = 1024**3
+
+
+def resposta_chat_padrao(corpo: dict) -> str:
+    """Resposta determinística do chat falso: um rótulo com as duas primeiras palavras-chave do pedido."""
+    pedido = corpo["messages"][-1]["content"]
+    achado = re.search(r"Palavras-chave: ([^\n]+)", pedido)
+    termos = [t.strip() for t in achado.group(1).split(",")] if achado else ["assunto", "geral"]
+    return json.dumps(
+        {
+            "rotulo": f"{termos[0].capitalize()} e {termos[1]}",
+            "descricao": f"Trabalhos sobre {termos[0]} e {termos[1]}.",
+        },
+        ensure_ascii=False,
+    )
+
+
+def vetor_falso(texto: str) -> list[float]:
+    """Embedding falso e determinístico: saco de palavras com hash. Textos com vocabulário parecido ficam perto,
+    o que basta para os testes do agrupamento (sem depender do Ollama nem de um modelo de verdade)."""
+    v = [0.0] * DIM_FALSA
+    for palavra in re.findall(r"[a-zà-ÿ]{3,}", texto.lower()):
+        h = zlib.crc32(palavra.encode())
+        v[h % DIM_FALSA] += 1.0
+        v[(h >> 8) % DIM_FALSA] += 0.5
+    norma = math.sqrt(sum(x * x for x in v)) or 1.0
+    return [x / norma for x in v]
 
 
 def obras_openalex() -> list[dict]:
@@ -45,11 +76,74 @@ class ApisFalsas:
         self.identificadores = {"0104-6276": identificadores_op()}
         router.get(f"{AM}/article/identifiers/").mock(side_effect=self._identificadores)
         router.get(f"{AM}/article/").mock(side_effect=self._artigo)
+        router.get(f"{AM}/journal/identifiers/").respond(json={"meta": {"total": 0}, "objects": []})  # diagnóstico
         self.obras = obras_openalex()
         self.total_forcado: int | None = None  # para simular buscas enormes
+        # Ollama: modelos "instalados" (tamanhos pequenos, para a checagem de memória passar em qualquer máquina)
+        self.modelos_ollama = {"qwen3-embedding:0.6b": 0.6, "qwen3.5:4b": 0.5, "qwen3.5:9b": 0.5}
+        self.digests: dict[str, str] = {}  # para simular um modelo atualizado
+        self.carregados: set[str] = set()
+        self.textos_embutidos: list[str] = []
+        router.get(f"{OLLAMA_FALSO}/api/version").respond(json={"version": "0.34.2"})
+        router.get(f"{OLLAMA_FALSO}/api/tags").mock(side_effect=self._tags)
+        router.get(f"{OLLAMA_FALSO}/api/ps").mock(side_effect=self._ps)
+        router.post(f"{OLLAMA_FALSO}/api/embed").mock(side_effect=self._embed)
+        router.post(f"{OLLAMA_FALSO}/api/generate").mock(side_effect=self._generate)
+        router.post(f"{OLLAMA_FALSO}/api/chat").mock(side_effect=self._chat)
+        self.pedidos_chat: list[dict] = []
+        # os testes trocam esta função para simular respostas (JSON inválido, rótulo sem acento...)
+        self.responder_chat = resposta_chat_padrao
         self.fora_dos_filtros: set[str] = set()  # DOIs que só o endereço direto /works/doi:… acha
         router.get(url__regex=rf"^{re.escape(OA)}/works/doi:").mock(side_effect=self._obra)
         router.get(f"{OA}/works").mock(side_effect=self._obras)
+
+    def _tags(self, _: httpx.Request) -> httpx.Response:
+        modelos = [
+            {"name": n, "size": int(t * GB), "digest": self.digests.get(n, f"{zlib.crc32(n.encode()):08x}00000000")}
+            for n, t in self.modelos_ollama.items()
+        ]
+        return httpx.Response(200, json={"models": modelos})
+
+    def _ps(self, _: httpx.Request) -> httpx.Response:
+        tamanho = self.modelos_ollama
+        modelos = [
+            {"name": n, "size": int(tamanho[n] * GB), "size_vram": int(tamanho[n] * GB)} for n in self.carregados
+        ]
+        return httpx.Response(200, json={"models": modelos})
+
+    def _modelo(self, corpo: dict) -> httpx.Response | None:
+        if corpo["model"] not in self.modelos_ollama:
+            erro = f'model "{corpo["model"]}" not found, try pulling it first'
+            return httpx.Response(404, json={"error": erro})
+        self.carregados.add(corpo["model"])
+        return None
+
+    def _embed(self, request: httpx.Request) -> httpx.Response:
+        self.chamadas["ollama"] += 1
+        corpo = json.loads(request.content)
+        if erro := self._modelo(corpo):
+            return erro
+        self.textos_embutidos += corpo["input"]
+        return httpx.Response(
+            200, json={"model": corpo["model"], "embeddings": [vetor_falso(t) for t in corpo["input"]]}
+        )
+
+    def _chat(self, request: httpx.Request) -> httpx.Response:
+        self.chamadas["ollama_chat"] += 1
+        corpo = json.loads(request.content)
+        if erro := self._modelo(corpo):
+            return erro
+        self.pedidos_chat.append(corpo)
+        conteudo = self.responder_chat(corpo)
+        return httpx.Response(
+            200, json={"model": corpo["model"], "message": {"role": "assistant", "content": conteudo}}
+        )
+
+    def _generate(self, request: httpx.Request) -> httpx.Response:
+        corpo = json.loads(request.content)
+        if corpo.get("keep_alive") == 0:
+            self.carregados.discard(corpo["model"])
+        return httpx.Response(200, json={"model": corpo["model"], "done": True})
 
     def _obra(self, request: httpx.Request) -> httpx.Response:
         self.chamadas["openalex"] += 1
@@ -96,7 +190,8 @@ class ApisFalsas:
 
 
 @pytest.fixture
-def apis_falsas():
+def apis_falsas(monkeypatch):
+    monkeypatch.setenv("OLLAMA_HOST", OLLAMA_FALSO)
     with respx.mock(assert_all_called=False) as router:
         yield ApisFalsas(router)
 

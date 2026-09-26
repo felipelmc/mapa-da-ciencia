@@ -83,6 +83,16 @@ def test_licenca_mais_restritiva_vence():
     assert (d.licenca, d.licenca_fonte, d.openalex_id, d.citacoes) == ("cc-by-nc", "openalex", "W1", 3)
 
 
+def test_titulo_do_openalex_quando_a_articlemeta_nao_tem():
+    # Opinião Pública e Novos Estudos, 2010–2013: seis artigos sem título na ArticleMeta
+    doc = Documento(id="S1", fonte="articlemeta", tipo=None, ano=2011)
+    obra = {"id": "https://openalex.org/W1", "title": "Cidade &amp; política", "language": "pt"}
+    d = enriquecer(doc, obra, "3_doi_derivado")
+    assert [(t.idioma, t.texto, t.origem) for t in d.titulos] == [("pt", "Cidade & política", "openalex")]
+    com_titulo = doc.model_copy(update={"titulos": [Texto(idioma="en", texto="City")]})
+    assert enriquecer(com_titulo, obra, "1_doi").titulos == com_titulo.titulos
+
+
 @pytest.fixture
 def projeto(tmp_path):
     return Projeto.criar(

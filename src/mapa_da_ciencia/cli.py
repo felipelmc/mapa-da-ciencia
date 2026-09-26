@@ -184,6 +184,32 @@ def _tabela_contagem(titulo: str, contagem: dict, total: int, rotulos: dict | No
     return tabela
 
 
+def _mostrar_topicos(p: Projeto) -> None:
+    from mapa_da_ciencia.armazenamento import ler_documentos
+    from mapa_da_ciencia.topicos.resultado import PASTA, Resultado, assinatura_corpus, ler_atribuicoes
+
+    resultado = Resultado.ler(p.dados / PASTA)
+    if resultado is None:
+        console.print("[dim]Tópicos: ainda não gerados. Rode `mapa topicos`.[/]")
+        return
+    atrib = ler_atribuicoes(p.dados / PASTA)
+    n = len(atrib)
+    sem = sum(a["topico"] == -1 for a in atrib)
+    reatrib = sum(a["atribuicao"] == "vizinho" and a["topico"] >= 0 for a in atrib)
+    fontes = {t.rotulo_fonte for t in resultado.topicos}
+    ari = num(resultado.estabilidade_ari, 2) if resultado.estabilidade_ari is not None else "—"
+    console.print(
+        f"[bold]Tópicos[/]: {num(len(resultado.topicos), 0)} em {num(len(resultado.macrotemas), 0)} macrotemas "
+        f"(ARI {ari}); núcleo {num(100 * (n - sem - reatrib) / n, 0)}%, reatribuídos {num(100 * reatrib / n, 0)}%, "
+        f"sem tópico {num(100 * sem / n, 0)}%; rótulos: {', '.join(sorted(fontes))}."
+    )
+    ids = [d.id for d in ler_documentos(p.dados / ARQUIVO_DOCUMENTOS)]
+    if resultado.assinatura != assinatura_corpus(ids):
+        console.print(
+            "[yellow]Os tópicos são de antes da última coleta.[/] Rode [bold]mapa topicos[/] para atualizá-los."
+        )
+
+
 def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
     """Cobertura do corpus coletado (`dados/documentos.parquet`), se já houver coleta."""
     caminho = p.dados / ARQUIVO_DOCUMENTOS
@@ -203,6 +229,7 @@ def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
             f"{num(c.get('requisicoes', 0), 0)} requisição(ões), {num(c.get('do_cache', 0), 0)} do cache, "
             f"{num(c.get('creditos_openalex', 0), 0)} crédito(s) do OpenAlex.[/]"
         )
+    _mostrar_topicos(p)
     if not total:
         return
     geral = {
@@ -426,6 +453,91 @@ def coletar(
     for aviso in resumo.avisos:
         console.print(f"[yellow]Aviso:[/] {aviso}")
     console.print("Próximo passo: [bold]mapa status[/] para ver a cobertura do corpus.")
+
+
+@app.command()
+def topicos(
+    projeto: OpcaoProjeto = Path("."),
+    sem_rotulos: Annotated[
+        bool,
+        typer.Option("--sem-rotulos", help="Rótulos pelas palavras-chave, sem carregar o modelo de linguagem."),
+    ] = False,
+    refazer_embeddings: Annotated[
+        bool, typer.Option("--refazer-embeddings", help="Recalcula os embeddings de todos os documentos.")
+    ] = False,
+    semente: Annotated[
+        int | None,
+        typer.Option("--semente", help="Semente principal do UMAP (padrão: a primeira de topicos.sementes)."),
+    ] = None,
+    refazer_macrotemas: Annotated[
+        bool,
+        typer.Option(
+            "--refazer-macrotemas",
+            help="Agrupa os tópicos em macrotemas de novo, em vez de manter os da execução anterior (as cores mudam).",
+        ),
+    ] = False,
+) -> None:
+    """Descobre os tópicos do corpus, dá um nome a cada um e prepara o mapa do painel."""
+    from mapa_da_ciencia.progresso import ProgressoRich
+    from mapa_da_ciencia.topicos.pipeline import OpcoesTopicos, gerar_topicos
+    from mapa_da_ciencia.topicos.resultado import PASTA, Resultado
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        progresso = ProgressoRich(console)
+        opcoes = OpcoesTopicos(
+            sem_rotulos=sem_rotulos,
+            refazer_embeddings=refazer_embeddings,
+            semente=semente,
+            refazer_macrotemas=refazer_macrotemas,
+        )
+        try:
+            resumo = gerar_topicos(p, opcoes, progresso)
+        except KeyboardInterrupt:
+            progresso.fim()
+            console.print(
+                "\n[yellow]Etapa interrompida.[/] Embeddings e rótulos já calculados estão em cache: "
+                "rode [bold]mapa topicos[/] de novo para continuar."
+            )
+            raise typer.Exit(130) from None
+
+    resultado = Resultado.ler(p.dados / PASTA)
+    console.print(f"\n[bold green]Tópicos prontos[/]: {resumo}")
+    if resultado:
+        tabela = Table("Macrotema", "Tópicos", "Documentos")
+        docs_por_topico = {t.id: t.n_nucleo for t in resultado.topicos}
+        for m in resultado.macrotemas:
+            tabela.add_row(
+                f"[{m.cor}]●[/] {m.rotulo}", num(len(m.topicos), 0), num(sum(docs_por_topico[t] for t in m.topicos), 0)
+            )
+        console.print(tabela)
+        console.print("[dim]Documentos do núcleo de cada tópico; os reatribuídos entram nas contagens do painel.[/]")
+    ari = f"{num(resumo.estabilidade_ari, 2)}" if resumo.estabilidade_ari is not None else "—"
+    console.print(
+        f"[dim]Núcleo: {num(resumo.nucleo, 0)}; reatribuídos pela vizinhança: {num(resumo.reatribuidos, 0)}; "
+        f"sem tópico: {num(resumo.sem_topico, 0)}. Estabilidade entre sementes (ARI): {ari}.[/]"
+    )
+    if resumo.casados == resumo.mesma_cor > 0:
+        console.print(f"[dim]{num(resumo.casados, 0)} tópico(s) mantiveram o número e a cor da execução anterior.[/]")
+    elif resumo.casados:
+        console.print(
+            f"[dim]{num(resumo.casados, 0)} tópico(s) mantiveram o número da execução anterior; "
+            f"{num(resumo.mesma_cor, 0)} também a cor (os outros mudaram de macrotema).[/]"
+        )
+    console.print(f"[dim]Embeddings novos: {num(resumo.embeddings_novos, 0)} (os demais vieram do cache).[/]")
+    r = resumo.rotulos
+    if sem_rotulos:
+        console.print("[dim]Rótulos: palavras-chave (sem modelo de linguagem).[/]")
+    else:
+        console.print(
+            f"[dim]Rótulos ({r.modelo}): {num(r.chamadas, 0)} chamada(s) ao modelo, {num(r.do_cache, 0)} do cache, "
+            f"{num(r.reaproveitados, 0)} mantidos da execução anterior, {num(r.manuais, 0)} do rotulos.yaml"
+            + (f", {num(r.acentos_corrigidos, 0)} com acento corrigido" if r.acentos_corrigidos else "")
+            + ".[/]"
+        )
+    for aviso in resumo.avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
+    console.print("Próximo passo: [bold]mapa painel[/] para ver o mapa.")
 
 
 @app.command()

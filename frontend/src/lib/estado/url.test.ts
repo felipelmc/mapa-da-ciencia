@@ -61,6 +61,8 @@ describe('filtros: ida e volta pela URL', () => {
 		{ cor: 'macrotema' },
 		{ busca: 'coalizão & "presidencialismo"' },
 		{ doc: 'doi:10.1590/1807-019120243011' },
+		{ laco: { versao: 'a1b2c3', pontos: [[0.1, -2.25], [3, 4.5], [-1.125, 0]] } },
+		{ vista: { x: -0.25, y: 0.5, zoom: 3.2 } },
 		{
 			anos: [2010, 2025],
 			revistas: ['rbcpol'],
@@ -107,7 +109,15 @@ describe('filtros: ida e volta pela URL', () => {
 				topicos: Array.from({ length: inteiro(0, 4) }, () => inteiro(-1, 40)),
 				cor: CORES_POR[inteiro(0, CORES_POR.length - 1)],
 				busca: aleatorio() < 0.3 ? `termo ${inteiro(0, 99)}, ç&=?#` : '',
-				doc: aleatorio() < 0.2 ? `exemplo:${inteiro(0, 1499)}` : null
+				doc: aleatorio() < 0.2 ? `exemplo:${inteiro(0, 1499)}` : null,
+				laco:
+					aleatorio() < 0.3
+						? {
+								versao: `v${inteiro(0, 999)}`,
+								pontos: Array.from({ length: inteiro(3, 8) }, () => [aleatorio() * 20 - 10, aleatorio() * 20 - 10])
+							}
+						: null,
+				vista: aleatorio() < 0.3 ? { x: aleatorio() * 2 - 1, y: aleatorio() * 2 - 1, zoom: 0.5 + aleatorio() * 8 } : null
 			});
 			expect(lerFiltros(lerHash(rota('/mapa', escreverFiltros(f))).params)).toEqual(f);
 		}
@@ -126,5 +136,29 @@ describe('filtros: ida e volta pela URL', () => {
 
 	it('põe anos invertidos em ordem', () => {
 		expect(lerFiltros(new URLSearchParams('anos=2020-2012')).anos).toEqual([2012, 2020]);
+	});
+});
+
+describe('laço e vista', () => {
+	it('arredondam para 3 casas e descartam o que não serve', () => {
+		const f = normalizarFiltros({
+			laco: { versao: 'v1', pontos: [[0.12345, 1], [2, NaN], [3, 3], [1, 2.00049]] },
+			vista: { x: -0.0001, y: 0.4, zoom: 2 }
+		});
+		expect(f.laco).toEqual({ versao: 'v1', pontos: [[0.123, 1], [3, 3], [1, 2]] });
+		expect(f.vista).toEqual({ x: 0, y: 0.4, zoom: 2 });
+		expect(normalizarFiltros({ laco: { versao: 'v1', pontos: [[0, 0], [1, 1]] } }).laco).toBeNull();
+		expect(normalizarFiltros({ vista: { x: 0, y: 0, zoom: 0 } }).vista).toBeNull();
+		expect(normalizarFiltros({ vista: { x: 0.0001, y: 0, zoom: 1.0002 } }).vista).toBeNull(); // a câmera inicial
+		expect(normalizarFiltros({ laco: { versao: 'não vale!', pontos: [[0, 0], [1, 0], [0, 1]] } }).laco?.versao).toBe('');
+	});
+
+	it('vão para a URL numa forma curta e legível', () => {
+		const texto = escreverFiltros({
+			laco: { versao: 'v1', pontos: [[0, 0], [1, 0], [0, 1]] },
+			vista: { x: 0.5, y: -0.5, zoom: 2 }
+		}).toString();
+		expect(texto).toBe('laco=v1%7E0%2C0%7E1%2C0%7E0%2C1&vista=0.5%2C-0.5%2C2');
+		expect(lerFiltros(new URLSearchParams('laco=v1~0,0~1,0&vista=1,2')).laco).toBeNull();
 	});
 });

@@ -49,7 +49,7 @@ uv run mapa --versao
 uv run mapa painel --exemplo
 ```
 
-O navegador abre em `http://127.0.0.1:8765/`. A página inicial mostra os números do corpus e os sete macrotemas, cada um com sua cor. Use o trilho à esquerda para passear pelas vistas. Mapa, Tópicos, Classificação, Geografia e Validação ganham conteúdo a partir do marco M3.
+O navegador abre em `http://127.0.0.1:8765/`. A página inicial mostra os números do corpus e os sete macrotemas, cada um com sua cor. Use o trilho à esquerda para passear pelas vistas. O **Mapa** mostra os 1.500 documentos fictícios como pontos: arraste para mover, use a roda do mouse para aproximar, clique num ponto para ver o documento, e experimente a busca (<kbd>/</kbd>), o laço (<kbd>L</kbd>) e o Play da linha do tempo ([Ler o mapa](../guias/ler-o-mapa.md)). Tópicos, Classificação, Geografia e Validação ganham conteúdo nos próximos marcos.
 
 Para encerrar, volte ao terminal e aperte ++ctrl+c++.
 
@@ -72,6 +72,6 @@ Para encerrar, volte ao terminal e aperte ++ctrl+c++.
 
 ## Próximos passos
 
-- [Seu primeiro mapa, parte 1](primeiro-mapa.md), para coletar artigos de verdade.
+- [Seu primeiro mapa, parte 1](primeiro-mapa.md), para coletar artigos de verdade, e a [parte 2](primeiro-mapa-topicos.md), para descobrir os tópicos deles.
 - [Instalar e escolher os modelos](../guias/instalacao.md), para preparar o Ollama.
 - [Criar um projeto](../guias/criar-projeto.md), para definir o seu recorte.

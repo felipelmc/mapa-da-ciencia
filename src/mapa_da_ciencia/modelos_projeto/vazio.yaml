@@ -26,6 +26,14 @@ modelos:
   rotulos:
     modelo: $modelo_rotulos
 
+# Agrupamento em tópicos (veja "Como os tópicos são construídos" na documentação).
+topicos:
+  min_cluster_size:         # menor tópico; vazio = automático (1 a cada 200 documentos, mínimo 10)
+  min_samples: 5            # maior = mais documentos ficam de fora dos tópicos
+  selecao: leaf             # leaf = tópicos estáveis quando o corpus muda; eom = tópicos maiores
+  votos_minimos: 3          # quem ficou de fora vai para o tópico com ao menos 3 vizinhos seus
+  macrotemas: 7             # no máximo; menos com poucos tópicos (≥ 3 tópicos por macrotema)
+
 validacao:
   n: 200
   estratificar_por: topico

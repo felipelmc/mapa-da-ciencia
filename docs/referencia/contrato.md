@@ -5,7 +5,8 @@
 Modelos do contrato de dados v1 (arquivos de `saida/dados/`).
 
 Convenções:
-- Todo arquivo tem `versao_contrato`. Mudança incompatível = nova versão maior.
+- Todo arquivo tem `versao_contrato`. Mudança incompatível = nova versão maior; versões menores
+  (1.1, 1.2…) só acrescentam campos, e quem lê a 1.0 lê qualquer 1.x.
 - Tabelas grandes são **colunares**: `colunas` com listas do mesmo tamanho, e campos
   categóricos guardados como índices em `dicionarios` (economiza espaço e acelera o
   filtro cruzado no navegador). `-1` significa "sem valor".
@@ -13,7 +14,7 @@ Convenções:
   `detalhes/{00..3f}.json`, carregados sob demanda (ver `fragmento_de`).
 - Nenhum arquivo do contrato pode conter e-mails ou codificações humanas individuais.
 
-Versão atual: **1.0**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
+Versão atual: **1.1**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
 
 | Arquivo | Modelo |
 |---|---|
@@ -37,7 +38,7 @@ a interface lê.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | `"1.0"` | `"1.0"` |  |
+| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `api` | sim/não | **obrigatório** | True no painel local (há API); False no site estático publicado. |
 | `gerado_em` | datetime | **obrigatório** |  |
 | `projeto` | [ProjetoInfo](#projetoinfo) | **obrigatório** | Identificação do projeto. |
@@ -100,7 +101,7 @@ Revistas presentes no corpus, com o número de documentos de cada uma.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | `"1.0"` | `"1.0"` |  |
+| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `revistas` | lista de [Revista](#revista) | **obrigatório** | Uma revista do corpus. |
 
 ### Revista
@@ -123,7 +124,7 @@ Tabela principal: um documento por posição, com coordenadas no mapa, tópico e
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | `"1.0"` | `"1.0"` |  |
+| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
 | `colunas` | [ColunasDocumentos](#colunasdocumentos) | **obrigatório** | Colunas da tabela de documentos (todas com `n` itens, na mesma ordem). |
 | `dicionarios` | [DicionariosDocumentos](#dicionariosdocumentos) | **obrigatório** | Valores por trás dos índices das colunas categóricas. |
@@ -143,7 +144,7 @@ Colunas da tabela de documentos (todas com `n` itens, na mesma ordem).
 | `x` | lista de número | **obrigatório** |  |
 | `y` | lista de número | **obrigatório** |  |
 | `topico` | lista de inteiro | **obrigatório** | Id do tópico (ver topicos.json) ou -1. |
-| `atribuicao` | lista de inteiro | **obrigatório** | Índice em `dicionarios.atribuicao`. |
+| `atribuicao` | lista de inteiro | **obrigatório** | Índice em `dicionarios.atribuicao`: `cluster` (o HDBSCAN agrupou o documento) ou `vizinho` (o HDBSCAN o deixou sem tópico; os vizinhos o atribuíram, ou não, se `topico` = -1). |
 | `autores_curto` | lista de texto | **obrigatório** | Ex.: `Limongi, F.; +2`. |
 | `vizinhos` | lista de lista de inteiro | **obrigatório** | Índices (nesta tabela) dos 5 documentos mais próximos. |
 | `cls` | mapa de texto para lista de inteiro | vazio | Variável do codebook → índice em `dicionarios.cls[variavel]` ou -1. |
@@ -167,7 +168,7 @@ Afiliações com contagem fracionária, base da vista de geografia.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | `"1.0"` | `"1.0"` |  |
+| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
 | `colunas` | [ColunasAfiliacoes](#colunasafiliacoes) | **obrigatório** | Colunas da tabela longa de afiliações (uma linha por documento × instituição). |
 | `dicionarios` | [DicionariosAfiliacoes](#dicionariosafiliacoes) | **obrigatório** | Instituições, UFs e países por trás dos índices. |
@@ -214,7 +215,7 @@ Um dos 64 fragmentos de detalhes, carregados sob demanda.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | `"1.0"` | `"1.0"` |  |
+| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `fragmento` | texto | **obrigatório** |  |
 | `documentos` | mapa de texto para [Detalhe](#detalhe) | **obrigatório** | O que a interface mostra ao abrir um documento: resumo, autores, licença e evidências. |
 
@@ -232,6 +233,8 @@ O que a interface mostra ao abrir um documento: resumo, autores, licença e evid
 | `licenca` | texto | **obrigatório** |  |
 | `licenca_fonte` | texto | **obrigatório** |  |
 | `evidencias` | mapa de texto para [Evidencia](#evidencia) | vazio | Valor de uma variável do codebook e o trecho do resumo que o justifica. |
+| `idioma_analise` | texto ou vazio | vazio | Idioma do texto usado nos embeddings e nos tópicos. |
+| `fonte_analise` | `"resumo"` \\| `"reserva"` \\| `"so_titulo"` ou vazio | vazio | `resumo`: título e resumo no idioma de análise; `reserva`: resumo em outro idioma (não havia no de análise); `so_titulo`: o documento não tem resumo. O texto em si não é publicado. |
 
 ### Evidencia
 
@@ -253,7 +256,7 @@ Tópicos e macrotemas do corpus, com as séries por ano.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | `"1.0"` | `"1.0"` |  |
+| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `anos` | lista de inteiro | **obrigatório** |  |
 | `total_por_ano` | lista de inteiro | **obrigatório** |  |
 | `parametros` | mapa de texto para número ou inteiro ou texto | **obrigatório** |  |
@@ -272,6 +275,7 @@ Agrupamento de tópicos próximos, usado para a cor e a navegação.
 | `rotulo` | texto | **obrigatório** |  |
 | `cor` | texto | **obrigatório** |  |
 | `topicos` | lista de inteiro | **obrigatório** |  |
+| `descricao` | texto | `""` |  |
 
 ### Topico
 
@@ -290,6 +294,8 @@ Um tópico: rótulo e descrição escritos pelo LLM, palavras-chave, cor estáve
 | `serie` | [Serie](#serie) | **obrigatório** | Série temporal de um tópico. |
 | `por_revista` | mapa de texto para inteiro | **obrigatório** |  |
 | `representativos` | lista de texto | **obrigatório** | Ids de documentos. |
+| `rotulo_fonte` | `"llm"` \\| `"palavras"` \\| `"manual"` | `"llm"` | Quem escreveu o rótulo: o modelo de linguagem, as palavras-chave ou você (rotulos.yaml). |
+| `n_nucleo` | inteiro ou vazio | vazio | Documentos do núcleo, que o HDBSCAN agrupou (os demais foram reatribuídos por vizinhança). |
 
 ### Serie
 
@@ -308,6 +314,7 @@ Documentos que o agrupamento não encaixou em nenhum tópico.
 |---|---|---|---|
 | `n` | inteiro | **obrigatório** | Documentos que o HDBSCAN deixou sem tópico. |
 | `reatribuidos` | inteiro | **obrigatório** | Quantos deles foram atribuídos ao tópico mais próximo. |
+| `por_ano` | lista de inteiro | vazio | Documentos sem tópico no HDBSCAN, por ano, alinhado a `anos`. |
 
 ## `codebook.json`
 
@@ -317,7 +324,7 @@ Cópia publicada do codebook, com o hash que identifica a versão usada.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | `"1.0"` | `"1.0"` |  |
+| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `nome` | texto | **obrigatório** |  |
 | `versao` | texto | **obrigatório** |  |
 | `hash` | texto | **obrigatório** |  |
@@ -355,7 +362,7 @@ Resumo da classificação por codebook: modelo, cobertura e contagens por catego
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | `"1.0"` | `"1.0"` |  |
+| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `modelo` | texto | **obrigatório** |  |
 | `hash_codebook` | texto | **obrigatório** |  |
 | `cobertura` | número | **obrigatório** | Fração dos documentos com classificação válida. |
@@ -370,7 +377,7 @@ Resultados da validação da classificação contra codificação humana.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | `"1.0"` | `"1.0"` |  |
+| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `amostra` | [AmostraInfo](#amostrainfo) | **obrigatório** | Como a amostra de validação foi sorteada. |
 | `metricas` | lista de [MetricaVariavel](#metricavariavel) | **obrigatório** | Concordância entre humano e modelo (ou entre dois modelos) numa variável. |
 | `modelos` | lista de texto | **obrigatório** |  |
@@ -431,7 +438,7 @@ Gabarito calculado no Python para testar o filtro cruzado do frontend.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | `"1.0"` | `"1.0"` |  |
+| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `topico_ano_revista` | lista de tupla | **obrigatório** | (tópico, ano, revista, n). |
 | `uf` | mapa de texto para número | **obrigatório** |  |
 | `pais` | mapa de texto para número | **obrigatório** |  |

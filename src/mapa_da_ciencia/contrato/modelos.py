@@ -1,7 +1,8 @@
 """Modelos do contrato de dados v1 (arquivos de `saida/dados/`).
 
 Convenções:
-- Todo arquivo tem `versao_contrato`. Mudança incompatível = nova versão maior.
+- Todo arquivo tem `versao_contrato`. Mudança incompatível = nova versão maior; versões menores
+  (1.1, 1.2…) só acrescentam campos, e quem lê a 1.0 lê qualquer 1.x.
 - Tabelas grandes são **colunares**: `colunas` com listas do mesmo tamanho, e campos
   categóricos guardados como índices em `dicionarios` (economiza espaço e acelera o
   filtro cruzado no navegador). `-1` significa "sem valor".
@@ -17,11 +18,13 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSAO_CONTRATO = "1.0"
+VERSAO_CONTRATO = "1.1"  # 1.1: marcas do texto de análise, fonte do rótulo, núcleo dos tópicos, ruído por ano
 N_FRAGMENTOS = 64
 
 StatusEvidencia = Literal["literal", "aproximada", "ausente"]
 Atribuicao = Literal["cluster", "vizinho"]
+FonteAnalise = Literal["resumo", "reserva", "so_titulo"]
+FonteRotulo = Literal["llm", "palavras", "manual"]
 
 
 class _Base(BaseModel):
@@ -29,7 +32,11 @@ class _Base(BaseModel):
 
 
 class _Arquivo(_Base):
-    versao_contrato: Literal["1.0"] = VERSAO_CONTRATO
+    versao_contrato: str = Field(
+        VERSAO_CONTRATO,
+        pattern=r"^1\.\d+$",
+        description="Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
+    )
 
 
 def fragmento_de(doc_id: str) -> str:
@@ -128,7 +135,10 @@ class ColunasDocumentos(_Base):
     x: list[float]
     y: list[float]
     topico: list[int] = Field(description="Id do tópico (ver topicos.json) ou -1.")
-    atribuicao: list[int] = Field(description="Índice em `dicionarios.atribuicao`.")
+    atribuicao: list[int] = Field(
+        description="Índice em `dicionarios.atribuicao`: `cluster` (o HDBSCAN agrupou o documento) ou `vizinho` "
+        "(o HDBSCAN o deixou sem tópico; os vizinhos o atribuíram, ou não, se `topico` = -1)."
+    )
     autores_curto: list[str] = Field(description="Ex.: `Limongi, F.; +2`.")
     vizinhos: list[list[int]] = Field(description="Índices (nesta tabela) dos 5 documentos mais próximos.")
     cls: dict[str, list[int]] = Field(
@@ -222,6 +232,12 @@ class Detalhe(_Base):
     licenca: str
     licenca_fonte: str
     evidencias: dict[str, Evidencia] = Field(default_factory=dict)
+    idioma_analise: str | None = Field(None, description="Idioma do texto usado nos embeddings e nos tópicos.")
+    fonte_analise: FonteAnalise | None = Field(
+        None,
+        description="`resumo`: título e resumo no idioma de análise; `reserva`: resumo em outro idioma (não havia "
+        "no de análise); `so_titulo`: o documento não tem resumo. O texto em si não é publicado.",
+    )
 
 
 class Fragmento(_Arquivo):
@@ -253,6 +269,12 @@ class Topico(_Base):
     serie: Serie
     por_revista: dict[str, int]
     representativos: list[str] = Field(description="Ids de documentos.")
+    rotulo_fonte: FonteRotulo = Field(
+        "llm", description="Quem escreveu o rótulo: o modelo de linguagem, as palavras-chave ou você (rotulos.yaml)."
+    )
+    n_nucleo: int | None = Field(
+        None, description="Documentos do núcleo, que o HDBSCAN agrupou (os demais foram reatribuídos por vizinhança)."
+    )
 
 
 class Macrotema(_Base):
@@ -262,6 +284,7 @@ class Macrotema(_Base):
     rotulo: str
     cor: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
     topicos: list[int]
+    descricao: str = ""
 
 
 class Outliers(_Base):
@@ -269,6 +292,9 @@ class Outliers(_Base):
 
     n: int = Field(description="Documentos que o HDBSCAN deixou sem tópico.")
     reatribuidos: int = Field(description="Quantos deles foram atribuídos ao tópico mais próximo.")
+    por_ano: list[int] = Field(
+        default_factory=list, description="Documentos sem tópico no HDBSCAN, por ano, alinhado a `anos`."
+    )
 
 
 class Topicos(_Arquivo):

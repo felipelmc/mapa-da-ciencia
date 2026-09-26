@@ -102,13 +102,16 @@ def _linhas(con: duckdb.DuckDBPyConnection, sql: str, params: list[Any] | None =
 def ler_documentos(caminho: Path) -> list[Documento]:
     con = duckdb.connect()
     try:
-        return [Documento.model_validate(d) for d in _linhas(con, "SELECT * FROM read_parquet(?)", [str(caminho)])]
+        # sempre na ordem dos ids: o UMAP e os caches dependem da ordem das linhas
+        sql = "SELECT * FROM read_parquet(?) ORDER BY id"
+        return [Documento.model_validate(d) for d in _linhas(con, sql, [str(caminho)])]
     finally:
         con.close()
 
 
 def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
-    """DuckDB em memória com as views do corpus: `documentos`, `textos`, `autores` e `afiliacoes`."""
+    """DuckDB em memória com as views do corpus: `documentos`, `textos`, `autores`, `afiliacoes` e, se a etapa
+    de tópicos já rodou, `atribuicoes`."""
     con = duckdb.connect()
     con.execute(f"CREATE VIEW documentos AS SELECT * FROM read_parquet('{caminho}')")
     con.execute(
@@ -127,6 +130,9 @@ def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
         SELECT id, f.id AS afiliacao, f.instituicao, f.divisoes, f.cidade, f.uf, f.pais, f.fonte
         FROM documentos, unnest(afiliacoes) AS u(f)"""
     )
+    atribuicoes = caminho.parent / "topicos" / "atribuicoes.parquet"
+    if atribuicoes.exists():  # depois de `mapa topicos`: tópico, coordenadas e vizinhos de cada documento
+        con.execute(f"CREATE VIEW atribuicoes AS SELECT * FROM read_parquet('{atribuicoes}')")
     return con
 
 

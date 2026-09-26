@@ -44,7 +44,7 @@ Cada vez que uma etapa roda, o `mapa` grava em `execucoes/` um arquivo como `202
 
 - Os modelos são registrados com o **digest** do Ollama, e não só com o nome. A mesma etiqueta (`qwen3.5:9b`) pode apontar para arquivos diferentes com o tempo.
 - UMAP, HDBSCAN e o sorteio da amostra de validação usam **sementes fixas**.
-- A classificação usa **temperatura 0** e semente fixa. Mesmo assim, modelos de linguagem podem variar um pouco entre versões do Ollama ou entre máquinas. Por isso as respostas ficam em cache, e a validação mede a qualidade do que foi efetivamente usado.
+- Os rótulos dos tópicos e a classificação usam **temperatura 0** e semente fixa. Mesmo assim, modelos de linguagem podem variar um pouco entre versões do Ollama ou entre máquinas. Por isso as respostas ficam em cache, no `estado.sqlite` do projeto, com uma chave que junta o pedido, o modelo com o digest e os parâmetros: rodar de novo sem mudanças não chama o modelo, e a validação mede a qualidade do que foi efetivamente usado. Respostas rejeitadas (JSON inválido, por exemplo) não entram no cache.
 - A **estabilidade dos tópicos** entre sementes diferentes é medida (índice de Rand ajustado) e publicada com os resultados.
 
 ## O que não é versionado

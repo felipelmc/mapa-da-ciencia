@@ -17,6 +17,7 @@ Conteúdo do `mapa.yaml`.
 | `fontes` | [Fontes](#fontes) | **obrigatório** | De onde vêm os artigos. Pode combinar mais de uma fonte. |
 | `recorte` | [Recorte](#recorte) | **obrigatório** | Período e idiomas do corpus. |
 | `modelos` | [Modelos](#modelos) | valores padrão da seção | Modelos locais de cada papel. `mapa novo` preenche conforme a memória da máquina. |
+| `topicos` | [ConfigTopicos](#configtopicos) | valores padrão da seção | Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007); para outro |
 | `validacao` | [Validacao](#validacao) | valores padrão da seção | Amostra de resumos codificados por pessoas para medir a qualidade da classificação. |
 
 ### Fontes
@@ -76,6 +77,8 @@ Modelo que transforma título e resumo em vetores (base dos tópicos e do mapa).
 |---|---|---|---|
 | `provedor` | `"ollama"` | `"ollama"` | No MVP, só o Ollama local. |
 | `modelo` | texto | `"qwen3-embedding:0.6b"` | Nome do modelo no Ollama (ver ADR 0004). |
+| `num_ctx` | inteiro | `2048` | Contexto em tokens. Título e resumo cabem com folga em 2.048; o que passar é truncado. Contextos maiores ocupam mais memória. |
+| `lote` | inteiro | `32` | Textos por requisição ao Ollama. |
 
 ### ModeloLLM
 
@@ -90,6 +93,23 @@ Modelo de linguagem usado para classificar resumos ou nomear tópicos.
 | `pensar` | sim/não | `false` | Liga o modo de raciocínio do modelo (mais lento). |
 | `concorrencia` | inteiro | `1` | Chamadas simultâneas ao Ollama. |
 | `semente` | inteiro | `7` | Semente do gerador, para resultados reprodutíveis. |
+
+### ConfigTopicos
+
+Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007); para outro
+corpus, `scripts/calibrar_topicos.py` refaz a grade.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `vizinhos` | inteiro | `15` | Vizinhos de cada documento no grafo do UMAP: mais vizinhos, estrutura mais global. |
+| `min_dist` | número | `0.0` | Distância mínima entre pontos no UMAP de 5 dimensões, usado no agrupamento. |
+| `min_dist_mapa` | número | `0.1` | A mesma distância no mapa de 2 dimensões: maior, pontos mais espalhados. |
+| `min_cluster_size` | inteiro ou vazio | vazio | Menor tópico, em documentos. Vazio: automático, 1 a cada 200 documentos (mínimo 10). |
+| `min_samples` | inteiro | `5` | Quão conservador é o HDBSCAN: maior, mais documentos ficam de fora dos tópicos. |
+| `votos_minimos` | inteiro | `3` | Um documento que o HDBSCAN deixou sem tópico vai para o tópico com mais vizinhos seus no núcleo, se forem pelo menos estes (entre os `vizinhos` mais próximos). Menos que isso, fica sem tópico. |
+| `selecao` | `"eom"` \\| `"leaf"` | `"leaf"` | `leaf` fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` prefere tópicos maiores, mas pode trocar um tópico grande por vários pequenos com uma mudança mínima. |
+| `macrotemas` | inteiro | `7` | Quantos macrotemas, no máximo (grupos de tópicos próximos, com cores bem distintas). Com poucos tópicos são menos, para que cada macrotema reúna em média ao menos 3 tópicos. |
+| `sementes` | lista de inteiro | `[42, 7, 2024]` | A primeira gera os tópicos; as demais medem a estabilidade (ARI entre as execuções). |
 
 ### Validacao
 

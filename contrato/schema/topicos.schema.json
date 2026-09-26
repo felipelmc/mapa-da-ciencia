@@ -9,6 +9,11 @@
           "title": "Cor",
           "type": "string"
         },
+        "descricao": {
+          "default": "",
+          "title": "Descricao",
+          "type": "string"
+        },
         "id": {
           "title": "Id",
           "type": "integer"
@@ -42,6 +47,14 @@
           "description": "Documentos que o HDBSCAN deixou sem tópico.",
           "title": "N",
           "type": "integer"
+        },
+        "por_ano": {
+          "description": "Documentos sem tópico no HDBSCAN, por ano, alinhado a `anos`.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Por Ano",
+          "type": "array"
         },
         "reatribuidos": {
           "description": "Quantos deles foram atribuídos ao tópico mais próximo.",
@@ -123,6 +136,19 @@
           "title": "N",
           "type": "integer"
         },
+        "n_nucleo": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Documentos do núcleo, que o HDBSCAN agrupou (os demais foram reatribuídos por vizinhança).",
+          "title": "N Nucleo"
+        },
         "palavras_chave": {
           "items": {
             "maxItems": 2,
@@ -157,6 +183,17 @@
         },
         "rotulo": {
           "title": "Rotulo",
+          "type": "string"
+        },
+        "rotulo_fonte": {
+          "default": "llm",
+          "description": "Quem escreveu o rótulo: o modelo de linguagem, as palavras-chave ou você (rotulos.yaml).",
+          "enum": [
+            "llm",
+            "palavras",
+            "manual"
+          ],
+          "title": "Rotulo Fonte",
           "type": "string"
         },
         "serie": {
@@ -243,8 +280,9 @@
       "type": "array"
     },
     "versao_contrato": {
-      "const": "1.0",
-      "default": "1.0",
+      "default": "1.1",
+      "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
+      "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",
       "type": "string"
     }

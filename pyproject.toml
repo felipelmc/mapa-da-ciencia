@@ -1,12 +1,12 @@
 [project]
 name = "mapa-da-ciencia"
-version = "0.2.0"
+version = "0.3.0"
 description = "Observatório da literatura científica: tópicos no tempo, classificação por codebook com validação humana e geografia da produção, com modelos de linguagem locais."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Felipe Lamarca" }]
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.15"
 keywords = ["scielo", "bibliometria", "revisão de literatura", "llm", "ollama", "ciências sociais computacionais"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -26,6 +26,10 @@ dependencies = [
     "fastapi>=0.141",
     "uvicorn>=0.54",
     "duckdb>=1.5",
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "scikit-learn>=1.6",
+    "umap-learn>=0.5.9",
 ]
 
 [project.scripts]
@@ -62,6 +66,10 @@ extend-exclude = ["spikes", "frontend"]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 # Textos em português usam travessões, aspas curvas e "×" de propósito.
 ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+# Listas de stopwords ficam mais legíveis como texto corrido do que como listas literais.
+"src/mapa_da_ciencia/topicos/ctfidf.py" = ["SIM905"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

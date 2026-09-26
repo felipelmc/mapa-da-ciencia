@@ -15,7 +15,7 @@ Funciona dentro do Jupyter e do Colab: a coleta roda numa thread quando já há 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import duckdb
 
@@ -34,6 +34,10 @@ from mapa_da_ciencia.manifesto import status_das_etapas
 from mapa_da_ciencia.progresso import ProgressoNulo, ProgressoRich
 from mapa_da_ciencia.projeto import Projeto
 
+if TYPE_CHECKING:
+    from mapa_da_ciencia.embeddings import Embeddings
+    from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
+
 __all__ = [
     "Projeto",
     "abrir",
@@ -42,10 +46,12 @@ __all__ = [
     "conectar",
     "consultar",
     "documentos",
+    "embeddings",
     "etapas",
     "importar",
     "novo",
     "revistas",
+    "topicos",
 ]
 
 Anos = int | str | tuple[int, int]
@@ -158,7 +164,8 @@ def documentos(projeto: Projeto | str | Path = ".") -> list[Documento]:
 
 
 def conectar(projeto: Projeto | str | Path = ".") -> duckdb.DuckDBPyConnection:
-    """Conexão DuckDB com as views `documentos`, `textos`, `autores` e `afiliacoes`.
+    """Conexão DuckDB com as views `documentos`, `textos`, `autores`, `afiliacoes` e, depois de `topicos()`,
+    `atribuicoes`.
 
     Use com `with` para fechar ao fim:
 
@@ -203,3 +210,50 @@ def cobertura(projeto: Projeto | str | Path = ".") -> dict[str, Any]:
 def etapas(projeto: Projeto | str | Path = ".") -> dict[str, dict[str, Any] | None]:
     """Manifesto da última execução de cada etapa (`None` para as pendentes), como na tabela do `mapa status`."""
     return status_das_etapas(_projeto(projeto))
+
+
+def embeddings(projeto: Projeto | str | Path = ".", *, refazer: bool = False, progresso: bool = True) -> Embeddings:
+    """Um vetor por documento (título e resumo no idioma de análise), calculado pelo Ollama e guardado em cache.
+
+    O resultado tem `ids` e `matriz` (numpy, uma linha por documento, normalizada), além da marca de cada texto
+    (`textos[i].fonte`: `resumo`, `reserva` ou `so_titulo`). Na segunda vez, vem inteiro do cache.
+    """
+    from mapa_da_ciencia.embeddings import calcular_embeddings
+
+    p = _projeto(projeto)
+    if not progresso:
+        return calcular_embeddings(p, refazer=refazer, progresso=ProgressoNulo())
+    from rich.console import Console
+
+    return calcular_embeddings(p, refazer=refazer, progresso=ProgressoRich(Console()))
+
+
+def topicos(
+    projeto: Projeto | str | Path = ".",
+    *,
+    sem_rotulos: bool = False,
+    refazer_embeddings: bool = False,
+    semente: int | None = None,
+    refazer_macrotemas: bool = False,
+    progresso: bool = True,
+) -> ResumoTopicos:
+    """Descobre os tópicos, como `mapa topicos`, e devolve o resumo (`print(resumo)` mostra os números).
+
+    O resultado fica em `dados/topicos/` e pode ser consultado pela view `atribuicoes` (tópico, coordenadas no
+    mapa e vizinhos de cada documento), por exemplo: `consultar(p, "SELECT topico, count(*) FROM atribuicoes
+    GROUP BY topico")`.
+    """
+    from mapa_da_ciencia.topicos.pipeline import OpcoesTopicos, gerar_topicos
+
+    p = _projeto(projeto)
+    opcoes = OpcoesTopicos(
+        sem_rotulos=sem_rotulos,
+        refazer_embeddings=refazer_embeddings,
+        semente=semente,
+        refazer_macrotemas=refazer_macrotemas,
+    )
+    if not progresso:
+        return gerar_topicos(p, opcoes, ProgressoNulo())
+    from rich.console import Console
+
+    return gerar_topicos(p, opcoes, ProgressoRich(Console()))

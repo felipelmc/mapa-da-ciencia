@@ -18,6 +18,24 @@
           "title": "Evidencias",
           "type": "object"
         },
+        "fonte_analise": {
+          "anyOf": [
+            {
+              "enum": [
+                "resumo",
+                "reserva",
+                "so_titulo"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "`resumo`: título e resumo no idioma de análise; `reserva`: resumo em outro idioma (não havia no de análise); `so_titulo`: o documento não tem resumo. O texto em si não é publicado.",
+          "title": "Fonte Analise"
+        },
         "idioma": {
           "anyOf": [
             {
@@ -28,6 +46,19 @@
             }
           ],
           "title": "Idioma"
+        },
+        "idioma_analise": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Idioma do texto usado nos embeddings e nos tópicos.",
+          "title": "Idioma Analise"
         },
         "licenca": {
           "title": "Licenca",
@@ -166,8 +197,9 @@
       "type": "string"
     },
     "versao_contrato": {
-      "const": "1.0",
-      "default": "1.0",
+      "default": "1.1",
+      "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
+      "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",
       "type": "string"
     }

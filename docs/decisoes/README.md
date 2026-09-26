@@ -14,6 +14,7 @@ As decisões do marco M0 vêm de **spikes**: experimentos pequenos e descartáve
 | [0004](0004-embeddings-e-idioma-de-analise.md) | Embeddings com `qwen3-embedding:0.6b`, análise em inglês e exibição em português | aceita |
 | [0005](0005-modelo-de-classificacao.md) | Classificação com `qwen3.5:9b`, sem raciocínio, concorrência 1 e checagem de memória contínua | aceita |
 | [0006](0006-armazenamento-parquet-duckdb.md) | Corpus em Parquet via DuckDB, refeito a partir de `brutos/` | aceita |
+| [0007](0007-parametros-dos-topicos.md) | Parâmetros do agrupamento em tópicos, calibrados no piloto | aceita |
 
 ## Modelo
 

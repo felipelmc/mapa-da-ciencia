@@ -46,14 +46,24 @@ def test_consistencia_interna_do_exemplo(exemplo):
     docs = arquivos["documentos"]
     n = docs.n
     ids = docs.colunas.id
-    # todo documento tem detalhe no fragmento certo
+    # todo documento tem detalhe no fragmento certo, com o idioma do texto de análise
     for doc_id in ids:
-        assert doc_id in fragmentos[m.fragmento_de(doc_id)].documentos
-    # tópicos: soma dos n = total de documentos; séries somam o total por ano
+        detalhe = fragmentos[m.fragmento_de(doc_id)].documentos[doc_id]
+        assert detalhe.fonte_analise in ("resumo", "reserva") and detalhe.idioma_analise
+    # tópicos: soma dos n + documentos sem tópico = total; o mesmo por ano
     top = arquivos["topicos"]
-    assert sum(t.n for t in top.topicos) == n
-    for i, _ano in enumerate(top.anos):
-        assert sum(t.serie.n[i] for t in top.topicos) == top.total_por_ano[i]
+    sem_topico = [i for i, t in enumerate(docs.colunas.topico) if t == -1]
+    assert sem_topico and sum(t.n for t in top.topicos) + len(sem_topico) == n
+    for i, ano in enumerate(top.anos):
+        sem_no_ano = sum(docs.colunas.ano[j] == ano for j in sem_topico)
+        assert sum(t.serie.n[i] for t in top.topicos) + sem_no_ano == top.total_por_ano[i]
+    # ids de tópico não contíguos (como depois de execuções que aposentaram tópicos), todos conhecidos
+    ids_topicos = {t.id for t in top.topicos}
+    assert max(ids_topicos) >= len(ids_topicos) and set(docs.colunas.topico) <= ids_topicos | {-1}
+    # núcleo e ruído: quem o HDBSCAN deixou de fora foi reatribuído ou ficou em -1
+    assert all(t.n_nucleo is not None and t.n_nucleo <= t.n for t in top.topicos)
+    assert top.outliers.reatribuidos + len(sem_topico) == top.outliers.n == sum(top.outliers.por_ano)
+    assert all(docs.dicionarios.atribuicao[docs.colunas.atribuicao[i]] == "vizinho" for i in sem_topico)
     # contagem fracionária: soma dos pesos por documento = 1
     af = arquivos["afiliacoes"].colunas
     por_doc = defaultdict(float)

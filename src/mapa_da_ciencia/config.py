@@ -88,6 +88,14 @@ class ModeloEmbeddings(_Base):
 
     provedor: Literal["ollama"] = Field("ollama", description="No MVP, só o Ollama local.")
     modelo: str = Field("qwen3-embedding:0.6b", description="Nome do modelo no Ollama (ver ADR 0004).")
+    num_ctx: int = Field(
+        2048,
+        ge=512,
+        le=32768,
+        description="Contexto em tokens. Título e resumo cabem com folga em 2.048; o que passar é truncado. "
+        "Contextos maiores ocupam mais memória.",
+    )
+    lote: int = Field(32, ge=1, le=256, description="Textos por requisição ao Ollama.")
 
 
 class ModeloLLM(_Base):
@@ -108,6 +116,58 @@ class Modelos(_Base):
     embeddings: ModeloEmbeddings = ModeloEmbeddings()
     classificacao: ModeloLLM = ModeloLLM()
     rotulos: ModeloLLM = ModeloLLM()
+
+
+class ConfigTopicos(_Base):
+    """Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007); para outro
+    corpus, `scripts/calibrar_topicos.py` refaz a grade."""
+
+    vizinhos: int = Field(
+        15,
+        ge=2,
+        le=200,
+        description="Vizinhos de cada documento no grafo do UMAP: mais vizinhos, estrutura mais global.",
+    )
+    min_dist: float = Field(
+        0.0, ge=0, le=1, description="Distância mínima entre pontos no UMAP de 5 dimensões, usado no agrupamento."
+    )
+    min_dist_mapa: float = Field(
+        0.1, ge=0, le=1, description="A mesma distância no mapa de 2 dimensões: maior, pontos mais espalhados."
+    )
+    min_cluster_size: int | None = Field(
+        None, ge=5, description="Menor tópico, em documentos. Vazio: automático, 1 a cada 200 documentos (mínimo 10)."
+    )
+    min_samples: int = Field(
+        5, ge=1, description="Quão conservador é o HDBSCAN: maior, mais documentos ficam de fora dos tópicos."
+    )
+    votos_minimos: int = Field(
+        3,
+        ge=1,
+        le=50,
+        description="Um documento que o HDBSCAN deixou sem tópico vai para o tópico com mais vizinhos seus no núcleo, "
+        "se forem pelo menos estes (entre os `vizinhos` mais próximos). Menos que isso, fica sem tópico.",
+    )
+    selecao: Literal["eom", "leaf"] = Field(
+        "leaf",
+        description=(
+            "`leaf` fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` "
+            "prefere tópicos maiores, mas pode trocar um tópico grande por vários pequenos com uma mudança mínima."
+        ),
+    )
+    macrotemas: int = Field(
+        7,
+        ge=1,
+        le=8,
+        description=(
+            "Quantos macrotemas, no máximo (grupos de tópicos próximos, com cores bem distintas). Com poucos "
+            "tópicos são menos, para que cada macrotema reúna em média ao menos 3 tópicos."
+        ),
+    )
+    sementes: list[int] = Field(
+        [42, 7, 2024],
+        min_length=1,
+        description="A primeira gera os tópicos; as demais medem a estabilidade (ARI entre as execuções).",
+    )
 
 
 class Validacao(_Base):
@@ -131,6 +191,7 @@ class ConfigProjeto(_Base):
     fontes: Fontes
     recorte: Recorte
     modelos: Modelos = Modelos()
+    topicos: ConfigTopicos = ConfigTopicos()
     validacao: Validacao = Validacao()
 
 

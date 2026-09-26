@@ -351,7 +351,7 @@ def reconstruir_resumo(indice_invertido: dict[str, list[int]] | None) -> str:
 
 
 def enriquecer(doc: Documento, obra: dict | None, passo: Casamento) -> Documento:
-    """Acrescenta ao documento o que o OpenAlex sabe: id, citações, licença e, se faltar, DOI e resumo."""
+    """Acrescenta ao documento o que o OpenAlex sabe: id, citações, licença e, se faltar, DOI, título e resumo."""
     if obra is None:
         return doc.model_copy(update={"casamento": passo})
     licenca_oa = licenca_da_obra(obra, {doc.revista_issn} if doc.revista_issn else frozenset())
@@ -367,6 +367,8 @@ def enriquecer(doc: Documento, obra: dict | None, passo: Casamento) -> Documento
     }
     if not doc.resumos and (resumo := reconstruir_resumo(obra.get("abstract_inverted_index"))):
         mudancas["resumos"] = [Texto(idioma=obra.get("language"), texto=resumo, origem="openalex")]
+    if not doc.titulos and (titulo := limpar(obra.get("title"))):
+        mudancas["titulos"] = [Texto(idioma=obra.get("language"), texto=titulo, origem="openalex")]
     return doc.model_copy(update=mudancas)
 
 

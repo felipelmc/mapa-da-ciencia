@@ -95,6 +95,22 @@ mapa coletar [OPÇÕES]
 | `--sem-openalex` | Não enriquece com o OpenAlex (citações, licença por artigo). |  |
 | `--consulta` | Só os artigos cujo título ou resumo respondem a esta busca (via OpenAlex). |  |
 
+## `mapa topicos`
+
+Descobre os tópicos do corpus, dá um nome a cada um e prepara o mapa do painel.
+
+```
+mapa topicos [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--sem-rotulos` | Rótulos pelas palavras-chave, sem carregar o modelo de linguagem. |  |
+| `--refazer-embeddings` | Recalcula os embeddings de todos os documentos. |  |
+| `--semente` | Semente principal do UMAP (padrão: a primeira de topicos.sementes). |  |
+| `--refazer-macrotemas` | Agrupa os tópicos em macrotemas de novo, em vez de manter os da execução anterior (as cores mudam). |  |
+
 ## `mapa importar`
 
 Acrescenta ao projeto artigos de uma busca exportada do search.scielo.org (ou de uma lista de DOIs).

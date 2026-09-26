@@ -83,11 +83,39 @@
 				<kbd>Tab</kbd> percorre os controles, e o primeiro deles é “Pular para o conteúdo”. O foco fica sempre
 				visível, e as animações somem se o sistema pedir menos movimento.
 			</p>
+			<h3 id="atalhos-mapa">No mapa</h3>
+			<dl class="atalhos" data-testid="atalhos-mapa">
+				<dt><kbd>/</kbd></dt>
+				<dd>busca por título ou autor</dd>
+				<dt><kbd>L</kbd></dt>
+				<dd>liga o laço: arraste em volta dos pontos para ficar só com eles</dd>
+				<dt><kbd>Esc</kbd></dt>
+				<dd>fecha o cartão do documento ou desliga o laço</dd>
+				<dt><kbd>?</kbd></dt>
+				<dd>abre esta página</dd>
+				<dt>roda do mouse, arrastar</dt>
+				<dd>aproxima e move o mapa; de perto, os rótulos passam dos macrotemas para os tópicos</dd>
+			</dl>
+			<p>
+				Tudo o que você faz no mapa (filtros, busca, laço, documento aberto e a posição da câmera) fica no endereço
+				da página: copie o link para mostrar exatamente a mesma coisa a outra pessoa.
+			</p>
 		</section>
 	</div>
 </div>
 
 <style>
+	.atalhos {
+		display: grid;
+		grid-template-columns: max-content 1fr;
+		gap: 0.4rem 1rem;
+		margin: 0.5rem 0 1rem;
+	}
+
+	.atalhos dd {
+		margin: 0;
+	}
+
 	.pagina {
 		display: grid;
 		gap: 2.5rem;

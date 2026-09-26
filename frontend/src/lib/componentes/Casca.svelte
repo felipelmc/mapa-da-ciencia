@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { page } from '$app/state';
 	import { definirProjeto, type ProjetoAberto } from '$lib/dados/contexto';
+	import { lerHash } from '$lib/estado/url';
 	import { secoesDoTrilho } from '$lib/secoes';
 	import BarraSuperior from './BarraSuperior.svelte';
 	import Trilho from './Trilho.svelte';
@@ -12,6 +14,7 @@
 	definirProjeto(projeto);
 
 	const secoes = $derived(secoesDoTrilho(projeto.manifesto));
+	const telaCheia = $derived(secoes.find((s) => s.caminho === lerHash(page.url.hash).caminho)?.telaCheia ?? false);
 
 	let principal: HTMLElement;
 
@@ -29,7 +32,7 @@
 <div class="casca">
 	<Trilho {secoes} {projeto} />
 	<BarraSuperior {projeto} />
-	<main id="conteudo" class="conteudo" tabindex="-1" bind:this={principal}>
+	<main id="conteudo" class="conteudo" class:tela-cheia={telaCheia} tabindex="-1" bind:this={principal}>
 		{@render children()}
 	</main>
 </div>
@@ -75,6 +78,14 @@
 		outline: none;
 	}
 
+	/* O mapa ocupa tudo: sem margens, sem largura máxima, na altura da janela */
+	.conteudo.tela-cheia {
+		max-width: none;
+		padding: 0;
+		height: calc(100dvh - var(--barra-altura));
+		overflow: hidden;
+	}
+
 	/* Tela estreita: o trilho vira uma barra fixa embaixo (ver Trilho.svelte). */
 	@media (max-width: 820px) {
 		.casca {
@@ -87,6 +98,11 @@
 
 		.conteudo {
 			padding: 1.5rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
+		}
+
+		.conteudo.tela-cheia {
+			padding: 0;
+			height: calc(100dvh - var(--barra-altura) - 4.5rem - env(safe-area-inset-bottom));
 		}
 	}
 </style>

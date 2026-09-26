@@ -37,10 +37,11 @@ flowchart LR
 | Configuração | `config.py`, `projeto.py` | `mapa.yaml`, `codebook.yaml` e layout da pasta do projeto |
 | Reprodutibilidade | `manifesto.py` | Registro de cada execução de etapa |
 | Coleta | `coleta.py`, `fontes/`, `documento.py`, `texto.py` | Orquestração da etapa (`coleta.py`); buscador com cache (`fontes/base.py`), ArticleMeta, OpenAlex, importação, deduplicação; o `Documento` normalizado |
+| Tópicos | `embeddings.py`, `topicos/` | Texto de análise e embeddings com cache; kNN exato, UMAP e HDBSCAN com reatribuição do ruído; palavras-chave (c-TF-IDF), macrotemas, identidade e cores estáveis (paleta OKLCH), rótulos pelo modelo de linguagem; `topicos/pipeline.py` orquestra a etapa ([explicação](../explicacoes/topicos.md), [ADR 0007](../decisoes/0007-parametros-dos-topicos.md)) |
 | Armazenamento | `armazenamento.py` | Corpus em Parquet via DuckDB, com views para consulta ([ADR 0006](../decisoes/0006-armazenamento-parquet-duckdb.md)) |
 | Rede e máquina | `rede.py`, `recursos.py` | HTTP com `truststore`; memória, swap e disco |
-| Modelos | `llm/` | Interface de provedor e adaptador do Ollama; perfis |
-| Contrato | `contrato/` | Modelos Pydantic (a fonte da verdade), exportação, exemplo sintético |
+| Modelos | `llm/` | Interface de provedor e adaptador do Ollama (embeddings, saída estruturada); guarda de memória (`memoria.py`); cache das respostas no `estado.sqlite` (`cache.py`); perfis |
+| Contrato | `contrato/` | Modelos Pydantic (a fonte da verdade), exportação única de `saida/dados/` (`exportar.py`), exemplo sintético |
 | Painel | `servidor/app.py` | FastAPI: interface em `/`, dados em `/dados`, API em `/api` |
 | Interface | `frontend/` | SvelteKit; veja o [`frontend/README.md`](https://github.com/felipelmc/mapa-da-ciencia/blob/main/frontend/README.md) |
 
@@ -89,8 +90,8 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | M0 | Spikes: fontes, embeddings, modelo de classificação, frontend ([ADRs 0001–0005](../decisoes/README.md)) | concluído |
 | M1 | Esqueleto: pacote, CLI, configuração, diagnóstico, contrato, painel, documentação, CI | concluído (v0.1.0) |
 | M2 | Coleta: ArticleMeta, OpenAlex, importação, deduplicação, cache | concluído (v0.2.0) |
-| M3 | Tópicos e mapa de documentos | |
-| M4 | Rótulos com LLM, tópicos no tempo, geografia | |
+| M3 | Tópicos com rótulos pelo modelo de linguagem e mapa de documentos | concluído (v0.3.0) |
+| M4 | Tópicos no tempo e geografia | |
 | M5 | Classificação por codebook e validação | |
 | M6 | Painel completo: rodar etapas pela interface | |
 | M7 | Publicação, figuras, oficina no Colab, release | |
