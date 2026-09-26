@@ -126,3 +126,11 @@ def test_nao_muda_o_projeto_com_uma_etapa_rodando(projeto, tmp_path):
         liberar.set()
         esperar_estado(c, job, {"concluido"})
         assert c.patch("/api/configuracao", json={"titulo": "x"}).status_code == 200
+
+
+def test_revistas_do_retrato(cliente):
+    achadas = cliente.get("/api/revistas", params={"busca": "opiniao publica"}).json()
+    assert achadas[0]["issn"] == "0104-6276" and achadas[0]["titulo"] == "Opinião Pública"
+    pedidas = cliente.get("/api/revistas", params={"issn": "0011-5258,0104-6276,9999-9999"}).json()
+    assert [r["acronimo"] for r in pedidas] == ["dados", "op"]
+    assert len(cliente.get("/api/revistas", params={"busca": "a"}).json()) <= 50

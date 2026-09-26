@@ -4,6 +4,10 @@ import { expect, test } from '@playwright/test';
 import { join } from 'node:path';
 import { h1, TELAS, url, vigiar } from './comum';
 
+/** Os problemas, menos os da queda proposital da primeira conexão SSE (ver api-falsa-painel.ts). */
+const semAQueda = (problemas: string[]) =>
+	problemas.filter((p) => !p.includes('/eventos') && !p.includes('ERR_INCOMPLETE_CHUNKED_ENCODING'));
+
 test.beforeEach(async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: 'reduce' });
 });
@@ -26,7 +30,7 @@ test('a linha de metrô, a estimativa e os modelos', async ({ page }) => {
 });
 
 test('rodar uma etapa: progresso ao vivo, mesmo com a conexão caindo, e a estação fica em dia', async ({ page }) => {
-	const problemas = vigiar(page).filter(() => true);
+	const problemas = vigiar(page);
 	const conexoes: string[] = [];
 	page.on('request', (r) => r.url().includes('/eventos') && conexoes.push(r.url()));
 	await page.goto(`${url('PAINEL')}#/projeto`);
@@ -50,7 +54,7 @@ test('rodar uma etapa: progresso ao vivo, mesmo com a conexão caindo, e a esta�
 	await expect(page.getByTestId('estado-topicos')).toHaveText('Em dia');
 	await expect(page.getByTestId('historico')).toContainText('Tópicos');
 	await expect(page.getByTestId('recarregar')).toBeVisible();
-	expect(problemas.filter((p) => !p.includes('/eventos'))).toEqual([]);
+	expect(semAQueda(problemas)).toEqual([]);
 });
 
 test('cancelar um job', async ({ page }) => {
@@ -78,4 +82,51 @@ test('baixar um modelo que falta', async ({ page }) => {
 	await expect(page.getByRole('heading', { name: 'Download do modelo' })).toBeVisible();
 	await expect(page.getByTestId('estado-job')).toHaveText('Concluído', { timeout: 15_000 });
 	await expect(page.getByTestId('modelos')).not.toContainText('Baixar');
+});
+
+// Por último: o assistente muda a configuração da API falsa (os modelos), e os testes acima contam com a original.
+test('o assistente em 5 passos salva o projeto e roda um piloto', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('PAINEL')}#/projeto`);
+	await page.getByTestId('configurar').click();
+	const assistente = page.getByTestId('assistente');
+	await expect(assistente.getByTestId('revistas-escolhidas')).toContainText('Opinião Pública');
+	// 1. fontes: tirar a única revista não deixa avançar; procurar e incluir outra
+	await assistente.getByRole('button', { name: 'Tirar Opinião Pública' }).click();
+	await assistente.getByTestId('avancar').click();
+	await expect(assistente.getByRole('alert')).toHaveText('Escolha pelo menos uma revista.');
+	await assistente.getByTestId('busca-revista').fill('ciencia politica');
+	await assistente.getByTestId('incluir-revista').first().click();
+	await expect(assistente.getByTestId('revistas-escolhidas')).toContainText('Revista Brasileira de Ciência Política');
+	await assistente.getByTestId('avancar').click();
+	// 2. recorte
+	await expect(assistente.getByTestId('passo-2')).toBeVisible();
+	await assistente.getByTestId('ano-inicio').fill('2015');
+	await assistente.getByTestId('avancar').click();
+	// 3. modelos: o perfil leve troca a classificação por um modelo já instalado
+	await assistente.getByTestId('perfil-leve').click();
+	await expect(assistente.getByTestId('perfil-leve')).toHaveAttribute('aria-pressed', 'true');
+	await assistente.screenshot({ path: join(TELAS, 'assistente-modelos.png') });
+	await assistente.getByTestId('avancar').click();
+	// 4. codebook: uma variável nova
+	await assistente.getByTestId('nova-variavel').click();
+	await assistente.getByTestId('avancar').click();
+	// 5. revisão: o que muda e o que isso refaz
+	const mudancas = assistente.getByTestId('mudancas');
+	await expect(mudancas).toContainText('Revistas incluídas: Revista Brasileira de Ciência Política');
+	await expect(mudancas).toContainText('Revistas retiradas: Opinião Pública');
+	await expect(mudancas).toContainText('Período: 2010–2025 → 2015–2025');
+	await expect(mudancas).toContainText('Classificação: qwen3.5:9b → qwen3.5:4b');
+	await expect(mudancas).toContainText('O codebook mudou.');
+	await assistente.getByTestId('salvar-piloto').click();
+	await expect(page.getByTestId('projeto-salvo')).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Etapa: Coleta' })).toBeVisible();
+	await expect(page.getByTestId('estado-job')).toHaveText('Concluído', { timeout: 15_000 });
+	const config = await (await page.request.get(`${url('PAINEL')}api/configuracao`)).json();
+	expect(config.recorte.anos).toEqual([2015, 2025]);
+	expect(config.fontes.scielo.revistas).toEqual(['0103-3352']);
+	expect(config.modelos.classificacao.modelo).toBe('qwen3.5:4b');
+	const codebook = await (await page.request.get(`${url('PAINEL')}api/codebook`)).json();
+	expect(codebook.variaveis.at(-1).rotulo).toMatch(/^Variável \d+$/);
+	expect(semAQueda(problemas)).toEqual([]);
 });

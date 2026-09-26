@@ -64,6 +64,18 @@ No painel local, a vista **Projeto** mostra as etapas numa linha, na ordem em qu
 - Quando a etapa termina, **Ver os dados novos** recarrega o painel com os arquivos que ela gerou.
 - O bloco **Modelos** mostra se o Ollama está no ar e se os modelos do projeto estão instalados; o que faltar pode ser baixado dali, com o tamanho do download antes.
 
+### Configurar o projeto
+
+O botão **Configurar o projeto** abre um assistente em cinco passos, sobre o projeto aberto:
+
+1. **Fontes:** as revistas do SciELO Brasil (procure por nome, sigla, ISSN ou área) e se a coleta completa os registros com o OpenAlex.
+2. **Recorte:** o período, os tipos de documento e os idiomas de análise (dos tópicos) e de exibição (do painel e da classificação).
+3. **Modelo:** os perfis de modelos, com o sugerido para a memória desta máquina, o que cada um baixa e o que já está instalado.
+4. **Codebook:** as variáveis, com a pergunta e as categorias (veja [Escrever um codebook](codebook.md)).
+5. **Revisão:** o que muda e o que isso refaz (uma revista nova refaz a coleta e as etapas seguintes; uma definição nova do codebook refaz a classificação).
+
+Nada é gravado antes da revisão. Ao salvar, o `mapa.yaml` e o `codebook.yaml` mudam só no que mudou, e os comentários dos arquivos ficam. **Salvar e rodar um piloto** coleta só 20 documentos, para conferir o recorte antes da coleta inteira. Enquanto uma etapa roda, o projeto não pode ser mudado.
+
 Na CLI, as mesmas etapas são `mapa coletar`, `mapa topicos`, `mapa geografia` e `mapa classificar`, e o que uma faz a outra enxerga: uma etapa rodada no terminal aparece em dia no painel.
 
 ## Como funciona

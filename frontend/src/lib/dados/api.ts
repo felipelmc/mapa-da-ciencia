@@ -51,7 +51,14 @@ export type Configuracao = Record<string, unknown> & {
 	modelos: Record<'embeddings' | 'classificacao' | 'rotulos', { modelo: string } & Record<string, unknown>>;
 };
 
-export type CodebookEditavel = Omit<CodebookContrato, 'versao_contrato'>;
+export interface RevistaDoRetrato {
+	issn: string;
+	acronimo: string;
+	titulo: string;
+	areas: string[];
+}
+
+export type CodebookEditavel = Omit<CodebookContrato, 'versao_contrato' | 'hash'>;
 
 const EVENTOS = ['estado', 'etapa', 'avanco', 'mensagem', 'resumo', 'erro', 'fim'] as const;
 
@@ -113,6 +120,12 @@ export class FonteApi extends FonteEstatica {
 
 	estimativaClassificacao(): Promise<Estimativa> {
 		return pedirApi('api/estimativa/classificacao');
+	}
+
+	/** As revistas correntes do SciELO Brasil que casam com a busca, ou as dos ISSNs pedidos. */
+	buscarRevistas(busca: string, issns: string[] = []): Promise<RevistaDoRetrato[]> {
+		const q = issns.length ? `issn=${encodeURIComponent(issns.join(','))}` : `busca=${encodeURIComponent(busca)}`;
+		return pedirApi(`api/revistas?${q}`);
 	}
 
 	configuracao(): Promise<Configuracao> {

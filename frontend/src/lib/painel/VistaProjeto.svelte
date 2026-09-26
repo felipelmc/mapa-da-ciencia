@@ -11,6 +11,7 @@
 	import type { EtapasDoProjeto, Estimativa, FonteApi, InfoModelos, NomeEtapa } from '$lib/dados/api';
 	import { ErroDaApi } from '$lib/dados/pedir';
 	import { formatarData, formatarDuracao, formatarInteiro } from '$lib/formato';
+	import Assistente from './Assistente.svelte';
 	import JobAoVivo from './JobAoVivo.svelte';
 	import LinhaDeMetro, { ESTACOES } from './LinhaDeMetro.svelte';
 	import type { Job, JobAoVivo as EstadoJob } from './job';
@@ -23,6 +24,8 @@
 	let historico = $state<Job[]>([]);
 	let aoVivo = $state<EstadoJob | null>(null);
 	let aviso = $state<string | null>(null);
+	let configurando = $state(false);
+	let salvo = $state(false);
 	let parar: (() => void) | null = null;
 
 	const ocupado = $derived(!!aoVivo && !aoVivo.terminado);
@@ -101,6 +104,23 @@
 	</header>
 
 	{#if aviso}<p class="aviso" role="alert" data-testid="aviso-projeto">{aviso}</p>{/if}
+	{#if salvo}<p class="ok-salvo" role="status" data-testid="projeto-salvo">Projeto salvo. As etapas afetadas aparecem desatualizadas na linha.</p>{/if}
+
+	{#if configurando}
+		<Assistente
+			{fonte}
+			aoFechar={(salvou) => {
+				configurando = false;
+				salvo = salvou;
+				if (salvou) void atualizar();
+			}}
+			aoPiloto={() => rodar('coleta', { limite: 20 })}
+		/>
+	{:else}
+		<button type="button" class="configurar" disabled={ocupado} onclick={() => ((configurando = true), (salvo = false))} data-testid="configurar">
+			Configurar o projeto
+		</button>
+	{/if}
 
 	{#if etapas}
 		<LinhaDeMetro {etapas} rodando={ocupado ? (aoVivo?.etapa ?? null) : null} {ocupado} aoRodar={(e, o) => rodar(e, o)} />
@@ -221,6 +241,26 @@
 	.suave {
 		color: var(--texto-fraco);
 		font-size: 0.85rem;
+	}
+
+	.configurar {
+		justify-self: start;
+		padding: 0.4rem 0.9rem;
+		border: 1px solid var(--linha-forte);
+		border-radius: var(--raio-pequeno);
+		background: none;
+		color: var(--texto);
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.configurar:disabled {
+		opacity: 0.45;
+	}
+
+	.ok-salvo {
+		margin: 0;
+		color: var(--texto-suave);
 	}
 
 	.lado-a-lado {

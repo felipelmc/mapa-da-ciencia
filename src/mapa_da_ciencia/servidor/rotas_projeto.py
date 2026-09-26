@@ -7,6 +7,7 @@ codebook.
   projeto (instalados ou não, com o tamanho do download);
 - `POST /api/modelos/baixar`: baixa um modelo (`ollama pull`) como um job, com o progresso ao vivo;
 - `GET /api/estimativa/classificacao`: quantos documentos faltam classificar e quanto tempo isso deve levar;
+- `GET /api/revistas`: as revistas correntes do SciELO Brasil, para escolher as fontes;
 - `GET` e `PATCH /api/configuracao`, `GET` e `PUT /api/codebook`: lidos e gravados sem perder os comentários do YAML
   (`edicao.py`), validados antes de ir para o disco, e recusados enquanto uma etapa roda.
 """
@@ -177,6 +178,19 @@ def rotas_projeto(projeto: Projeto, jobs: Jobs) -> APIRouter:
             if por_doc is not None
             else None,
         }
+
+    @rotas.get("/revistas")
+    def revistas(busca: str = "", area: str = "", issn: str = "") -> list[dict[str, Any]]:
+        """As revistas correntes do SciELO Brasil (o retrato empacotado), por nome, acrônimo, ISSN ou área; com
+        `issn`, só as desses ISSNs (separados por vírgula), na ordem pedida."""
+        from ..fontes import revistas as retrato
+
+        if issn:
+            achadas = [retrato.resolver(i) for i in issn.split(",") if i.strip()]
+            lista = [r for r in achadas if r is not None]
+        else:
+            lista = retrato.buscar(busca, area)[:50]
+        return [{"issn": r.issn, "acronimo": r.acronimo, "titulo": r.titulo, "areas": list(r.areas)} for r in lista]
 
     @rotas.get("/configuracao")
     def configuracao() -> dict[str, Any]:

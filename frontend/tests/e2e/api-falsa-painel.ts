@@ -28,6 +28,12 @@ interface JobFalso {
 }
 
 const PASSOS = 20;
+const REVISTAS = [
+	{ issn: '0104-6276', acronimo: 'op', titulo: 'Opinião Pública', areas: ['Ciências Humanas'] },
+	{ issn: '0011-5258', acronimo: 'dados', titulo: 'Dados', areas: ['Ciências Humanas'] },
+	{ issn: '0103-3352', acronimo: 'rbcpol', titulo: 'Revista Brasileira de Ciência Política', areas: ['Ciências Humanas'] },
+	{ issn: '1981-3821', acronimo: 'bpsr', titulo: 'Brazilian Political Science Review', areas: ['Ciências Humanas'] }
+];
 
 export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 	const jobs: JobFalso[] = [];
@@ -211,6 +217,15 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 		if (metodo === 'GET' && caminho === 'estimativa/classificacao') {
 			json(res, 200, { modelo: 'qwen3.5:9b', documentos: 1480, classificados: 200, pendentes: 1280, segundos_por_documento: 11, estimativa_s: 14080 });
 			return true;
+		}
+		if (metodo === 'GET' && caminho === 'revistas') {
+			const semAcento = (t: string) => t.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+			const busca = semAcento(url.searchParams.get('busca') ?? '');
+			const issns = (url.searchParams.get('issn') ?? '').split(',').filter(Boolean);
+			const lista = issns.length
+				? REVISTAS.filter((r) => issns.includes(r.issn))
+				: REVISTAS.filter((r) => busca && semAcento(`${r.titulo} ${r.acronimo} ${r.issn}`).includes(busca));
+			return (json(res, 200, lista), true);
 		}
 		if (caminho === 'configuracao') {
 			if (metodo === 'GET') return (json(res, 200, config), true);
