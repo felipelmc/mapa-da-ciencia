@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Mudado
+
+- `mapa status` deixa de listar a "exportação" como etapa pendente: a exportação para o painel acontece no fim de cada etapa.
+
 ## [0.3.0] - 2026-09-26
 
 Os tópicos e o mapa: o `mapa` descobre os assuntos do corpus com modelos locais, dá nome a eles em português e os mostra num mapa navegável. No piloto (4.275 artigos de dez revistas de ciência política), são 57 tópicos em 7 macrotemas, com estabilidade de 0,89 entre sementes; a etapa leva uns 4 minutos nos embeddings e 3 nos rótulos na primeira vez, e segundos depois.
