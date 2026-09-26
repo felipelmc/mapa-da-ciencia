@@ -1,0 +1,203 @@
+"""As instituições que a geografia conhece: os registros do OpenAlex e as correções do projeto.
+
+- `dados/instituicoes_openalex.parquet` (gravado pela coleta): nome, siglas, nomes alternativos, país, região,
+  cidade, tipo e linhagem de cada instituição que aparece nas autorias do OpenAlex e acima delas.
+- `geografia/dados/apelidos.csv` (do pacote): textos de afiliação que o casamento automático erra ou não acha,
+  ligados a uma instituição do OpenAlex.
+- `instituicoes.yaml` (do projeto, opcional) tem prioridade sobre os dois:
+
+```yaml
+apelidos:                      # texto de afiliação (como aparece) → instituição
+  IUPERJ: I4210131232
+  Centro Brasileiro de Análise e Planejamento: cebrap
+instituicoes:
+  cebrap:                      # instituição que o OpenAlex não tem
+    nome: Centro Brasileiro de Análise e Planejamento
+    sigla: CEBRAP
+    pais: BR
+    uf: SP
+  I4210089234:                 # instituição do OpenAlex: corrige campos ou fica separada da "mãe"
+    uf: RJ
+    separada: true
+```
+"""
+
+from __future__ import annotations
+
+import csv
+from collections.abc import Iterable
+from dataclasses import dataclass, replace
+from importlib import resources
+from pathlib import Path
+
+import yaml
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+
+from ..armazenamento import ARQUIVO_INSTITUICOES, ler_tabela
+from ..config import ErroConfig
+from ..documento import Documento
+from . import normalizar
+
+ARQUIVO_PROJETO = "instituicoes.yaml"
+
+
+@dataclass(frozen=True)
+class Registro:
+    """Uma instituição: do OpenAlex (`id` = `I…`) ou do projeto (`id` = o nome dado no `instituicoes.yaml`)."""
+
+    id: str
+    nome: str
+    ror: str | None = None
+    siglas: tuple[str, ...] = ()
+    nomes: tuple[str, ...] = ()
+    pais: str | None = None
+    regiao: str | None = None
+    cidade: str | None = None
+    tipo: str | None = None
+    linhagem: tuple[str, ...] = ()
+    super_sistema: bool = False
+    uf: str | None = None  # só quando o projeto informa; senão sai da região ou da cidade
+    separada: bool = False  # não sobe para a instituição "mãe"
+
+    @property
+    def do_openalex(self) -> bool:
+        return self.id.startswith("I") and self.id[1:].isdigit()
+
+
+def ler_openalex(dados: Path) -> dict[str, Registro]:
+    """Os registros gravados pela coleta; vazio se a coleta não os buscou (corpus antigo ou sem OpenAlex)."""
+    arquivo = dados / ARQUIVO_INSTITUICOES
+    if not arquivo.exists():
+        return {}
+    return {
+        r["id"]: Registro(
+            id=r["id"],
+            ror=r["ror"],
+            nome=r["nome"] or r["id"],
+            siglas=tuple(r["siglas"] or ()),
+            nomes=tuple(dict.fromkeys([*(r["nomes"] or ()), *([r["nome_pt"]] if r.get("nome_pt") else [])])),
+            pais=r["pais"],
+            regiao=r["regiao"],
+            cidade=r["cidade"],
+            tipo=r["tipo"],
+            linhagem=tuple(r["linhagem"] or ()),
+            super_sistema=bool(r["super_sistema"]),
+        )
+        for r in ler_tabela(arquivo)
+    }
+
+
+def completar(registros: dict[str, Registro], documentos: Iterable[Documento]) -> dict[str, Registro]:
+    """Acrescenta as instituições das autorias que faltam nos registros (coleta sem `/institutions`), com o que a
+    própria autoria diz: nome, país, tipo e linhagem, sem siglas nem nomes alternativos."""
+    saida = dict(registros)
+    for doc in documentos:
+        for autoria in doc.autorias_openalex:
+            for i in autoria.instituicoes:
+                if i.id not in saida:
+                    saida[i.id] = Registro(
+                        id=i.id, nome=i.nome or i.id, ror=i.ror, pais=i.pais, tipo=i.tipo, linhagem=tuple(i.linhagem)
+                    )
+    return saida
+
+
+def apelidos_do_pacote() -> dict[str, str]:
+    """Apelido (texto de afiliação) → id do OpenAlex, do `apelidos.csv` do pacote."""
+    texto = resources.files("mapa_da_ciencia.geografia").joinpath("dados", "apelidos.csv").read_text("utf-8")
+    linhas = csv.DictReader(linha for linha in texto.splitlines() if not linha.startswith("#"))
+    return {linha["apelido"]: linha["instituicao"] for linha in linhas}
+
+
+# ---------------------------------------------------------------- instituicoes.yaml
+class _Instituicao(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    nome: str | None = None
+    sigla: str | None = None
+    pais: str | None = Field(None, description="ISO 3166-1 alfa-2 ou nome do país.")
+    uf: str | None = Field(None, description="Sigla ou nome da UF.")
+    cidade: str | None = None
+    separada: bool = False
+
+    @field_validator("pais")
+    @classmethod
+    def _pais(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        if codigo := normalizar.pais(v):
+            return codigo
+        raise ValueError(f"país desconhecido: {v!r}")
+
+    @field_validator("uf")
+    @classmethod
+    def _uf(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        if sigla := normalizar.uf(v):
+            return sigla
+        raise ValueError(f"UF desconhecida: {v!r}")
+
+
+class _Arquivo(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    apelidos: dict[str, str] = Field(default_factory=dict)
+    instituicoes: dict[str, _Instituicao] = Field(default_factory=dict)
+
+
+@dataclass
+class Correcoes:
+    """O que o projeto corrige: apelidos (texto → id) e instituições próprias ou ajustadas."""
+
+    apelidos: dict[str, str]
+    instituicoes: dict[str, _Instituicao]
+
+
+def ler_projeto(raiz: Path) -> Correcoes:
+    arquivo = raiz / ARQUIVO_PROJETO
+    if not arquivo.exists():
+        return Correcoes({}, {})
+    try:
+        dados = _Arquivo.model_validate(yaml.safe_load(arquivo.read_text(encoding="utf-8")) or {})
+    except (yaml.YAMLError, ValidationError) as e:
+        raise ErroConfig(
+            f"{ARQUIVO_PROJETO} inválido: {e}. O formato é `apelidos: {{texto: id}}` e "
+            "`instituicoes: {id: {nome: ..., pais: ..., uf: ...}}`."
+        ) from e
+    return Correcoes({str(k): str(v) for k, v in dados.apelidos.items()}, dados.instituicoes)
+
+
+def combinar(openalex: dict[str, Registro], correcoes: Correcoes) -> tuple[dict[str, Registro], dict[str, str]]:
+    """Registros e apelidos finais: os do OpenAlex e do pacote, com as correções do projeto por cima.
+
+    Um apelido que aponta para uma instituição desconhecida é um erro (quase sempre um id digitado errado).
+    """
+    registros = dict(openalex)
+    for id_, info in correcoes.instituicoes.items():
+        if id_ in registros:
+            campos = {k: v for k, v in info.model_dump(exclude_unset=True).items() if k != "sigla"}
+            if info.sigla:
+                campos["siglas"] = (info.sigla, *registros[id_].siglas)
+            registros[id_] = replace(registros[id_], **campos)
+        elif info.nome and info.pais:
+            registros[id_] = Registro(
+                id=id_,
+                nome=info.nome,
+                siglas=(info.sigla,) if info.sigla else (),
+                pais=info.pais,
+                uf=info.uf,
+                cidade=info.cidade,
+                separada=True,
+            )
+        else:
+            raise ErroConfig(
+                f"{ARQUIVO_PROJETO}: a instituição {id_!r} não está nos registros do OpenAlex; "
+                "para criar uma instituição própria, informe ao menos `nome` e `pais`."
+            )
+    apelidos = {k: v for k, v in apelidos_do_pacote().items() if v in registros}
+    for texto, id_ in correcoes.apelidos.items():
+        if id_ not in registros:
+            raise ErroConfig(
+                f"{ARQUIVO_PROJETO}: o apelido {texto!r} aponta para {id_!r}, que não é uma instituição conhecida. "
+                "Use um id do OpenAlex (I…) que apareça no corpus ou declare a instituição em `instituicoes:`."
+            )
+        apelidos[texto] = id_
+    return registros, apelidos

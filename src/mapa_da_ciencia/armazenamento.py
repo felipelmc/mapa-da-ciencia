@@ -125,6 +125,15 @@ def gravar_tabela(linhas: Iterable[dict[str, Any]], colunas: dict[str, str], des
     return len(lista)
 
 
+def ler_tabela(caminho: Path) -> list[dict[str, Any]]:
+    """As linhas de um Parquet gravado por `gravar_tabela`, como dicionários."""
+    con = duckdb.connect()
+    try:
+        return _linhas(con, "SELECT * FROM read_parquet(?)", [str(caminho)])
+    finally:
+        con.close()
+
+
 def tem_coluna(caminho: Path, nome: str) -> bool:
     """`True` se o Parquet tem a coluna: distingue um corpus gravado antes de um campo novo existir."""
     con = duckdb.connect()

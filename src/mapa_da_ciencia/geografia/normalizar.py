@@ -34,9 +34,14 @@ _PREFIXO_UF = re.compile(r"^(estado d[eoa]s?|state of|provincia d[eoa]|estado)\s
 _CODIGO = re.compile(r"^[A-Z]{2}$")
 
 
+# apóstrofos, aspas e travessões tipográficos viram espaço (senão "King’s" vira "kings", e "Iscte–Instituto",
+# uma palavra só)
+_TIPOGRAFICOS = str.maketrans({c: " " for c in "’‘`´“”–—"})
+
+
 def chave(texto: str | None) -> str:
     """Forma de comparação: sem acentos, minúsculas, só letras e números separados por um espaço."""
-    return normalizar_titulo(texto)
+    return normalizar_titulo(texto.translate(_TIPOGRAFICOS) if texto else texto)
 
 
 @dataclass(frozen=True)
@@ -46,6 +51,7 @@ class UF:
     codigo: int
     regiao: str
     capital: str
+    variantes: tuple[str, ...] = ()
 
 
 def _linhas(arquivo: str) -> Iterator[dict[str, str]]:
@@ -80,10 +86,11 @@ def _ufs() -> tuple[dict[str, UF], dict[str, str]]:
     ufs = {}
     pares = []
     for linha in _linhas("ufs.csv"):
-        uf = UF(linha["sigla"], linha["nome"], int(linha["codigo"]), linha["regiao"], linha["capital"])
+        variantes = tuple(v for v in linha["variantes"].split("|") if v)
+        uf = UF(linha["sigla"], linha["nome"], int(linha["codigo"]), linha["regiao"], linha["capital"], variantes)
         ufs[uf.sigla] = uf
         pares += [(uf.sigla, uf.sigla), (uf.nome, uf.sigla)]
-        pares += [(v, uf.sigla) for v in linha["variantes"].split("|") if v]
+        pares += [(v, uf.sigla) for v in variantes]
     indice, ambiguas = _unicos(iter(pares))
     assert not ambiguas, ambiguas
     return ufs, indice
