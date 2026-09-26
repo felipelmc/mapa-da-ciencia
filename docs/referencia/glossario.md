@@ -3,6 +3,9 @@
 **ArticleMeta**
 : API pública do SciELO com os metadados de cada artigo: títulos, resumos, palavras-chave, autores e afiliações. É a fonte principal do corpus. Veja [Fontes de dados](../explicacoes/fontes.md).
 
+**Casamento**
+: Encontrar, no OpenAlex, o mesmo artigo que veio da ArticleMeta. O `mapa` tenta, em ordem, o DOI, o PID dentro dos endereços do OpenAlex, o DOI derivado do PID e o título mais o ano, e confere ano e título antes de aceitar (a ArticleMeta às vezes traz DOIs trocados). O passo usado fica registrado em cada documento.
+
 **Codebook**
 : Conjunto de variáveis, categorias e definições que o modelo usa para classificar cada resumo. Veja [Escrever um codebook](../guias/codebook.md).
 
@@ -11,6 +14,9 @@
 
 **Contrato de dados**
 : Os arquivos JSON que o pipeline gera e a interface lê. Veja a [referência](contrato.md).
+
+**Documento**
+: A unidade do corpus depois da coleta: títulos e resumos em cada idioma, autores, afiliações (sem e-mails), revista, ano, licença e identificadores (PID, DOI, OpenAlex). Todas as fontes viram documentos no mesmo formato.
 
 **Embedding**
 : Representação de um texto como um vetor de números, em que textos de assunto parecido ficam próximos. É a base dos tópicos e do mapa de documentos.
@@ -23,6 +29,9 @@
 
 **Kappa de Cohen**
 : Medida de concordância entre dois codificadores que desconta a concordância esperada ao acaso. Vai de −1 a 1. Acima de 0,6 costuma ser considerado substancial, e acima de 0,8, quase perfeito.
+
+**Licença mais restritiva**
+: Regra do projeto para a licença de cada artigo: entre a licença informada pelo OpenAlex e a da revista, vale a mais restritiva (por exemplo, CC BY-NC ganha de CC BY). Veja [Privacidade e licenças](../explicacoes/privacidade-e-licencas.md).
 
 **Macrotema**
 : Agrupamento de tópicos próximos, usado para organizar as cores e a navegação.
