@@ -53,3 +53,22 @@ def test_garantir_modelo(apis_falsas, monkeypatch):
     assert situacao(ollama, "qwen3.5:9b").carregado and garantir_modelo(ollama, "qwen3.5:9b")
     ollama.descarregar("qwen3.5:9b")
     assert not apis_falsas.carregados
+
+
+def test_saida_estruturada(apis_falsas):
+    esquema = {"type": "object", "properties": {"rotulo": {"type": "string"}}, "required": ["rotulo"]}
+    mensagens = [{"role": "user", "content": "Palavras-chave: coalizão, congresso, agenda"}]
+    r = Ollama().gerar_estruturado("qwen3.5:9b", mensagens, esquema, num_ctx=4096, semente=3)
+    assert r["rotulo"] == "Coalizão e congresso"
+    corpo = apis_falsas.pedidos_chat[0]
+    assert corpo["format"] == esquema and corpo["think"] is False and corpo["stream"] is False
+    assert corpo["options"] == {"num_ctx": 4096, "temperature": 0.0, "seed": 3}
+
+
+def test_saida_estruturada_invalida(apis_falsas):
+    apis_falsas.responder_chat = lambda _: "isto não é JSON"
+    with pytest.raises(ErroProvedor, match="não devolveu um JSON válido"):
+        Ollama().gerar_estruturado("qwen3.5:9b", [{"role": "user", "content": "x"}], {})
+    apis_falsas.responder_chat = lambda _: "[1, 2]"
+    with pytest.raises(ErroProvedor, match="devolveu list"):
+        Ollama().gerar_estruturado("qwen3.5:9b", [{"role": "user", "content": "x"}], {})

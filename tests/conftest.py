@@ -22,6 +22,20 @@ DIM_FALSA = 64
 GB = 1024**3
 
 
+def resposta_chat_padrao(corpo: dict) -> str:
+    """Resposta determinística do chat falso: um rótulo com as duas primeiras palavras-chave do pedido."""
+    pedido = corpo["messages"][-1]["content"]
+    achado = re.search(r"Palavras-chave: ([^\n]+)", pedido)
+    termos = [t.strip() for t in achado.group(1).split(",")] if achado else ["assunto", "geral"]
+    return json.dumps(
+        {
+            "rotulo": f"{termos[0].capitalize()} e {termos[1]}",
+            "descricao": f"Trabalhos sobre {termos[0]} e {termos[1]}.",
+        },
+        ensure_ascii=False,
+    )
+
+
 def vetor_falso(texto: str) -> list[float]:
     """Embedding falso e determinístico: saco de palavras com hash. Textos com vocabulário parecido ficam perto,
     o que basta para os testes do agrupamento (sem depender do Ollama nem de um modelo de verdade)."""
@@ -74,6 +88,10 @@ class ApisFalsas:
         router.get(f"{OLLAMA_FALSO}/api/ps").mock(side_effect=self._ps)
         router.post(f"{OLLAMA_FALSO}/api/embed").mock(side_effect=self._embed)
         router.post(f"{OLLAMA_FALSO}/api/generate").mock(side_effect=self._generate)
+        router.post(f"{OLLAMA_FALSO}/api/chat").mock(side_effect=self._chat)
+        self.pedidos_chat: list[dict] = []
+        # os testes trocam esta função para simular respostas (JSON inválido, rótulo sem acento...)
+        self.responder_chat = resposta_chat_padrao
         self.fora_dos_filtros: set[str] = set()  # DOIs que só o endereço direto /works/doi:… acha
         router.get(url__regex=rf"^{re.escape(OA)}/works/doi:").mock(side_effect=self._obra)
         router.get(f"{OA}/works").mock(side_effect=self._obras)
@@ -107,6 +125,17 @@ class ApisFalsas:
         self.textos_embutidos += corpo["input"]
         return httpx.Response(
             200, json={"model": corpo["model"], "embeddings": [vetor_falso(t) for t in corpo["input"]]}
+        )
+
+    def _chat(self, request: httpx.Request) -> httpx.Response:
+        self.chamadas["ollama_chat"] += 1
+        corpo = json.loads(request.content)
+        if erro := self._modelo(corpo):
+            return erro
+        self.pedidos_chat.append(corpo)
+        conteudo = self.responder_chat(corpo)
+        return httpx.Response(
+            200, json={"model": corpo["model"], "message": {"role": "assistant", "content": conteudo}}
         )
 
     def _generate(self, request: httpx.Request) -> httpx.Response:

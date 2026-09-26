@@ -53,3 +53,16 @@ class ProvedorLLM(Protocol):
         keep_alive: str = "10m",
         ao_avancar: Callable[[int], None] | None = None,
     ) -> Iterator[list[list[float]]]: ...
+
+    def gerar_estruturado(
+        self,
+        modelo: str,
+        mensagens: list[dict[str, str]],
+        esquema: dict,
+        *,
+        num_ctx: int = 8192,
+        temperatura: float = 0.0,
+        semente: int = 7,
+        pensar: bool = False,
+        keep_alive: str = "10m",
+    ) -> dict: ...

@@ -6,6 +6,7 @@ pela variável `OLLAMA_HOST`, como no próprio Ollama.
 
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import Callable, Iterator
 
@@ -114,6 +115,41 @@ class Ollama:
             if ao_avancar:
                 ao_avancar(len(parte))
             yield vetores
+
+    def gerar_estruturado(
+        self,
+        modelo: str,
+        mensagens: list[dict[str, str]],
+        esquema: dict,
+        *,
+        num_ctx: int = 8192,
+        temperatura: float = 0.0,
+        semente: int = 7,
+        pensar: bool = False,
+        keep_alive: str = "10m",
+    ) -> dict:
+        """Resposta do modelo como JSON que segue `esquema` (`/api/chat` com `format`). Sem raciocínio por padrão.
+
+        O Ollama restringe a geração ao esquema, então a resposta é JSON válido quase sempre; se não for, o erro
+        diz qual modelo falhou, e quem chama decide se tenta de novo.
+        """
+        corpo = {
+            "model": modelo,
+            "messages": mensagens,
+            "format": esquema,
+            "stream": False,
+            "think": pensar,
+            "keep_alive": keep_alive,
+            "options": {"num_ctx": num_ctx, "temperature": temperatura, "seed": semente},
+        }
+        conteudo = (self._post("/api/chat", corpo).get("message") or {}).get("content") or ""
+        try:
+            resposta = json.loads(conteudo)
+        except json.JSONDecodeError as e:
+            raise ErroProvedor(f"{modelo} não devolveu um JSON válido: {conteudo[:120]!r}") from e
+        if not isinstance(resposta, dict):
+            raise ErroProvedor(f"{modelo} devolveu {type(resposta).__name__}, e não um objeto JSON.")
+        return resposta
 
     def embutir(self, modelo: str, textos: list[str], **opcoes) -> list[list[float]]:
         """Todos os embeddings de uma vez (para listas pequenas; para o corpus, use `embutir_lotes`)."""
