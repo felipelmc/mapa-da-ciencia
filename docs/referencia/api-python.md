@@ -29,7 +29,7 @@ Todas as funções que recebem `projeto` aceitam um `Projeto` já aberto ou o ca
 
 ## Tabelas para consulta
 
-O corpus fica em `dados/documentos.parquet`. `consultar` e `conectar` abrem esse arquivo no [DuckDB](https://duckdb.org/docs/stable/sql/introduction) com as views abaixo (as três últimas depois da etapa de geografia):
+O corpus fica em `dados/documentos.parquet`. `consultar` e `conectar` abrem esse arquivo no [DuckDB](https://duckdb.org/docs/stable/sql/introduction) com as views abaixo (as de tópicos, geografia e classificação aparecem depois das etapas correspondentes):
 
 | View | Uma linha por | Colunas principais |
 |---|---|---|
@@ -41,8 +41,9 @@ O corpus fica em `dados/documentos.parquet`. `consultar` e `conectar` abrem esse
 | `vinculos` | autor × afiliação, depois de `geografia()` | `doc`, `autor`, `afiliacao`, `fonte`, `texto`, `instituicao` (id; nula se não casou), `nivel` do casamento, `semelhanca`, `pais`, `uf` e o que a fonte escreveu (`pais_fonte`, `uf_fonte`, `cidade_fonte`) |
 | `pesos` | documento × (instituição, UF, país), depois de `geografia()` | `doc`, `instituicao` (nula = sem afiliação; `nao-identificada`), `uf`, `pais`, `peso` (contagem fracionária: soma 1 por documento) |
 | `instituicoes` | instituição, depois de `geografia()` | `id`, `nome`, `sigla`, `pais`, `uf`, `tipo`, `ror`, `peso`, `documentos` |
+| `classificacoes` | documento × variável × execução, depois de `classificar()` | `doc`, `variavel`, `valor` (texto; lista JSON nas de múltipla escolha), `evidencia`, `status` (`literal`, `aproximada`, `ausente`, `dispensada`), `campo`, `inicio`, `fim` (*offsets* no texto), `tentativas`, `execucao` (modelo e hash do codebook) |
 
-A coluna `id` liga as cinco primeiras views; nas da geografia, a coluna é `doc`. Os campos de `documentos` estão descritos em [Fontes de dados](../explicacoes/fontes.md). Para consultas longas, abra uma conexão:
+A coluna `id` liga as cinco primeiras views; nas da geografia e na `classificacoes`, a coluna é `doc`. Os campos de `documentos` estão descritos em [Fontes de dados](../explicacoes/fontes.md). Para consultas longas, abra uma conexão:
 
 ```python
 with mapa.conectar(p) as con:
@@ -71,6 +72,14 @@ O Parquet também pode ser lido direto pelo pandas ou pelo polars (`pd.read_parq
 
 ::: mapa_da_ciencia.api.geografia
 
+::: mapa_da_ciencia.api.classificar
+
+::: mapa_da_ciencia.api.amostra_de_validacao
+
+::: mapa_da_ciencia.api.importar_codificacoes
+
+::: mapa_da_ciencia.api.codificacoes
+
 ::: mapa_da_ciencia.api.consultar
 
 ::: mapa_da_ciencia.api.conectar
@@ -86,6 +95,18 @@ O Parquet também pode ser lido direto pelo pandas ou pelo polars (`pd.read_parq
       members: false
 
 ::: mapa_da_ciencia.topicos.pipeline.ResumoTopicos
+    options:
+      members: false
+
+::: mapa_da_ciencia.classificacao.pipeline.ResumoClassificacao
+    options:
+      members: false
+
+::: mapa_da_ciencia.validacao.amostra.Amostra
+    options:
+      members: [por_estrato]
+
+::: mapa_da_ciencia.validacao.amostra.ResumoImportacao
     options:
       members: false
 

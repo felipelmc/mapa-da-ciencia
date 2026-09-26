@@ -39,18 +39,24 @@ if TYPE_CHECKING:
     from mapa_da_ciencia.embeddings import Embeddings
     from mapa_da_ciencia.geografia.pipeline import ResumoGeografia
     from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
+    from mapa_da_ciencia.validacao.amostra import Amostra, ResumoImportacao
 
 __all__ = [
     "Projeto",
     "abrir",
+    "amostra_de_validacao",
+    "classificar",
     "cobertura",
+    "codificacoes",
     "coletar",
     "conectar",
     "consultar",
     "documentos",
     "embeddings",
     "etapas",
+    "geografia",
     "importar",
+    "importar_codificacoes",
     "novo",
     "revistas",
     "topicos",
@@ -286,6 +292,7 @@ def classificar(
     estimar: bool = False,
     limite: int | None = None,
     modelo: str | None = None,
+    somente_amostra: bool = False,
     progresso: bool = True,
 ) -> ResumoClassificacao:
     """Classifica os resumos pelo codebook, como `mapa classificar`, e devolve o resumo.
@@ -299,9 +306,41 @@ def classificar(
     from mapa_da_ciencia.classificacao.pipeline import classificar as rodar
 
     p = _projeto(projeto)
-    opcoes = OpcoesClassificacao(estimar=estimar, limite=limite, modelo=modelo)
+    opcoes = OpcoesClassificacao(estimar=estimar, limite=limite, modelo=modelo, somente_amostra=somente_amostra)
     if not progresso:
         return rodar(p, opcoes, ProgressoNulo())
     from rich.console import Console
 
     return rodar(p, opcoes, ProgressoRich(Console()))
+
+
+def amostra_de_validacao(projeto: Projeto | str | Path = ".", *, refazer: bool = False) -> Amostra:
+    """A amostra de validação, como `mapa validar amostra`: sorteada na primeira vez (ou com `refazer=True`) e
+    exportada em `validacao/amostra.jsonl`. `amostra.docs` traz os ids na ordem da fila de codificação."""
+    from mapa_da_ciencia.validacao import amostra as va
+
+    p = _projeto(projeto)
+    a = va.sortear(p, refazer=refazer)
+    va.exportar(p, a)
+    return a
+
+
+def importar_codificacoes(
+    projeto: Projeto | str | Path,
+    arquivo: str | Path,
+    codificador: str,
+    *,
+    tipo: Literal["humano", "referencia"] = "humano",
+) -> ResumoImportacao:
+    """Importa um JSONL de codificações da amostra, como `mapa validar importar`. Linhas inválidas não são
+    gravadas e aparecem em `resumo.invalidas`."""
+    from mapa_da_ciencia.validacao import amostra as va
+
+    return va.importar(_projeto(projeto), Path(arquivo), codificador, tipo=tipo)
+
+
+def codificacoes(projeto: Projeto | str | Path = ".", codificador: str | None = None) -> list[dict[str, Any]]:
+    """As codificações guardadas (de um codificador, ou de todos), uma por codificador × documento × variável."""
+    from mapa_da_ciencia.validacao import amostra as va
+
+    return va.codificacoes(_projeto(projeto), codificador)

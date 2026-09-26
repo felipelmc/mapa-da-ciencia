@@ -4,7 +4,9 @@ corpus → textos (resumo no idioma de exibição) → executor (cache, nova ten
 evidências → `dados/classificacao/` → manifesto da etapa → exportação para o painel.
 
 É a etapa mais longa do pipeline: no piloto, horas. Por isso `--estimar` mede o tempo com 5 documentos antes,
-`--limite` classifica só os primeiros, e uma execução interrompida retoma de onde parou.
+`--limite` classifica só os primeiros, e uma execução interrompida retoma de onde parou. Os documentos da amostra
+de validação vêm primeiro na fila (e `--somente-amostra` classifica só eles), para a validação poder começar antes
+do fim da classificação e para comparar modelos só na amostra.
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ from ..manifesto import registrar_execucao
 from ..progresso import Progresso, ProgressoNulo
 from ..projeto import Projeto
 from ..topicos.resultado import assinatura_corpus
+from ..validacao.amostra import ler as ler_amostra
 from .executor import Classificacao, Classificador, textos_para_classificar
 from .prompt import VERSAO_PROMPT
 from .resultado import PASTA, Resultado, resultados, valor_como_texto
@@ -36,6 +39,7 @@ class OpcoesClassificacao:
     estimar: bool = False
     limite: int | None = None
     modelo: str | None = None  # outro modelo, para comparar (padrão: modelos.classificacao.modelo)
+    somente_amostra: bool = False  # só os documentos da amostra de validação
 
 
 @dataclass
@@ -107,12 +111,22 @@ def classificar(
     docs = ler_documentos(caminho)
     idiomas = [cfg.recorte.idioma_exibicao, cfg.recorte.idioma_analise]
     textos, sem_resumo = textos_para_classificar(docs, idiomas)
+    amostra = ler_amostra(projeto)
+    if opcoes.somente_amostra and amostra is None:
+        raise ErroConfig("O projeto ainda não tem amostra de validação. Rode `mapa validar amostra` antes.")
+    posicao = {doc: i for i, doc in enumerate(amostra.docs)} if amostra else {}
+    # a amostra primeiro, na ordem da fila; depois o resto, por id
+    textos = sorted(textos, key=lambda t: (posicao.get(t.doc, len(posicao)), t.doc))
 
     classificador = Classificador(modelo_cfg, codebook, projeto.estado, ollama=Ollama(), progresso=progresso)
     alvo, parcial = textos, False
+    if opcoes.somente_amostra:
+        alvo = [t for t in textos if t.doc in posicao]
+        parcial = len(alvo) < len(textos)
     if opcoes.estimar or opcoes.limite is not None:
-        pendentes = classificador.pendentes(textos)
-        ja = [t for t in textos if t not in set(pendentes)]
+        pendentes = classificador.pendentes(alvo)
+        faltando = set(pendentes)
+        ja = [t for t in alvo if t not in faltando]
         extra = AMOSTRA_ESTIMATIVA if opcoes.estimar else max(0, (opcoes.limite or 0) - len(ja))
         alvo = ja + pendentes[:extra]
         parcial = len(alvo) < len(textos)
@@ -204,6 +218,7 @@ def classificar(
             "concorrencia": modelo_cfg.concorrencia,
             "versao_prompt": VERSAO_PROMPT,
             "parcial": resultado.parcial,
+            "somente_amostra": opcoes.somente_amostra,
         },
     )
     if not opcoes.modelo or opcoes.modelo == cfg.modelos.classificacao.modelo:

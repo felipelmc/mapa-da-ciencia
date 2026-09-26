@@ -603,12 +603,19 @@ def classificar(
         typer.Option("--estimar", help="Classifica 5 documentos, mede o tempo e projeta quanto falta. Grava os 5."),
     ] = False,
     limite: Annotated[
-        int | None, typer.Option("--limite", help="Classifica só os primeiros N documentos (por id).", min=1)
+        int | None,
+        typer.Option(
+            "--limite", help="Classifica só os primeiros N da fila (a amostra de validação, depois por id).", min=1
+        ),
     ] = None,
     modelo: Annotated[
         str | None,
         typer.Option("--modelo", help="Outro modelo do Ollama, para comparar (o painel mostra só o principal)."),
     ] = None,
+    somente_amostra: Annotated[
+        bool,
+        typer.Option("--somente-amostra", help="Classifica só os documentos da amostra de validação."),
+    ] = False,
 ) -> None:
     """Classifica os resumos segundo o codebook do projeto, com evidência textual para cada resposta."""
     from mapa_da_ciencia.classificacao.pipeline import OpcoesClassificacao
@@ -619,7 +626,9 @@ def classificar(
         p = Projeto.abrir(projeto)
         try:
             resumo = rodar(
-                p, OpcoesClassificacao(estimar=estimar, limite=limite, modelo=modelo), ProgressoRich(console)
+                p,
+                OpcoesClassificacao(estimar=estimar, limite=limite, modelo=modelo, somente_amostra=somente_amostra),
+                ProgressoRich(console),
             )
         except KeyboardInterrupt:
             console.print(
@@ -661,6 +670,86 @@ def _mostrar_classificacao(p: Projeto, resumo, *, estimar: bool) -> None:
         console.print(f"Faltam {num(resumo.pendentes, 0)} documento(s): rode [bold]mapa classificar[/] de novo.")
     for aviso in resumo.avisos:
         console.print(f"[yellow]Aviso:[/] {aviso}")
+
+
+validar_app = typer.Typer(
+    help="Validação da classificação: a amostra, as codificações e a concordância.",
+    no_args_is_help=True,
+)
+app.add_typer(validar_app, name="validar")
+
+
+@validar_app.command("amostra")
+def validar_amostra(
+    projeto: OpcaoProjeto = Path("."),
+    refazer: Annotated[
+        bool, typer.Option("--refazer", help="Sorteia outra amostra (as codificações já feitas continuam guardadas).")
+    ] = False,
+) -> None:
+    """Sorteia a amostra de validação (uma vez) e exporta os textos para quem vai codificar."""
+    from mapa_da_ciencia.validacao import amostra as va
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        ja = va.ler(p)
+        a = va.sortear(p, refazer=refazer)
+        arquivo = va.exportar(p, a)
+    novo = ja is None or refazer
+    console.print(
+        f"[bold green]Amostra {'sorteada' if novo else 'já sorteada'}[/]: {num(len(a.docs), 0)} documentos, "
+        f"estratificada por {a.estratificar_por} ({num(len(a.por_estrato()), 0)} estratos), semente {a.semente}."
+    )
+    tabela = Table("Estrato", "Documentos")
+    for estrato, n in sorted(a.por_estrato().items(), key=lambda e: (-e[1], e[0]))[:12]:
+        tabela.add_row(estrato, num(n, 0))
+    if len(a.por_estrato()) > 12:
+        tabela.add_row("…", "")
+    console.print(tabela)
+    console.print(
+        f"Textos para codificar em [bold]{arquivo.relative_to(p.raiz)}[/] (só id, título, resumo e idioma). "
+        "Codifique no painel ([bold]mapa painel[/], Validação › Codificar) ou importe um arquivo com "
+        "[bold]mapa validar importar[/]."
+    )
+    for aviso in a.avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
+
+
+@validar_app.command("importar")
+def validar_importar(
+    arquivo: Annotated[Path, typer.Argument(help="JSONL com uma linha por documento.", exists=True, dir_okay=False)],
+    codificador: Annotated[str, typer.Option("--codificador", "-c", help="Nome de quem codificou.")],
+    projeto: OpcaoProjeto = Path("."),
+    tipo: Annotated[
+        str,
+        typer.Option(
+            "--tipo", help="`humano` ou `referencia` (um anotador que não é uma pessoa, como outro modelo de IA)."
+        ),
+    ] = "humano",
+) -> None:
+    """Importa as codificações de um arquivo JSONL (formato no guia "Codificar a amostra")."""
+    from mapa_da_ciencia.validacao import amostra as va
+
+    with _erros_amigaveis():
+        if tipo not in ("humano", "referencia"):
+            raise ErroConfig(f"Tipo de codificador inválido: {tipo!r}. Use `humano` ou `referencia`.")
+        p = Projeto.abrir(projeto)
+        r = va.importar(p, arquivo, codificador, tipo=tipo)  # type: ignore[arg-type]
+        n_amostra = len(va.ler(p).docs)  # type: ignore[union-attr]
+    console.print(
+        f"[bold green]Importado[/]: {num(r.documentos, 0)} de {num(n_amostra, 0)} documentos da amostra "
+        f"codificados por [bold]{r.codificador}[/] ({tipo})."
+    )
+    if r.fora_da_amostra:
+        console.print(
+            f"[yellow]Aviso:[/] {num(len(r.fora_da_amostra), 0)} linha(s) com documentos fora da amostra foram "
+            f"ignoradas (por exemplo {', '.join(r.fora_da_amostra[:3])})."
+        )
+    for problema in r.invalidas[:10]:
+        console.print(f"[red]Inválida:[/] {problema}")
+    if len(r.invalidas) > 10:
+        console.print(f"[red]… e mais {num(len(r.invalidas) - 10, 0)} linha(s) inválida(s).[/]")
+    if r.invalidas:
+        raise typer.Exit(1)
 
 
 @app.command()
