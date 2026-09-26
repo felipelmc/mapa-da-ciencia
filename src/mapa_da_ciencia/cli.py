@@ -440,30 +440,15 @@ def importar(
     sem_openalex: Annotated[bool, typer.Option("--sem-openalex", help="Não usa o OpenAlex na coleta.")] = False,
 ) -> None:
     """Acrescenta ao projeto artigos de uma busca exportada do search.scielo.org (ou de uma lista de DOIs)."""
-    import shutil
-
-    from mapa_da_ciencia.coleta import PASTA_IMPORTADOS
-    from mapa_da_ciencia.fontes.importar import ler_arquivo
+    from mapa_da_ciencia.coleta import PASTA_IMPORTADOS, guardar_importacao
 
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
-        destino = p.raiz / PASTA_IMPORTADOS
-        destino.mkdir(exist_ok=True)
         for arquivo in arquivos:
-            if not arquivo.exists():
-                raise ErroConfig(f"Arquivo não encontrado: {arquivo}")
-            leitura = ler_arquivo(arquivo)
-            if not leitura.itens:
-                raise ErroConfig(
-                    f"{arquivo.name}: nenhum PID ou DOI encontrado. Confira se é uma exportação do SciELO."
-                )
-            if arquivo.resolve() != (destino / arquivo.name).resolve():
-                shutil.copy2(arquivo, destino / arquivo.name)
+            leitura = guardar_importacao(p, arquivo)
             console.print(f"[green]✓[/] {leitura.resumo()}")
             for ignorado in leitura.ignorados[:5]:
                 console.print(f"    [dim]ignorado — {ignorado}[/]")
-    console.print(
-        f"Arquivo(s) guardado(s) em {destino.relative_to(p.raiz)}/; eles entram em toda coleta deste projeto."
-    )
+    console.print(f"Arquivo(s) guardado(s) em {PASTA_IMPORTADOS}/; eles entram em toda coleta deste projeto.")
     if not nao_coletar:
         coletar(projeto=p.raiz, sem_openalex=sem_openalex)

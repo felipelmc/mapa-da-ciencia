@@ -18,6 +18,8 @@ from mapa_da_ciencia.texto import normalizar_titulo
 
 @dataclass(frozen=True)
 class Revista:
+    """Uma revista corrente do SciELO Brasil, como aparece no retrato empacotado."""
+
     acronimo: str
     titulo: str
     titulo_abreviado: str | None

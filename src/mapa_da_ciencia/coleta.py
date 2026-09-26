@@ -8,6 +8,7 @@ registra o manifesto. Rodar de novo reaproveita tudo o que já está em `brutos/
 from __future__ import annotations
 
 import asyncio
+import shutil
 import threading
 import time
 from collections import Counter
@@ -30,7 +31,7 @@ from mapa_da_ciencia.fontes.articlemeta import (
 )
 from mapa_da_ciencia.fontes.base import Buscador, limpar_temporarios
 from mapa_da_ciencia.fontes.dedup import deduplicar
-from mapa_da_ciencia.fontes.importar import FORMATOS, Identificador, ler_arquivo
+from mapa_da_ciencia.fontes.importar import FORMATOS, Identificador, Importacao, ler_arquivo
 from mapa_da_ciencia.fontes.importar import colecao_da_url as colecao_da_url
 from mapa_da_ciencia.fontes.openalex import (
     buscar_por_dois,
@@ -40,6 +41,7 @@ from mapa_da_ciencia.fontes.openalex import (
     listar_por_revista,
     pid_da_obra,
 )
+from mapa_da_ciencia.formatar import num, periodo
 from mapa_da_ciencia.manifesto import registrar_execucao
 from mapa_da_ciencia.progresso import Progresso, ProgressoNulo
 from mapa_da_ciencia.projeto import Projeto
@@ -75,6 +77,13 @@ class Plano:
 
 @dataclass
 class ResumoColeta:
+    """O que uma execução da coleta fez. `print(resumo)` mostra os números principais numa frase.
+
+    `documentos` e `por_revista` contam o que foi gravado no corpus. `fora_do_periodo`, `excluidos_por_tipo`
+    e `nao_encontrados` contam o que ficou de fora, e `casamento` conta os documentos por passo da ligação
+    com o OpenAlex. `requisicoes`, `do_cache` e `creditos_openalex` medem o acesso às APIs.
+    """
+
     documentos: int
     por_revista: dict[str, int]
     fora_do_periodo: int
@@ -94,6 +103,17 @@ class ResumoColeta:
     @property
     def total_requisicoes(self) -> int:
         return sum(self.requisicoes.values())
+
+    def __str__(self) -> str:
+        casados = sum(v for k, v in self.casamento.items() if k[0].isdigit())
+        return (
+            f"{num(self.documentos, 0)} documento(s) de {len(self.por_revista)} revista(s), "
+            f"{periodo(self.plano.anos)}, em {num(self.duracao_s)} s. "
+            f"De fora: {num(self.fora_do_periodo, 0)} fora do período, "
+            f"{num(sum(self.excluidos_por_tipo.values()), 0)} por tipo, {num(self.nao_encontrados, 0)} não "
+            f"encontrado(s). OpenAlex: {num(casados, 0)} casado(s), {num(self.creditos_openalex, 0)} crédito(s). "
+            f"{num(self.total_requisicoes, 0)} requisição(ões), {num(sum(self.do_cache.values()), 0)} do cache."
+        )
 
 
 def interpretar_anos(texto: str) -> tuple[int, int]:
@@ -264,6 +284,24 @@ async def _hidratar(
     if obras:
         documentos = casar_todos(documentos, obras)
     return documentos + so_openalex, nao_encontrados
+
+
+def guardar_importacao(projeto: Projeto, arquivo: Path) -> Importacao:
+    """Lê o arquivo e o copia para `importados/`, de onde ele entra em toda coleta do projeto.
+
+    Recusa arquivos sem nenhum PID ou DOI, que quase sempre são exportações no formato errado.
+    """
+    arquivo = Path(arquivo)
+    if not arquivo.exists():
+        raise ErroConfig(f"Arquivo não encontrado: {arquivo}")
+    leitura = ler_arquivo(arquivo)
+    if not leitura.itens:
+        raise ErroConfig(f"{arquivo.name}: nenhum PID ou DOI encontrado. Confira se é uma exportação do SciELO.")
+    destino = projeto.raiz / PASTA_IMPORTADOS
+    destino.mkdir(exist_ok=True)
+    if arquivo.resolve() != (destino / arquivo.name).resolve():
+        shutil.copy2(arquivo, destino / arquivo.name)
+    return leitura
 
 
 async def _importar(

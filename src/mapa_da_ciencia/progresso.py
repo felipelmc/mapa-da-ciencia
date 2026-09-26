@@ -35,7 +35,7 @@ class ProgressoNulo:
 
 
 class ProgressoRich:
-    """Uma barra por etapa no terminal. Sem terminal interativo, só as mensagens aparecem."""
+    """Uma barra por etapa no terminal ou no Jupyter. Sem nenhum dos dois, só as mensagens aparecem."""
 
     def __init__(self, console: Console) -> None:
         self.console = console
@@ -45,7 +45,7 @@ class ProgressoRich:
             MofNCompleteColumn(),
             TimeRemainingColumn(),
             console=console,
-            disable=not console.is_terminal,
+            disable=not (console.is_terminal or console.is_jupyter),
         )
         self._atual: TaskID | None = None
         self._iniciado = False
