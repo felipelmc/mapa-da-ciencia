@@ -48,6 +48,8 @@ class FonteOpenAlex(_Base):
 
 
 class Fontes(_Base):
+    """De onde vêm os artigos. Pode combinar mais de uma fonte."""
+
     scielo: FonteScielo | None = None
     openalex: FonteOpenAlex = FonteOpenAlex()
     importar: list[Path] = Field(
@@ -63,6 +65,8 @@ class Fontes(_Base):
 
 
 class Recorte(_Base):
+    """Período e idiomas do corpus."""
+
     anos: tuple[int, int] = Field(description="Primeiro e último ano de publicação, inclusive.")
     idioma_analise: Idioma = Field(
         "en", description="Idioma dos textos usados nos embeddings e nos tópicos (ver ADR 0004)."
@@ -79,40 +83,50 @@ class Recorte(_Base):
 
 
 class ModeloEmbeddings(_Base):
-    provedor: Literal["ollama"] = "ollama"
-    modelo: str = "qwen3-embedding:0.6b"
+    """Modelo que transforma título e resumo em vetores (base dos tópicos e do mapa)."""
+
+    provedor: Literal["ollama"] = Field("ollama", description="No MVP, só o Ollama local.")
+    modelo: str = Field("qwen3-embedding:0.6b", description="Nome do modelo no Ollama (ver ADR 0004).")
 
 
 class ModeloLLM(_Base):
-    provedor: Literal["ollama"] = "ollama"
-    modelo: str = "qwen3.5:9b"
+    """Modelo de linguagem usado para classificar resumos ou nomear tópicos."""
+
+    provedor: Literal["ollama"] = Field("ollama", description="No MVP, só o Ollama local.")
+    modelo: str = Field("qwen3.5:9b", description="Nome do modelo no Ollama (ver `mapa diagnostico`).")
     num_ctx: int = Field(8192, ge=2048, description="Janela de contexto pedida ao Ollama.")
-    temperatura: float = Field(0.0, ge=0, le=2)
+    temperatura: float = Field(0.0, ge=0, le=2, description="0 = respostas determinísticas (recomendado).")
     pensar: bool = Field(False, description="Liga o modo de raciocínio do modelo (mais lento).")
     concorrencia: int = Field(1, ge=1, le=16, description="Chamadas simultâneas ao Ollama.")
-    semente: int = 7
+    semente: int = Field(7, description="Semente do gerador, para resultados reprodutíveis.")
 
 
 class Modelos(_Base):
+    """Modelos locais de cada papel. `mapa novo` preenche conforme a memória da máquina."""
+
     embeddings: ModeloEmbeddings = ModeloEmbeddings()
     classificacao: ModeloLLM = ModeloLLM()
     rotulos: ModeloLLM = ModeloLLM()
 
 
 class Validacao(_Base):
+    """Amostra de resumos codificados por pessoas para medir a qualidade da classificação."""
+
     n: int = Field(200, ge=10, description="Tamanho da amostra para codificação humana.")
-    estratificar_por: Literal["topico", "ano", "revista"] = "topico"
-    semente: int = 7
-    codificadores: list[str] = Field(default_factory=list)
+    estratificar_por: Literal["topico", "ano", "revista"] = Field(
+        "topico", description="Garante que a amostra cubra todos os tópicos (ou anos, ou revistas)."
+    )
+    semente: int = Field(7, description="Semente do sorteio da amostra.")
+    codificadores: list[str] = Field(default_factory=list, description="Nomes de quem vai codificar.")
 
 
 class ConfigProjeto(_Base):
     """Conteúdo do `mapa.yaml`."""
 
-    versao_config: Literal[1] = 1
+    versao_config: Literal[1] = Field(1, description="Versão do formato deste arquivo.")
     nome: Slug
-    titulo: str
-    descricao: str = ""
+    titulo: str = Field(description="Título exibido no painel e no site publicado.")
+    descricao: str = Field("", description="Um parágrafo sobre o recorte e o objetivo do projeto.")
     fontes: Fontes
     recorte: Recorte
     modelos: Modelos = Modelos()
@@ -121,18 +135,27 @@ class ConfigProjeto(_Base):
 
 # ---------------------------------------------------------------- codebook.yaml
 class Categoria(_Base):
+    """Uma das respostas possíveis de uma variável categórica."""
+
     valor: Slug
-    rotulo: str | None = None
-    definicao: str
-    exemplos: list[str] = Field(default_factory=list)
+    rotulo: str | None = Field(None, description="Nome exibido; se vazio, usa o `valor`.")
+    definicao: str = Field(description="Quando usar esta categoria. É o texto que o modelo lê.")
+    exemplos: list[str] = Field(default_factory=list, description="Trechos típicos (opcional).")
 
 
 class Variavel(_Base):
+    """Uma pergunta que o modelo responde para cada resumo."""
+
     id: Slug
-    rotulo: str
-    tipo: Literal["categorica", "multipla", "booleana", "texto"]
-    pergunta: str
-    categorias: list[Categoria] = Field(default_factory=list)
+    rotulo: str = Field(description="Nome curto exibido nas tabelas e gráficos.")
+    tipo: Literal["categorica", "multipla", "booleana", "texto"] = Field(
+        description="`categorica`: uma categoria; `multipla`: várias; `booleana`: sim/não; "
+        "`texto`: resposta livre curta."
+    )
+    pergunta: str = Field(description="A pergunta, como o modelo vai lê-la.")
+    categorias: list[Categoria] = Field(
+        default_factory=list, description="Obrigatórias (2 ou mais) em `categorica` e `multipla`."
+    )
 
     @model_validator(mode="after")
     def _categorias_coerentes(self) -> Variavel:
@@ -150,10 +173,10 @@ class Variavel(_Base):
 class Codebook(_Base):
     """Conteúdo do `codebook.yaml`."""
 
-    nome: str
-    versao: str
-    instrucoes: str
-    variaveis: list[Variavel] = Field(min_length=1)
+    nome: str = Field(description="Nome do codebook.")
+    versao: str = Field(description="Versão; mude sempre que alterar definições.")
+    instrucoes: str = Field(description="Instruções gerais ao modelo, lidas antes das variáveis.")
+    variaveis: list[Variavel] = Field(min_length=1, description="Pelo menos uma variável.")
 
     @field_validator("variaveis")
     @classmethod

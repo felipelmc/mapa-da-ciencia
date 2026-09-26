@@ -2,6 +2,7 @@
   "$defs": {
     "ColunasAfiliacoes": {
       "additionalProperties": false,
+      "description": "Colunas da tabela longa de afiliações (uma linha por documento × instituição).",
       "properties": {
         "doc": {
           "description": "Índice do documento em documentos.json.",
@@ -54,6 +55,7 @@
     },
     "DicionariosAfiliacoes": {
       "additionalProperties": false,
+      "description": "Instituições, UFs e países por trás dos índices.",
       "properties": {
         "instituicao": {
           "items": {
@@ -89,6 +91,7 @@
     },
     "Instituicao": {
       "additionalProperties": false,
+      "description": "Uma instituição de afiliação, já normalizada.",
       "properties": {
         "id": {
           "description": "`ror:…` quando houver, senão um slug do nome normalizado.",
@@ -138,6 +141,7 @@
     }
   },
   "additionalProperties": false,
+  "description": "Afiliações com contagem fracionária, base da vista de geografia.",
   "properties": {
     "colunas": {
       "$ref": "#/$defs/ColunasAfiliacoes"

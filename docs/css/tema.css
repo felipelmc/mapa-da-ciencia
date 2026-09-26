@@ -1,0 +1,72 @@
+/* Identidade visual do mapa-da-ciencia na documentação: os mesmos temas do painel.
+   Observatório (escuro): céu noturno, acento âmbar. Prancha (claro): papel de atlas, acento vermelhão. */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&display=swap");
+
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #161a2b;
+  --md-primary-fg-color--light: #2b3150;
+  --md-primary-fg-color--dark: #0c0f1c;
+  --md-primary-bg-color: #f6f2e9;
+  --md-accent-fg-color: #c2410c;
+  --md-default-bg-color: #f6f2e9;
+  --md-default-fg-color: #161a2b;
+  --md-typeset-a-color: #b23a0a;
+  --md-code-bg-color: #ece5d6;
+  --mapa-linha: #dcd3c2;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 230;
+  --md-primary-fg-color: #111733;
+  --md-primary-fg-color--light: #1b2349;
+  --md-primary-fg-color--dark: #0a0e1f;
+  --md-primary-bg-color: #eceaf4;
+  --md-accent-fg-color: #ffb547;
+  --md-default-bg-color: #0a0e1f;
+  --md-default-fg-color: #eceaf4;
+  --md-default-fg-color--light: #c3c0d4;
+  --md-typeset-a-color: #ffb547;
+  --md-code-bg-color: #111733;
+  --mapa-linha: #242c55;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-header__title {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.md-typeset h1 {
+  font-size: 2.1rem;
+}
+
+.md-typeset table:not([class]) {
+  border: 1px solid var(--mapa-linha);
+}
+
+.md-typeset table:not([class]) th {
+  background: color-mix(in srgb, var(--md-accent-fg-color) 12%, transparent);
+}
+
+/* Números grandes da página inicial */
+.md-typeset .numeros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 2.5rem;
+  margin: 1.5rem 0;
+}
+
+.md-typeset .numeros div {
+  display: flex;
+  flex-direction: column;
+}
+
+.md-typeset .numeros strong {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--md-accent-fg-color);
+}

@@ -2,6 +2,7 @@
   "$defs": {
     "Contagens": {
       "additionalProperties": false,
+      "description": "Números do corpus, usados na capa do painel.",
       "properties": {
         "classificados": {
           "default": 0,
@@ -36,6 +37,7 @@
     },
     "ExecucaoInfo": {
       "additionalProperties": false,
+      "description": "Dados de reprodutibilidade da última execução de cada etapa.",
       "properties": {
         "duracao_s": {
           "additionalProperties": {
@@ -85,6 +87,7 @@
     },
     "ProjetoInfo": {
       "additionalProperties": false,
+      "description": "Identificação do projeto.",
       "properties": {
         "descricao": {
           "default": "",
@@ -109,6 +112,7 @@
     },
     "RecorteInfo": {
       "additionalProperties": false,
+      "description": "Recorte do corpus: período, fontes e idiomas.",
       "properties": {
         "anos": {
           "maxItems": 2,
@@ -152,6 +156,7 @@
     }
   },
   "additionalProperties": false,
+  "description": "Índice do projeto publicado: o que existe, de onde veio e como foi gerado. É o primeiro arquivo que\na interface lê.",
   "properties": {
     "api": {
       "description": "True no painel local (há API); False no site estático publicado.",

@@ -1,5 +1,6 @@
 {
   "additionalProperties": false,
+  "description": "Resumo da classificação por codebook: modelo, cobertura e contagens por categoria.",
   "properties": {
     "cobertura": {
       "description": "Fração dos documentos com classificação válida.",

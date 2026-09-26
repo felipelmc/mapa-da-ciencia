@@ -2,6 +2,7 @@
   "$defs": {
     "Macrotema": {
       "additionalProperties": false,
+      "description": "Agrupamento de tópicos próximos, usado para a cor e a navegação.",
       "properties": {
         "cor": {
           "pattern": "^#[0-9a-fA-F]{6}$",
@@ -35,6 +36,7 @@
     },
     "Outliers": {
       "additionalProperties": false,
+      "description": "Documentos que o agrupamento não encaixou em nenhum tópico.",
       "properties": {
         "n": {
           "description": "Documentos que o HDBSCAN deixou sem tópico.",
@@ -56,6 +58,7 @@
     },
     "Serie": {
       "additionalProperties": false,
+      "description": "Série temporal de um tópico.",
       "properties": {
         "n": {
           "description": "Documentos por ano, alinhado a `anos`.",
@@ -83,6 +86,7 @@
     },
     "Topico": {
       "additionalProperties": false,
+      "description": "Um tópico: rótulo e descrição escritos pelo LLM, palavras-chave, cor estável e série no tempo.",
       "properties": {
         "centroide": {
           "maxItems": 2,
@@ -177,6 +181,7 @@
     }
   },
   "additionalProperties": false,
+  "description": "Tópicos e macrotemas do corpus, com as séries por ano.",
   "properties": {
     "anos": {
       "items": {

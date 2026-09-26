@@ -2,6 +2,7 @@
   "$defs": {
     "Detalhe": {
       "additionalProperties": false,
+      "description": "O que a interface mostra ao abrir um documento: resumo, autores, licença e evidências.",
       "properties": {
         "autores": {
           "items": {
@@ -80,6 +81,7 @@
     },
     "Evidencia": {
       "additionalProperties": false,
+      "description": "Valor de uma variável do codebook e o trecho do resumo que o justifica.",
       "properties": {
         "evidencia": {
           "title": "Evidencia",
@@ -150,6 +152,7 @@
     }
   },
   "additionalProperties": false,
+  "description": "Um dos 64 fragmentos de detalhes, carregados sob demanda.",
   "properties": {
     "documentos": {
       "additionalProperties": {

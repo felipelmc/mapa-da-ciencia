@@ -47,12 +47,16 @@ def fragmento_de(doc_id: str) -> str:
 
 # ---------------------------------------------------------------- manifesto.json
 class ProjetoInfo(_Base):
+    """Identificação do projeto."""
+
     nome: str
     titulo: str
     descricao: str = ""
 
 
 class RecorteInfo(_Base):
+    """Recorte do corpus: período, fontes e idiomas."""
+
     anos: tuple[int, int]
     fontes: list[str] = Field(description="Ex.: ['scielo:scl', 'openalex'].")
     idioma_analise: str
@@ -60,6 +64,8 @@ class RecorteInfo(_Base):
 
 
 class Contagens(_Base):
+    """Números do corpus, usados na capa do painel."""
+
     documentos: int
     topicos: int = 0
     classificados: int = 0
@@ -68,6 +74,8 @@ class Contagens(_Base):
 
 
 class ExecucaoInfo(_Base):
+    """Dados de reprodutibilidade da última execução de cada etapa."""
+
     versao_pacote: str
     modelos: dict[str, str] = Field(default_factory=dict, description="Papel → `modelo@digest`.")
     hash_codebook: str | None = None
@@ -76,6 +84,10 @@ class ExecucaoInfo(_Base):
 
 
 class Manifesto(_Arquivo):
+    """Índice do projeto publicado: o que existe, de onde veio e como foi gerado. É o primeiro arquivo que
+    a interface lê.
+    """
+
     api: bool = Field(description="True no painel local (há API); False no site estático publicado.")
     gerado_em: datetime
     projeto: ProjetoInfo
@@ -88,6 +100,8 @@ class Manifesto(_Arquivo):
 
 # ---------------------------------------------------------------- revistas.json
 class Revista(_Base):
+    """Uma revista do corpus."""
+
     id: str = Field(description="Acrônimo no SciELO, ex.: `dados`.")
     issn: str
     titulo: str
@@ -96,11 +110,15 @@ class Revista(_Base):
 
 
 class Revistas(_Arquivo):
+    """Revistas presentes no corpus, com o número de documentos de cada uma."""
+
     revistas: list[Revista]
 
 
 # ---------------------------------------------------------------- documentos.json
 class ColunasDocumentos(_Base):
+    """Colunas da tabela de documentos (todas com `n` itens, na mesma ordem)."""
+
     id: list[str]
     doi: list[str | None]
     titulo: list[str]
@@ -119,6 +137,8 @@ class ColunasDocumentos(_Base):
 
 
 class DicionariosDocumentos(_Base):
+    """Valores por trás dos índices das colunas categóricas."""
+
     revista: list[str]
     idioma: list[str]
     atribuicao: list[Atribuicao] = ["cluster", "vizinho"]
@@ -126,6 +146,8 @@ class DicionariosDocumentos(_Base):
 
 
 class Documentos(_Arquivo):
+    """Tabela principal: um documento por posição, com coordenadas no mapa, tópico e classificações."""
+
     n: int
     colunas: ColunasDocumentos
     dicionarios: DicionariosDocumentos
@@ -143,6 +165,8 @@ class Documentos(_Arquivo):
 
 # ---------------------------------------------------------------- afiliacoes.json
 class Instituicao(_Base):
+    """Uma instituição de afiliação, já normalizada."""
+
     id: str = Field(description="`ror:…` quando houver, senão um slug do nome normalizado.")
     nome: str
     sigla: str | None = None
@@ -151,6 +175,8 @@ class Instituicao(_Base):
 
 
 class ColunasAfiliacoes(_Base):
+    """Colunas da tabela longa de afiliações (uma linha por documento × instituição)."""
+
     doc: list[int] = Field(description="Índice do documento em documentos.json.")
     instituicao: list[int]
     uf: list[int] = Field(description="Índice em `dicionarios.uf` ou -1 (fora do Brasil ou desconhecida).")
@@ -159,12 +185,16 @@ class ColunasAfiliacoes(_Base):
 
 
 class DicionariosAfiliacoes(_Base):
+    """Instituições, UFs e países por trás dos índices."""
+
     instituicao: list[Instituicao]
     uf: list[str] = Field(description="Siglas das UFs.")
     pais: list[str] = Field(description="Códigos ISO 3166-1 alfa-2.")
 
 
 class Afiliacoes(_Arquivo):
+    """Afiliações com contagem fracionária, base da vista de geografia."""
+
     n: int
     colunas: ColunasAfiliacoes
     dicionarios: DicionariosAfiliacoes
@@ -172,6 +202,8 @@ class Afiliacoes(_Arquivo):
 
 # ---------------------------------------------------------------- detalhes/{xx}.json
 class Evidencia(_Base):
+    """Valor de uma variável do codebook e o trecho do resumo que o justifica."""
+
     valor: str | bool | list[str] | None
     evidencia: str
     status: StatusEvidencia
@@ -180,6 +212,8 @@ class Evidencia(_Base):
 
 
 class Detalhe(_Base):
+    """O que a interface mostra ao abrir um documento: resumo, autores, licença e evidências."""
+
     resumo: str | None = Field(description="None quando a licença não permite publicar o resumo.")
     idioma: str | None
     palavras_chave: list[str] = Field(default_factory=list)
@@ -191,17 +225,23 @@ class Detalhe(_Base):
 
 
 class Fragmento(_Arquivo):
+    """Um dos 64 fragmentos de detalhes, carregados sob demanda."""
+
     fragmento: str
     documentos: dict[str, Detalhe]
 
 
 # ---------------------------------------------------------------- topicos.json
 class Serie(_Base):
+    """Série temporal de um tópico."""
+
     n: list[int] = Field(description="Documentos por ano, alinhado a `anos`.")
     prop: list[float] = Field(description="Proporção do total do ano.")
 
 
 class Topico(_Base):
+    """Um tópico: rótulo e descrição escritos pelo LLM, palavras-chave, cor estável e série no tempo."""
+
     id: int
     macro_id: int
     rotulo: str
@@ -216,6 +256,8 @@ class Topico(_Base):
 
 
 class Macrotema(_Base):
+    """Agrupamento de tópicos próximos, usado para a cor e a navegação."""
+
     id: int
     rotulo: str
     cor: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
@@ -223,11 +265,15 @@ class Macrotema(_Base):
 
 
 class Outliers(_Base):
+    """Documentos que o agrupamento não encaixou em nenhum tópico."""
+
     n: int = Field(description="Documentos que o HDBSCAN deixou sem tópico.")
     reatribuidos: int = Field(description="Quantos deles foram atribuídos ao tópico mais próximo.")
 
 
 class Topicos(_Arquivo):
+    """Tópicos e macrotemas do corpus, com as séries por ano."""
+
     anos: list[int]
     total_por_ano: list[int]
     parametros: dict[str, float | int | str]
@@ -239,6 +285,8 @@ class Topicos(_Arquivo):
 
 # ---------------------------------------------------------------- codebook.json
 class CategoriaContrato(_Base):
+    """Categoria de uma variável, como o codebook define."""
+
     valor: str
     rotulo: str
     definicao: str
@@ -246,6 +294,8 @@ class CategoriaContrato(_Base):
 
 
 class VariavelContrato(_Base):
+    """Variável do codebook."""
+
     id: str
     rotulo: str
     tipo: Literal["categorica", "multipla", "booleana", "texto"]
@@ -254,6 +304,8 @@ class VariavelContrato(_Base):
 
 
 class CodebookContrato(_Arquivo):
+    """Cópia publicada do codebook, com o hash que identifica a versão usada."""
+
     nome: str
     versao: str
     hash: str
@@ -263,6 +315,8 @@ class CodebookContrato(_Arquivo):
 
 # ---------------------------------------------------------------- classificacoes.json
 class Classificacoes(_Arquivo):
+    """Resumo da classificação por codebook: modelo, cobertura e contagens por categoria."""
+
     modelo: str
     hash_codebook: str
     cobertura: float = Field(description="Fração dos documentos com classificação válida.")
@@ -272,11 +326,15 @@ class Classificacoes(_Arquivo):
 
 # ---------------------------------------------------------------- validacao.json
 class Matriz(_Base):
+    """Matriz de confusão entre a codificação humana e a do modelo."""
+
     rotulos: list[str]
     valores: list[list[int]] = Field(description="Linhas = codificação humana; colunas = modelo.")
 
 
 class MetricaVariavel(_Base):
+    """Concordância entre humano e modelo (ou entre dois modelos) numa variável."""
+
     variavel: str
     comparacao: str = Field(description="Ex.: `humano × qwen3.5:9b`.")
     n: int
@@ -289,6 +347,8 @@ class MetricaVariavel(_Base):
 
 
 class Divergencia(_Base):
+    """Um caso em que humano e modelo discordam, para arbitragem."""
+
     doc: str
     variavel: str
     humano: str
@@ -297,12 +357,16 @@ class Divergencia(_Base):
 
 
 class AmostraInfo(_Base):
+    """Como a amostra de validação foi sorteada."""
+
     n: int
     estratificar_por: str
     semente: int
 
 
 class Validacao(_Arquivo):
+    """Resultados da validação da classificação contra codificação humana."""
+
     amostra: AmostraInfo
     metricas: list[MetricaVariavel]
     modelos: list[str]

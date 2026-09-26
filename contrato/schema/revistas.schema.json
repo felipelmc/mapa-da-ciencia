@@ -2,6 +2,7 @@
   "$defs": {
     "Revista": {
       "additionalProperties": false,
+      "description": "Uma revista do corpus.",
       "properties": {
         "areas": {
           "items": {
@@ -39,6 +40,7 @@
     }
   },
   "additionalProperties": false,
+  "description": "Revistas presentes no corpus, com o número de documentos de cada uma.",
   "properties": {
     "revistas": {
       "items": {

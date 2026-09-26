@@ -1,0 +1,122 @@
+site_name: mapa-da-ciencia
+site_description: Observatório da literatura científica com modelos de linguagem locais
+site_url: https://felipelmc.github.io/mapa-da-ciencia/
+repo_url: https://github.com/felipelmc/mapa-da-ciencia
+repo_name: felipelmc/mapa-da-ciencia
+edit_uri: edit/main/docs/
+copyright: Código sob licença MIT · Projeto independente, sem vínculo oficial com SciELO, OpenAlex ou IBGE
+
+theme:
+  name: material
+  language: pt-BR
+  font:
+    text: Instrument Sans
+    code: JetBrains Mono
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Mudar para o tema claro (Prancha)
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Mudar para o tema escuro (Observatório)
+  icon:
+    logo: material/telescope
+    repo: fontawesome/brands/github
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+
+extra_css:
+  - css/tema.css
+
+plugins:
+  - search:
+      lang: pt
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: false
+            show_root_heading: true
+            heading_level: 3
+            docstring_style: google
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+
+nav:
+  - Início: index.md
+  - Tutoriais:
+      - tutoriais/index.md
+      - Explorar o exemplo em 5 minutos: tutoriais/explorar-exemplo.md
+  - Guias:
+      - guias/index.md
+      - Instalar e escolher os modelos: guias/instalacao.md
+      - Criar um projeto: guias/criar-projeto.md
+      - Escrever um codebook: guias/codebook.md
+      - Usar o painel: guias/painel.md
+      - Solução de problemas: guias/problemas.md
+  - Referência:
+      - referencia/index.md
+      - Linha de comando: referencia/cli.md
+      - Configuração (mapa.yaml): referencia/configuracao.md
+      - Codebook (codebook.yaml): referencia/codebook.md
+      - Contrato de dados: referencia/contrato.md
+      - API Python: referencia/api-python.md
+      - Glossário: referencia/glossario.md
+  - Explicações:
+      - explicacoes/index.md
+      - Fontes de dados: explicacoes/fontes.md
+      - Modelos locais: explicacoes/modelos-locais.md
+      - Reprodutibilidade: explicacoes/reprodutibilidade.md
+      - Privacidade e licenças: explicacoes/privacidade-e-licencas.md
+  - Decisões:
+      - decisoes/README.md
+      - "0001 · Certificados do sistema": decisoes/0001-certificados-do-sistema-com-truststore.md
+      - "0002 · Frontend": decisoes/0002-frontend-router-hash-e-regl-scatterplot.md
+      - "0003 · Fontes e licenças": decisoes/0003-fontes-casamento-e-licencas.md
+      - "0004 · Embeddings e idioma": decisoes/0004-embeddings-e-idioma-de-analise.md
+  - Desenvolvimento:
+      - desenvolvimento/index.md

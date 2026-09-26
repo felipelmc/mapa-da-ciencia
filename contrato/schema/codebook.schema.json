@@ -2,6 +2,7 @@
   "$defs": {
     "CategoriaContrato": {
       "additionalProperties": false,
+      "description": "Categoria de uma variável, como o codebook define.",
       "properties": {
         "definicao": {
           "title": "Definicao",
@@ -33,6 +34,7 @@
     },
     "VariavelContrato": {
       "additionalProperties": false,
+      "description": "Variável do codebook.",
       "properties": {
         "categorias": {
           "items": {
@@ -75,6 +77,7 @@
     }
   },
   "additionalProperties": false,
+  "description": "Cópia publicada do codebook, com o hash que identifica a versão usada.",
   "properties": {
     "hash": {
       "title": "Hash",

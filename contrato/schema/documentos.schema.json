@@ -2,6 +2,7 @@
   "$defs": {
     "ColunasDocumentos": {
       "additionalProperties": false,
+      "description": "Colunas da tabela de documentos (todas com `n` itens, na mesma ordem).",
       "properties": {
         "ano": {
           "items": {
@@ -134,6 +135,7 @@
     },
     "DicionariosDocumentos": {
       "additionalProperties": false,
+      "description": "Valores por trás dos índices das colunas categóricas.",
       "properties": {
         "atribuicao": {
           "default": [
@@ -184,6 +186,7 @@
     }
   },
   "additionalProperties": false,
+  "description": "Tabela principal: um documento por posição, com coordenadas no mapa, tópico e classificações.",
   "properties": {
     "colunas": {
       "$ref": "#/$defs/ColunasDocumentos"

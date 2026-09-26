@@ -2,6 +2,7 @@
   "$defs": {
     "AmostraInfo": {
       "additionalProperties": false,
+      "description": "Como a amostra de validação foi sorteada.",
       "properties": {
         "estratificar_por": {
           "title": "Estratificar Por",
@@ -26,6 +27,7 @@
     },
     "Divergencia": {
       "additionalProperties": false,
+      "description": "Um caso em que humano e modelo discordam, para arbitragem.",
       "properties": {
         "doc": {
           "title": "Doc",
@@ -60,6 +62,7 @@
     },
     "Matriz": {
       "additionalProperties": false,
+      "description": "Matriz de confusão entre a codificação humana e a do modelo.",
       "properties": {
         "rotulos": {
           "items": {
@@ -89,6 +92,7 @@
     },
     "MetricaVariavel": {
       "additionalProperties": false,
+      "description": "Concordância entre humano e modelo (ou entre dois modelos) numa variável.",
       "properties": {
         "alfa": {
           "anyOf": [
@@ -181,6 +185,7 @@
     }
   },
   "additionalProperties": false,
+  "description": "Resultados da validação da classificação contra codificação humana.",
   "properties": {
     "amostra": {
       "$ref": "#/$defs/AmostraInfo"
