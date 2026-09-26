@@ -12,6 +12,7 @@ As decisões do marco M0 vêm de **spikes**: experimentos pequenos e descartáve
 | [0002](0002-frontend-router-hash-e-regl-scatterplot.md) | Frontend: router por hash do SvelteKit, estado no hash e regl-scatterplot | aceita |
 | [0003](0003-fontes-casamento-e-licencas.md) | Fontes do corpus, casamento ArticleMeta↔OpenAlex e licença por artigo | aceita |
 | [0004](0004-embeddings-e-idioma-de-analise.md) | Embeddings com `qwen3-embedding:0.6b`, análise em inglês e exibição em português | aceita |
+| [0005](0005-modelo-de-classificacao.md) | Classificação com `qwen3.5:9b`, sem raciocínio, concorrência 1 e checagem de memória contínua | aceita |
 
 ## Modelo
 

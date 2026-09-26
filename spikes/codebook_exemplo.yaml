@@ -1,0 +1,105 @@
+# Codebook de exemplo para o spike M0b (ciência política).
+# Serve para medir o comportamento dos modelos locais. NÃO é o codebook final do
+# piloto: as variáveis e definições devem ser revistas pelo pesquisador.
+nome: ciencia-politica-exemplo
+versao: "0.1"
+instrucoes: >
+  Você é um assistente de pesquisa que codifica resumos de artigos de ciência
+  política e relações internacionais publicados em revistas brasileiras. Leia o
+  resumo e preencha cada variável do codebook. Para cada variável, copie
+  primeiro, como evidência, um trecho literal do resumo (palavra por palavra,
+  sem parafrasear) que justifique a escolha, e só então informe o valor. Se o
+  resumo não trouxer informação suficiente, escolha a categoria "nao_informado"
+  quando ela existir e use como evidência a frase mais próxima do assunto.
+  Responda apenas com o JSON pedido.
+
+variaveis:
+  - id: abordagem
+    rotulo: Abordagem metodológica
+    tipo: categorica
+    pergunta: Qual é a abordagem metodológica principal do estudo?
+    categorias:
+      - valor: quantitativa
+        definicao: Análise baseada principalmente em dados numéricos e técnicas estatísticas (surveys, regressões, séries de dados eleitorais ou legislativos, experimentos).
+      - valor: qualitativa
+        definicao: Análise baseada principalmente em dados não numéricos (entrevistas, documentos, estudo de caso, análise de discurso, etnografia, process tracing).
+      - valor: mista
+        definicao: Combina de forma substantiva técnicas quantitativas e qualitativas.
+      - valor: teorica_ensaistica
+        definicao: Discussão conceitual, normativa ou histórica, sem análise sistemática de dados empíricos.
+      - valor: revisao
+        definicao: Revisão da literatura, estado da arte ou balanço bibliográfico.
+      - valor: nao_informado
+        definicao: O resumo não permite identificar a abordagem.
+
+  - id: tecnica_principal
+    rotulo: Técnica ou fonte de dados principal
+    tipo: categorica
+    pergunta: Qual técnica ou fonte de dados principal o estudo usa?
+    categorias:
+      - valor: survey
+        definicao: Pesquisa de opinião ou questionário aplicado a amostra.
+      - valor: experimento
+        definicao: Experimento de laboratório, de campo ou de survey, com manipulação de tratamento.
+      - valor: dados_observacionais_agregados
+        definicao: Dados eleitorais, legislativos, orçamentários, econômicos ou institucionais analisados estatisticamente.
+      - valor: textos_e_documentos
+        definicao: Análise de documentos, discursos, leis, imprensa ou textos, manual ou computacional.
+      - valor: entrevistas_e_observacao
+        definicao: Entrevistas, grupos focais, observação participante ou etnografia.
+      - valor: estudo_de_caso_historico
+        definicao: Reconstrução de um ou poucos casos ou processos históricos.
+      - valor: bibliografia
+        definicao: A literatura ou autores clássicos são a fonte principal (típico de textos teóricos e revisões).
+      - valor: nao_informado
+        definicao: O resumo não permite identificar a técnica ou fonte.
+
+  - id: recorte_geografico
+    rotulo: Recorte geográfico
+    tipo: categorica
+    pergunta: Qual é o recorte geográfico do objeto estudado?
+    categorias:
+      - valor: brasil_nacional
+        definicao: O Brasil como um todo (instituições federais, eleições nacionais, o país).
+      - valor: brasil_subnacional
+        definicao: Estados, municípios ou regiões brasileiras.
+      - valor: america_latina
+        definicao: Mais de um país da América Latina, ou a região como um todo.
+      - valor: outro_pais_ou_regiao
+        definicao: Um país ou região fora do Brasil que não seja a América Latina como conjunto.
+      - valor: internacional_global
+        definicao: O sistema internacional, organizações internacionais ou comparações globais.
+      - valor: sem_recorte
+        definicao: Estudo teórico ou conceitual sem recorte geográfico.
+
+  - id: brasil_como_caso
+    rotulo: Brasil como caso
+    tipo: booleana
+    pergunta: O Brasil (ou parte dele) é um caso empírico analisado no estudo?
+
+  - id: subarea
+    rotulo: Subárea
+    tipo: categorica
+    pergunta: Em qual subárea da ciência política o estudo se encaixa melhor?
+    categorias:
+      - valor: instituicoes_politicas
+        definicao: Executivo, Legislativo, Judiciário, federalismo, relações entre Poderes, burocracia.
+      - valor: eleicoes_e_partidos
+        definicao: Sistemas eleitorais, campanhas, partidos, representação.
+      - valor: comportamento_e_opiniao
+        definicao: Comportamento político, opinião pública, cultura política, participação individual.
+      - valor: politicas_publicas
+        definicao: Formulação, implementação e avaliação de políticas públicas.
+      - valor: relacoes_internacionais
+        definicao: Política externa, segurança, economia política internacional, organizações internacionais.
+      - valor: teoria_politica
+        definicao: Teoria e filosofia política, história do pensamento político.
+      - valor: sociedade_civil_e_movimentos
+        definicao: Movimentos sociais, sociedade civil, participação coletiva, conflitos.
+      - valor: outra
+        definicao: Nenhuma das anteriores.
+
+  - id: periodo_analisado
+    rotulo: Período analisado
+    tipo: texto
+    pergunta: Qual período o estudo analisa? Responda com anos (ex. "1994–2018") ou "não se aplica".
