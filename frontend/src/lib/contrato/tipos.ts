@@ -153,25 +153,61 @@ export interface Agregados {
  * Resumo da classificação por codebook: modelo, cobertura e contagens por categoria.
  */
 export interface Classificacoes {
+	classificados?: number;
 	/**
 	 * Fração dos documentos com classificação válida.
 	 */
 	cobertura: number;
+	/**
+	 * Variável → valor → documentos. Nas de múltipla escolha, cada categoria conta à parte; as de texto ficam de fora.
+	 */
 	contagens: {
 		[k: string]: {
 			[k: string]: number;
 		};
 	};
 	/**
+	 * Documentos com resumo, que podiam ser classificados.
+	 */
+	documentos?: number;
+	/**
 	 * Fração das evidências encontradas literalmente no resumo.
 	 */
 	evidencia_literal: number;
 	hash_codebook: string;
+	json_valido_na_primeira?: number | null;
 	modelo: string;
+	/**
+	 * A classificação ainda não cobre todos os documentos com resumo.
+	 */
+	parcial?: boolean;
+	por_variavel?: {
+		[k: string]: VariavelClassificada;
+	};
+	sem_resumo?: number;
 	/**
 	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
 	 */
 	versao_contrato?: string;
+}
+/**
+ * Como uma variável saiu na classificação.
+ */
+export interface VariavelClassificada {
+	/**
+	 * Status → fração das evidências, sem as dispensadas.
+	 */
+	evidencia?: {
+		[k: string]: number;
+	};
+	/**
+	 * Documentos com resposta nesta variável.
+	 */
+	n: number;
+	/**
+	 * Fração das respostas sem informação (`nao_informado`, `nao_se_aplica` ou falso).
+	 */
+	sem_informacao: number;
 }
 /**
  * Cópia publicada do codebook, com o hash que identifica a versão usada.
@@ -313,13 +349,20 @@ export interface Detalhe {
  * Valor de uma variável do codebook e o trecho do resumo que o justifica.
  */
 export interface Evidencia {
+	/**
+	 * Onde o trecho foi localizado; `inicio` e `fim` são posições nesse texto.
+	 */
+	campo?: ('titulo' | 'resumo') | null;
 	evidencia: string;
 	fim?: number | null;
 	/**
 	 * Posição do trecho no resumo exibido (caracteres), se localizado.
 	 */
 	inicio?: number | null;
-	status: 'literal' | 'aproximada' | 'ausente';
+	/**
+	 * `literal`: o trecho está no texto; `aproximada`: quase (90% dos caracteres); `ausente`: não está; `dispensada`: vazia numa resposta sem informação.
+	 */
+	status: 'literal' | 'aproximada' | 'ausente' | 'dispensada';
 	valor: string | boolean | string[] | null;
 }
 /**
@@ -585,12 +628,25 @@ export interface Topico {
 	tendencia?: Tendencia | null;
 }
 /**
- * Resultados da validação da classificação contra codificação humana.
+ * Resultados da validação da classificação: concordância por variável e por par de participantes.
  */
 export interface Validacao {
 	amostra: AmostraInfo;
+	/**
+	 * Participantes, com o tipo.
+	 */
+	codificadores?: Participante[];
+	comparacoes_modelos?: ComparacaoModelos[];
 	divergencias: Divergencia[];
+	/**
+	 * Modelo → fração das evidências literais na amostra.
+	 */
+	evidencia_literal?: {
+		[k: string]: number;
+	};
+	hash_codebook?: string | null;
 	metricas: MetricaVariavel[];
+	modelo_principal?: string | null;
 	modelos: string[];
 	/**
 	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
@@ -606,39 +662,95 @@ export interface AmostraInfo {
 	semente: number;
 }
 /**
- * Um caso em que humano e modelo discordam, para arbitragem.
+ * Quem respondeu na amostra: um codificador (`humano` ou `referencia`, que não é uma pessoa) ou um modelo.
  */
-export interface Divergencia {
-	doc: string;
-	evidencia: string;
-	humano: string;
-	modelo: string;
+export interface Participante {
+	/**
+	 * Documentos da amostra com resposta.
+	 */
+	n: number;
+	nome: string;
+	tipo: 'humano' | 'referencia' | 'modelo';
+}
+/**
+ * McNemar exato entre dois modelos, contra a mesma referência, numa variável.
+ */
+export interface ComparacaoModelos {
+	acertos_a: number;
+	acertos_b: number;
+	modelo_a: string;
+	modelo_b: string;
+	n: number;
+	p: number;
+	referencia: string;
 	variavel: string;
 }
 /**
- * Concordância entre humano e modelo (ou entre dois modelos) numa variável.
+ * Um caso em que um codificador de referência e o modelo principal discordam, para arbitragem.
+ */
+export interface Divergencia {
+	codificador?: string;
+	doc: string;
+	/**
+	 * Trecho que o modelo citou.
+	 */
+	evidencia: string;
+	/**
+	 * Valor dado pelo codificador (o nome do campo vem da versão 1.0).
+	 */
+	humano: string;
+	/**
+	 * O codificador marcou a resposta como incerta.
+	 */
+	incerto?: boolean;
+	modelo: string;
+	status?: ('literal' | 'aproximada' | 'ausente' | 'dispensada') | null;
+	variavel: string;
+}
+/**
+ * Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável.
+ * Nas de múltipla escolha, `variavel` é `id:categoria` (uma variável sim/não por categoria).
  */
 export interface MetricaVariavel {
 	alfa: number | null;
 	/**
-	 * Ex.: `humano × qwen3.5:9b`.
+	 * Ex.: `claude-opus × qwen3.5:9b` (referência primeiro).
 	 */
 	comparacao: string;
-	concordancia: number;
+	comparado?: string;
+	concordancia: number | null;
 	kappa: number | null;
 	kappa_ic95: [number, number] | null;
 	matriz: Matriz;
 	n: number;
 	pabak: number | null;
+	por_classe?: MetricaClasse[];
+	/**
+	 * Participante tomado como referência (linhas da matriz).
+	 */
+	referencia?: string;
 	variavel: string;
 }
 /**
- * Matriz de confusão entre a codificação humana e a do modelo.
+ * Matriz de confusão entre dois participantes.
  */
 export interface Matriz {
 	rotulos: string[];
 	/**
-	 * Linhas = codificação humana; colunas = modelo.
+	 * Linhas = a referência do par; colunas = o outro participante.
 	 */
 	valores: number[][];
+}
+/**
+ * Precisão, revocação e F1 de uma categoria, tomando o primeiro do par como referência.
+ */
+export interface MetricaClasse {
+	f1: number | null;
+	precisao: number | null;
+	revocacao: number | null;
+	rotulo: string;
+	/**
+	 * Quantas vezes a referência deu esta categoria.
+	 */
+	suporte: number;
 }

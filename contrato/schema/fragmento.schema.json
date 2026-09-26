@@ -114,6 +114,23 @@
       "additionalProperties": false,
       "description": "Valor de uma variável do codebook e o trecho do resumo que o justifica.",
       "properties": {
+        "campo": {
+          "anyOf": [
+            {
+              "enum": [
+                "titulo",
+                "resumo"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Onde o trecho foi localizado; `inicio` e `fim` são posições nesse texto.",
+          "title": "Campo"
+        },
         "evidencia": {
           "title": "Evidencia",
           "type": "string"
@@ -144,10 +161,12 @@
           "title": "Inicio"
         },
         "status": {
+          "description": "`literal`: o trecho está no texto; `aproximada`: quase (90% dos caracteres); `ausente`: não está; `dispensada`: vazia numa resposta sem informação.",
           "enum": [
             "literal",
             "aproximada",
-            "ausente"
+            "ausente",
+            "dispensada"
           ],
           "title": "Status",
           "type": "string"
@@ -197,7 +216,7 @@
       "type": "string"
     },
     "versao_contrato": {
-      "default": "1.2",
+      "default": "1.3",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",

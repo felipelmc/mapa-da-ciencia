@@ -431,9 +431,11 @@ def _geografia(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[st
 def exportar(projeto: Projeto) -> list[str]:
     """Reconstrói `saida/dados/` (o contrato que o painel lê) a partir de `dados/`. Devolve avisos.
 
-    Sempre grava `manifesto.json` e `revistas.json`. Com tópicos em dia (gerados a partir do corpus atual), grava
-    também `documentos.json`, `topicos.json`, `agregados.json` e os fragmentos de `detalhes/`; com a geografia
-    também em dia, `afiliacoes.json` e os campos geográficos de `agregados.json`. Tudo é escrito
+    Sempre grava `manifesto.json`, `revistas.json` e `codebook.json`. Com tópicos em dia (gerados a partir do
+    corpus atual), grava também `documentos.json`, `topicos.json`, `agregados.json` e os fragmentos de
+    `detalhes/`; com a geografia também em dia, `afiliacoes.json` e os campos geográficos de `agregados.json`.
+    Com a classificação do modelo principal e do codebook atual, `classificacoes.json`, as colunas `cls` e as
+    evidências dos detalhes; com a amostra de validação respondida, `validacao.json`. Tudo é escrito
     numa pasta nova, que substitui a antiga de uma vez: o painel nunca vê uma exportação pela metade, e
     arquivos de uma etapa desatualizada não sobram.
     """
@@ -472,6 +474,14 @@ def exportar(projeto: Projeto) -> list[str]:
             if geo is not None:
                 contagens = contagens.model_copy(update={"com_instituicao": geo})
 
+    from mapa_da_ciencia.contrato.classificacao import exportar_classificacao
+
+    cls = exportar_classificacao(projeto, arquivos, fragmentos, cob["documentos"], avisos)
+    contagens = contagens.model_copy(
+        update={"classificados": cls.get("classificados", 0), "validados": cls.get("validados", 0)}
+    )
+    if "modelo" in cls:
+        modelos["classificacao"] = cls["modelo"]
     manifesto = manifesto_do_projeto(
         projeto,
         api=False,
@@ -480,11 +490,16 @@ def exportar(projeto: Projeto) -> list[str]:
     )
     duracoes = {
         etapa: round(m["duracao_s"], 1)
-        for etapa in ("coleta", "embeddings", "topicos", "geografia")
+        for etapa in ("coleta", "embeddings", "topicos", "geografia", "classificacao")
         if (m := ultima_execucao(projeto, etapa))
     }
     execucao = manifesto.execucao.model_copy(
-        update={"duracao_s": duracoes, "sementes": sementes, "modelos": {**manifesto.execucao.modelos, **modelos}}
+        update={
+            "duracao_s": duracoes,
+            "sementes": sementes,
+            "modelos": {**manifesto.execucao.modelos, **modelos},
+            "hash_codebook": cls.get("hash_codebook"),
+        }
     )
     manifesto = manifesto.model_copy(update={"licencas": cob["licencas"], "execucao": execucao})
 

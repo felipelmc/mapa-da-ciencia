@@ -194,3 +194,15 @@ def test_cli_validar(projeto, tmp_path):
     assert r.exit_code == 1 and "Inválida" in r.output
     r = runner.invoke(app, ["validar", "importar", str(arquivo), "-P", raiz, "-c", "felipe", "--tipo", "robo"], env=ENV)
     assert r.exit_code == 1 and "Tipo de codificador" in r.output
+
+
+def test_importar_atualiza_o_painel(projeto, tmp_path):
+    from mapa_da_ciencia.contrato import modelos as m
+
+    a = va.sortear(projeto)
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    arquivo = tmp_path / "c.jsonl"
+    arquivo.write_text("\n".join(json.dumps({"doc": d, "respostas": _respostas(projeto)}) for d in a.docs))
+    mapa.importar_codificacoes(projeto, arquivo, "claude-opus", tipo="referencia")
+    manifesto = m.Manifesto.model_validate_json((projeto.saida / "dados" / "manifesto.json").read_text())
+    assert "validacao" in manifesto.arquivos and manifesto.contagens.validados == 10

@@ -70,7 +70,7 @@ def test_exporta_manifesto_e_revistas_para_o_painel(projeto, apis_falsas):
     dados = projeto.saida / "dados"
     manifesto = Manifesto.model_validate_json((dados / "manifesto.json").read_text())
     assert manifesto.contagens.documentos == 25 and manifesto.contagens.com_afiliacao == 25
-    assert manifesto.arquivos == ["manifesto", "revistas"] and not manifesto.api
+    assert manifesto.arquivos == ["manifesto", "revistas", "codebook"] and not manifesto.api
     assert manifesto.licencas == {"cc-by": 25} and "coleta" in manifesto.execucao.duracao_s
     revistas = Revistas.model_validate_json((dados / "revistas.json").read_text()).revistas
     assert [(r.id, r.issn, r.n) for r in revistas] == [("op", "0104-6276", 25)]

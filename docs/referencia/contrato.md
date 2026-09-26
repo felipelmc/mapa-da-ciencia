@@ -12,9 +12,10 @@ Convenções:
   filtro cruzado no navegador). `-1` significa "sem valor".
 - Resumos e evidências ficam fora de `documentos.json`, em fragmentos
   `detalhes/{00..3f}.json`, carregados sob demanda (ver `fragmento_de`).
-- Nenhum arquivo do contrato pode conter e-mails ou codificações humanas individuais.
+- Nenhum arquivo do contrato pode conter e-mails ou codificações humanas individuais (as divergências de
+  `validacao.json` vêm só de codificadores de referência; as de pessoas ficam na API local do painel).
 
-Versão atual: **1.2**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
+Versão atual: **1.3**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
 
 | Arquivo | Modelo |
 |---|---|
@@ -38,7 +39,7 @@ a interface lê.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `api` | sim/não | **obrigatório** | True no painel local (há API); False no site estático publicado. |
 | `gerado_em` | datetime | **obrigatório** |  |
 | `projeto` | [ProjetoInfo](#projetoinfo) | **obrigatório** | Identificação do projeto. |
@@ -102,7 +103,7 @@ Revistas presentes no corpus, com o número de documentos de cada uma.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `revistas` | lista de [Revista](#revista) | **obrigatório** | Uma revista do corpus. |
 
 ### Revista
@@ -125,7 +126,7 @@ Tabela principal: um documento por posição, com coordenadas no mapa, tópico e
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
 | `colunas` | [ColunasDocumentos](#colunasdocumentos) | **obrigatório** | Colunas da tabela de documentos (todas com `n` itens, na mesma ordem). |
 | `dicionarios` | [DicionariosDocumentos](#dicionariosdocumentos) | **obrigatório** | Valores por trás dos índices das colunas categóricas. |
@@ -169,7 +170,7 @@ Afiliações com contagem fracionária, base da vista de geografia.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
 | `colunas` | [ColunasAfiliacoes](#colunasafiliacoes) | **obrigatório** | Colunas da tabela longa de afiliações: uma linha por documento × (instituição, UF, país), pesos somados. |
 | `dicionarios` | [DicionariosAfiliacoes](#dicionariosafiliacoes) | **obrigatório** | Instituições, UFs e países por trás dos índices. |
@@ -216,7 +217,7 @@ Um dos 64 fragmentos de detalhes, carregados sob demanda.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `fragmento` | texto | **obrigatório** |  |
 | `documentos` | mapa de texto para [Detalhe](#detalhe) | **obrigatório** | O que a interface mostra ao abrir um documento: resumo, autores, licença e evidências. |
 
@@ -245,9 +246,10 @@ Valor de uma variável do codebook e o trecho do resumo que o justifica.
 |---|---|---|---|
 | `valor` | texto ou sim/não ou lista de texto ou vazio | **obrigatório** |  |
 | `evidencia` | texto | **obrigatório** |  |
-| `status` | `"literal"` \\| `"aproximada"` \\| `"ausente"` | **obrigatório** |  |
+| `status` | `"literal"` \\| `"aproximada"` \\| `"ausente"` \\| `"dispensada"` | **obrigatório** | `literal`: o trecho está no texto; `aproximada`: quase (90% dos caracteres); `ausente`: não está; `dispensada`: vazia numa resposta sem informação. |
 | `inicio` | inteiro ou vazio | vazio | Posição do trecho no resumo exibido (caracteres), se localizado. |
 | `fim` | inteiro ou vazio | vazio |  |
+| `campo` | `"titulo"` \\| `"resumo"` ou vazio | vazio | Onde o trecho foi localizado; `inicio` e `fim` são posições nesse texto. |
 
 ## `topicos.json`
 
@@ -257,7 +259,7 @@ Tópicos e macrotemas do corpus, com as séries por ano.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `anos` | lista de inteiro | **obrigatório** |  |
 | `total_por_ano` | lista de inteiro | **obrigatório** |  |
 | `parametros` | mapa de texto para número ou inteiro ou texto | **obrigatório** |  |
@@ -361,7 +363,7 @@ Cópia publicada do codebook, com o hash que identifica a versão usada.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `nome` | texto | **obrigatório** |  |
 | `versao` | texto | **obrigatório** |  |
 | `hash` | texto | **obrigatório** |  |
@@ -399,26 +401,47 @@ Resumo da classificação por codebook: modelo, cobertura e contagens por catego
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `modelo` | texto | **obrigatório** |  |
 | `hash_codebook` | texto | **obrigatório** |  |
 | `cobertura` | número | **obrigatório** | Fração dos documentos com classificação válida. |
 | `evidencia_literal` | número | **obrigatório** | Fração das evidências encontradas literalmente no resumo. |
-| `contagens` | mapa de texto para mapa de texto para inteiro | **obrigatório** |  |
+| `contagens` | mapa de texto para mapa de texto para inteiro | **obrigatório** | Variável → valor → documentos. Nas de múltipla escolha, cada categoria conta à parte; as de texto ficam de fora. |
+| `classificados` | inteiro | `0` |  |
+| `documentos` | inteiro | `0` | Documentos com resumo, que podiam ser classificados. |
+| `sem_resumo` | inteiro | `0` |  |
+| `parcial` | sim/não | `false` | A classificação ainda não cobre todos os documentos com resumo. |
+| `json_valido_na_primeira` | número ou vazio | vazio |  |
+| `por_variavel` | mapa de texto para [VariavelClassificada](#variavelclassificada) | vazio | Como uma variável saiu na classificação. |
+
+### VariavelClassificada
+
+Como uma variável saiu na classificação.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `n` | inteiro | **obrigatório** | Documentos com resposta nesta variável. |
+| `sem_informacao` | número | **obrigatório** | Fração das respostas sem informação (`nao_informado`, `nao_se_aplica` ou falso). |
+| `evidencia` | mapa de texto para número | vazio | Status → fração das evidências, sem as dispensadas. |
 
 ## `validacao.json`
 
 ### Validacao
 
-Resultados da validação da classificação contra codificação humana.
+Resultados da validação da classificação: concordância por variável e por par de participantes.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `amostra` | [AmostraInfo](#amostrainfo) | **obrigatório** | Como a amostra de validação foi sorteada. |
-| `metricas` | lista de [MetricaVariavel](#metricavariavel) | **obrigatório** | Concordância entre humano e modelo (ou entre dois modelos) numa variável. |
+| `metricas` | lista de [MetricaVariavel](#metricavariavel) | **obrigatório** | Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável. |
 | `modelos` | lista de texto | **obrigatório** |  |
-| `divergencias` | lista de [Divergencia](#divergencia) | **obrigatório** | Um caso em que humano e modelo discordam, para arbitragem. |
+| `divergencias` | lista de [Divergencia](#divergencia) | **obrigatório** | Um caso em que um codificador de referência e o modelo principal discordam, para arbitragem. |
+| `codificadores` | lista de [Participante](#participante) | vazio | Participantes, com o tipo. |
+| `modelo_principal` | texto ou vazio | vazio |  |
+| `hash_codebook` | texto ou vazio | vazio |  |
+| `comparacoes_modelos` | lista de [ComparacaoModelos](#comparacaomodelos) | vazio | McNemar exato entre dois modelos, contra a mesma referência, numa variável. |
+| `evidencia_literal` | mapa de texto para número | vazio | Modelo → fração das evidências literais na amostra. |
 
 ### AmostraInfo
 
@@ -432,40 +455,84 @@ Como a amostra de validação foi sorteada.
 
 ### MetricaVariavel
 
-Concordância entre humano e modelo (ou entre dois modelos) numa variável.
+Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável.
+Nas de múltipla escolha, `variavel` é `id:categoria` (uma variável sim/não por categoria).
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `variavel` | texto | **obrigatório** |  |
-| `comparacao` | texto | **obrigatório** | Ex.: `humano × qwen3.5:9b`. |
+| `comparacao` | texto | **obrigatório** | Ex.: `claude-opus × qwen3.5:9b` (referência primeiro). |
 | `n` | inteiro | **obrigatório** |  |
-| `concordancia` | número | **obrigatório** |  |
+| `concordancia` | número ou vazio | **obrigatório** |  |
 | `kappa` | número ou vazio | **obrigatório** |  |
 | `kappa_ic95` | par de número e número ou vazio | **obrigatório** |  |
 | `pabak` | número ou vazio | **obrigatório** |  |
 | `alfa` | número ou vazio | **obrigatório** |  |
-| `matriz` | [Matriz](#matriz) | **obrigatório** | Matriz de confusão entre a codificação humana e a do modelo. |
+| `matriz` | [Matriz](#matriz) | **obrigatório** | Matriz de confusão entre dois participantes. |
+| `referencia` | texto | `""` | Participante tomado como referência (linhas da matriz). |
+| `comparado` | texto | `""` |  |
+| `por_classe` | lista de [MetricaClasse](#metricaclasse) | vazio | Precisão, revocação e F1 de uma categoria, tomando o primeiro do par como referência. |
 
 ### Matriz
 
-Matriz de confusão entre a codificação humana e a do modelo.
+Matriz de confusão entre dois participantes.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `rotulos` | lista de texto | **obrigatório** |  |
-| `valores` | lista de lista de inteiro | **obrigatório** | Linhas = codificação humana; colunas = modelo. |
+| `valores` | lista de lista de inteiro | **obrigatório** | Linhas = a referência do par; colunas = o outro participante. |
+
+### MetricaClasse
+
+Precisão, revocação e F1 de uma categoria, tomando o primeiro do par como referência.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `rotulo` | texto | **obrigatório** |  |
+| `suporte` | inteiro | **obrigatório** | Quantas vezes a referência deu esta categoria. |
+| `precisao` | número ou vazio | **obrigatório** |  |
+| `revocacao` | número ou vazio | **obrigatório** |  |
+| `f1` | número ou vazio | **obrigatório** |  |
 
 ### Divergencia
 
-Um caso em que humano e modelo discordam, para arbitragem.
+Um caso em que um codificador de referência e o modelo principal discordam, para arbitragem.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `doc` | texto | **obrigatório** |  |
 | `variavel` | texto | **obrigatório** |  |
-| `humano` | texto | **obrigatório** |  |
+| `humano` | texto | **obrigatório** | Valor dado pelo codificador (o nome do campo vem da versão 1.0). |
 | `modelo` | texto | **obrigatório** |  |
-| `evidencia` | texto | **obrigatório** |  |
+| `evidencia` | texto | **obrigatório** | Trecho que o modelo citou. |
+| `codificador` | texto | `""` |  |
+| `status` | `"literal"` \\| `"aproximada"` \\| `"ausente"` \\| `"dispensada"` ou vazio | vazio |  |
+| `incerto` | sim/não | `false` | O codificador marcou a resposta como incerta. |
+
+### Participante
+
+Quem respondeu na amostra: um codificador (`humano` ou `referencia`, que não é uma pessoa) ou um modelo.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `nome` | texto | **obrigatório** |  |
+| `tipo` | `"humano"` \\| `"referencia"` \\| `"modelo"` | **obrigatório** |  |
+| `n` | inteiro | **obrigatório** | Documentos da amostra com resposta. |
+
+### ComparacaoModelos
+
+McNemar exato entre dois modelos, contra a mesma referência, numa variável.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `variavel` | texto | **obrigatório** |  |
+| `referencia` | texto | **obrigatório** |  |
+| `modelo_a` | texto | **obrigatório** |  |
+| `modelo_b` | texto | **obrigatório** |  |
+| `n` | inteiro | **obrigatório** |  |
+| `acertos_a` | inteiro | **obrigatório** |  |
+| `acertos_b` | inteiro | **obrigatório** |  |
+| `p` | número | **obrigatório** |  |
 
 ## `agregados.json`
 
@@ -475,7 +542,7 @@ Gabarito calculado no Python para testar o filtro cruzado do frontend.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `topico_ano_revista` | lista de tupla | **obrigatório** | (tópico, ano, revista, n). |
 | `uf` | mapa de texto para número | **obrigatório** | Contagem fracionária por UF (sigla). |
 | `pais` | mapa de texto para número | **obrigatório** | Contagem fracionária por país (ISO alfa-2). |

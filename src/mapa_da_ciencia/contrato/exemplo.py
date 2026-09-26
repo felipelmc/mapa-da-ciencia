@@ -19,6 +19,7 @@ import yaml
 
 from mapa_da_ciencia.config import Codebook
 from mapa_da_ciencia.contrato import modelos as m
+from mapa_da_ciencia.contrato.classificacao import codebook_contrato
 from mapa_da_ciencia.contrato.exportar import agregados_geograficos, tendencia_contrato
 from mapa_da_ciencia.topicos.paleta import cores_macrotemas, proxima_cor
 
@@ -388,12 +389,14 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
             ("periodo_analisado", frase_periodo),
         ):
             valor = d["cls"].get(var, f"{periodo[0]}–{periodo[1]}")
-            if rng.random() < 0.05:  # às vezes o modelo parafraseia: evidência aproximada, sem posição
+            if valor is False:  # "não": a evidência pode ficar vazia
+                evid[var] = m.Evidencia(valor=valor, evidencia="", status="dispensada")
+            elif rng.random() < 0.05:  # às vezes o modelo parafraseia: evidência aproximada, sem posição
                 evid[var] = m.Evidencia(valor=valor, evidencia=frase.lower()[:-3], status="aproximada")
             else:
                 ini = resumo.index(frase)
                 evid[var] = m.Evidencia(
-                    valor=valor, evidencia=frase, status="literal", inicio=ini, fim=ini + len(frase)
+                    valor=valor, evidencia=frase, status="literal", inicio=ini, fim=ini + len(frase), campo="resumo"
                 )
         licenca = rng.choices(["cc-by", "cc-by-nc", "desconhecida"], [45, 50, 5])[0]
         fonte_analise = "reserva" if rng.random() < 0.03 else "resumo"  # sem resumo em inglês: vai o português
@@ -558,39 +561,31 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
     )
 
     # ---- codebook, classificações e validação
-    codebook = m.CodebookContrato(
-        nome=cb.nome,
-        versao=cb.versao,
-        hash=cb.hash(),
-        instrucoes=cb.instrucoes,
-        variaveis=[
-            m.VariavelContrato(
-                id=v.id,
-                rotulo=v.rotulo,
-                tipo=v.tipo,
-                pergunta=v.pergunta,
-                categorias=[
-                    m.CategoriaContrato(
-                        valor=c.valor, rotulo=c.rotulo or c.valor.replace("_", " "), definicao=c.definicao
-                    )
-                    for c in v.categorias
-                ],
-            )
-            for v in cb.variaveis
-        ],
-    )
+    codebook = codebook_contrato(cb)
     contagens_cls = {
         v.id: dict(Counter(str(d["cls"][v.id]).lower() if v.tipo == "booleana" else d["cls"][v.id] for d in docs))
         for v in vars_cls
     }
-    n_evid = sum(len(det.evidencias) for det in detalhes.values())
+    n_evid = sum(e.status != "dispensada" for det in detalhes.values() for e in det.evidencias.values())
     n_lit = sum(e.status == "literal" for det in detalhes.values() for e in det.evidencias.values())
+    por_variavel = {}
+    for v in cb.variaveis:
+        evs = [det.evidencias[v.id] for det in detalhes.values() if v.id in det.evidencias]
+        st = Counter(e.status for e in evs if e.status != "dispensada")
+        por_variavel[v.id] = m.VariavelClassificada(
+            n=len(evs),
+            sem_informacao=round(sum(e.status == "dispensada" for e in evs) / len(evs), 4),
+            evidencia={k: round(x / sum(st.values()), 4) for k, x in sorted(st.items())},
+        )
     classificacoes = m.Classificacoes(
         modelo="exemplo",
         hash_codebook=cb.hash(),
         cobertura=1.0,
         evidencia_literal=round(n_lit / n_evid, 4),
         contagens=contagens_cls,
+        classificados=len(docs),
+        documentos=len(docs),
+        por_variavel=por_variavel,
     )
     validacao = _validacao_sintetica(rng, docs, vars_cls, dic_cls)
 
@@ -664,6 +659,9 @@ def _kappa(a: list[str], b: list[str]) -> tuple[float, float, float]:
     return po, kappa, pabak
 
 
+REFERENCIA = "referencia-exemplo"  # um codificador de referência fictício (não humano)
+
+
 def _validacao_sintetica(rng, docs, vars_cls, dic_cls) -> m.Validacao:
     amostra = rng.sample(docs, 60)
     metricas, divergencias = [], []
@@ -679,7 +677,7 @@ def _validacao_sintetica(rng, docs, vars_cls, dic_cls) -> m.Validacao:
         metricas.append(
             m.MetricaVariavel(
                 variavel=v.id,
-                comparacao="humano × exemplo",
+                comparacao=f"{REFERENCIA} × exemplo",
                 n=len(amostra),
                 concordancia=round(po, 4),
                 kappa=round(kappa, 4),
@@ -687,16 +685,42 @@ def _validacao_sintetica(rng, docs, vars_cls, dic_cls) -> m.Validacao:
                 pabak=round(pabak, 4),
                 alfa=None,
                 matriz=m.Matriz(rotulos=rotulos, valores=matriz),
+                referencia=REFERENCIA,
+                comparado="exemplo",
+                por_classe=[
+                    m.MetricaClasse(
+                        rotulo=r,
+                        suporte=sum(linha),
+                        precisao=round(matriz[i][i] / col, 4) if (col := sum(x[i] for x in matriz)) else None,
+                        revocacao=round(matriz[i][i] / sum(linha), 4) if sum(linha) else None,
+                        f1=round(2 * matriz[i][i] / (sum(linha) + col), 4) if sum(linha) + col else None,
+                    )
+                    for i, (r, linha) in enumerate(zip(rotulos, matriz, strict=True))
+                ],
             )
         )
         for d, h, mo in zip(amostra, humano, modelo, strict=True):
             if h != mo and len(divergencias) < 40:
                 divergencias.append(
-                    m.Divergencia(doc=d["id"], variavel=v.id, humano=h, modelo=mo, evidencia="(ver resumo)")
+                    m.Divergencia(
+                        doc=d["id"],
+                        variavel=v.id,
+                        humano=h,
+                        modelo=mo,
+                        evidencia="(ver resumo)",
+                        codificador=REFERENCIA,
+                        status="literal",
+                    )
                 )
     return m.Validacao(
         amostra=m.AmostraInfo(n=len(amostra), estratificar_por="topico", semente=7),
         metricas=metricas,
         modelos=["exemplo"],
         divergencias=divergencias,
+        codificadores=[
+            m.Participante(nome=REFERENCIA, tipo="referencia", n=len(amostra)),
+            m.Participante(nome="exemplo", tipo="modelo", n=len(amostra)),
+        ],
+        modelo_principal="exemplo",
+        evidencia_literal={"exemplo": 0.95},
     )

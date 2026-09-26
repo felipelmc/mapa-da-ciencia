@@ -727,6 +727,7 @@ def validar_importar(
     ] = "humano",
 ) -> None:
     """Importa as codificações de um arquivo JSONL (formato no guia "Codificar a amostra")."""
+    from mapa_da_ciencia.contrato.exportar import exportar
     from mapa_da_ciencia.validacao import amostra as va
 
     with _erros_amigaveis():
@@ -735,6 +736,7 @@ def validar_importar(
         p = Projeto.abrir(projeto)
         r = va.importar(p, arquivo, codificador, tipo=tipo)  # type: ignore[arg-type]
         n_amostra = len(va.ler(p).docs)  # type: ignore[union-attr]
+        avisos = exportar(p) if r.documentos else []  # o painel passa a mostrar a concordância
     console.print(
         f"[bold green]Importado[/]: {num(r.documentos, 0)} de {num(n_amostra, 0)} documentos da amostra "
         f"codificados por [bold]{r.codificador}[/] ({tipo})."
@@ -744,6 +746,8 @@ def validar_importar(
             f"[yellow]Aviso:[/] {num(len(r.fora_da_amostra), 0)} linha(s) com documentos fora da amostra foram "
             f"ignoradas (por exemplo {', '.join(r.fora_da_amostra[:3])})."
         )
+    for aviso in avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
     for problema in r.invalidas[:10]:
         console.print(f"[red]Inválida:[/] {problema}")
     if len(r.invalidas) > 10:

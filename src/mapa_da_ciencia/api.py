@@ -337,9 +337,14 @@ def importar_codificacoes(
 ) -> ResumoImportacao:
     """Importa um JSONL de codificações da amostra, como `mapa validar importar`. Linhas inválidas não são
     gravadas e aparecem em `resumo.invalidas`."""
+    from mapa_da_ciencia.contrato.exportar import exportar
     from mapa_da_ciencia.validacao import amostra as va
 
-    return va.importar(_projeto(projeto), Path(arquivo), codificador, tipo=tipo)
+    p = _projeto(projeto)
+    resumo = va.importar(p, Path(arquivo), codificador, tipo=tipo)
+    if resumo.documentos:
+        exportar(p)  # o painel passa a mostrar a concordância
+    return resumo
 
 
 def codificacoes(projeto: Projeto | str | Path = ".", codificador: str | None = None) -> list[dict[str, Any]]:
