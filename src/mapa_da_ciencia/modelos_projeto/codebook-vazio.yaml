@@ -1,0 +1,21 @@
+# Codebook: as variáveis que o modelo vai preencher para cada resumo.
+# Guia: https://felipelmc.github.io/mapa-da-ciencia/guias/codebook/
+nome: meu-codebook
+versao: "0.1"
+instrucoes: >
+  Você é um assistente de pesquisa que codifica resumos de artigos científicos. Para cada
+  variável, copie primeiro, como evidência, um trecho literal do resumo que justifique a
+  escolha, e só então informe o valor. Responda apenas com o JSON pedido.
+
+variaveis:
+  - id: abordagem
+    rotulo: Abordagem metodológica
+    tipo: categorica        # categorica | multipla | booleana | texto
+    pergunta: Qual é a abordagem metodológica principal do estudo?
+    categorias:
+      - valor: quantitativa
+        definicao: Análise baseada principalmente em dados numéricos e técnicas estatísticas.
+      - valor: qualitativa
+        definicao: Análise baseada principalmente em dados não numéricos.
+      - valor: nao_informado
+        definicao: O resumo não permite identificar a abordagem.

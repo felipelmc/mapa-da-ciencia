@@ -1,0 +1,170 @@
+{
+  "$defs": {
+    "ColunasAfiliacoes": {
+      "additionalProperties": false,
+      "description": "Colunas da tabela longa de afiliações (uma linha por documento × instituição).",
+      "properties": {
+        "doc": {
+          "description": "Índice do documento em documentos.json.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Doc",
+          "type": "array"
+        },
+        "instituicao": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Instituicao",
+          "type": "array"
+        },
+        "pais": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Pais",
+          "type": "array"
+        },
+        "peso": {
+          "description": "Contagem fracionária: a soma por documento é 1.",
+          "items": {
+            "type": "number"
+          },
+          "title": "Peso",
+          "type": "array"
+        },
+        "uf": {
+          "description": "Índice em `dicionarios.uf` ou -1 (fora do Brasil ou desconhecida).",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Uf",
+          "type": "array"
+        }
+      },
+      "required": [
+        "doc",
+        "instituicao",
+        "uf",
+        "pais",
+        "peso"
+      ],
+      "title": "ColunasAfiliacoes",
+      "type": "object"
+    },
+    "DicionariosAfiliacoes": {
+      "additionalProperties": false,
+      "description": "Instituições, UFs e países por trás dos índices.",
+      "properties": {
+        "instituicao": {
+          "items": {
+            "$ref": "#/$defs/Instituicao"
+          },
+          "title": "Instituicao",
+          "type": "array"
+        },
+        "pais": {
+          "description": "Códigos ISO 3166-1 alfa-2.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Pais",
+          "type": "array"
+        },
+        "uf": {
+          "description": "Siglas das UFs.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Uf",
+          "type": "array"
+        }
+      },
+      "required": [
+        "instituicao",
+        "uf",
+        "pais"
+      ],
+      "title": "DicionariosAfiliacoes",
+      "type": "object"
+    },
+    "Instituicao": {
+      "additionalProperties": false,
+      "description": "Uma instituição de afiliação, já normalizada.",
+      "properties": {
+        "id": {
+          "description": "`ror:…` quando houver, senão um slug do nome normalizado.",
+          "title": "Id",
+          "type": "string"
+        },
+        "nome": {
+          "title": "Nome",
+          "type": "string"
+        },
+        "pais": {
+          "title": "Pais",
+          "type": "string"
+        },
+        "sigla": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sigla"
+        },
+        "uf": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uf"
+        }
+      },
+      "required": [
+        "id",
+        "nome",
+        "pais"
+      ],
+      "title": "Instituicao",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Afiliações com contagem fracionária, base da vista de geografia.",
+  "properties": {
+    "colunas": {
+      "$ref": "#/$defs/ColunasAfiliacoes"
+    },
+    "dicionarios": {
+      "$ref": "#/$defs/DicionariosAfiliacoes"
+    },
+    "n": {
+      "title": "N",
+      "type": "integer"
+    },
+    "versao_contrato": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "n",
+    "colunas",
+    "dicionarios"
+  ],
+  "title": "Afiliacoes",
+  "type": "object"
+}

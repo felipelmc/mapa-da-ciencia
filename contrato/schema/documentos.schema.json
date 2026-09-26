@@ -1,0 +1,215 @@
+{
+  "$defs": {
+    "ColunasDocumentos": {
+      "additionalProperties": false,
+      "description": "Colunas da tabela de documentos (todas com `n` itens, na mesma ordem).",
+      "properties": {
+        "ano": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Ano",
+          "type": "array"
+        },
+        "atribuicao": {
+          "description": "Índice em `dicionarios.atribuicao`.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Atribuicao",
+          "type": "array"
+        },
+        "autores_curto": {
+          "description": "Ex.: `Limongi, F.; +2`.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Autores Curto",
+          "type": "array"
+        },
+        "cls": {
+          "additionalProperties": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "description": "Variável do codebook → índice em `dicionarios.cls[variavel]` ou -1.",
+          "title": "Cls",
+          "type": "object"
+        },
+        "doi": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Doi",
+          "type": "array"
+        },
+        "id": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Id",
+          "type": "array"
+        },
+        "idioma": {
+          "description": "Índice em `dicionarios.idioma` (idioma do resumo exibido).",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Idioma",
+          "type": "array"
+        },
+        "revista": {
+          "description": "Índice em `dicionarios.revista`.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Revista",
+          "type": "array"
+        },
+        "titulo": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Titulo",
+          "type": "array"
+        },
+        "topico": {
+          "description": "Id do tópico (ver topicos.json) ou -1.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Topico",
+          "type": "array"
+        },
+        "vizinhos": {
+          "description": "Índices (nesta tabela) dos 5 documentos mais próximos.",
+          "items": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "title": "Vizinhos",
+          "type": "array"
+        },
+        "x": {
+          "items": {
+            "type": "number"
+          },
+          "title": "X",
+          "type": "array"
+        },
+        "y": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Y",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "doi",
+        "titulo",
+        "ano",
+        "revista",
+        "idioma",
+        "x",
+        "y",
+        "topico",
+        "atribuicao",
+        "autores_curto",
+        "vizinhos"
+      ],
+      "title": "ColunasDocumentos",
+      "type": "object"
+    },
+    "DicionariosDocumentos": {
+      "additionalProperties": false,
+      "description": "Valores por trás dos índices das colunas categóricas.",
+      "properties": {
+        "atribuicao": {
+          "default": [
+            "cluster",
+            "vizinho"
+          ],
+          "items": {
+            "enum": [
+              "cluster",
+              "vizinho"
+            ],
+            "type": "string"
+          },
+          "title": "Atribuicao",
+          "type": "array"
+        },
+        "cls": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Cls",
+          "type": "object"
+        },
+        "idioma": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Idioma",
+          "type": "array"
+        },
+        "revista": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Revista",
+          "type": "array"
+        }
+      },
+      "required": [
+        "revista",
+        "idioma"
+      ],
+      "title": "DicionariosDocumentos",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Tabela principal: um documento por posição, com coordenadas no mapa, tópico e classificações.",
+  "properties": {
+    "colunas": {
+      "$ref": "#/$defs/ColunasDocumentos"
+    },
+    "dicionarios": {
+      "$ref": "#/$defs/DicionariosDocumentos"
+    },
+    "n": {
+      "title": "N",
+      "type": "integer"
+    },
+    "versao_contrato": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "n",
+    "colunas",
+    "dicionarios"
+  ],
+  "title": "Documentos",
+  "type": "object"
+}

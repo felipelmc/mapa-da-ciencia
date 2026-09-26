@@ -1,0 +1,57 @@
+{
+  "additionalProperties": false,
+  "description": "Gabarito calculado no Python para testar o filtro cruzado do frontend.",
+  "properties": {
+    "pais": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Pais",
+      "type": "object"
+    },
+    "topico_ano_revista": {
+      "description": "(tópico, ano, revista, n).",
+      "items": {
+        "maxItems": 4,
+        "minItems": 4,
+        "prefixItems": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "Topico Ano Revista",
+      "type": "array"
+    },
+    "uf": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Uf",
+      "type": "object"
+    },
+    "versao_contrato": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "topico_ano_revista",
+    "uf",
+    "pais"
+  ],
+  "title": "Agregados",
+  "type": "object"
+}

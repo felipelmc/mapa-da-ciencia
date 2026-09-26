@@ -1,0 +1,121 @@
+{
+  "$defs": {
+    "CategoriaContrato": {
+      "additionalProperties": false,
+      "description": "Categoria de uma variável, como o codebook define.",
+      "properties": {
+        "definicao": {
+          "title": "Definicao",
+          "type": "string"
+        },
+        "exemplos": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Exemplos",
+          "type": "array"
+        },
+        "rotulo": {
+          "title": "Rotulo",
+          "type": "string"
+        },
+        "valor": {
+          "title": "Valor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "valor",
+        "rotulo",
+        "definicao"
+      ],
+      "title": "CategoriaContrato",
+      "type": "object"
+    },
+    "VariavelContrato": {
+      "additionalProperties": false,
+      "description": "Variável do codebook.",
+      "properties": {
+        "categorias": {
+          "items": {
+            "$ref": "#/$defs/CategoriaContrato"
+          },
+          "title": "Categorias",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "pergunta": {
+          "title": "Pergunta",
+          "type": "string"
+        },
+        "rotulo": {
+          "title": "Rotulo",
+          "type": "string"
+        },
+        "tipo": {
+          "enum": [
+            "categorica",
+            "multipla",
+            "booleana",
+            "texto"
+          ],
+          "title": "Tipo",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "rotulo",
+        "tipo",
+        "pergunta"
+      ],
+      "title": "VariavelContrato",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Cópia publicada do codebook, com o hash que identifica a versão usada.",
+  "properties": {
+    "hash": {
+      "title": "Hash",
+      "type": "string"
+    },
+    "instrucoes": {
+      "title": "Instrucoes",
+      "type": "string"
+    },
+    "nome": {
+      "title": "Nome",
+      "type": "string"
+    },
+    "variaveis": {
+      "items": {
+        "$ref": "#/$defs/VariavelContrato"
+      },
+      "title": "Variaveis",
+      "type": "array"
+    },
+    "versao": {
+      "title": "Versao",
+      "type": "string"
+    },
+    "versao_contrato": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome",
+    "versao",
+    "hash",
+    "instrucoes",
+    "variaveis"
+  ],
+  "title": "CodebookContrato",
+  "type": "object"
+}

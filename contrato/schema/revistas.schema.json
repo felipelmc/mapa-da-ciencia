@@ -1,0 +1,64 @@
+{
+  "$defs": {
+    "Revista": {
+      "additionalProperties": false,
+      "description": "Uma revista do corpus.",
+      "properties": {
+        "areas": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Areas",
+          "type": "array"
+        },
+        "id": {
+          "description": "Acrônimo no SciELO, ex.: `dados`.",
+          "title": "Id",
+          "type": "string"
+        },
+        "issn": {
+          "title": "Issn",
+          "type": "string"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "titulo": {
+          "title": "Titulo",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "issn",
+        "titulo",
+        "n"
+      ],
+      "title": "Revista",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Revistas presentes no corpus, com o número de documentos de cada uma.",
+  "properties": {
+    "revistas": {
+      "items": {
+        "$ref": "#/$defs/Revista"
+      },
+      "title": "Revistas",
+      "type": "array"
+    },
+    "versao_contrato": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "revistas"
+  ],
+  "title": "Revistas",
+  "type": "object"
+}

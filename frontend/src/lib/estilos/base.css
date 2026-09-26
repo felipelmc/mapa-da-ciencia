@@ -1,0 +1,181 @@
+/* Estilos globais: reset leve, tipografia, foco visível e o fundo de cada tema. */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	background: var(--fundo);
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	min-height: 100dvh;
+	font-family: var(--fonte-interface);
+	font-size: 1rem;
+	line-height: 1.55;
+	color: var(--texto);
+	-webkit-font-smoothing: antialiased;
+	font-synthesis: none;
+}
+
+/*
+ * O fundo fica em duas camadas fixas atrás de tudo:
+ * - ::before: estrelas (Observatório) ou a grade fina do papel (Prancha), em ladrilho;
+ * - ::after: um brilho difuso nos cantos, como nebulosa ou mancha de papel antigo.
+ */
+body::before,
+body::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+}
+
+body::before {
+	background-image:
+		radial-gradient(1.1px 1.1px at 6% 12%, var(--estrela) 60%, transparent 100%),
+		radial-gradient(0.8px 0.8px at 19% 64%, var(--estrela) 60%, transparent 100%),
+		radial-gradient(1.4px 1.4px at 33% 27%, var(--estrela) 60%, transparent 100%),
+		radial-gradient(0.8px 0.8px at 41% 83%, var(--estrela) 60%, transparent 100%),
+		radial-gradient(1px 1px at 57% 9%, var(--estrela) 60%, transparent 100%),
+		radial-gradient(0.9px 0.9px at 63% 48%, var(--estrela) 60%, transparent 100%),
+		radial-gradient(1.3px 1.3px at 78% 71%, var(--estrela) 60%, transparent 100%),
+		radial-gradient(0.8px 0.8px at 86% 22%, var(--estrela) 60%, transparent 100%),
+		radial-gradient(1px 1px at 93% 91%, var(--estrela) 60%, transparent 100%),
+		linear-gradient(var(--grade) 1px, transparent 1px),
+		linear-gradient(90deg, var(--grade) 1px, transparent 1px);
+	background-size:
+		520px 520px,
+		520px 520px,
+		520px 520px,
+		520px 520px,
+		520px 520px,
+		520px 520px,
+		520px 520px,
+		520px 520px,
+		520px 520px,
+		56px 56px,
+		56px 56px;
+	opacity: 0.55;
+}
+
+body::after {
+	background:
+		radial-gradient(60rem 38rem at 92% -8%, var(--brilho), transparent 70%),
+		radial-gradient(52rem 40rem at -12% 108%, var(--brilho-frio), transparent 70%);
+}
+
+h1,
+h2,
+h3 {
+	font-family: var(--fonte-titulo);
+	font-weight: 420;
+	font-optical-sizing: auto;
+	letter-spacing: -0.012em;
+	line-height: 1.12;
+	margin: 0;
+	text-wrap: balance;
+}
+
+p {
+	margin: 0;
+	text-wrap: pretty;
+}
+
+a {
+	color: inherit;
+}
+
+button {
+	font: inherit;
+	color: inherit;
+}
+
+code {
+	font-family: var(--fonte-mono);
+	font-size: 0.88em;
+	padding: 0.08em 0.4em;
+	border-radius: var(--raio-pequeno);
+	background: var(--superficie-alta);
+	border: 1px solid var(--linha);
+	white-space: nowrap;
+}
+
+:focus-visible {
+	outline: 2px solid var(--foco);
+	outline-offset: 3px;
+	border-radius: var(--raio-pequeno);
+}
+
+::selection {
+	background: var(--acento);
+	color: var(--sobre-acento);
+}
+
+/* Números em colunas: JetBrains Mono com algarismos de largura fixa. */
+.numero {
+	font-family: var(--fonte-mono);
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: 'zero' 0;
+}
+
+/* Rótulo pequeno em versaletes, usado como sobretítulo e legenda. */
+.rotulo-miudo {
+	font-family: var(--fonte-mono);
+	font-size: 0.72rem;
+	font-weight: 500;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--texto-suave);
+}
+
+.visualmente-oculto {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Transições discretas: só a troca de cores do tema e a entrada das páginas. */
+@media (prefers-reduced-motion: no-preference) {
+	body,
+	.transicao-tema {
+		transition:
+			background-color var(--duracao) ease,
+			color var(--duracao) ease,
+			border-color var(--duracao) ease;
+	}
+
+	.surgir {
+		animation: surgir 320ms var(--curva) both;
+	}
+}
+
+@keyframes surgir {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}

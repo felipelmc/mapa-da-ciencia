@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python (lint, testes, arquivos gerados)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+      - run: uv sync --all-groups --locked
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+      - run: uv run pytest
+      - name: Contrato de dados em dia
+        run: uv run python scripts/gerar_contrato.py --checar
+      - name: Referência da documentação em dia
+        run: uv run python scripts/gerar_referencias.py --checar
+
+  frontend:
+    name: Interface (tipos, checagem, testes, build, e2e)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Tipos do contrato em dia
+        run: npm run tipos:checar
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Testes de ponta a ponta (raiz e subcaminho)
+        run: npm run e2e
+      - uses: actions/upload-artifact@v7
+        with:
+          name: interface
+          path: frontend/build
+          if-no-files-found: error
+
+  pacote:
+    name: Wheel com a interface e smoke test sem Node
+    needs: [python, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - uses: actions/download-artifact@v8
+        with:
+          name: interface
+          path: src/mapa_da_ciencia/web/estatico
+      - run: uv build
+      - run: bash scripts/testar_wheel.sh dist/mapa_da_ciencia-*.whl
+      - uses: actions/upload-artifact@v7
+        with:
+          name: distribuicao
+          path: dist/

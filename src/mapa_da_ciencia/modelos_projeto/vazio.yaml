@@ -1,0 +1,32 @@
+# Configuração do projeto. Referência completa: https://felipelmc.github.io/mapa-da-ciencia/referencia/configuracao/
+versao_config: 1
+nome: $nome
+titulo: Meu mapa da literatura
+descricao: ""
+
+fontes:
+  scielo:
+    colecao: scl
+    revistas:
+      - 0104-6276           # troque pelos ISSNs das revistas do seu recorte (`mapa revistas`)
+  openalex:
+    enriquecer: true
+
+recorte:
+  anos: [2015, 2025]
+  idioma_analise: en
+  idioma_exibicao: pt
+
+# Modelos locais do Ollama, sugeridos pelo perfil "$perfil" desta máquina.
+modelos:
+  embeddings:
+    modelo: $modelo_embeddings
+  classificacao:
+    modelo: $modelo_classificacao
+  rotulos:
+    modelo: $modelo_rotulos
+
+validacao:
+  n: 200
+  estratificar_por: topico
+  semente: 7

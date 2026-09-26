@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="dark light" />
+		<meta name="description" content="Observatório da literatura científica: tópicos, classificação e geografia de um corpus de artigos." />
+		<!-- Caminho relativo: o mesmo build é servido na raiz e em subcaminhos (ADR 0002). -->
+		<link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+		<title>mapa da ciência</title>
+		<script>
+			// Aplica o tema antes da primeira pintura, para não piscar o tema errado.
+			// A escolha explícita (botão da barra superior) fica em localStorage; sem ela,
+			// segue prefers-color-scheme. A mesma lógica vive em src/lib/estado/tema.svelte.ts.
+			(function () {
+				var tema = null;
+				try {
+					tema = localStorage.getItem('mapa-da-ciencia:tema');
+				} catch (e) {}
+				if (tema !== 'observatorio' && tema !== 'prancha') {
+					var claro = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+					tema = claro ? 'prancha' : 'observatorio';
+				}
+				document.documentElement.setAttribute('data-tema', tema);
+			})();
+		</script>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

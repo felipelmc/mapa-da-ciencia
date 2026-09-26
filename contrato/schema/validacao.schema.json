@@ -1,0 +1,229 @@
+{
+  "$defs": {
+    "AmostraInfo": {
+      "additionalProperties": false,
+      "description": "Como a amostra de validação foi sorteada.",
+      "properties": {
+        "estratificar_por": {
+          "title": "Estratificar Por",
+          "type": "string"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "semente": {
+          "title": "Semente",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "n",
+        "estratificar_por",
+        "semente"
+      ],
+      "title": "AmostraInfo",
+      "type": "object"
+    },
+    "Divergencia": {
+      "additionalProperties": false,
+      "description": "Um caso em que humano e modelo discordam, para arbitragem.",
+      "properties": {
+        "doc": {
+          "title": "Doc",
+          "type": "string"
+        },
+        "evidencia": {
+          "title": "Evidencia",
+          "type": "string"
+        },
+        "humano": {
+          "title": "Humano",
+          "type": "string"
+        },
+        "modelo": {
+          "title": "Modelo",
+          "type": "string"
+        },
+        "variavel": {
+          "title": "Variavel",
+          "type": "string"
+        }
+      },
+      "required": [
+        "doc",
+        "variavel",
+        "humano",
+        "modelo",
+        "evidencia"
+      ],
+      "title": "Divergencia",
+      "type": "object"
+    },
+    "Matriz": {
+      "additionalProperties": false,
+      "description": "Matriz de confusão entre a codificação humana e a do modelo.",
+      "properties": {
+        "rotulos": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rotulos",
+          "type": "array"
+        },
+        "valores": {
+          "description": "Linhas = codificação humana; colunas = modelo.",
+          "items": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "title": "Valores",
+          "type": "array"
+        }
+      },
+      "required": [
+        "rotulos",
+        "valores"
+      ],
+      "title": "Matriz",
+      "type": "object"
+    },
+    "MetricaVariavel": {
+      "additionalProperties": false,
+      "description": "Concordância entre humano e modelo (ou entre dois modelos) numa variável.",
+      "properties": {
+        "alfa": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Alfa"
+        },
+        "comparacao": {
+          "description": "Ex.: `humano × qwen3.5:9b`.",
+          "title": "Comparacao",
+          "type": "string"
+        },
+        "concordancia": {
+          "title": "Concordancia",
+          "type": "number"
+        },
+        "kappa": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Kappa"
+        },
+        "kappa_ic95": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Kappa Ic95"
+        },
+        "matriz": {
+          "$ref": "#/$defs/Matriz"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "pabak": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pabak"
+        },
+        "variavel": {
+          "title": "Variavel",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variavel",
+        "comparacao",
+        "n",
+        "concordancia",
+        "kappa",
+        "kappa_ic95",
+        "pabak",
+        "alfa",
+        "matriz"
+      ],
+      "title": "MetricaVariavel",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Resultados da validação da classificação contra codificação humana.",
+  "properties": {
+    "amostra": {
+      "$ref": "#/$defs/AmostraInfo"
+    },
+    "divergencias": {
+      "items": {
+        "$ref": "#/$defs/Divergencia"
+      },
+      "title": "Divergencias",
+      "type": "array"
+    },
+    "metricas": {
+      "items": {
+        "$ref": "#/$defs/MetricaVariavel"
+      },
+      "title": "Metricas",
+      "type": "array"
+    },
+    "modelos": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Modelos",
+      "type": "array"
+    },
+    "versao_contrato": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "amostra",
+    "metricas",
+    "modelos",
+    "divergencias"
+  ],
+  "title": "Validacao",
+  "type": "object"
+}

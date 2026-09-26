@@ -1,0 +1,70 @@
+[project]
+name = "mapa-da-ciencia"
+version = "0.1.0"
+description = "Observatório da literatura científica: tópicos no tempo, classificação por codebook com validação humana e geografia da produção, com modelos de linguagem locais."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Felipe Lamarca" }]
+requires-python = ">=3.11"
+keywords = ["scielo", "bibliometria", "revisão de literatura", "llm", "ollama", "ciências sociais computacionais"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: Portuguese (Brazilian)",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = [
+    "typer>=0.27",
+    "pydantic>=2.13",
+    "pyyaml>=6.0",
+    "httpx>=0.28",
+    "truststore>=0.10",
+    "psutil>=7.0",
+    "fastapi>=0.141",
+    "uvicorn>=0.54",
+]
+
+[project.scripts]
+mapa = "mapa_da_ciencia.cli:app"
+
+[project.urls]
+Repositorio = "https://github.com/felipelmc/mapa-da-ciencia"
+
+[dependency-groups]
+dev = ["pytest>=9.1", "respx>=0.23", "ruff>=0.16"]
+docs = [
+    "mkdocs>=1.6,<2",
+    "mkdocs-material>=9.7",
+    "mkdocstrings-python>=2.0",
+]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+# A interface compilada não é versionada (é gerada no CI), mas precisa entrar no wheel.
+artifacts = ["src/mapa_da_ciencia/web/estatico/"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mapa_da_ciencia"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["spikes", "frontend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+# Textos em português usam travessões, aspas curvas e "×" de propósito.
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+# Aviso do Starlette 1.7 sobre o cliente de testes; não afeta o código do projeto.
+filterwarnings = ["ignore:Using .httpx. with .starlette.testclient. is deprecated"]
+addopts = "-q"
