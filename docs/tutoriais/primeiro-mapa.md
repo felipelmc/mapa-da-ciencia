@@ -2,7 +2,7 @@
 
 Neste tutorial você monta um corpus de verdade: os artigos da revista *Opinião Pública* publicados em 2024. No fim, você terá um projeto com 25 artigos, com títulos, resumos, autores, afiliações e licenças, e saberá conferir a cobertura desses dados. Leva uns 10 minutos.
 
-A parte 1 não usa modelos de linguagem: só precisa de internet, para consultar a [ArticleMeta](../explicacoes/fontes.md) do SciELO e o OpenAlex. As próximas partes (tópicos e mapa, classificação) chegam com os marcos M3 a M5.
+A parte 1 não usa modelos de linguagem: só precisa de internet, para consultar a [ArticleMeta](../explicacoes/fontes.md) do SciELO e o OpenAlex. A [parte 2](primeiro-mapa-topicos.md) descobre os tópicos e monta o mapa; a parte 3, com a classificação, chega com o marco M5.
 
 !!! info "Antes de começar"
     Você precisa do `mapa-da-ciencia` instalado. Se ainda não instalou, siga os passos 1 e 2 de [Explorar o exemplo](explorar-exemplo.md) e volte para cá. Todos os comandos abaixo rodam dentro da pasta `mapa-da-ciencia` que você baixou.
@@ -146,7 +146,7 @@ O resultado lista os três artigos mais citados da revista em 2024, segundo o Op
 uv run mapa painel  # fora do CI
 ```
 
-A página inicial do painel agora mostra os números do seu corpus: 25 documentos, 1 revista, 2024. O mapa e os tópicos aparecem depois da etapa de tópicos, na parte 2. Para encerrar, aperte ++ctrl+c++ no terminal.
+A página inicial do painel agora mostra os números do seu corpus: 25 documentos, 1 revista, 2024. O mapa e os tópicos aparecem depois da etapa de tópicos, na [parte 2](primeiro-mapa-topicos.md). Para encerrar, aperte ++ctrl+c++ no terminal.
 
 ## O que você fez
 

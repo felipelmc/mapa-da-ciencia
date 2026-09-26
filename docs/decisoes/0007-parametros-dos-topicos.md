@@ -1,6 +1,6 @@
 # 0007. Parâmetros dos tópicos
 
-- **Status:** proposta (em andamento no M3: falta a leitura dos tópicos, depois dos rótulos)
+- **Status:** aceita
 - **Data:** 2026-09-26
 - **Marco:** M3
 
@@ -54,19 +54,26 @@ O que a grade mostra:
 
 Custo: kNN exato em 0,2 s; UMAP de 5 dimensões em 3,5 a 5 s por semente (9 s na primeira, com a compilação do numba); HDBSCAN em menos de 1 s. A grade inteira (80 combinações × 3 sementes) levou 45 s, com pico de 0,77 GB de memória.
 
+**Leitura dos tópicos.** A lista completa dos 50 tópicos do piloto (palavras-chave e títulos representativos, em `dados/topicos/resultado.json`) foi lida para responder à pergunta aberta do ADR 0004: tópicos calculados sobre textos em inglês são legíveis?
+
+- Cada tópico corresponde a uma subárea reconhecível: judicialização e STF, comunicação política digital, ideologia e voto, religião e política, partidos, Legislativo, coalizões ministeriais, carreiras políticas, participação e políticas públicas, relações raciais e cotas, Mercosul, China, operações de paz, securitização, pensamento social brasileiro, Maquiavel, democracia deliberativa, legitimidade policial, aborto no Congresso, entre outras.
+- **O idioma não separa os tópicos.** Nenhum tópico tem mais de 80% de documentos em inglês (a mediana é 15%). Os 12 com maioria em inglês são de relações internacionais, área em que várias revistas publicam só em inglês, e mesmo esses misturam artigos em português e em inglês.
+- Pontos fracos: um tópico amplo de "políticas públicas, municípios, participação" (243 documentos no núcleo); dois tópicos de política externa brasileira que se sobrepõem (um mais voltado às instituições, outro aos governos Lula e à cooperação Sul-Sul); e um macrotema heterogêneo, que junta segurança pública, movimentos sociais, sindicalismo e gênero.
+
 ## Decisão
 
 1. **Padrões da seção `topicos:`:** 15 vizinhos, `min_dist` 0 no UMAP de agrupamento, `min_cluster_size` automático (1 a cada 200 documentos, mínimo 10), `min_samples` 5, seleção `eom`, sementes 42, 7 e 2024. São os valores do spike, agora confirmados pela grade.
 2. **O ruído é tratado depois do agrupamento, e não escondido por parâmetros.** Como um terço do corpus fica de fora com qualquer configuração estável, a reatribuição por vizinhança é parte do método, com `topicos.votos_minimos: 3`. Os documentos reatribuídos ficam marcados (`atribuicao: vizinho`), e o núcleo continua sendo a base das palavras-chave, dos representativos, dos contornos e da estabilidade.
 3. **A estabilidade publicada é o ARI do núcleo** entre as três sementes.
-4. **Macrotemas por aglomeração de Ward** dos centros dos tópicos, 7 por padrão. No piloto, a ligação média deixava três macrotemas de um tópico só; a de Ward dá grupos de 4 a 12 tópicos (191 a 811 documentos) coerentes: instituições e eleições; políticas públicas e desigualdades; política externa e regionalismo; direitos, memória e pensamento social; teoria política; segurança pública e movimentos sociais; segurança internacional.
+4. **Macrotemas por aglomeração de Ward** dos centros dos tópicos, até 7 por padrão; com poucos tópicos, um macrotema para cada três tópicos (a *Opinião Pública* sozinha, com 13 tópicos, ficava com 7 macrotemas, dois deles de um tópico só). No piloto, a ligação média deixava três macrotemas de um tópico só; a de Ward dá grupos de 4 a 12 tópicos (191 a 811 documentos) coerentes: instituições e eleições; políticas públicas e desigualdades; política externa e regionalismo; direitos, memória e pensamento social; teoria política; segurança pública e movimentos sociais; segurança internacional.
 5. **Identidade estável por sobreposição de membros** (Jaccard ≥ 0,3 entre os núcleos, só com documentos presentes nas duas execuções, casamento húngaro), e não por centroides. No piloto, trocar a semente principal mantém 43 dos 50 tópicos e os 7 macrotemas, e todos os tópicos casados que ficam no mesmo macrotema mantêm a cor; tirar os 241 artigos de 2010 mantém 41 dos 53 tópicos. Ids aposentados nunca voltam.
 
 ## Consequências
 
+- A pergunta do ADR 0004 está respondida: o inglês continua como idioma de análise padrão.
+- Os pontos fracos são assunto para quem usar o piloto: um `min_cluster_size` menor divide o tópico amplo de políticas públicas (e cria outros pequenos), e os rótulos dos dois tópicos de política externa podem ser corrigidos no `rotulos.yaml`.
 - 11% do corpus do piloto fica sem tópico. No mapa, esses documentos aparecem em cinza; na validação (M5), formam um estrato próprio.
-- A leitura da lista completa de tópicos (a pergunta aberta do ADR 0004: os tópicos em inglês são tão legíveis quanto seriam em português?) também entra aqui, depois dos rótulos.
-- Corpora muito diferentes do piloto (bem menores, ou de outra área) podem pedir outros valores. `scripts/calibrar_topicos.py` refaz a grade em qualquer projeto.
+- Corpora muito diferentes do piloto (bem menores, ou de outra área) podem pedir outros valores. Os menores também são menos estáveis: a *Opinião Pública* sozinha (396 artigos, o recorte do tutorial) dá 13 tópicos com ARI 0,62. `scripts/calibrar_topicos.py` refaz a grade em qualquer projeto.
 
 ## Como reproduzir
 

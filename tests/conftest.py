@@ -76,6 +76,7 @@ class ApisFalsas:
         self.identificadores = {"0104-6276": identificadores_op()}
         router.get(f"{AM}/article/identifiers/").mock(side_effect=self._identificadores)
         router.get(f"{AM}/article/").mock(side_effect=self._artigo)
+        router.get(f"{AM}/journal/identifiers/").respond(json={"meta": {"total": 0}, "objects": []})  # diagnóstico
         self.obras = obras_openalex()
         self.total_forcado: int | None = None  # para simular buscas enormes
         # Ollama: modelos "instalados" (tamanhos pequenos, para a checagem de memória passar em qualquer máquina)

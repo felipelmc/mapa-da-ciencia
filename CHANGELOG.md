@@ -4,6 +4,25 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Marco M3 (tópicos e mapa)**:
+  - `mapa topicos`: embeddings locais (`qwen3-embedding:0.6b` no Ollama) sobre título e resumo no mesmo idioma, com os artigos sem resumo em inglês marcados como reserva ou só título; cache incremental em `dados/embeddings/`;
+  - kNN exato, UMAP e HDBSCAN com cache das projeções; o ruído é reatribuído pelo voto dos vizinhos do núcleo, e a estabilidade é medida pelo ARI entre três sementes. No piloto: 50 tópicos em 7 macrotemas, ARI 0,90, 89% dos artigos com tópico;
+  - palavras-chave por c-TF-IDF no idioma de exibição, documentos representativos e macrotemas por aglomeração de Ward;
+  - números e cores dos tópicos estáveis entre execuções, por sobreposição dos núcleos; números aposentados nunca voltam;
+  - rótulos e descrições em português escritos pelo modelo de linguagem local, com conferência de acentos, cache no `estado.sqlite` e correção manual por `rotulos.yaml`; `--sem-rotulos` usa as palavras-chave;
+  - guarda de memória antes de carregar modelos, que para a etapa com uma explicação em vez de travar a máquina;
+  - contrato de dados 1.1 (só acréscimos) e exportação única de `saida/dados/`, com os documentos, os tópicos, os fragmentos de detalhe e os agregados;
+  - a vista **Mapa** do painel: nuvem de documentos (regl-scatterplot), contornos e rótulos dos tópicos, cartão do documento com os cinco vizinhos, busca, laço, linha do tempo com play e permalink de tudo o que está na tela;
+  - `mapa status` com a linha dos tópicos e o aviso de tópicos desatualizados; `api.embeddings()` e `api.topicos()`, com a view `atribuicoes`;
+  - documentação: tutorial "Seu primeiro mapa, parte 2", explicação "Como os tópicos são construídos", guias "Gerar os tópicos" e "Ler o mapa", ADR 0007 e adendo ao ADR 0004.
+
+### Mudado
+
+- A tabela de marcos: os rótulos pelo modelo de linguagem entram no M3, e o M4 fica com os tópicos no tempo e a geografia.
+- O Python aceito vai de 3.11 a 3.14, porque as dependências numéricas (numba) ainda não têm versão para o 3.15.
+
 ## [0.2.0] - 2026-09-26
 
 A coleta: o `mapa` monta o corpus a partir do SciELO e do OpenAlex. No piloto (10 revistas de ciência política, 2010–2025), são 4.275 artigos, 99,6% com resumo e 99,4% casados com o OpenAlex, em menos de um minuto e cerca de 32 créditos do OpenAlex.

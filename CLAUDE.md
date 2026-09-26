@@ -27,7 +27,7 @@ uv run mapa topicos -P projetos/cp-scielo    # tópicos (use --sem-rotulos se o 
 uv run python scripts/calibrar_topicos.py projetos/cp-scielo  # grade UMAP × HDBSCAN com 3 sementes (ADR 0007)
 ```
 
-Os testes nunca acessam a rede: `tests/conftest.py` tem a fixture `apis_falsas` (respx), que responde ArticleMeta e OpenAlex com as fixtures de `tests/fixtures/` e também um Ollama falso (`OLLAMA_HOST=http://ollama.teste:11434`, com embeddings de saco de palavras via `vetor_falso`) (geradas por `scripts/recortar_fixtures.py`, com e-mails trocados por `anonimo@exemplo.invalid`). `tests/test_tutorial.py` roda os comandos do tutorial `docs/tutoriais/primeiro-mapa.md`; linhas com `# fora do CI` são puladas.
+Os testes nunca acessam a rede: `tests/conftest.py` tem a fixture `apis_falsas` (respx), que responde ArticleMeta e OpenAlex com as fixtures de `tests/fixtures/` e também um Ollama falso (`OLLAMA_HOST=http://ollama.teste:11434`, com embeddings de saco de palavras via `vetor_falso`) (geradas por `scripts/recortar_fixtures.py`, com e-mails trocados por `anonimo@exemplo.invalid`). `tests/test_tutorial.py` roda os comandos das duas partes do tutorial (`docs/tutoriais/primeiro-mapa.md` e `primeiro-mapa-topicos.md`); linhas com `# fora do CI` são puladas, e na parte 2 o corpus sintético (`tests/corpus_sintetico.py`) entra no lugar da coleta.
 
 Frontend (SvelteKit), em `frontend/`: veja `frontend/README.md`. Depois de mudar os schemas, rode `npm run tipos`.
 

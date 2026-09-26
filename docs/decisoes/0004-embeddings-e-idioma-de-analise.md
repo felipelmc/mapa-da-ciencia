@@ -65,3 +65,8 @@ Script `spikes/s02_embeddings.py`, rodado nos 3.403 artigos que têm resumo em p
 
     uv run spikes/s02_embeddings.py                 # ~15 min (os dois modelos, com UMAP)
     uv run spikes/s02_embeddings.py --limite 500    # rodada rápida
+
+## Adendo (2026-09-26, marco M3)
+
+A pergunta aberta sobre a legibilidade dos tópicos calculados em inglês foi respondida pela leitura dos 50 tópicos do piloto ([ADR 0007](0007-parametros-dos-topicos.md)): os tópicos são subáreas reconhecíveis, e o idioma não os separa (nenhum tópico tem mais de 80% de documentos em inglês). Os documentos sem resumo em inglês entram como "reserva marcada" (o resumo no idioma disponível, ou só o título), e a marca aparece no cartão do mapa. A meta de tempo ficou abaixo do previsto: com os embeddings em cache, a etapa de tópicos leva cerca de 20 segundos no piloto.
+

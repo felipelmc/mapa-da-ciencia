@@ -72,6 +72,6 @@ Para encerrar, volte ao terminal e aperte ++ctrl+c++.
 
 ## Próximos passos
 
-- [Seu primeiro mapa, parte 1](primeiro-mapa.md), para coletar artigos de verdade.
+- [Seu primeiro mapa, parte 1](primeiro-mapa.md), para coletar artigos de verdade, e a [parte 2](primeiro-mapa-topicos.md), para descobrir os tópicos deles.
 - [Instalar e escolher os modelos](../guias/instalacao.md), para preparar o Ollama.
 - [Criar um projeto](../guias/criar-projeto.md), para definir o seu recorte.
