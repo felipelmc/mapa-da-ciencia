@@ -3,7 +3,7 @@
 Os tópicos do `mapa-da-ciencia` não vêm de uma lista pronta: eles saem dos próprios textos. Artigos que tratam de assuntos parecidos ficam perto uns dos outros num espaço de muitas dimensões, e o agrupamento encontra as regiões mais densas desse espaço. Esta página descreve cada passo e as escolhas por trás deles.
 
 !!! note "Em construção no marco M3"
-    Por enquanto, esta página descreve o texto de análise, os embeddings, a vizinhança, o UMAP, o HDBSCAN, a reatribuição do ruído, a estabilidade e as palavras-chave. Os rótulos, os macrotemas e a identidade estável entram ao longo do M3.
+    Por enquanto, esta página descreve o texto de análise, os embeddings, a vizinhança, o UMAP, o HDBSCAN, a reatribuição do ruído, a estabilidade, as palavras-chave, os macrotemas e a identidade estável. Os rótulos entram ao longo do M3.
 
 ## 1. O texto de análise
 
@@ -90,3 +90,20 @@ As palavras-chave de cada tópico saem de uma variante do TF-IDF por classe, o *
 As palavras-chave são calculadas nos textos no **idioma de exibição** (`recorte.idioma_exibicao`, português por padrão), com o de análise como reserva. Revistas que publicam só em inglês (comuns em relações internacionais) trazem termos em inglês para os tópicos em que predominam.
 
 Os **documentos representativos** são os cinco do núcleo mais próximos do centro do tópico (a média dos embeddings). Eles aparecem no painel e, junto com as palavras-chave, orientam o rótulo.
+
+## 9. Macrotemas
+
+Cinquenta tópicos com cinquenta cores seriam ilegíveis. Os tópicos próximos são agrupados em **macrotemas** (7 por padrão, no máximo 8: `topicos.macrotemas`), por aglomeração hierárquica (método de Ward) dos centros dos tópicos no espaço dos embeddings.
+
+Cada macrotema tem uma cor bem distinta das outras, inclusive para quem tem daltonismo, e os tópicos dele são variações dessa cor. As cores são geradas no espaço OKLCH, em que distâncias iguais parecem diferenças iguais, e conferidas em teste: contraste suficiente sobre os dois fundos da interface e diferença perceptível entre macrotemas sob simulação de protanopia, deuteranopia e tritanopia.
+
+## 10. Identidade estável
+
+A cada execução, o HDBSCAN numera os tópicos de um jeito. Para que as cores, os links do mapa e os rótulos editados à mão continuem valendo quando você coleta mais anos ou muda um parâmetro, o `mapa` casa os tópicos novos com os da execução anterior pela **sobreposição de membros**: dois tópicos são o mesmo se boa parte dos documentos do núcleo de um estiver no núcleo do outro (índice de Jaccard de pelo menos 0,3, com casamento ótimo entre as duas listas).
+
+- Um tópico casado mantém o número, o rótulo e, se continuar no mesmo macrotema, a cor.
+- Um tópico novo ganha um número nunca usado antes: um link antigo nunca aponta para outro assunto.
+- Os macrotemas também são casados, pelos tópicos que os compõem.
+- Trocar o modelo de embeddings ou o idioma de análise recomeça o casamento (os números continuam de onde pararam).
+
+No piloto, rodar de novo com outra semente mantém 43 dos 50 tópicos e os 7 macrotemas; tirar os artigos de 2010 mantém 41 dos 53 tópicos encontrados.

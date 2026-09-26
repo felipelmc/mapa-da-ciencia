@@ -108,6 +108,7 @@ corpus, `scripts/calibrar_topicos.py` refaz a grade.
 | `min_samples` | inteiro | `5` | Quão conservador é o HDBSCAN: maior, mais documentos ficam de fora dos tópicos. |
 | `votos_minimos` | inteiro | `3` | Um documento que o HDBSCAN deixou sem tópico vai para o tópico com mais vizinhos seus no núcleo, se forem pelo menos estes (entre os `vizinhos` mais próximos). Menos que isso, fica sem tópico. |
 | `selecao` | `"eom"` \\| `"leaf"` | `"eom"` | `eom` prefere tópicos maiores e mais estáveis; `leaf`, tópicos menores e mais numerosos. |
+| `macrotemas` | inteiro | `7` | Quantos macrotemas (grupos de tópicos próximos, com cores bem distintas). |
 | `sementes` | lista de inteiro | `[42, 7, 2024]` | A primeira gera os tópicos; as demais medem a estabilidade (ARI entre as execuções). |
 
 ### Validacao

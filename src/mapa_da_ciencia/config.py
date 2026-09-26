@@ -150,6 +150,9 @@ class ConfigTopicos(_Base):
     selecao: Literal["eom", "leaf"] = Field(
         "eom", description="`eom` prefere tópicos maiores e mais estáveis; `leaf`, tópicos menores e mais numerosos."
     )
+    macrotemas: int = Field(
+        7, ge=1, le=8, description="Quantos macrotemas (grupos de tópicos próximos, com cores bem distintas)."
+    )
     sementes: list[int] = Field(
         [42, 7, 2024],
         min_length=1,

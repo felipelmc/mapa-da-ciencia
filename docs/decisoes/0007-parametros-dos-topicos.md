@@ -59,6 +59,8 @@ Custo: kNN exato em 0,2 s; UMAP de 5 dimensões em 3,5 a 5 s por semente (9 s na
 1. **Padrões da seção `topicos:`:** 15 vizinhos, `min_dist` 0 no UMAP de agrupamento, `min_cluster_size` automático (1 a cada 200 documentos, mínimo 10), `min_samples` 5, seleção `eom`, sementes 42, 7 e 2024. São os valores do spike, agora confirmados pela grade.
 2. **O ruído é tratado depois do agrupamento, e não escondido por parâmetros.** Como um terço do corpus fica de fora com qualquer configuração estável, a reatribuição por vizinhança é parte do método, com `topicos.votos_minimos: 3`. Os documentos reatribuídos ficam marcados (`atribuicao: vizinho`), e o núcleo continua sendo a base das palavras-chave, dos representativos, dos contornos e da estabilidade.
 3. **A estabilidade publicada é o ARI do núcleo** entre as três sementes.
+4. **Macrotemas por aglomeração de Ward** dos centros dos tópicos, 7 por padrão. No piloto, a ligação média deixava três macrotemas de um tópico só; a de Ward dá grupos de 4 a 12 tópicos (191 a 811 documentos) coerentes: instituições e eleições; políticas públicas e desigualdades; política externa e regionalismo; direitos, memória e pensamento social; teoria política; segurança pública e movimentos sociais; segurança internacional.
+5. **Identidade estável por sobreposição de membros** (Jaccard ≥ 0,3 entre os núcleos, só com documentos presentes nas duas execuções, casamento húngaro), e não por centroides. No piloto, trocar a semente principal mantém 43 dos 50 tópicos e os 7 macrotemas, e todos os tópicos casados que ficam no mesmo macrotema mantêm a cor; tirar os 241 artigos de 2010 mantém 41 dos 53 tópicos. Ids aposentados nunca voltam.
 
 ## Consequências
 
