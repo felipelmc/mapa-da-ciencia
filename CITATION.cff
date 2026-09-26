@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "Se você usar o mapa-da-ciencia numa pesquisa, cite-o como abaixo."
+title: "mapa-da-ciencia: observatório da literatura científica com modelos de linguagem locais"
+type: software
+authors:
+  - family-names: Lamarca
+    given-names: Felipe
+repository-code: "https://github.com/felipelmc/mapa-da-ciencia"
+url: "https://felipelmc.github.io/mapa-da-ciencia/"
+license: MIT
+version: 0.1.0.dev0
+abstract: >-
+  Ferramenta de código aberto que coleta artigos científicos (inicialmente do SciELO),
+  mapeia tópicos ao longo do tempo com embeddings, classifica resumos segundo um codebook
+  definido pelo pesquisador, com evidência textual e validação contra codificação humana,
+  e mostra a geografia da produção. Os modelos de linguagem rodam localmente, via Ollama.
+keywords:
+  - bibliometria
+  - revisão de literatura
+  - SciELO
+  - modelos de linguagem
+  - análise de conteúdo
+  - ciências sociais computacionais

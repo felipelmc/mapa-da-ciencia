@@ -1,0 +1,21 @@
+# Registro de mudanças
+
+Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e as versões seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
+
+## [Não lançado]
+
+### Adicionado
+
+- **Marco M0 (spikes técnicos)**, com os resultados registrados em `docs/decisoes/`:
+  - fontes, casamento ArticleMeta↔OpenAlex e licenças ([ADR 0003](docs/decisoes/0003-fontes-casamento-e-licencas.md));
+  - modelo de embeddings e idioma de análise ([ADR 0004](docs/decisoes/0004-embeddings-e-idioma-de-analise.md));
+  - frontend com router por hash e regl-scatterplot ([ADR 0002](docs/decisoes/0002-frontend-router-hash-e-regl-scatterplot.md));
+  - certificados do sistema com `truststore` ([ADR 0001](docs/decisoes/0001-certificados-do-sistema-com-truststore.md)).
+- **Marco M1 (esqueleto)**:
+  - pacote Python e CLI `mapa` com os comandos `novo`, `status`, `diagnostico` e `painel`;
+  - configuração do projeto (`mapa.yaml`) e do codebook (`codebook.yaml`), com erros explicados em português;
+  - perfis de modelos locais por memória e checagem de memória antes de carregar modelos;
+  - manifesto de execução para reprodutibilidade;
+  - contrato de dados v1 com JSON Schemas e um exemplo sintético determinístico;
+  - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
+  - site de documentação (Material for MkDocs), com referência gerada a partir do código.
