@@ -284,6 +284,7 @@ class Macrotema(_Base):
     rotulo: str
     cor: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
     topicos: list[int]
+    descricao: str = ""
 
 
 class Outliers(_Base):

@@ -5,22 +5,37 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
 from mapa_da_ciencia import __version__
 from mapa_da_ciencia.contrato.modelos import (
     ARQUIVOS,
+    Agregados,
+    ColunasDocumentos,
     Contagens,
+    Detalhe,
+    DicionariosDocumentos,
+    Documentos,
     ExecucaoInfo,
     Fragmento,
+    Macrotema,
     Manifesto,
+    Outliers,
     ProjetoInfo,
     RecorteInfo,
     Revista,
     Revistas,
+    Serie,
+    Topico,
+    Topicos,
+    fragmento_de,
 )
 from mapa_da_ciencia.projeto import Projeto
+
+if TYPE_CHECKING:
+    from mapa_da_ciencia.documento import Documento
 
 
 def manifesto_do_projeto(
@@ -95,7 +110,8 @@ def escrever_dados(destino: Path, arquivos: dict[str, BaseModel], fragmentos: di
         arq.write_text(_serializar(obj), encoding="utf-8")
         escritos.append(arq)
     pasta = destino / "detalhes"
-    pasta.mkdir(exist_ok=True)
+    if fragmentos:
+        pasta.mkdir(exist_ok=True)
     for chave, frag in sorted(fragmentos.items()):
         arq = pasta / f"{chave}.json"
         arq.write_text(_serializar(frag), encoding="utf-8")
@@ -103,46 +119,208 @@ def escrever_dados(destino: Path, arquivos: dict[str, BaseModel], fragmentos: di
     return escritos
 
 
-def exportar_coleta(projeto: Projeto, *, duracao_s: float | None = None) -> list[Path]:
-    """Depois da coleta: `manifesto.json` com as contagens e `revistas.json`, para o painel já mostrar o corpus.
-
-    Com isso a capa do painel já mostra documentos, revistas e período. As etapas seguintes (tópicos,
-    geografia...) acrescentam os seus arquivos e reescrevem o manifesto com a lista completa.
-    """
-    from mapa_da_ciencia.armazenamento import ARQUIVO, cobertura, conectar
+def _revistas(caminho: Path) -> list[Revista]:
+    from mapa_da_ciencia.armazenamento import conectar
     from mapa_da_ciencia.fontes import revistas as retrato
 
-    caminho = projeto.dados / ARQUIVO
-    cob = cobertura(caminho)
     con = conectar(caminho)
     try:
         linhas = con.execute(
             """SELECT coalesce(revista_acronimo, revista_issn, '?'), revista_issn, any_value(revista_titulo), count(*)
-               FROM documentos GROUP BY 1, 2 ORDER BY 4 DESC"""
+               FROM documentos GROUP BY 1, 2 ORDER BY 4 DESC, 1"""
         ).fetchall()
     finally:
         con.close()
     lista = []
     for acronimo, issn, titulo, n in linhas:
         conhecida = retrato.por_issn(issn) if issn else None
-        lista.append(
-            Revista(
-                id=acronimo,
-                issn=issn or "",
-                titulo=titulo or acronimo,
-                areas=list(conhecida.areas) if conhecida else [],
-                n=n,
+        areas = list(conhecida.areas) if conhecida else []
+        lista.append(Revista(id=acronimo, issn=issn or "", titulo=titulo or acronimo, areas=areas, n=n))
+    return lista
+
+
+def _autor_curto(doc: Documento) -> str:
+    if not doc.autores:
+        return ""
+    a = doc.autores[0]
+    primeiro = f"{a.sobrenome}, {a.nome[0]}." if a.sobrenome and a.nome else (a.sobrenome or a.nome or "")
+    return primeiro + (f"; +{len(doc.autores) - 1}" if len(doc.autores) > 1 else "")
+
+
+def _detalhe(doc: Documento, atrib: dict[str, Any], idiomas: list[str]) -> Detalhe:
+    resumo = doc.texto_em("resumos", idiomas)
+    chaves = [t for t in doc.palavras_chave if t.idioma == (resumo.idioma if resumo else idiomas[0])]
+    return Detalhe(
+        resumo=resumo.texto if resumo else None,  # no painel local vai tudo; `mapa publicar` (M7) filtra por licença
+        idioma=resumo.idioma if resumo else None,
+        palavras_chave=list(dict.fromkeys(t.texto for t in (chaves or doc.palavras_chave))),
+        autores=[" ".join(p for p in (a.nome, a.sobrenome) if p) for a in doc.autores],
+        url=doc.url or (f"https://doi.org/{doc.doi}" if doc.doi else None),
+        licenca=doc.licenca,
+        licenca_fonte=doc.licenca_fonte,
+        idioma_analise=atrib["idioma_analise"],
+        fonte_analise=atrib["fonte_analise"],
+    )
+
+
+def _arquivos_de_topicos(
+    projeto: Projeto, resultado: Any, atribuicoes: list[dict[str, Any]], docs: dict[str, Documento], revistas: list[str]
+) -> tuple[dict[str, BaseModel], dict[str, Fragmento]]:
+    """documentos.json, topicos.json, agregados.json e os fragmentos de detalhes."""
+    from collections import Counter, defaultdict
+
+    cfg = projeto.config
+    idiomas = [cfg.recorte.idioma_exibicao, cfg.recorte.idioma_analise]
+    indice = {a["id"]: i for i, a in enumerate(atribuicoes)}
+    linhas = [(a, docs[a["id"]]) for a in atribuicoes]
+    idiomas_dic: list[str] = []
+    colunas: dict[str, list] = defaultdict(list)
+    for a, d in linhas:
+        titulo = d.texto_em("titulos", idiomas)
+        resumo = d.texto_em("resumos", idiomas)
+        idioma = (resumo.idioma if resumo else None) or "?"
+        if idioma not in idiomas_dic:
+            idiomas_dic.append(idioma)
+        colunas["id"].append(d.id)
+        colunas["doi"].append(d.doi)
+        colunas["titulo"].append(titulo.texto if titulo else "")
+        colunas["ano"].append(d.ano)
+        colunas["revista"].append(revistas.index(d.revista_acronimo or d.revista_issn or "?"))
+        colunas["idioma"].append(idiomas_dic.index(idioma))
+        colunas["x"].append(round(a["x"], 4))
+        colunas["y"].append(round(a["y"], 4))
+        colunas["topico"].append(a["topico"])
+        colunas["atribuicao"].append(0 if a["atribuicao"] == "cluster" else 1)
+        colunas["autores_curto"].append(_autor_curto(d))
+        colunas["vizinhos"].append([indice[v] for v in a["vizinhos"] if v in indice])
+    documentos = Documentos(
+        n=len(linhas),
+        colunas=ColunasDocumentos(**colunas),
+        dicionarios=DicionariosDocumentos(revista=revistas, idioma=idiomas_dic),
+    )
+
+    anos_docs = [d.ano for _, d in linhas]
+    anos = list(range(min(anos_docs), max(anos_docs) + 1))
+    total_ano = Counter(anos_docs)
+    membros: dict[int, list[Documento]] = defaultdict(list)
+    for a, d in linhas:
+        membros[a["topico"]].append(d)
+    ruido_ano = Counter(d.ano for a, d in linhas if a["atribuicao"] == "vizinho")
+    topicos = []
+    for t in resultado.topicos:
+        docs_t = membros.get(t.id, [])
+        por_ano = Counter(d.ano for d in docs_t)
+        topicos.append(
+            Topico(
+                id=t.id,
+                macro_id=t.macro,
+                rotulo=t.rotulo,
+                descricao=t.descricao,
+                palavras_chave=t.palavras,
+                n=len(docs_t),
+                centroide=t.centroide,
+                cor=t.cor,
+                serie=Serie(
+                    n=[por_ano[ano] for ano in anos],
+                    prop=[round(por_ano[ano] / total_ano[ano], 5) if total_ano[ano] else 0.0 for ano in anos],
+                ),
+                por_revista=dict(sorted(Counter(d.revista_acronimo or "?" for d in docs_t).items())),
+                representativos=t.representativos,
+                rotulo_fonte=t.rotulo_fonte,
+                n_nucleo=t.n_nucleo,
             )
         )
+    topicos_arq = Topicos(
+        anos=anos,
+        total_por_ano=[total_ano[ano] for ano in anos],
+        parametros={k: v for k, v in resultado.parametros.items() if isinstance(v, str | int | float)},
+        estabilidade_ari=resultado.estabilidade_ari,
+        macrotemas=[
+            Macrotema(id=m.id, rotulo=m.rotulo, cor=m.cor, topicos=m.topicos, descricao=m.descricao)
+            for m in resultado.macrotemas
+        ],
+        topicos=topicos,
+        outliers=Outliers(
+            n=resultado.ruido, reatribuidos=resultado.reatribuidos, por_ano=[ruido_ano[ano] for ano in anos]
+        ),
+    )
+    trio = Counter((a["topico"], d.ano, d.revista_acronimo or "?") for a, d in linhas)
+    agregados = Agregados(
+        topico_ano_revista=[(t, ano, r, n) for (t, ano, r), n in sorted(trio.items())], uf={}, pais={}
+    )
+    fragmentos: dict[str, dict[str, Detalhe]] = defaultdict(dict)
+    for a, d in linhas:
+        fragmentos[fragmento_de(d.id)][d.id] = _detalhe(d, a, idiomas)
+    return (
+        {"documentos": documentos, "topicos": topicos_arq, "agregados": agregados},
+        {k: Fragmento(fragmento=k, documentos=v) for k, v in fragmentos.items()},
+    )
+
+
+def exportar(projeto: Projeto) -> list[str]:
+    """Reconstrói `saida/dados/` (o contrato que o painel lê) a partir de `dados/`. Devolve avisos.
+
+    Sempre grava `manifesto.json` e `revistas.json`. Com tópicos em dia (gerados a partir do corpus atual), grava
+    também `documentos.json`, `topicos.json`, `agregados.json` e os fragmentos de `detalhes/`. Tudo é escrito
+    numa pasta nova, que substitui a antiga de uma vez: o painel nunca vê uma exportação pela metade, e
+    arquivos de uma etapa desatualizada não sobram.
+    """
+    import shutil
+
+    from mapa_da_ciencia.armazenamento import ARQUIVO, cobertura, ler_documentos
+    from mapa_da_ciencia.manifesto import ultima_execucao
+    from mapa_da_ciencia.topicos.resultado import PASTA, Resultado, assinatura_corpus, ler_atribuicoes
+
+    caminho = projeto.dados / ARQUIVO
+    if not caminho.exists():
+        return []
+    avisos: list[str] = []
+    cob = cobertura(caminho)
+    revistas = _revistas(caminho)
+    arquivos: dict[str, BaseModel] = {"revistas": Revistas(revistas=revistas)}
+    fragmentos: dict[str, Fragmento] = {}
+    contagens = Contagens(documentos=cob["documentos"], com_afiliacao=cob["com_afiliacao"])
+    modelos: dict[str, str] = {}
+    sementes: dict[str, int] = {}
+
+    resultado = Resultado.ler(projeto.dados / PASTA)
+    if resultado is not None:
+        docs = {d.id: d for d in ler_documentos(caminho)}
+        if resultado.assinatura != assinatura_corpus(list(docs)):
+            avisos.append("Os tópicos foram gerados antes da última coleta. Rode `mapa topicos` para atualizá-los.")
+        else:
+            mais, fragmentos = _arquivos_de_topicos(
+                projeto, resultado, ler_atribuicoes(projeto.dados / PASTA), docs, [r.id for r in revistas]
+            )
+            arquivos.update(mais)
+            contagens = contagens.model_copy(update={"topicos": len(resultado.topicos)})
+            modelos = {"rotulos": "nenhum (palavras-chave)", **resultado.modelos}
+            sementes = {"umap": int(resultado.parametros["semente"])}
+
     manifesto = manifesto_do_projeto(
         projeto,
         api=False,
-        contagens=Contagens(documentos=cob["documentos"], com_afiliacao=cob["com_afiliacao"]),
-        arquivos=["manifesto", "revistas"],
+        contagens=contagens,
+        arquivos=["manifesto", *arquivos, *(["detalhes"] if fragmentos else [])],
     )
+    duracoes = {
+        etapa: round(m["duracao_s"], 1)
+        for etapa in ("coleta", "embeddings", "topicos")
+        if (m := ultima_execucao(projeto, etapa))
+    }
     execucao = manifesto.execucao.model_copy(
-        update={"duracao_s": {"coleta": round(duracao_s, 1)} if duracao_s is not None else {}}
+        update={"duracao_s": duracoes, "sementes": sementes, "modelos": {**manifesto.execucao.modelos, **modelos}}
     )
     manifesto = manifesto.model_copy(update={"licencas": cob["licencas"], "execucao": execucao})
+
     destino = projeto.saida / "dados"
-    return escrever_dados(destino, {"manifesto": manifesto, "revistas": Revistas(revistas=lista)}, {})
+    novo = projeto.saida / "dados.novo"
+    velho = projeto.saida / "dados.velho"
+    shutil.rmtree(novo, ignore_errors=True)
+    shutil.rmtree(velho, ignore_errors=True)
+    escrever_dados(novo, {"manifesto": manifesto, **arquivos}, fragmentos)
+    if destino.exists():
+        destino.rename(velho)
+    novo.rename(destino)
+    shutil.rmtree(velho, ignore_errors=True)
+    return avisos

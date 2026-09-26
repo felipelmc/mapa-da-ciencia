@@ -144,4 +144,6 @@ Tudo o que a etapa produz fica em `dados/topicos/`, dentro da pasta do projeto:
 | `identidade.json` | O estado da identidade estável, usado pela próxima execução |
 | `reducoes/` | As reduções do UMAP em cache |
 
+Ao fim da etapa, o `mapa` exporta o resultado para `saida/dados/`, nos arquivos do [contrato de dados](../referencia/contrato.md) que o painel lê (`documentos.json`, `topicos.json`, `agregados.json` e os detalhes). Se uma coleta nova mudar o corpus depois, os tópicos ficam desatualizados: o painel volta a mostrar só os números do corpus até a próxima execução de `mapa topicos`.
+
 O `atribuicoes.parquet` pode ser lido direto pelo pandas, pelo polars ou pelo R, e cruzado com `dados/documentos.parquet` pelo `id`. No piloto, a etapa inteira leva cerca de 20 segundos quando os embeddings já estão em cache (4 minutos na primeira vez, mais uns 3 minutos para os rótulos).

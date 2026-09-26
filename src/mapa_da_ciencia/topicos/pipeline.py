@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 from mapa_da_ciencia.armazenamento import ARQUIVO, ler_documentos
 from mapa_da_ciencia.config import ErroConfig
+from mapa_da_ciencia.contrato.exportar import exportar
 from mapa_da_ciencia.embeddings import VERSAO_TEXTO, calcular_embeddings
 from mapa_da_ciencia.llm.base import ErroProvedor
 from mapa_da_ciencia.llm.ollama import Ollama
@@ -254,7 +255,7 @@ def gerar_topicos(
     ruido = int((brutos == -1).sum())
     reatribuidos = int(((brutos == -1) & (finais_brutos >= 0)).sum())
     Resultado(
-        assinatura=assinatura_corpus(e.ids),
+        assinatura=assinatura_corpus(list(docs)),
         gerado_em=datetime.now(UTC).isoformat(),
         parametros=parametros,
         estabilidade_ari=ari,
@@ -297,4 +298,5 @@ def gerar_topicos(
         modelos=modelos,
         parametros={**parametros, "estabilidade_ari": ari},
     )
+    resumo.avisos += exportar(projeto)  # o painel passa a mostrar o mapa
     return resumo

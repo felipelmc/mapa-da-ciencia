@@ -275,6 +275,7 @@ Agrupamento de tópicos próximos, usado para a cor e a navegação.
 | `rotulo` | texto | **obrigatório** |  |
 | `cor` | texto | **obrigatório** |  |
 | `topicos` | lista de inteiro | **obrigatório** |  |
+| `descricao` | texto | `""` |  |
 
 ### Topico
 

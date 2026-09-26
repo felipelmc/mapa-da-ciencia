@@ -9,6 +9,11 @@
           "title": "Cor",
           "type": "string"
         },
+        "descricao": {
+          "default": "",
+          "title": "Descricao",
+          "type": "string"
+        },
         "id": {
           "title": "Id",
           "type": "integer"

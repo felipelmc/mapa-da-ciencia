@@ -412,6 +412,7 @@ export interface Topicos {
  */
 export interface Macrotema {
 	cor: string;
+	descricao?: string;
 	id: number;
 	rotulo: string;
 	topicos: number[];

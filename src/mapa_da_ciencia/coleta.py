@@ -19,7 +19,7 @@ from typing import Any
 
 from mapa_da_ciencia.armazenamento import ARQUIVO, gravar_documentos
 from mapa_da_ciencia.config import ErroConfig
-from mapa_da_ciencia.contrato.exportar import exportar_coleta
+from mapa_da_ciencia.contrato.exportar import exportar
 from mapa_da_ciencia.documento import Documento
 from mapa_da_ciencia.fontes import revistas as retrato
 from mapa_da_ciencia.fontes.articlemeta import (
@@ -486,7 +486,7 @@ async def coletar_async(
         parametros=_parametros(plano, opcoes)
         | {"duplicatas_fundidas": dedup.fundidos, "dois_removidos": dedup.dois_removidos},
     )
-    exportar_coleta(projeto, duracao_s=resumo.duracao_s)
+    avisos += exportar(projeto)  # manifesto e revistas; tópicos que ficaram de outro corpus, com aviso
     return resumo
 
 
