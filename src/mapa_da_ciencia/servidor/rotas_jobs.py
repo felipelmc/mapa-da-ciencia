@@ -61,32 +61,33 @@ def rotas_jobs(jobs: Jobs, opcoes: dict[str, type] | None = None) -> APIRouter:
         """Os jobs mais recentes, do mais novo ao mais antigo."""
         return [dataclasses.asdict(j) for j in jobs.listar()]
 
-    @rotas.get("/jobs/{id_}")
-    def obter(id_: str) -> dict[str, Any]:
-        return dataclasses.asdict(_job(id_))
+    @rotas.get("/jobs/{job}")
+    def obter(job: str) -> dict[str, Any]:
+        """O estado de um job: etapa, opções, estado, início, fim, resumo e erro."""
+        return dataclasses.asdict(_job(job))
 
-    @rotas.delete("/jobs/{id_}", dependencies=[Depends(conferir_origem)])
-    def cancelar(id_: str) -> dict[str, Any]:
+    @rotas.delete("/jobs/{job}", dependencies=[Depends(conferir_origem)])
+    def cancelar(job: str) -> dict[str, Any]:
         """Pede para o job parar; ele para na próxima atualização de progresso."""
-        _job(id_)
-        return dataclasses.asdict(jobs.cancelar(id_))
+        _job(job)
+        return dataclasses.asdict(jobs.cancelar(job))
 
-    @rotas.get("/jobs/{id_}/eventos")
+    @rotas.get("/jobs/{job}/eventos")
     async def eventos(
-        id_: str,
+        job: str,
         request: Request,
         desde: int = 0,
         last_event_id: str | None = Header(None),
     ) -> StreamingResponse:
         """O progresso do job em Server-Sent Events, a partir do evento seguinte ao último recebido."""
-        _job(id_)
+        _job(job)
         inicio = int(last_event_id) if last_event_id and last_event_id.isdigit() else desde
 
         async def fluxo() -> AsyncIterator[str]:
             visto = inicio
             yield "retry: 1000\n\n"
             while True:
-                novos = await asyncio.to_thread(jobs.esperar, id_, visto, BATIMENTO)
+                novos = await asyncio.to_thread(jobs.esperar, job, visto, BATIMENTO)
                 if not novos:
                     if await request.is_disconnected():
                         return

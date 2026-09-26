@@ -21,6 +21,7 @@ TUTORIAIS = Path(__file__).parents[1] / "docs" / "tutoriais"
 PARTE_1 = TUTORIAIS / "primeiro-mapa.md"
 PARTE_2 = TUTORIAIS / "primeiro-mapa-topicos.md"
 PARTE_3 = TUTORIAIS / "primeiro-mapa-tempo-e-geografia.md"
+PELA_INTERFACE = TUTORIAIS / "primeiro-mapa-pela-interface.md"
 FORA_DO_CI = "# fora do CI"
 runner = CliRunner()
 
@@ -107,3 +108,17 @@ def test_parte_3_tempo_e_geografia(tmp_path, apis_falsas, monkeypatch):
     assert "apelidos:" in revisao and "Geografia pronta" in segunda
     assert "Geografia:" in saidas["status"][0] and "vínculos ligados a uma de" in saidas["status"][0]
     assert (tmp_path / "projetos" / "op" / "saida" / "dados" / "afiliacoes.json").exists()
+
+
+def test_pela_interface_cria_o_projeto(tmp_path, monkeypatch):
+    """O tutorial pela interface só usa o terminal para criar o projeto (o painel fica fora do CI; os e2e cobrem
+    a vista Projeto)."""
+    monkeypatch.chdir(tmp_path)
+    comandos = [c for lingua, bloco in _blocos(PELA_INTERFACE.read_text(encoding="utf-8")) for c in _comandos(bloco)]
+    assert comandos == ["uv run mapa novo projetos/pela-interface --revista op --anos 2010-2025"]
+    r = runner.invoke(app, shlex.split(comandos[0])[3:], env={"COLUMNS": "120"})
+    assert r.exit_code == 0, r.output
+    import yaml
+
+    cfg = yaml.safe_load((tmp_path / "projetos" / "pela-interface" / "mapa.yaml").read_text(encoding="utf-8"))
+    assert cfg["fontes"]["scielo"]["revistas"] == ["0104-6276"] and cfg["recorte"]["anos"] == [2010, 2025]

@@ -8,5 +8,6 @@ Descrições técnicas completas, para consulta. As páginas marcadas com ⚙ s�
 | [Configuração (mapa.yaml)](configuracao.md) ⚙ | Todos os campos do arquivo de projeto |
 | [Codebook (codebook.yaml)](codebook.md) ⚙ | Todos os campos do codebook |
 | [Contrato de dados](contrato.md) ⚙ | Os arquivos JSON que o pipeline gera e o painel lê |
+| [API HTTP do painel](api-http.md) ⚙ | As rotas do `mapa painel`: etapas e jobs com progresso ao vivo, projeto, codificação |
 | [API Python](api-python.md) | Classes e funções para usar o `mapa-da-ciencia` em notebooks |
 | [Glossário](glossario.md) | Termos usados na documentação e na interface |

@@ -4,6 +4,7 @@
 - docs/referencia/configuracao.md   ← modelos do `mapa.yaml` (`mapa_da_ciencia.config`)
 - docs/referencia/codebook.md       ← modelos do `codebook.yaml`
 - docs/referencia/contrato.md       ← modelos do contrato de dados (`mapa_da_ciencia.contrato.modelos`)
+- docs/referencia/api-http.md       ← rotas do painel (o OpenAPI de `mapa_da_ciencia.servidor.app`)
 
 Uso (da raiz do repo):
     uv run python scripts/gerar_referencias.py            # regenera
@@ -193,6 +194,97 @@ def pagina_contrato() -> str:
     return "\n".join(linhas)
 
 
+TAGS_API = {
+    None: "Painel",
+    "etapas": "Etapas e jobs",
+    "projeto": "Projeto",
+    "validação": "Validação",
+}
+
+
+def _tipo_openapi(esquema: dict) -> str:
+    if "anyOf" in esquema:
+        return " ou ".join(_tipo_openapi(e) for e in esquema["anyOf"] if e.get("type") != "null")
+    if "$ref" in esquema:
+        return esquema["$ref"].rsplit("/", 1)[-1]
+    tipo = esquema.get("type", "objeto")
+    if tipo == "array":
+        return f"lista de {_tipo_openapi(esquema.get('items', {}))}"
+    return {"string": "texto", "integer": "inteiro", "number": "número", "boolean": "booleano", "object": "objeto"}.get(
+        tipo, tipo
+    )
+
+
+def pagina_api_http() -> str:
+    """As rotas do painel local, a partir do OpenAPI do FastAPI (com um projeto vazio, numa pasta temporária)."""
+    import tempfile
+
+    from mapa_da_ciencia.llm.perfis import PERFIS
+    from mapa_da_ciencia.projeto import Projeto
+    from mapa_da_ciencia.servidor.app import criar_app
+
+    with tempfile.TemporaryDirectory() as tmp:
+        projeto = Projeto.criar(Path(tmp) / "p", modelo="vazio", perfil=PERFIS["leve"])
+        app = criar_app(pasta_dados=projeto.saida / "dados", projeto=projeto, estatico=Path(tmp) / "x")
+        esquema = app.openapi()
+        app.state.jobs.fechar()
+    componentes = esquema.get("components", {}).get("schemas", {})
+    rotas = []
+    for caminho, metodos in esquema["paths"].items():
+        for metodo, op in metodos.items():
+            tag = (op.get("tags") or [None])[0]
+            rotas.append((list(TAGS_API).index(tag) if tag in TAGS_API else 99, caminho, metodo.upper(), op, tag))
+    rotas.sort(key=lambda r: (r[0], r[1], r[2]))
+
+    linhas = [
+        AVISO,
+        "# API HTTP do painel",
+        "",
+        "O `mapa painel` serve, além da interface e dos arquivos do contrato (`/dados/…`), uma API local em `/api/…`. "
+        "Ela só existe no painel com um projeto aberto, só escuta em `127.0.0.1`, e as rotas de escrita recusam "
+        "pedidos cujo `Host` ou `Origin` não sejam desta máquina. O site publicado não tem API. Com o painel aberto, "
+        "a documentação interativa fica em `/api/docs`.",
+        "",
+        "O progresso das etapas chega por *Server-Sent Events* (`GET /api/jobs/{job}/eventos`): cada evento tem "
+        "`id:` (a sequência), `event:` (`estado`, `etapa`, `avanco`, `mensagem`, `resumo`, `erro` ou `fim`) e "
+        "`data:` em JSON; quem reconecta manda `Last-Event-ID` e recebe só o que perdeu. Veja o guia "
+        "[Usar o painel](../guias/painel.md).",
+        "",
+        "| Método | Rota | O que faz |",
+        "|---|---|---|",
+    ]
+    for _, caminho, metodo, op, _tag in rotas:
+        resumo = " ".join((op.get("description") or op.get("summary") or "").split())
+        linhas.append(f"| `{metodo}` | `{caminho}` | {_celula(resumo)} |")
+    atual = object()
+    for _, caminho, metodo, op, tag in rotas:
+        if tag != atual:
+            atual = tag
+            linhas += ["", f"## {TAGS_API.get(tag, tag)}"]
+        linhas += ["", f"### `{metodo} {caminho}`", ""]
+        if op.get("description"):
+            linhas += [" ".join(_sem_markup(op["description"]).split()), ""]
+        params = op.get("parameters") or []
+        if params:
+            linhas += ["| Parâmetro | Onde | Tipo | Obrigatório |", "|---|---|---|---|"]
+            for prm in params:
+                onde = {"path": "caminho", "query": "consulta", "header": "cabeçalho"}.get(prm["in"], prm["in"])
+                obrig = "sim" if prm.get("required") else "não"
+                linhas.append(f"| `{prm['name']}` | {onde} | {_tipo_openapi(prm.get('schema', {}))} | {obrig} |")
+            linhas.append("")
+        corpo = op.get("requestBody", {}).get("content", {}).get("application/json", {}).get("schema")
+        if corpo:
+            nome = _tipo_openapi(corpo)
+            campos = componentes.get(nome, {}).get("properties", {})
+            if campos:
+                linhas += [f"Corpo (JSON, `{nome}`):", "", "| Campo | Tipo |", "|---|---|"]
+                linhas += [f"| `{c}` | {_tipo_openapi(e)} |" for c, e in campos.items()]
+                linhas.append("")
+            else:
+                linhas += ["Corpo: um objeto JSON (ver a descrição).", ""]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(linhas))
+
+
 def paginas() -> dict[str, str]:
     return {
         "cli.md": pagina_cli(),
@@ -210,6 +302,7 @@ def paginas() -> dict[str, str]:
             config.Codebook,
         ),
         "contrato.md": pagina_contrato(),
+        "api-http.md": pagina_api_http(),
     }
 
 

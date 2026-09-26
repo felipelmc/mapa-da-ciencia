@@ -1,8 +1,8 @@
 """Rotas do projeto no painel: o estado das etapas, os modelos, a estimativa da classificação, a configuração e o
 codebook.
 
-- `GET /api/projeto/etapas`: cada etapa do pipeline como `pendente`, `em_dia`, `incompleta` ou `desatualizada`, com a última
-  execução (a linha de metrô da vista Projeto);
+- `GET /api/projeto/etapas`: cada etapa do pipeline como `pendente`, `em_dia`, `incompleta` ou `desatualizada`,
+  com a última execução (a linha de metrô da vista Projeto);
 - `GET /api/modelos`: a memória da máquina, o perfil sugerido, os perfis, os modelos instalados no Ollama e os do
   projeto (instalados ou não, com o tamanho do download);
 - `POST /api/modelos/baixar`: baixa um modelo (`ollama pull`) como um job, com o progresso ao vivo;

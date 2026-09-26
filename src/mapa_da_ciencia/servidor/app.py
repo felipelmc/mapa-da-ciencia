@@ -75,10 +75,12 @@ def criar_app(
 
     @app.get("/api/saude")
     def saude() -> dict:
+        """Confere se o painel está no ar: a versão do pacote e o nome do projeto aberto (ou `null`, no exemplo)."""
         return {"ok": True, "versao": __version__, "projeto": projeto.config.nome if projeto else None}
 
     @app.get("/api/projeto")
     def info_projeto() -> dict:
+        """O projeto aberto: nome, título, pasta e a última execução de cada etapa."""
         if projeto is None:
             raise HTTPException(404, "O painel está mostrando o exemplo, sem projeto aberto.")
         etapas = {
@@ -104,6 +106,8 @@ def criar_app(
 
     @app.get("/dados/manifesto.json")
     def manifesto() -> JSONResponse:
+        """O manifesto do contrato, com `api: true` no painel (a interface usa isso para mostrar o que só funciona
+        localmente); sem exportação ainda, um manifesto mínimo do projeto."""
         arq = pasta_dados / "manifesto.json"
         if arq.exists():
             dados = json.loads(arq.read_text(encoding="utf-8"))
@@ -121,7 +125,7 @@ def criar_app(
         app.mount("/", StaticFiles(directory=estatico, html=True), name="estatico")
     else:
 
-        @app.get("/", response_class=HTMLResponse)
+        @app.get("/", response_class=HTMLResponse, include_in_schema=False)
         def sem_build() -> str:
             return _SEM_BUILD.format(versao=__version__)
 
