@@ -51,4 +51,4 @@ Cada etapa grava seus arquivos em `saida/dados/`. Basta recarregar a página, se
 
 ## Como funciona
 
-O `mapa painel` sobe um servidor local ([FastAPI](https://fastapi.tiangolo.com)) que entrega a interface compilada, os arquivos do [contrato de dados](../referencia/contrato.md) do projeto e uma API para as ações que só fazem sentido localmente (rodar etapas, codificar a amostra). O site publicado com `mapa publicar` (marco M7) é a mesma interface lendo os mesmos arquivos, só que sem a API: por isso ele é somente leitura.
+O `mapa painel` sobe um servidor local ([FastAPI](https://fastapi.tiangolo.com)) que entrega a interface compilada, os arquivos do [contrato de dados](../referencia/contrato.md) do projeto e uma API que, por enquanto, só descreve o projeto; ela ganha as ações que só fazem sentido localmente com os próximos marcos (codificar a amostra no M5, rodar as etapas no M6). O site publicado com `mapa publicar` (marco M7) é a mesma interface lendo os mesmos arquivos, só que sem a API: por isso ele é somente leitura.

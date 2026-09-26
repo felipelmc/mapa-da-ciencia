@@ -116,7 +116,7 @@ export const SECOES: readonly Secao[] = [
 		icone: 'projeto',
 		resumo:
 			'Configurar o projeto, acompanhar as etapas do pipeline e editar o codebook, direto no painel local.',
-		chegada: 'com a API do painel local',
+		chegada: 'no marco M6',
 		arquivos: [],
 		soNoPainel: true
 	}

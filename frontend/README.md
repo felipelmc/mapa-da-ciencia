@@ -5,7 +5,7 @@ App estático em SvelteKit que visualiza o **contrato de dados**: os arquivos JS
 - o **painel local** (`mapa painel`), servido pelo Python em `/`, com os dados em `/dados/` e a API em `/api/`;
 - o **site publicado** (GitHub Pages), servido num subcaminho como `/mapa-da-ciencia/demo/`, sem API e sem regra de reescrita.
 
-> **Estado:** marco M3, em andamento. Já funcionam a casca (trilho, barra superior, dois temas, estado na URL), a capa (Início) com os números do corpus e os macrotemas, e o **Mapa** (regl-scatterplot, `src/lib/graficos/Nuvem.svelte` e `src/lib/mapa/`). As outras vistas mostram um estado vazio que diz em que marco chegam.
+> **Estado:** marco M4, em andamento. Já funcionam a casca (trilho, barra superior, dois temas, estado na URL), a capa (Início) com os números do corpus e os macrotemas, e o **Mapa** (regl-scatterplot, `src/lib/graficos/Nuvem.svelte` e `src/lib/mapa/`). As outras vistas mostram um estado vazio que diz em que marco chegam.
 
 ## Como rodar
 
@@ -75,7 +75,9 @@ frontend/
 └── tests/e2e/
     ├── preparar.ts                   globalSetup: monta e serve raiz, subcaminho e projeto vazio
     ├── servidor.ts                   estático sem reescrita (como o GitHub Pages)
-    └── casca.spec.ts                 os testes
+    ├── comum.ts                      ajudantes: vigiar o console, esperar o mapa, ler o exemplo
+    ├── casca.spec.ts                 casca, capa, temas, projeto vazio
+    └── mapa.spec.ts                  a vista Mapa
 ```
 
 Os testes unitários ficam ao lado do código (`*.test.ts`).
@@ -172,9 +174,14 @@ Um só sistema de tokens (`src/lib/estilos/tokens.css`) com dois temas, escolhid
 |---|---|
 | `dados/fragmentos.test.ts` | `fragmentoDe` igual ao Python; os 64 fragmentos cobertos; cada documento do exemplo no fragmento certo |
 | `dados/estatica.test.ts` | cache; detalhe no fragmento certo; escolha da fonte por `api`; projeto vazio sem nenhuma requisição além do manifesto (`fetch` falso); erro e nova tentativa; versão do contrato |
-| `estado/url.test.ts` | `rota()`, `lerHash()` e a ida e volta dos filtros |
+| `dados/documentos.test.ts` | decodificação do `documentos.json`: NDC com a mesma escala nos dois eixos, enquadramento que resiste a ilhas, vizinhos, índice |
+| `estado/url.test.ts` | `rota()`, `lerHash()` e a ida e volta dos filtros, inclusive `laco` e `vista` |
 | `estado/sem-resolve.test.ts` | nenhum `resolve()` nem link absoluto em `src/` |
 | `estilos/contraste.test.ts` | contraste AA dos tokens nos dois temas |
+| `graficos/geometria.test.ts` | simplificação do laço (RDP) e ponto no polígono |
+| `mapa/busca.test.ts` | busca por título e autor sem diferença de acentos |
+| `mapa/contornos.test.ts` | contornos que envolvem o núcleo de cada tópico, banda adaptada, ~80% dentro |
+| `mapa/cores.test.ts` | paletas de revista e de ano |
 
 **De ponta a ponta** (`npm run e2e`). O `tests/e2e/preparar.ts` copia o build para uma pasta temporária, com os dados de exemplo em `dados/` ao lado do `index.html`, e serve três sites com um estático sem reescrita:
 
@@ -194,7 +201,8 @@ Os testes cobrem:
 - o link de pular;
 - rota inexistente;
 - tela estreita;
-- projeto vazio, sem pedir arquivos ausentes.
+- projeto vazio, sem pedir arquivos ausentes;
+- no Mapa (`mapa.spec.ts`): o desenho dos pontos, contornos e rótulos pelo zoom, legenda, cor por revista, cartão pelo link e pelo clique, busca, laço pelo link e pelo mouse, play da linha do tempo e atalhos.
 
 As capturas ficam em `test-results/` (ignorado pelo git): `tema-observatorio-1440x900.png`, `tema-prancha-1440x900.png` e `estreita-observatorio-390x844.png`.
 

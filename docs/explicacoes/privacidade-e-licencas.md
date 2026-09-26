@@ -2,16 +2,16 @@
 
 ## O que nunca sai da sua máquina
 
-- **Textos para modelos:** embeddings e classificação rodam no Ollama local.
+- **Textos para modelos:** os embeddings e os rótulos dos tópicos rodam no Ollama local, e a classificação (marco M5) também vai rodar.
 - **E-mails de autores:** a ArticleMeta traz o e-mail de alguns autores nas afiliações. A normalização da coleta (marco M2) descarta esse campo, e ele nunca chega aos dados do projeto nem ao site publicado. Os testes do contrato de dados verificam que nenhum arquivo exportado contém e-mails.
-- **Codificações humanas individuais:** o site publicado mostra só as métricas agregadas de concordância.
+- **Codificações humanas individuais:** o site publicado (marco M7) vai mostrar só as métricas agregadas de concordância.
 - **Chaves e e-mail de contato:** ficam no `.env` do projeto, que o `mapa novo` já coloca no `.gitignore`.
 
 As únicas chamadas externas são as da coleta de metadados públicos (ArticleMeta e OpenAlex), identificadas por um User-Agent do projeto.
 
 ## Licenças dos resumos
 
-O painel local mostra os resumos para você trabalhar. O site publicado (`mapa publicar`) é outra coisa: redistribui os resumos na internet, e aí a licença de cada artigo importa.
+O painel local mostra os resumos para você trabalhar. O site publicado (`mapa publicar`, que chega no marco M7) é outra coisa: redistribui os resumos na internet, e aí a licença de cada artigo importa.
 
 As fontes nem sempre concordam sobre a licença:
 
