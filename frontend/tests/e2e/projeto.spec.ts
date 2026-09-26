@@ -12,9 +12,14 @@ test.beforeEach(async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: 'reduce' });
 });
 
-test('no site estático, a vista explica que é do painel', async ({ page }) => {
+test('no site estático, a seção vira a Metodologia, tirada do manifesto', async ({ page }) => {
+	const problemas = vigiar(page);
 	await page.goto(`${url('RAIZ')}#/projeto`);
-	await expect(page.getByText('só existe no painel local')).toBeVisible();
+	await expect(h1(page)).toHaveText('Metodologia');
+	await expect(page.getByTestId('modelos-metodologia')).toContainText('Classificação');
+	await expect(page.getByTestId('metodologia')).toContainText('versão 1.4');
+	await expect(page.getByRole('link', { name: 'Desenho da validação' })).toBeVisible();
+	expect(problemas).toEqual([]);
 });
 
 test('a linha de metrô, a estimativa e os modelos', async ({ page }) => {

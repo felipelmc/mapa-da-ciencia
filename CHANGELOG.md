@@ -38,6 +38,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - **Exportar figuras** (`lib/exportar/`): cada gráfico do painel baixa em SVG (com título, recorte, fonte, n e data, as cores do tema resolvidas e as fontes embutidas), PNG (rasterizado na resolução do tamanho) ou CSV (os dados da tabela); tamanhos Artigo (85 ou 174 mm, 300 ou 600 dpi, tema Prancha), Slide (1.920 px) e Telão (3.840 px, Observatório); guia "Exportar figuras";
 - **modo apresentação** (tecla ++p++, em todas as vistas menos a codificação): esconde o trilho e as barras e aumenta a letra, para projetar; ++esc++ sai; atalho na Ajuda;
 - **`mapa publicar [--destino] [--sem-resumos]`** e `api.publicar()`: o site estático do projeto, com a interface e o contrato, `api: false`, resumos (e o texto das evidências) só com licença Creative Commons, sem e-mails (varredura final), montado numa pasta nova e trocado de uma vez; contrato 1.4 (`Manifesto.publicacao`); guia "Publicar o site";
+- **Metodologia** no site publicado: sem API, a seção Projeto vira a página Metodologia, tirada do manifesto (fontes, recorte, contagens, modelos com o digest, hash do codebook, sementes, durações, licenças e o que a publicação retirou), com os links para as explicações;
 
 ## [0.4.0] - 2026-09-26
 

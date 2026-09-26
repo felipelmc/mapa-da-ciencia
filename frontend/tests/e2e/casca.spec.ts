@@ -23,6 +23,7 @@ const SECOES = [
 	{ rotulo: 'Classificação', caminho: '/classificacao', h1: 'Classificação' },
 	{ rotulo: 'Geografia', caminho: '/geografia', h1: 'Geografia' },
 	{ rotulo: 'Validação', caminho: '/validacao', h1: 'Validação' },
+	{ rotulo: 'Metodologia', caminho: '/projeto', h1: 'Metodologia' },
 	{ rotulo: 'Início', caminho: '/', h1: manifesto.projeto.titulo }
 ];
 
@@ -46,7 +47,7 @@ for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 			// Tudo no cliente: nenhuma recarga completa (o problema do resolve() no ADR 0002).
 			expect(await page.evaluate(() => window.__semRecarga)).toBe(true);
 
-			// Redes aparece desativada, com selo; Projeto não aparece fora do painel.
+			// Redes aparece desativada, com selo; fora do painel, Projeto vira Metodologia.
 			await expect(trilho(page).getByRole('link', { name: /Redes/ })).toHaveCount(0);
 			await expect(trilho(page).getByText('Redes', { exact: true })).toBeVisible();
 			await expect(trilho(page).getByText('v2', { exact: true })).toBeVisible();

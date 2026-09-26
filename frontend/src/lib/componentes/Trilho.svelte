@@ -29,7 +29,7 @@
 	<nav aria-label="Seções">
 		<ul>
 			{#each secoes as s (s.id)}
-				<li class:separado={s.selo || s.soNoPainel}>
+				<li class:separado={s.selo || s.soNoPainel || s.noSite}>
 					{#if s.selo}
 						<span class="item desativado" title="Chega {s.chegada}">
 							<Icone nome={s.icone} />
