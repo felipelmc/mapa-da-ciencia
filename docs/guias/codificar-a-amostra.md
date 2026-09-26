@@ -110,7 +110,9 @@ Grava em `validacao/`:
 
 - `relatorio.md`: os participantes e o tipo de cada um, a concordância por variável e par, a precisão e a revocação por categoria, as matrizes de confusão, a comparação entre modelos, a taxa de evidência literal e todas as divergências com o modelo principal, com o trecho que o modelo citou;
 - `tabelas.tex`: as tabelas de concordância em LaTeX (pacote `booktabs`), com vírgula decimal, prontas para um artigo;
-- `validacao.json`: as mesmas métricas, para outras análises.
+- `metricas.json`: as mesmas métricas, para outras análises.
+
+O relatório e o JSON trazem as respostas de cada pessoa nas divergências. Por isso a pasta `validacao/` fica fora do git (o `.gitignore` que o `mapa novo` cria já a deixa de fora) e não vai para o site publicado.
 
 O desenho da validação está no [ADR 0012](../decisoes/0012-validacao-e-codificador-de-referencia.md).
 

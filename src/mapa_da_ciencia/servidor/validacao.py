@@ -8,8 +8,9 @@
 - `GET /api/validacao/metricas`: a concordância calculada agora, no formato de `validacao.json`, com as
   divergências de todos os codificadores (no contrato publicado, só as de codificadores de referência).
 
-As rotas de escrita só aceitam pedidos feitos desta máquina: o `Host` precisa ser local e o `Origin`, quando
-existe, também. Assim uma página aberta em outro site não consegue gravar no projeto pelo navegador.
+Toda a API só responde a um `Host` local (`servidor/app.py`); as rotas de escrita conferem também o `Origin`,
+quando existe. Assim uma página aberta em outro site não consegue ler as codificações nem gravar no projeto pelo
+navegador.
 """
 
 from __future__ import annotations

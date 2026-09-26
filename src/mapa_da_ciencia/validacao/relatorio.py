@@ -3,7 +3,10 @@
 - `relatorio.md`: participantes, concordância por variável e par, precisão e revocação por classe, matrizes de
   confusão, comparação entre modelos, evidência literal e as divergências com o modelo principal;
 - `tabelas.tex`: as tabelas de concordância em LaTeX (`booktabs`), com vírgula decimal, prontas para um artigo;
-- `validacao.json`: as mesmas métricas em JSON, para outras análises.
+- `metricas.json`: as mesmas métricas em JSON, para outras análises.
+
+O relatório e o JSON trazem as respostas de cada pessoa nas divergências: a pasta fica fora do git (`.gitignore` do
+projeto).
 
 Um codificador de referência nunca é chamado de humano: o relatório diz o tipo de cada participante.
 """
@@ -230,11 +233,11 @@ def latex(v: Validacao) -> str:
 
 
 def gerar(projeto: Projeto) -> tuple[Validacao, dict[str, Path]]:
-    """Calcula as métricas e grava `relatorio.md`, `tabelas.tex` e `validacao.json` em `validacao/`."""
+    """Calcula as métricas e grava `relatorio.md`, `tabelas.tex` e `metricas.json` em `validacao/`."""
     v = calcular(projeto)
     pasta = projeto.raiz / PASTA_EXPORTACAO
     pasta.mkdir(exist_ok=True)
-    arquivos = {"markdown": pasta / "relatorio.md", "latex": pasta / "tabelas.tex", "json": pasta / "validacao.json"}
+    arquivos = {"markdown": pasta / "relatorio.md", "latex": pasta / "tabelas.tex", "json": pasta / "metricas.json"}
     arquivos["markdown"].write_text(markdown(v, projeto=projeto.config.titulo), encoding="utf-8")
     arquivos["latex"].write_text(latex(v), encoding="utf-8")
     arquivos["json"].write_text(json.dumps(asdict(v), ensure_ascii=False, indent=1), encoding="utf-8")

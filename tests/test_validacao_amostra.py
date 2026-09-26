@@ -217,3 +217,27 @@ def test_tamanho_da_amostra_na_linha_de_comando(projeto):
     assert r.exit_code == 1 and "--refazer" in r.output
     r = runner.invoke(app, ["validar", "amostra", "-P", raiz, "--n", "6", "--refazer"], env=ENV)
     assert r.exit_code == 0 and len(va.ler(projeto).docs) == 6 and va.ler(projeto).n == 6
+
+
+def test_codificacoes_presas_ao_codebook(projeto):
+    """Uma categoria renomeada ou uma variável que mudou de tipo tiram as respostas antigas das métricas e da fila,
+    sem quebrar nada."""
+    from mapa_da_ciencia.validacao.metricas import calcular
+
+    a = va.sortear(projeto)
+    for d in a.docs:
+        assert not va.salvar(projeto, "maria", d, _respostas(projeto), tipo="humano")
+    n = len(projeto.codebook.variaveis)
+    assert len(va.codificacoes(projeto, "maria")) == 10 * n
+
+    cb = projeto.raiz / "codebook.yaml"
+    texto = cb.read_text(encoding="utf-8").replace("- valor: quantitativa", "- valor: quanti")
+    i = texto.index("id: subarea")
+    texto = texto[:i] + texto[i:].replace("tipo: categorica", "tipo: multipla", 1)
+    cb.write_text(texto, encoding="utf-8")
+    projeto = Projeto.abrir(projeto.raiz)
+
+    validas = va.codificacoes(projeto, "maria")
+    assert len(validas) == 10 * (n - 2) and not {"abordagem", "subarea"} & {c["variavel"] for c in validas}
+    assert len(va.codificacoes(projeto, "maria", todas=True)) == 10 * n
+    calcular(projeto, reamostras=10)  # não quebra com o valor antigo guardado como texto
