@@ -1,5 +1,5 @@
 /**
- * Classes de cor dos mapas da geografia. A produção por UF é muito concentrada (no piloto, São Paulo tem quase 400
+ * Classes de cor dos mapas da geografia. A produção por UF é muito concentrada (no piloto, São Paulo tem mais de 350
  * vezes o peso do Acre), então as classes crescem em escala logarítmica, com limites "redondos" (1, 2, 5, 10, 20,
  * 50…) para a legenda ser legível. Zero fica fora das classes (cor `--seq-vazio`).
  */

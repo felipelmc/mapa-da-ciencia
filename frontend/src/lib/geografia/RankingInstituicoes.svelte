@@ -28,41 +28,47 @@
 	const maior = $derived(Math.max(1e-9, ...itens.map((i) => i.peso)));
 </script>
 
-<ol class="ranking" data-testid="ranking">
-	{#each visiveis as item, k (item.id)}
-		<li>
-			<button
-				type="button"
-				class="linha"
-				class:selecionada={selecionados.has(item.id)}
-				aria-pressed={selecionados.has(item.id)}
-				data-testid="instituicao"
-				data-id={item.id}
-				data-valor={item.peso.toFixed(4)}
-				onclick={() => aoEscolher(item.id)}
-			>
-				<span class="posicao">{k + 1}</span>
-				<span class="nome" title="{item.nome}{item.sigla ? ` (${item.sigla})` : ''}, {item.lugar}">
-					{#if item.sigla}<strong>{item.sigla}</strong> <span class="extenso">{item.nome}</span>{:else}{item.nome}{/if}
-				</span>
-				<span class="lugar">{item.lugar}</span>
-				<span class="barra" aria-hidden="true"><span style:width="{(100 * item.peso) / maior}%"></span></span>
-				<span class="numero">{formatarDecimal(item.peso)}</span>
-				<span class="numero documentos">{formatarInteiro(item.documentos)}</span>
+<div class="contem">
+	<ol class="ranking" data-testid="ranking">
+		{#each visiveis as item, k (item.id)}
+			<li>
+				<button
+					type="button"
+					class="linha"
+					class:selecionada={selecionados.has(item.id)}
+					aria-pressed={selecionados.has(item.id)}
+					data-testid="instituicao"
+					data-id={item.id}
+					data-valor={item.peso.toFixed(4)}
+					onclick={() => aoEscolher(item.id)}
+				>
+					<span class="posicao">{k + 1}</span>
+					<span class="nome" title="{item.nome}{item.sigla ? ` (${item.sigla})` : ''}, {item.lugar}">
+						{#if item.sigla}<strong>{item.sigla}</strong> <span class="extenso">{item.nome}</span>{:else}{item.nome}{/if}
+					</span>
+					<span class="lugar">{item.lugar}</span>
+					<span class="barra" aria-hidden="true"><span style:width="{(100 * item.peso) / maior}%"></span></span>
+					<span class="numero">{formatarDecimal(item.peso)}</span>
+					<span class="numero documentos">{formatarInteiro(item.documentos)}</span>
+				</button>
+			</li>
+		{/each}
+	</ol>
+	<div class="rodape">
+		<span>Peso fracionário · documentos</span>
+		{#if itens.length > visiveis.length}
+			<button type="button" class="botao" data-testid="mostrar-mais" onclick={() => (mostrar = visiveis.length + passo)}>
+				Mostrar mais ({formatarInteiro(itens.length - visiveis.length)} restantes)
 			</button>
-		</li>
-	{/each}
-</ol>
-<div class="rodape">
-	<span>Peso fracionário · documentos</span>
-	{#if itens.length > visiveis.length}
-		<button type="button" class="botao" data-testid="mostrar-mais" onclick={() => (mostrar = visiveis.length + passo)}>
-			Mostrar mais ({formatarInteiro(itens.length - visiveis.length)} restantes)
-		</button>
-	{/if}
+		{/if}
+	</div>
 </div>
 
 <style>
+	.contem {
+		container-type: inline-size;
+	}
+
 	.ranking {
 		display: grid;
 		gap: 0.15rem;
@@ -151,13 +157,23 @@
 		color: var(--texto-suave);
 	}
 
-	@media (max-width: 640px) {
+	/* estreito (a coluna ao lado do mapa das UFs numa tela de notebook): sem o lugar, que aparece na dica */
+	@container (max-width: 34rem) {
 		.linha {
-			grid-template-columns: 1.5rem minmax(0, 1fr) 3.4rem;
+			grid-template-columns: 1.4rem minmax(0, 1fr) minmax(2.5rem, 4.5rem) 3.2rem 2.6rem;
+		}
+
+		.lugar {
+			display: none;
+		}
+	}
+
+	@container (max-width: 22rem) {
+		.linha {
+			grid-template-columns: 1.4rem minmax(0, 1fr) 3.2rem;
 		}
 
 		.barra,
-		.lugar,
 		.documentos {
 			display: none;
 		}

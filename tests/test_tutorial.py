@@ -2,7 +2,7 @@
 
 Os blocos `bash` viram chamadas da CLI (sem o `uv run`), e `cd` muda a pasta do teste. Os blocos `python`
 rodam com `exec`. Linhas marcadas com `# fora do CI` são puladas (o painel, que não termina sozinho, o
-`ollama pull` e as coletas que não estão nas fixtures). Na parte 2, o corpus sintético faz o papel da coleta
+`ollama pull` e as coletas que não estão nas fixtures). Nas partes 2 e 3, o corpus sintético faz o papel da coleta
 da *Opinião Pública* de 2010 a 2025.
 """
 
@@ -20,6 +20,7 @@ from mapa_da_ciencia.cli import app
 TUTORIAIS = Path(__file__).parents[1] / "docs" / "tutoriais"
 PARTE_1 = TUTORIAIS / "primeiro-mapa.md"
 PARTE_2 = TUTORIAIS / "primeiro-mapa-topicos.md"
+PARTE_3 = TUTORIAIS / "primeiro-mapa-tempo-e-geografia.md"
 FORA_DO_CI = "# fora do CI"
 runner = CliRunner()
 
@@ -62,6 +63,13 @@ def _rodar(tutorial: Path, monkeypatch, antes: Callable[[list[str]], None] | Non
     return saidas
 
 
+def _semear(args: list[str]) -> None:
+    """A coleta de 2010–2025 fica fora do CI: antes dos tópicos, o corpus sintético entra no lugar dela."""
+    corpus = Path.cwd() / "dados" / ARQUIVO
+    if args[0] == "topicos" and not corpus.exists():
+        gravar_documentos(corpus_sintetico()[0], corpus)
+
+
 def test_parte_1_coleta(tmp_path, apis_falsas, monkeypatch):
     monkeypatch.chdir(tmp_path)
     saidas = _rodar(PARTE_1, monkeypatch)
@@ -78,13 +86,7 @@ def test_parte_1_coleta(tmp_path, apis_falsas, monkeypatch):
 def test_parte_2_topicos(tmp_path, apis_falsas, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
-    def semear(args: list[str]) -> None:
-        """A coleta de 2010–2025 fica fora do CI: antes dos tópicos, o corpus sintético entra no lugar dela."""
-        corpus = Path.cwd() / "dados" / ARQUIVO
-        if args[0] == "topicos" and not corpus.exists():
-            gravar_documentos(corpus_sintetico()[0], corpus)
-
-    saidas = _rodar(PARTE_2, monkeypatch, antes=semear)
+    saidas = _rodar(PARTE_2, monkeypatch, antes=_semear)
 
     assert "Modelos do perfil" in saidas["diagnostico"][0]
     primeira, segunda = saidas["topicos"]
@@ -92,3 +94,16 @@ def test_parte_2_topicos(tmp_path, apis_falsas, monkeypatch):
     assert "mantiveram o número e a cor" in segunda and "Embeddings novos: 0" in segunda
     assert "Tópicos:" in saidas["status"][0] and "rótulos: llm" in saidas["status"][0]
     assert (tmp_path / "projetos" / "op" / "saida" / "dados" / "topicos.json").exists()
+
+
+def test_parte_3_tempo_e_geografia(tmp_path, apis_falsas, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    _rodar(PARTE_2, monkeypatch, antes=_semear)  # a parte 3 continua o projeto da parte 2
+    saidas = _rodar(PARTE_3, monkeypatch)
+
+    primeira, segunda = saidas["geografia"][0], saidas["geografia"][-1]
+    assert "Geografia pronta" in primeira and "Fonte das afiliações" in primeira
+    revisao = next(s for s in saidas["geografia"] if "sem instituição mais frequentes" in s)
+    assert "apelidos:" in revisao and "Geografia pronta" in segunda
+    assert "Geografia:" in saidas["status"][0] and "vínculos ligados a uma de" in saidas["status"][0]
+    assert (tmp_path / "projetos" / "op" / "saida" / "dados" / "afiliacoes.json").exists()

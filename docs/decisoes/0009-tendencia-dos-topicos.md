@@ -1,6 +1,6 @@
 # 0009. Tendência dos tópicos: em alta, em queda ou estável
 
-- **Status:** proposta (M4)
+- **Status:** aceita (M4)
 - **Data:** 2026-09-26
 - **Marco:** M4
 

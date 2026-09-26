@@ -1,6 +1,6 @@
 # 0008. Geografia: afiliações casadas com as instituições do OpenAlex
 
-- **Status:** proposta (M4)
+- **Status:** aceita (M4)
 - **Data:** 2026-09-26
 - **Marco:** M4
 

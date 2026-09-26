@@ -1,4 +1,5 @@
-// Gera as capturas do mapa usadas na documentação (docs/imagens/), a partir dos dados de um projeto.
+// Gera as capturas usadas na documentação (docs/imagens/), a partir dos dados de um projeto: o Mapa, os Tópicos
+// e, se o projeto tiver geografia, a Geografia.
 //
 // Uso (da pasta frontend/, depois de `npm run build`):
 //   node scripts/capturas.ts ../projetos/cp-scielo
@@ -112,6 +113,41 @@ try {
 	await page.waitForFunction(() => (window.__mapaDebug?.zoom ?? 1) > 2.2);
 	await page.waitForTimeout(800);
 	await capturar(page, 'mapa-cartao');
+
+	// 4. os Tópicos: o fluxo dos macrotemas e, abaixo, as listas em alta e em queda
+	await page.goto(`${origem}/#/topicos`);
+	await page.getByTestId('figura-fluxo').and(page.locator('[data-pronto="sim"]')).waitFor();
+	await page.waitForTimeout(500);
+	await capturar(page, 'topicos');
+	await page.getByTestId('figura-tendencias').screenshot({ path: join(DESTINO, 'topicos-tendencias.png') });
+	console.log(join(DESTINO, 'topicos-tendencias.png'));
+
+	// 5. a gaveta do tópico que mais cresceu
+	const emAlta = [...topicos.topicos]
+		.filter((t) => t.tendencia?.direcao === 'alta')
+		.sort((a, b) => (b.tendencia.pp_periodo ?? 0) - (a.tendencia.pp_periodo ?? 0))[0];
+	if (emAlta) {
+		await page.goto(`${origem}/#/topicos?topico=${emAlta.id}`);
+		await page.getByTestId('gaveta-topico').waitFor();
+		await page.waitForTimeout(400);
+		await capturar(page, 'topicos-gaveta');
+	}
+
+	// 6. a Geografia: UFs e instituições, o mundo e a cobertura por ano
+	if (existsSync(join(dados, 'afiliacoes.json'))) {
+		await page.goto(`${origem}/#/geografia`);
+		await page.getByTestId('figura-ufs').and(page.locator('[data-pronto="sim"]')).waitFor();
+		await page.getByTestId('figura-mundo').and(page.locator('[data-pronto="sim"]')).waitFor();
+		await page.waitForTimeout(400);
+		await capturar(page, 'geografia');
+		for (const figura of ['mundo', 'cobertura']) {
+			const arquivo = join(DESTINO, `geografia-${figura}.png`);
+			await page.getByTestId(`figura-${figura}`).screenshot({ path: arquivo });
+			console.log(arquivo);
+		}
+	} else {
+		console.log('Sem afiliacoes.json: rode `mapa geografia` no projeto para capturar a Geografia.');
+	}
 	await contexto.close();
 } finally {
 	await navegador.close();
