@@ -60,6 +60,22 @@ export function parametrosDoHash(url: URL): URLSearchParams {
 export const CORES_POR = ['topico', 'macrotema', 'revista', 'ano'] as const;
 export type CorPor = (typeof CORES_POR)[number];
 
+/**
+ * Laço desenhado no mapa: polígono em coordenadas dos dados (as do UMAP, que não dependem da tela), com a
+ * versão do mapa em que foi desenhado. Um link de um mapa já regenerado ainda abre, mas com aviso.
+ */
+export interface Laco {
+	versao: string;
+	pontos: [number, number][];
+}
+
+/** Câmera do mapa: centro (NDC) e zoom. */
+export interface Vista {
+	x: number;
+	y: number;
+	zoom: number;
+}
+
 /** O recorte que as vistas compartilham. Cada campo vira um parâmetro do hash. */
 export interface Filtros {
 	/** Intervalo de anos, inclusivo. `null` = todo o período. */
@@ -74,6 +90,10 @@ export interface Filtros {
 	busca: string;
 	/** Documento em destaque (id do contrato). */
 	doc: string | null;
+	/** Seleção por laço no mapa. */
+	laco: Laco | null;
+	/** Câmera do mapa. */
+	vista: Vista | null;
 }
 
 export const FILTROS_PADRAO: Readonly<Filtros> = Object.freeze({
@@ -82,11 +102,45 @@ export const FILTROS_PADRAO: Readonly<Filtros> = Object.freeze({
 	topicos: [],
 	cor: 'topico',
 	busca: '',
-	doc: null
+	doc: null,
+	laco: null,
+	vista: null
 });
 
 /** Ordem fixa dos parâmetros na URL. */
-const ORDEM: (keyof Filtros)[] = ['anos', 'revistas', 'topicos', 'cor', 'busca', 'doc'];
+const ORDEM: (keyof Filtros)[] = ['anos', 'revistas', 'topicos', 'cor', 'busca', 'laco', 'vista', 'doc'];
+
+/** Arredonda para `casas` decimais (e troca −0 por 0, para o texto da URL ser estável). */
+function arredondar(v: number, casas = 3): number {
+	const f = 10 ** casas;
+	return Math.round(v * f) / f || 0;
+}
+
+function normalizarLaco(l: Laco | null): Laco | null {
+	if (!l) return null;
+	const pontos = l.pontos
+		.filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y))
+		.map(([x, y]) => [arredondar(x), arredondar(y)] as [number, number]);
+	if (pontos.length < 3) return null;
+	return { versao: /^[\w-]{0,16}$/.test(l.versao) ? l.versao : '', pontos };
+}
+
+function normalizarVista(v: Vista | null): Vista | null {
+	if (!v || ![v.x, v.y, v.zoom].every(Number.isFinite) || v.zoom <= 0) return null;
+	return { x: arredondar(v.x), y: arredondar(v.y), zoom: arredondar(v.zoom) };
+}
+
+function lerLaco(texto: string | null): Laco | null {
+	if (!texto) return null;
+	const [versao, ...pares] = texto.split('~');
+	const pontos = pares.map((p) => p.split(',').map(Number) as [number, number]).filter((p) => p.length === 2);
+	return normalizarLaco({ versao, pontos });
+}
+
+function lerVista(texto: string | null): Vista | null {
+	const partes = texto?.split(',').map(Number) ?? [];
+	return partes.length === 3 ? normalizarVista({ x: partes[0], y: partes[1], zoom: partes[2] }) : null;
+}
 
 function lista(texto: string | null): string[] {
 	return texto ? texto.split(',').map((s) => s.trim()).filter(Boolean) : [];
@@ -108,7 +162,9 @@ export function normalizarFiltros(parcial: Partial<Filtros> = {}): Filtros {
 		topicos: [...new Set(f.topicos.filter((t) => Number.isInteger(t) && t >= -1))].sort((a, b) => a - b),
 		cor: (CORES_POR as readonly string[]).includes(f.cor) ? f.cor : FILTROS_PADRAO.cor,
 		busca: f.busca.trim(),
-		doc: f.doc || null
+		doc: f.doc || null,
+		laco: normalizarLaco(f.laco),
+		vista: normalizarVista(f.vista)
 	};
 }
 
@@ -123,7 +179,9 @@ export function lerFiltros(params: URLSearchParams): Filtros {
 			.map(Number),
 		cor: (params.get('cor') ?? FILTROS_PADRAO.cor) as CorPor,
 		busca: params.get('busca') ?? '',
-		doc: params.get('doc')
+		doc: params.get('doc'),
+		laco: lerLaco(params.get('laco')),
+		vista: lerVista(params.get('vista'))
 	});
 }
 
@@ -136,7 +194,9 @@ export function escreverFiltros(parcial: Partial<Filtros>): URLSearchParams {
 		topicos: f.topicos.length ? f.topicos.join(',') : null,
 		cor: f.cor === FILTROS_PADRAO.cor ? null : f.cor,
 		busca: f.busca || null,
-		doc: f.doc
+		doc: f.doc,
+		laco: f.laco ? [f.laco.versao, ...f.laco.pontos.map(([x, y]) => `${x},${y}`)].join('~') : null,
+		vista: f.vista ? `${f.vista.x},${f.vista.y},${f.vista.zoom}` : null
 	};
 	const busca = new URLSearchParams();
 	for (const chave of ORDEM) {
