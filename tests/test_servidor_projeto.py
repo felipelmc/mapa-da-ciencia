@@ -5,13 +5,13 @@ import threading
 import pytest
 import yaml
 from fastapi.testclient import TestClient
+from test_servidor_jobs import LOCAL, esperar_estado, ler_sse
 
 import mapa_da_ciencia.api as mapa
 from mapa_da_ciencia.coleta import coletar
 from mapa_da_ciencia.llm.perfis import PERFIS
 from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.servidor.app import criar_app
-from test_servidor_jobs import LOCAL, esperar_estado, ler_sse
 
 
 @pytest.fixture
