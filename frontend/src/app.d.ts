@@ -11,6 +11,10 @@ declare global {
 		modoLaco: boolean;
 		renderer: string | null;
 		erro: string | null;
+		/** Zoom atual da câmera (1 = inicial). */
+		zoom?: number;
+		/** Contornos desenhados (anéis). */
+		anotacoes?: number;
 		/** Tempo acumulado até cada etapa do primeiro desenho, em ms. */
 		etapasMs?: Record<string, number>;
 		/** Seleciona por um polígono em coordenadas NDC, como se fosse um laço desenhado. */

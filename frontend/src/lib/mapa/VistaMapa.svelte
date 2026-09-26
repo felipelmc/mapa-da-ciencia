@@ -4,12 +4,14 @@
 	 * (`filtrosDaPagina`) e volta para ela (`mudarFiltros`): um link reproduz exatamente o que está na tela.
 	 */
 	import type { Topicos } from '$lib/contrato/tipos';
-	import type { TabelaDocumentos } from '$lib/dados/documentos';
+	import { paraNdc, type TabelaDocumentos } from '$lib/dados/documentos';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { tema } from '$lib/estado/tema.svelte';
 	import { CORES_POR, type CorPor } from '$lib/estado/url';
 	import { formatarInteiro } from '$lib/formato';
-	import Nuvem from '$lib/graficos/Nuvem.svelte';
+	import Nuvem, { type Anotacao, type Camera } from '$lib/graficos/Nuvem.svelte';
+	import Rotulos, { type ItemRotulo } from '$lib/graficos/Rotulos.svelte';
+	import { calcularContornos, centroDePeso } from './contornos';
 	import { colorir, type ItemLegenda } from './cores';
 	import { visiveis } from './filtro';
 
@@ -57,10 +59,61 @@
 	}
 
 	const temRecorte = $derived(!!(filtros.anos || filtros.revistas.length || filtros.topicos.length));
+
+	// ---- contornos (uma vez) e rótulos (a cada movimento da câmera)
+	const ZOOM_TOPICOS = 1.8; // abaixo, rótulos dos macrotemas; acima, dos tópicos
+	const contornos = $derived(calcularContornos(tabela, topicos.topicos.map((t) => t.id)));
+	const macroDoTopico = $derived(new Map(topicos.macrotemas.flatMap((m) => m.topicos.map((t) => [t, m] as const))));
+	const posicao = $derived(
+		new Map(topicos.topicos.map((t) => [t.id, paraNdc(tabela.escala, t.centroide[0], t.centroide[1])]))
+	);
+
+	const anotacoes = $derived.by(() => {
+		const neutra = filtros.cor === 'revista' || filtros.cor === 'ano';
+		const saida: Anotacao[] = [];
+		for (const t of topicos.topicos) {
+			if (filtros.topicos.length && !filtros.topicos.includes(t.id)) continue;
+			const cor = neutra ? cinza : filtros.cor === 'macrotema' ? (macroDoTopico.get(t.id)?.cor ?? t.cor) : t.cor;
+			for (const anel of contornos.get(t.id) ?? []) saida.push({ vertices: anel, cor, largura: neutra ? 1 : 1.5 });
+		}
+		return saida;
+	});
+
+	let tela: HTMLDivElement;
+	function repassarRoda(evento: WheelEvent) {
+		evento.preventDefault();
+		tela.querySelector('canvas')?.dispatchEvent(new WheelEvent('wheel', evento));
+	}
+
+	let camera = $state<Camera | null>(null);
+	let versaoCamera = $state(0);
+	function aoVer(c: Camera) {
+		camera = c;
+		versaoCamera += 1;
+	}
+
+	const rotulos = $derived.by((): ItemRotulo[] => {
+		const zoom = camera?.zoom ?? 1;
+		if (zoom < ZOOM_TOPICOS && !filtros.topicos.length) {
+			return topicos.macrotemas.map((m) => {
+				const membros = topicos.topicos.filter((t) => m.topicos.includes(t.id));
+				const [x, y] = centroDePeso(membros.map((t) => ({ x: posicao.get(t.id)![0], y: posicao.get(t.id)![1], peso: t.n })));
+				const item: ItemLegenda = { rotulo: m.rotulo, cor: m.cor, topicos: m.topicos };
+				return { id: `m${m.id}`, texto: m.rotulo, x, y, cor: m.cor, peso: 1e6 + membros.reduce((s, t) => s + t.n, 0), ativo: ativo(item), aoClicar: () => alternar(item) };
+			});
+		}
+		return topicos.topicos
+			.filter((t) => !filtros.topicos.length || filtros.topicos.includes(t.id))
+			.map((t) => {
+				const [x, y] = posicao.get(t.id)!;
+				const item: ItemLegenda = { rotulo: t.rotulo, cor: t.cor, topicos: [t.id] };
+				return { id: `t${t.id}`, texto: t.rotulo, x, y, cor: t.cor, peso: t.n, ativo: ativo(item), aoClicar: () => alternar(item) };
+			});
+	});
 </script>
 
 <div class="mapa">
-	<div class="tela">
+	<div class="tela" bind:this={tela}>
 		<Nuvem
 			x={tabela.x}
 			y={tabela.y}
@@ -74,9 +127,19 @@
 			corLaco={acento}
 			modoLaco={false}
 			vista={vistaInicial}
+			{anotacoes}
+			{aoVer}
 			aoClicar={() => {}}
 			aoLaco={() => {}}
 			aoMoverCamera={(v) => mudarFiltros({ vista: v }, { substituir: true, em: '/mapa' })}
+		/>
+		<Rotulos
+			itens={rotulos}
+			projetar={camera?.projetar ?? null}
+			versao={versaoCamera}
+			largura={camera?.largura ?? 0}
+			altura={camera?.altura ?? 0}
+			aoRoda={repassarRoda}
 		/>
 	</div>
 

@@ -51,10 +51,6 @@ function servirDados(): Plugin {
 
 export default defineConfig({
 	plugins: [sveltekit(), servirDados()],
-	// O minificador do Vite 8 (oxc) quebra o regl-scatterplot quando renomeia variáveis ("Cannot read
-	// properties of null (reading '0')" ao criar o gráfico; no dev e sem minificar, funciona). Compressão sim,
-	// renomeação não: o bundle cresce pouco e o mapa funciona no build.
-	build: { rolldownOptions: { output: { minify: { mangle: false, compress: true } } } },
 	test: {
 		include: ['src/**/*.test.ts'],
 		environment: 'node'

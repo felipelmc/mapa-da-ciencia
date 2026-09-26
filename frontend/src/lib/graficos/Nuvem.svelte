@@ -8,9 +8,12 @@
 	 */
 	import { onMount } from 'svelte';
 	import type criarGrafico from 'regl-scatterplot';
+	import { escalaLinear } from './escala';
 
 	type Grafico = ReturnType<typeof criarGrafico>;
 	type Vista = { x: number; y: number; zoom: number };
+	export type Camera = { projetar: (x: number, y: number) => [number, number]; zoom: number; largura: number; altura: number };
+	export type Anotacao = { vertices: [number, number][]; cor: string; largura: number };
 
 	interface Props {
 		x: Float32Array;
@@ -27,18 +30,30 @@
 		modoLaco: boolean;
 		/** Câmera inicial (só na montagem). */
 		vista: Vista | null;
+		/** Polígonos desenhados pelo próprio gráfico (acompanham a câmera sem custo): os contornos. */
+		anotacoes?: Anotacao[];
 		aoClicar: (i: number | null) => void;
 		aoLaco: (vertices: [number, number][]) => void;
 		aoMoverCamera: (v: Vista) => void;
 		/** Chamado a cada quadro em que a câmera muda, para camadas sobre o mapa (rótulos). */
-		aoVer?: (grafico: Grafico) => void;
-		aoPronto?: (grafico: Grafico) => void;
+		aoVer?: (camera: Camera) => void;
 	}
 
 	let {
 		x, y, valores, tipo, cores, visiveis, selecionados, destaque, fundo, corLaco, modoLaco, vista,
-		aoClicar, aoLaco, aoMoverCamera, aoVer, aoPronto
+		anotacoes = [], aoClicar, aoLaco, aoMoverCamera, aoVer
 	}: Props = $props();
+
+	// O gráfico atualiza estas escalas a cada movimento: dados (NDC) → pixels do canvas
+	const escalaX = escalaLinear();
+	const escalaY = escalaLinear();
+
+	function avisarCamera() {
+		if (!grafico || !aoVer) return;
+		const [largura, altura] = [escalaX.range()[1], escalaY.range()[0]];
+		debug().zoom = 1 / grafico.get('cameraDistance');
+		aoVer({ projetar: (px, py) => [escalaX(px), escalaY(py)], zoom: 1 / grafico.get('cameraDistance'), largura, altura });
+	}
 
 	let canvas: HTMLCanvasElement;
 	let grafico: Grafico | null = null; // fora do $state: o Svelte não deve observar o objeto do WebGL
@@ -49,6 +64,22 @@
 	function emFila(tarefa: () => unknown) {
 		fila = fila.then(tarefa).catch((e) => console.error('[mapa]', e));
 		return fila;
+	}
+
+	/** Espera o elemento ter largura e altura maiores que zero. */
+	function tamanhoPositivo(el: HTMLElement): Promise<DOMRect> {
+		return new Promise((resolver) => {
+			const agora = el.getBoundingClientRect();
+			if (agora.width > 0 && agora.height > 0) return resolver(agora);
+			const observador = new ResizeObserver(() => {
+				const caixa = el.getBoundingClientRect();
+				if (caixa.width > 0 && caixa.height > 0) {
+					observador.disconnect();
+					resolver(caixa);
+				}
+			});
+			observador.observe(el);
+		});
 	}
 
 	function debug(): MapaDebug {
@@ -88,7 +119,10 @@
 				const { default: criar } = await import('regl-scatterplot');
 				if (desmontado) return;
 				debug().etapasMs = { importar: performance.now() - t0 };
-				const r = canvas.getBoundingClientRect();
+				// Com o canvas ainda sem tamanho (a casca aplica a tela cheia um instante depois), a projeção da
+				// câmera fica singular e o regl-scatterplot quebra ao iniciar ("reading '0'" em getScatterGlPos).
+				const r = await tamanhoPositivo(canvas);
+				if (desmontado) return;
 				grafico = criar({
 					canvas,
 					width: r.width,
@@ -107,6 +141,9 @@
 					mouseMode: modoLaco ? 'lasso' : 'panZoom',
 					deselectOnDblClick: false,
 					deselectOnEscape: false,
+					// a interface do regl-scatterplot é a do d3-scale; ele só usa domain() e range()
+					xScale: escalaX as never,
+					yScale: escalaY as never,
 					...(vista ? { cameraTarget: [vista.x, vista.y], cameraDistance: 1 / vista.zoom } : {})
 				});
 				try {
@@ -133,7 +170,7 @@
 					if (vertices.length >= 3) aoLaco(vertices);
 				});
 				grafico.subscribe('view', () => {
-					if (grafico && aoVer) aoVer(grafico);
+					avisarCamera();
 					clearTimeout(temporizador);
 					temporizador = setTimeout(() => {
 						if (!grafico) return;
@@ -152,12 +189,11 @@
 				debug().msAtePrimeiroDesenho = performance.now() - t0;
 				debug().desenhado = true;
 				pronto = true;
-				aoPronto?.(grafico);
-				aoVer?.(grafico);
+				avisarCamera();
 
 				observador = new ResizeObserver(() => {
 					const caixa = canvas.getBoundingClientRect();
-					if (caixa.width && caixa.height) grafico?.set({ width: caixa.width, height: caixa.height });
+					if (caixa.width && caixa.height) grafico?.set({ width: caixa.width, height: caixa.height }).then(avisarCamera);
 				});
 				observador.observe(canvas);
 			} catch (e) {
@@ -197,6 +233,17 @@
 		void selecionados;
 		void destaque;
 		if (pronto) emFila(aplicarSelecao);
+	});
+
+	$effect(() => {
+		const a = anotacoes;
+		if (!pronto) return;
+		debug().anotacoes = a.length;
+		emFila(() =>
+			a.length
+				? grafico?.drawAnnotations(a.map((p) => ({ vertices: p.vertices, lineColor: p.cor, lineWidth: p.largura })))
+				: grafico?.clearAnnotations()
+		);
 	});
 
 	$effect(() => {

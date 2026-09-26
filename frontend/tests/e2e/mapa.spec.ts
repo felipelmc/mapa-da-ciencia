@@ -24,6 +24,36 @@ for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 	});
 }
 
+test('contornos e rótulos: macrotemas de longe, tópicos de perto', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.anotacoes ?? 0)).toBeGreaterThanOrEqual(topicos.topicos.length);
+	const rotulos = page.getByTestId('rotulo-mapa');
+	await expect(rotulos.first()).toBeVisible();
+	const macros: string[] = topicos.macrotemas.map((m: { rotulo: string }) => m.rotulo);
+	expect(macros).toContain(await rotulos.first().textContent().then((t) => t?.trim()));
+
+	// aproxima com a roda do mouse: os rótulos passam a ser dos tópicos
+	const canvas = page.getByTestId('canvas-mapa');
+	const caixa = (await canvas.boundingBox())!;
+	await page.mouse.move(caixa.x + caixa.width * 0.7, caixa.y + caixa.height * 0.5);
+	for (let i = 0; i < 2; i += 1) await page.mouse.wheel(0, -300); // ~2× (os rótulos dos tópicos entram a 1,8×)
+	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.zoom ?? 1)).toBeGreaterThan(1.8);
+	const nomesTopicos: string[] = topicos.topicos.map((t: { rotulo: string }) => t.rotulo);
+	await expect.poll(async () => {
+		const textos = await rotulos.allTextContents();
+		return textos.some((t) => nomesTopicos.includes(t.trim()));
+	}).toBe(true);
+	await expect(page).toHaveURL(/vista=/); // a câmera foi para o link
+
+	// clicar num rótulo filtra o tópico
+	const alvo = rotulos.filter({ hasText: new RegExp(nomesTopicos.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')) }).first();
+	await alvo.click();
+	await expect(page).toHaveURL(/topicos=/);
+	expect(problemas).toEqual([]);
+});
+
 test('a legenda filtra por tópico, e "Limpar filtros" volta ao todo', async ({ page }) => {
 	const problemas = vigiar(page);
 	await page.goto(`${url('RAIZ')}#/mapa`);
