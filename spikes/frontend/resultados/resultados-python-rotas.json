@@ -1,0 +1,1392 @@
+{
+  "quando": "2026-09-26T03:38:40.407Z",
+  "servidor": "python",
+  "node": "v24.14.0",
+  "plataforma": "darwin-arm64",
+  "limiares": {
+    "LIMIAR_COR": 24,
+    "FRACAO_MINIMA": 0.005
+  },
+  "versaoChromium": "153.0.8010.12",
+  "rotas": [
+    {
+      "variante": "sem-fallback",
+      "modo": "raiz",
+      "servidor": "python",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.5,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64644/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64644/#/",
+            "pathname": "/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "#/",
+            "hrefMapa": "#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64644/#/mapa",
+          "navegacaoNoCliente": true
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "#/",
+          "urlNaBarra": "http://127.0.0.1:64644/#/",
+          "navegacaoNoCliente": true
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64644/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64644/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64644/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64644/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64644/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 171.7999999821186,
+            "msDesdeNavegacao": 191,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64644/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [
+            "[warning] [.WebGL-0x12400442c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+            "[warning] [.WebGL-0x12400442c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+            "[warning] [.WebGL-0x12400442c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+            "[warning] [.WebGL-0x12400442c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+          ],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": [
+        "304 /"
+      ]
+    },
+    {
+      "variante": "sem-fallback",
+      "modo": "subcaminho",
+      "servidor": "python",
+      "esperado": false,
+      "funciona": false,
+      "conformeEsperado": true,
+      "segundos": 8,
+      "etapasOk": [],
+      "etapasFalhas": [
+        "a_cargaInicio"
+      ],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64661/sem-fallback/",
+        "a_cargaInicio": {
+          "ok": false,
+          "erro": "locator.waitFor: Timeout 8000ms exceeded."
+        },
+        "problemas": {
+          "console": [
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)"
+          ],
+          "excecoes": [
+            "TypeError: Failed to fetch dynamically imported module: http://127.0.0.1:64661/_app/immutable/entry/start.Cq_77ijt.js"
+          ],
+          "respostasComFalha": [
+            "404 /_app/immutable/chunks/5PXmsLrJ.js",
+            "404 /_app/immutable/chunks/m1hoHegV.js",
+            "404 /_app/immutable/entry/app.B-1bxlsK.js",
+            "404 /_app/immutable/entry/start.Cq_77ijt.js",
+            "404 /_app/immutable/assets/0.Bu4xUFfR.css",
+            "404 /_app/immutable/chunks/xihTtKlq.js",
+            "404 /_app/immutable/chunks/BT-BsQH3.js",
+            "404 /_app/immutable/nodes/0.lqlSUqwE.js"
+          ],
+          "requisicoesFalhas": [
+            "net::ERR_ABORTED http://127.0.0.1:64661/_app/immutable/chunks/5PXmsLrJ.js",
+            "net::ERR_ABORTED http://127.0.0.1:64661/_app/immutable/chunks/m1hoHegV.js",
+            "net::ERR_ABORTED http://127.0.0.1:64661/_app/immutable/entry/app.B-1bxlsK.js",
+            "net::ERR_ABORTED http://127.0.0.1:64661/_app/immutable/entry/start.Cq_77ijt.js",
+            "net::ERR_ABORTED http://127.0.0.1:64661/_app/immutable/assets/0.Bu4xUFfR.css",
+            "net::ERR_ABORTED http://127.0.0.1:64661/_app/immutable/chunks/xihTtKlq.js",
+            "net::ERR_ABORTED http://127.0.0.1:64661/_app/immutable/chunks/BT-BsQH3.js",
+            "net::ERR_ABORTED http://127.0.0.1:64661/_app/immutable/nodes/0.lqlSUqwE.js"
+          ]
+        }
+      },
+      "logServidorNao200": [
+        "404 /_app/immutable/chunks/5PXmsLrJ.js",
+        "404 /_app/immutable/chunks/m1hoHegV.js",
+        "404 /_app/immutable/entry/app.B-1bxlsK.js",
+        "404 /_app/immutable/entry/start.Cq_77ijt.js",
+        "404 /_app/immutable/assets/0.Bu4xUFfR.css",
+        "404 /_app/immutable/chunks/xihTtKlq.js",
+        "404 /_app/immutable/chunks/BT-BsQH3.js",
+        "404 /_app/immutable/nodes/0.lqlSUqwE.js"
+      ]
+    },
+    {
+      "variante": "com-fallback",
+      "modo": "raiz",
+      "servidor": "python",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.4,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64671/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64671/#/",
+            "pathname": "/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "#/",
+            "hrefMapa": "#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64671/#/mapa",
+          "navegacaoNoCliente": true
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "#/",
+          "urlNaBarra": "http://127.0.0.1:64671/#/",
+          "navegacaoNoCliente": true
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64671/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64671/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64671/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64671/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64671/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 169.90000000596046,
+            "msDesdeNavegacao": 186.40000000596046,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64671/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": [
+        "304 /"
+      ]
+    },
+    {
+      "variante": "com-fallback",
+      "modo": "subcaminho",
+      "servidor": "python",
+      "esperado": false,
+      "funciona": false,
+      "conformeEsperado": true,
+      "segundos": 8,
+      "etapasOk": [],
+      "etapasFalhas": [
+        "a_cargaInicio"
+      ],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64688/com-fallback/",
+        "a_cargaInicio": {
+          "ok": false,
+          "erro": "locator.waitFor: Timeout 8000ms exceeded."
+        },
+        "problemas": {
+          "console": [
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)"
+          ],
+          "excecoes": [
+            "TypeError: Failed to fetch dynamically imported module: http://127.0.0.1:64688/_app/immutable/entry/start.xZCqAjb9.js"
+          ],
+          "respostasComFalha": [
+            "404 /_app/immutable/chunks/xihTtKlq.js",
+            "404 /_app/immutable/assets/0.Bu4xUFfR.css",
+            "404 /_app/immutable/chunks/BZVveBZU.js",
+            "404 /_app/immutable/entry/start.xZCqAjb9.js",
+            "404 /_app/immutable/entry/app.Dok1VChm.js",
+            "404 /_app/immutable/chunks/5PXmsLrJ.js",
+            "404 /_app/immutable/nodes/0.D4wiyXm6.js",
+            "404 /_app/immutable/chunks/hJnugBGx.js"
+          ],
+          "requisicoesFalhas": [
+            "net::ERR_ABORTED http://127.0.0.1:64688/_app/immutable/chunks/xihTtKlq.js",
+            "net::ERR_ABORTED http://127.0.0.1:64688/_app/immutable/assets/0.Bu4xUFfR.css",
+            "net::ERR_ABORTED http://127.0.0.1:64688/_app/immutable/chunks/BZVveBZU.js",
+            "net::ERR_ABORTED http://127.0.0.1:64688/_app/immutable/entry/start.xZCqAjb9.js",
+            "net::ERR_ABORTED http://127.0.0.1:64688/_app/immutable/entry/app.Dok1VChm.js",
+            "net::ERR_ABORTED http://127.0.0.1:64688/_app/immutable/chunks/5PXmsLrJ.js",
+            "net::ERR_ABORTED http://127.0.0.1:64688/_app/immutable/nodes/0.D4wiyXm6.js",
+            "net::ERR_ABORTED http://127.0.0.1:64688/_app/immutable/chunks/hJnugBGx.js"
+          ]
+        }
+      },
+      "logServidorNao200": [
+        "404 /_app/immutable/chunks/xihTtKlq.js",
+        "404 /_app/immutable/assets/0.Bu4xUFfR.css",
+        "404 /_app/immutable/chunks/BZVveBZU.js",
+        "404 /_app/immutable/entry/start.xZCqAjb9.js",
+        "404 /_app/immutable/entry/app.Dok1VChm.js",
+        "404 /_app/immutable/chunks/5PXmsLrJ.js",
+        "404 /_app/immutable/nodes/0.D4wiyXm6.js",
+        "404 /_app/immutable/chunks/hJnugBGx.js"
+      ]
+    },
+    {
+      "variante": "inline",
+      "modo": "raiz",
+      "servidor": "python",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.4,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64700/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64700/#/",
+            "pathname": "/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "#/",
+            "hrefMapa": "#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64700/#/mapa",
+          "navegacaoNoCliente": true
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "#/",
+          "urlNaBarra": "http://127.0.0.1:64700/#/",
+          "navegacaoNoCliente": true
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64700/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64700/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64700/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64700/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64700/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 174.90000000596046,
+            "msDesdeNavegacao": 198.5,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64700/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": [
+        "304 /"
+      ]
+    },
+    {
+      "variante": "inline",
+      "modo": "subcaminho",
+      "servidor": "python",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.7,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64704/inline/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64704/inline/#/",
+            "pathname": "/inline/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "/inline#/",
+            "hrefMapa": "/inline#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "/inline#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64704/inline/#/mapa",
+          "navegacaoNoCliente": false
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "/inline#/",
+          "urlNaBarra": "http://127.0.0.1:64704/inline/#/",
+          "navegacaoNoCliente": false
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64704/inline/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64704/inline/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64704/inline/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": false,
+          "mapaPreservado": false
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64704/inline/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64704/inline/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 175.30000001192093,
+            "msDesdeNavegacao": 198.80000001192093,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64704/inline/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": [
+        "301 /inline",
+        "304 /inline/"
+      ]
+    },
+    {
+      "variante": "base-fixa",
+      "modo": "raiz",
+      "servidor": "python",
+      "esperado": false,
+      "funciona": false,
+      "conformeEsperado": true,
+      "segundos": 8,
+      "etapasOk": [],
+      "etapasFalhas": [
+        "a_cargaInicio"
+      ],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64709/",
+        "a_cargaInicio": {
+          "ok": false,
+          "erro": "locator.waitFor: Timeout 8000ms exceeded."
+        },
+        "problemas": {
+          "console": [
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)",
+            "[error] Failed to load resource: the server responded with a status of 404 (File not found)"
+          ],
+          "excecoes": [
+            "TypeError: Failed to fetch dynamically imported module: http://127.0.0.1:64709/base-fixa/_app/immutable/entry/start.Dpnexrvr.js"
+          ],
+          "respostasComFalha": [
+            "404 /base-fixa/_app/immutable/chunks/xihTtKlq.js",
+            "404 /base-fixa/_app/immutable/entry/start.Dpnexrvr.js",
+            "404 /base-fixa/_app/immutable/chunks/DbRHtCVN.js",
+            "404 /base-fixa/_app/immutable/entry/app.BJR9A5Z_.js",
+            "404 /base-fixa/_app/immutable/chunks/5PXmsLrJ.js",
+            "404 /base-fixa/_app/immutable/assets/0.Bu4xUFfR.css",
+            "404 /base-fixa/_app/immutable/chunks/CXIp-V0O.js",
+            "404 /base-fixa/_app/immutable/nodes/0.BV28YjAe.js"
+          ],
+          "requisicoesFalhas": [
+            "net::ERR_ABORTED http://127.0.0.1:64709/base-fixa/_app/immutable/chunks/xihTtKlq.js",
+            "net::ERR_ABORTED http://127.0.0.1:64709/base-fixa/_app/immutable/entry/start.Dpnexrvr.js",
+            "net::ERR_ABORTED http://127.0.0.1:64709/base-fixa/_app/immutable/chunks/DbRHtCVN.js",
+            "net::ERR_ABORTED http://127.0.0.1:64709/base-fixa/_app/immutable/entry/app.BJR9A5Z_.js",
+            "net::ERR_ABORTED http://127.0.0.1:64709/base-fixa/_app/immutable/chunks/5PXmsLrJ.js",
+            "net::ERR_ABORTED http://127.0.0.1:64709/base-fixa/_app/immutable/assets/0.Bu4xUFfR.css",
+            "net::ERR_ABORTED http://127.0.0.1:64709/base-fixa/_app/immutable/chunks/CXIp-V0O.js",
+            "net::ERR_ABORTED http://127.0.0.1:64709/base-fixa/_app/immutable/nodes/0.BV28YjAe.js"
+          ]
+        }
+      },
+      "logServidorNao200": [
+        "404 /base-fixa/_app/immutable/chunks/xihTtKlq.js",
+        "404 /base-fixa/_app/immutable/entry/start.Dpnexrvr.js",
+        "404 /base-fixa/_app/immutable/chunks/DbRHtCVN.js",
+        "404 /base-fixa/_app/immutable/entry/app.BJR9A5Z_.js",
+        "404 /base-fixa/_app/immutable/chunks/5PXmsLrJ.js",
+        "404 /base-fixa/_app/immutable/assets/0.Bu4xUFfR.css",
+        "404 /base-fixa/_app/immutable/chunks/CXIp-V0O.js",
+        "404 /base-fixa/_app/immutable/nodes/0.BV28YjAe.js"
+      ]
+    },
+    {
+      "variante": "base-fixa",
+      "modo": "subcaminho",
+      "servidor": "python",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.6,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64719/base-fixa/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64719/base-fixa/#/",
+            "pathname": "/base-fixa/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "/base-fixa#/",
+            "hrefMapa": "/base-fixa#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "/base-fixa#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64719/base-fixa/#/mapa",
+          "navegacaoNoCliente": false
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "/base-fixa#/",
+          "urlNaBarra": "http://127.0.0.1:64719/base-fixa/#/",
+          "navegacaoNoCliente": false
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64719/base-fixa/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64719/base-fixa/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64719/base-fixa/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": false,
+          "mapaPreservado": false
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64719/base-fixa/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64719/base-fixa/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 171,
+            "msDesdeNavegacao": 187.30000001192093,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64719/base-fixa/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": [
+        "301 /base-fixa",
+        "304 /base-fixa/"
+      ]
+    },
+    {
+      "variante": "relativo",
+      "modo": "raiz",
+      "servidor": "python",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.4,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64737/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64737/#/",
+            "pathname": "/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "#/",
+            "hrefMapa": "#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64737/#/mapa",
+          "navegacaoNoCliente": true
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "#/",
+          "urlNaBarra": "http://127.0.0.1:64737/#/",
+          "navegacaoNoCliente": true
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64737/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64737/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64737/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64737/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64737/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 173.2000000178814,
+            "msDesdeNavegacao": 189.90000000596046,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64737/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": [
+        "304 /"
+      ]
+    },
+    {
+      "variante": "relativo",
+      "modo": "subcaminho",
+      "servidor": "python",
+      "esperado": true,
+      "funciona": true,
+      "conformeEsperado": true,
+      "segundos": 1.6,
+      "etapasOk": [
+        "a_cargaInicio",
+        "b_linkResolveMapa",
+        "c_linkResolveInicio",
+        "d_linkComParametros",
+        "e1_gotoHashRelativo",
+        "e2_gotoComResolve",
+        "e3_gotoQueryAntesDoHash",
+        "f_voltar",
+        "g_cargaDiretaLinkProfundo",
+        "h_recarregar",
+        "i_queryAntesDoHash"
+      ],
+      "etapasFalhas": [],
+      "detalhes": {
+        "urlBase": "http://127.0.0.1:64754/relativo/",
+        "a_cargaInicio": {
+          "ok": true,
+          "rota": {
+            "href": "http://127.0.0.1:64754/relativo/#/",
+            "pathname": "/relativo/",
+            "search": "",
+            "hash": "#/",
+            "routeId": "/",
+            "searchParams": {},
+            "hashParams": {},
+            "hrefInicio": "/relativo#/",
+            "hrefMapa": "/relativo#/mapa",
+            "atualizacoes": 1
+          }
+        },
+        "b_linkResolveMapa": {
+          "ok": true,
+          "href": "/relativo#/mapa",
+          "urlNaBarra": "http://127.0.0.1:64754/relativo/#/mapa",
+          "navegacaoNoCliente": false
+        },
+        "c_linkResolveInicio": {
+          "ok": true,
+          "href": "/relativo#/",
+          "urlNaBarra": "http://127.0.0.1:64754/relativo/#/",
+          "navegacaoNoCliente": false
+        },
+        "d_linkComParametros": {
+          "ok": true,
+          "href": "#/mapa?anos=2012-2020&cor=topico",
+          "urlNaBarra": "http://127.0.0.1:64754/relativo/#/mapa?anos=2012-2020&cor=topico",
+          "navegacaoNoCliente": true,
+          "pageUrlSearchParams": {},
+          "pageUrlHash": "#/mapa?anos=2012-2020&cor=topico",
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": false,
+          "hashManualFunciona": true,
+          "mapaDesenhado": true,
+          "mapaErro": null
+        },
+        "e1_gotoHashRelativo": {
+          "ok": true,
+          "destino": "goto('#/mapa?anos=1990-1995&cor=area')",
+          "urlNaBarra": "http://127.0.0.1:64754/relativo/#/mapa?anos=1990-1995&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "1990-1995",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "e2_gotoComResolve": {
+          "ok": true,
+          "destino": "goto(`${resolve(\"/mapa\")}?anos=2000-2005&cor=area`)",
+          "urlNaBarra": "http://127.0.0.1:64754/relativo/#/mapa?anos=2000-2005&cor=area",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {
+            "anos": "2000-2005",
+            "cor": "area"
+          },
+          "pageUrlSearchParams": {},
+          "navegacaoNoCliente": false,
+          "mapaPreservado": false
+        },
+        "e3_gotoQueryAntesDoHash": {
+          "ok": true,
+          "destino": "goto('?anos=1980-1985&cor=area#/mapa')",
+          "urlNaBarra": "http://127.0.0.1:64754/relativo/?anos=1980-1985&cor=area#/mapa",
+          "routeId": "/mapa",
+          "parametrosLidosDoHash": {},
+          "pageUrlSearchParams": {
+            "anos": "1980-1985",
+            "cor": "area"
+          },
+          "navegacaoNoCliente": true,
+          "mapaPreservado": true
+        },
+        "f_voltar": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64754/relativo/#/",
+          "navegacaoNoCliente": true
+        },
+        "g_cargaDiretaLinkProfundo": {
+          "ok": true,
+          "pageUrlSearchParams": {},
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "mapa": {
+            "desenhado": true,
+            "erro": null,
+            "pontos": 10000,
+            "clusters": 40,
+            "montagens": 1,
+            "msAtePrimeiroDesenho": 172,
+            "msDesdeNavegacao": 188.39999997615814,
+            "eventosDraw": 2,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          },
+          "pixels": {
+            "largura": 1280,
+            "altura": 800,
+            "total": 1024000,
+            "diferentes": 52995,
+            "fracao": 0.0518,
+            "fracaoFundo": 0.947,
+            "coresDistintas": 795,
+            "desenhou": true
+          }
+        },
+        "h_recarregar": {
+          "ok": true,
+          "mapaDesenhado": true,
+          "parametrosLidosDoHash": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          }
+        },
+        "i_queryAntesDoHash": {
+          "ok": true,
+          "urlNaBarra": "http://127.0.0.1:64754/relativo/?anos=2012-2020&cor=topico#/mapa",
+          "pageUrlSearchParams": {
+            "anos": "2012-2020",
+            "cor": "topico"
+          },
+          "searchParamsFunciona": true
+        },
+        "problemas": {
+          "console": [],
+          "excecoes": [],
+          "respostasComFalha": [],
+          "requisicoesFalhas": []
+        }
+      },
+      "logServidorNao200": [
+        "301 /relativo",
+        "304 /relativo/"
+      ]
+    }
+  ]
+}

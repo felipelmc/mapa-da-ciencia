@@ -1,0 +1,36 @@
+{
+  "name": "spike-m0d-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Spike M0d (descartável): router por hash do SvelteKit + regl-scatterplot no Chromium headless.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite dev",
+    "build": "rm -rf build && npm run build:sem-fallback && npm run build:com-fallback && npm run build:inline && npm run build:base-fixa && npm run build:relativo",
+    "build:sem-fallback": "SPIKE_VARIANTE=sem-fallback vite build",
+    "build:com-fallback": "SPIKE_VARIANTE=com-fallback vite build",
+    "build:inline": "SPIKE_VARIANTE=inline vite build",
+    "build:base-fixa": "SPIKE_VARIANTE=base-fixa vite build",
+    "build:relativo": "node scripts/relativizar.mjs build/sem-fallback build/relativo",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "spike": "node tests/spike.mjs",
+    "prepare": "svelte-kit sync || echo ''"
+  },
+  "dependencies": {
+    "regl-scatterplot": "1.16.0"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "3.0.10",
+    "@sveltejs/kit": "2.70.3",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "playwright": "1.63.0",
+    "pngjs": "7.0.0",
+    "svelte": "5.57.1",
+    "svelte-check": "4.7.6",
+    "typescript": "6.0.3",
+    "vite": "8.3.1"
+  }
+}

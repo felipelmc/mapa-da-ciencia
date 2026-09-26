@@ -8,7 +8,7 @@ As decisões do marco M0 vêm de **spikes**: experimentos pequenos e descartáve
 
 | Nº | Decisão | Status |
 |---|---|---|
-| — | (nenhuma ainda) | — |
+| [0002](0002-frontend-router-hash-e-regl-scatterplot.md) | Frontend: router por hash do SvelteKit, estado no hash e regl-scatterplot | aceita |
 
 ## Modelo
 
