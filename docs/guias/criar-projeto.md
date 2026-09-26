@@ -63,7 +63,7 @@ Dentro da pasta do projeto (ou em qualquer subpasta):
 mapa status
 ```
 
-O comando mostra o recorte, os modelos e em que ponto está cada etapa: coleta, embeddings, tópicos, classificação, geografia, validação e exportação. Fora da pasta, indique o projeto com `--projeto` (`-P`): `mapa status -P cp-scielo`.
+O comando mostra o recorte, os modelos e em que ponto está cada etapa: coleta, embeddings, tópicos, classificação, geografia, validação e exportação. Depois da coleta, mostra também a cobertura do corpus (veja [Montar um recorte](recorte.md#4-conferir)). Fora da pasta, indique o projeto com `--projeto` (`-P`): `mapa status -P cp-scielo`.
 
 ## Próximo passo
 

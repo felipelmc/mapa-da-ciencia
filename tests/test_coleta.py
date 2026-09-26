@@ -7,10 +7,12 @@ from mapa_da_ciencia.armazenamento import ARQUIVO, ler_documentos
 from mapa_da_ciencia.cli import app
 from mapa_da_ciencia.coleta import OpcoesColeta, coletar, interpretar_anos
 from mapa_da_ciencia.config import ErroConfig
+from mapa_da_ciencia.contrato.modelos import Manifesto, Revistas
 from mapa_da_ciencia.fontes.base import ErroFonte, FaltaNoCache
 from mapa_da_ciencia.llm.perfis import PERFIS
 from mapa_da_ciencia.manifesto import ultima_execucao
 from mapa_da_ciencia.projeto import Projeto
+from mapa_da_ciencia.texto import EMAIL, contem_email
 
 runner = CliRunner()
 
@@ -53,6 +55,25 @@ def test_coleta_opiniao_publica_2024(projeto, apis_falsas):
     assert len(docs) == 25 and all(d.ano == 2024 for d in docs)
     m = ultima_execucao(projeto, "coleta")
     assert m["contagens"]["documentos"] == 25 and m["parametros"]["revistas"] == ["0104-6276"]
+
+
+def test_exporta_manifesto_e_revistas_para_o_painel(projeto, apis_falsas):
+    coletar(projeto)
+    dados = projeto.saida / "dados"
+    manifesto = Manifesto.model_validate_json((dados / "manifesto.json").read_text())
+    assert manifesto.contagens.documentos == 25 and manifesto.contagens.com_afiliacao == 25
+    assert manifesto.arquivos == ["manifesto", "revistas"] and not manifesto.api
+    assert manifesto.licencas == {"cc-by": 25} and "coleta" in manifesto.execucao.duracao_s
+    revistas = Revistas.model_validate_json((dados / "revistas.json").read_text()).revistas
+    assert [(r.id, r.issn, r.n) for r in revistas] == [("op", "0104-6276", 25)]
+    assert revistas[0].titulo == "Opinião Pública" and revistas[0].areas  # áreas vêm do retrato empacotado
+
+
+def test_nenhum_email_no_parquet_nem_em_saida(projeto, apis_falsas):
+    coletar(projeto)  # as fixtures da ArticleMeta têm e-mails (falsos) em vários campos
+    assert not any(contem_email(d.model_dump()) for d in ler_documentos(projeto.dados / ARQUIVO))
+    arquivos = list(projeto.saida.rglob("*.json"))
+    assert arquivos and not any(EMAIL.search(a.read_text()) for a in arquivos)
 
 
 def test_segunda_execucao_nao_faz_requisicoes(projeto, apis_falsas):
@@ -110,9 +131,15 @@ def test_cli_novo_coletar_e_status(tmp_path, apis_falsas, monkeypatch):
     r = runner.invoke(app, ["novo", "op-2024", "--modelo", "vazio", "--revista", "op", "--anos", "2024"])
     assert r.exit_code == 0, r.output
     assert yaml.safe_load((tmp_path / "op-2024" / "mapa.yaml").read_text())["recorte"]["anos"] == [2024, 2024]
+    r = runner.invoke(app, ["status", "-P", "op-2024"])
+    assert r.exit_code == 0 and "nenhum documento coletado ainda" in r.output
     r = runner.invoke(app, ["coletar", "-P", "op-2024"])
     assert r.exit_code == 0, r.output
     assert "Coleta concluída" in r.output and "25" in r.output
+    r = runner.invoke(app, ["status", "-P", "op-2024"])
+    assert r.exit_code == 0, r.output
+    assert "Corpus: 25 documento(s), 2024" in r.output and "com resumo" in r.output
+    assert "25 documentos" in r.output  # resultado da etapa de coleta
     r = runner.invoke(app, ["coletar", "-P", "op-2024"])
     assert "0 requisição(ões), 26 resposta(s) do cache" in r.output
     r = runner.invoke(app, ["coletar", "-P", "op-2024", "--anos", "abc"])

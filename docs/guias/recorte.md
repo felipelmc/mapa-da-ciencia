@@ -103,7 +103,26 @@ fontes:
 mapa status
 ```
 
-O comando mostra o recorte e em que ponto está cada etapa. A tabela com a cobertura do corpus (resumos por idioma, DOI, afiliações, licenças) aparece depois da coleta.
+O comando mostra o recorte e em que ponto está cada etapa. Depois da coleta, ele mostra também a **cobertura do corpus**:
+
+```
+Corpus: 25 documento(s), 2024
+Última coleta: ficaram de fora 544 fora do período, 0 por tipo e 0 não encontrado(s); 0 duplicata(s)
+fundida(s). 0 requisição(ões), 27 do cache, 0 crédito(s) do OpenAlex.
+```
+
+Em seguida vêm tabelas curtas, cada uma com o número e a porcentagem de documentos:
+
+| Tabela | O que conferir |
+|---|---|
+| Por revista, Por tipo | Se as contagens batem com o que você esperava do recorte |
+| Cobertura | Quantos têm resumo, DOI e afiliação, e quantos são possíveis duplicatas (veja [Fontes de dados](../explicacoes/fontes.md)) |
+| Resumo por idioma | Em quais idiomas há resumo. A análise usa o idioma do `recorte.idioma_analise`, então ele precisa cobrir quase todo o corpus |
+| Afiliações | Quantos têm afiliação normalizada pelo SciELO (`v240`) e quantos só em texto livre (`v70`). Importa para a geografia |
+| Casamento com o OpenAlex | Por qual caminho cada documento foi ligado ao OpenAlex, e quantos ficaram sem ligação |
+| Licença, Licença decidida por | Quais resumos podem ser publicados num site, e de qual fonte veio a licença |
+
+O painel (`mapa painel`) também passa a mostrar os números do corpus na página inicial.
 
 ## Dicas
 

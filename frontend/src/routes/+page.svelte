@@ -144,6 +144,10 @@
 		{:then t}
 			{#if t}
 				<Macrotemas topicos={t} totalDocumentos={contagens.documentos} />
+			{:else}
+				<p class="carregando" data-testid="proximo-passo">
+					Documentos coletados. Próximo passo: <code>mapa topicos</code> monta o mapa e os macrotemas.
+				</p>
 			{/if}
 		{:catch erro}
 			<p class="falha" role="alert">Não foi possível carregar os tópicos: {erro.message}</p>

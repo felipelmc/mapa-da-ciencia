@@ -145,6 +145,7 @@ def cobertura(caminho: Path) -> dict[str, Any]:
                 "SELECT idioma, count(DISTINCT id) FROM textos WHERE campo = 'resumo' GROUP BY 1 ORDER BY 2 DESC"
             ),
             "com_doi": um("SELECT count(*) FROM documentos WHERE doi IS NOT NULL"),
+            "com_afiliacao": um("SELECT count(*) FROM documentos WHERE len(afiliacoes) > 0"),
             "afiliacoes_fonte": contagem(
                 "SELECT afiliacoes_fonte, count(*) FROM documentos GROUP BY 1 ORDER BY 2 DESC"
             ),

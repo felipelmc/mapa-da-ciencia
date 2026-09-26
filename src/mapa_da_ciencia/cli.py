@@ -14,14 +14,18 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.columns import Columns
 from rich.console import Console
 from rich.table import Table
 
 from mapa_da_ciencia import __version__
+from mapa_da_ciencia.armazenamento import ARQUIVO as ARQUIVO_DOCUMENTOS
+from mapa_da_ciencia.armazenamento import cobertura
 from mapa_da_ciencia.coleta import interpretar_anos
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.diagnostico import DICAS_OLLAMA, diagnosticar
 from mapa_da_ciencia.fontes.base import ErroFonte
+from mapa_da_ciencia.formatar import num, periodo
 from mapa_da_ciencia.llm.base import ErroProvedor
 from mapa_da_ciencia.llm.perfis import PERFIS, ram_total_gb, sugerir_perfil
 from mapa_da_ciencia.manifesto import status_das_etapas
@@ -130,15 +134,98 @@ def status(projeto: OpcaoProjeto = Path(".")) -> None:
         f"rótulos [bold]{m.rotulos.modelo}[/]"
     )
 
-    tabela = Table("Etapa", "Estado", "Última execução", "Duração", "Contagens")
-    for etapa, manifesto in status_das_etapas(p).items():
+    tabela = Table("Etapa", "Estado", "Última execução", "Duração", "Resultado")
+    etapas = status_das_etapas(p)
+    for etapa, manifesto in etapas.items():
         if manifesto is None:
             tabela.add_row(etapa, "[dim]pendente[/]", "", "", "")
             continue
         quando = datetime.fromisoformat(manifesto["fim"]).astimezone().strftime("%d/%m/%Y %H:%M")
-        contagens = ", ".join(f"{k}={v}" for k, v in manifesto["contagens"].items())
-        tabela.add_row(etapa, "[green]concluída[/]", quando, f"{manifesto['duracao_s']:.0f} s", contagens)
+        # a primeira contagem é a principal da etapa; as demais aparecem nos detalhes de cada uma
+        principal = next(iter(manifesto["contagens"].items()), None)
+        resultado = f"{num(principal[1], 0)} {principal[0]}" if principal else ""
+        tabela.add_row(etapa, "[green]concluída[/]", quando, f"{num(manifesto['duracao_s'], 0)} s", resultado)
     console.print(tabela)
+    _mostrar_corpus(p, etapas.get("coleta"))
+
+
+_ROTULOS = {
+    "casamento": {
+        "1_doi": "DOI",
+        "2_pid_url": "PID no link",
+        "3_doi_derivado": "DOI derivado do PID",
+        "4_titulo_ano": "título e ano",
+        "sem_casamento": "sem casamento",
+        "nao_tentado": "não tentado",
+    },
+    "afiliacoes_fonte": {
+        "v240": "normalizada (v240)",
+        "v70": "só texto livre (v70)",
+        "openalex": "do OpenAlex",
+        "nenhuma": "nenhuma",
+    },
+    "licenca_fonte": {
+        "openalex": "OpenAlex",
+        "revista": "revista",
+        "ambas": "OpenAlex e revista concordam",
+        "nenhuma": "nenhuma",
+    },
+}
+
+
+def _tabela_contagem(titulo: str, contagem: dict, total: int, rotulos: dict | None = None) -> Table:
+    tabela = Table(title=titulo, title_justify="left", show_edge=False, pad_edge=False, min_width=len(titulo))
+    tabela.add_column("")
+    tabela.add_column("n", justify="right")
+    tabela.add_column("%", justify="right", style="dim")
+    for chave, n in contagem.items():
+        rotulo = (rotulos or {}).get(chave, chave) if chave is not None else "(sem revista)"
+        tabela.add_row(str(rotulo), num(n, 0), num(100 * n / total if total else 0, 0))
+    return tabela
+
+
+def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
+    """Cobertura do corpus coletado (`dados/documentos.parquet`), se já houver coleta."""
+    caminho = p.dados / ARQUIVO_DOCUMENTOS
+    if not caminho.exists():
+        console.print("\n[dim]Corpus: nenhum documento coletado ainda. Rode `mapa coletar`.[/]")
+        return
+    cob = cobertura(caminho)
+    total = cob["documentos"]
+    anos = f", {periodo(cob['anos'])}" if total else ""
+    console.print(f"\n[bold]Corpus[/]: {num(total, 0)} documento(s){anos}")
+    if coleta:
+        c = coleta["contagens"]
+        console.print(
+            f"[dim]Última coleta: ficaram de fora {num(c.get('fora_do_periodo', 0), 0)} fora do período, "
+            f"{num(c.get('excluidos_por_tipo', 0), 0)} por tipo e {num(c.get('nao_encontrados', 0), 0)} não "
+            f"encontrado(s); {num(c.get('fundidos', 0), 0)} duplicata(s) fundida(s). "
+            f"{num(c.get('requisicoes', 0), 0)} requisição(ões), {num(c.get('do_cache', 0), 0)} do cache, "
+            f"{num(c.get('creditos_openalex', 0), 0)} crédito(s) do OpenAlex.[/]"
+        )
+    if not total:
+        return
+    geral = {
+        "com resumo": cob["com_resumo"],
+        "com DOI": cob["com_doi"],
+        "com afiliação": cob["com_afiliacao"],
+        "possível duplicata": cob["possiveis_duplicatas"],
+    }
+    console.print(
+        Columns(
+            [
+                _tabela_contagem("Por revista", cob["por_revista"], total),
+                _tabela_contagem("Por tipo", cob["por_tipo"], total),
+                _tabela_contagem("Cobertura", geral, total),
+                _tabela_contagem("Resumo por idioma", cob["resumo_por_idioma"], total),
+                _tabela_contagem("Afiliações", cob["afiliacoes_fonte"], total, _ROTULOS["afiliacoes_fonte"]),
+                _tabela_contagem("Casamento com o OpenAlex", cob["casamento"], total, _ROTULOS["casamento"]),
+                _tabela_contagem("Licença", cob["licencas"], total),
+                _tabela_contagem("Licença decidida por", cob["licenca_fonte"], total, _ROTULOS["licenca_fonte"]),
+            ],
+            padding=(1, 4),
+        )
+    )
 
 
 @app.command()
@@ -281,7 +368,6 @@ def coletar(
     """Coleta os artigos do recorte e monta o corpus do projeto (dados/documentos.parquet)."""
     from mapa_da_ciencia import coleta as etapa
     from mapa_da_ciencia.fontes.base import limpar_temporarios
-    from mapa_da_ciencia.formatar import num, periodo
     from mapa_da_ciencia.progresso import ProgressoRich
 
     with _erros_amigaveis():
