@@ -88,7 +88,7 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 |---|---|---|
 | M0 | Spikes: fontes, embeddings, modelo de classificação, frontend ([ADRs 0001–0005](../decisoes/README.md)) | concluído |
 | M1 | Esqueleto: pacote, CLI, configuração, diagnóstico, contrato, painel, documentação, CI | concluído (v0.1.0) |
-| M2 | Coleta: ArticleMeta, OpenAlex, importação, deduplicação, cache | |
+| M2 | Coleta: ArticleMeta, OpenAlex, importação, deduplicação, cache | concluído (v0.2.0) |
 | M3 | Tópicos e mapa de documentos | |
 | M4 | Rótulos com LLM, tópicos no tempo, geografia | |
 | M5 | Classificação por codebook e validação | |
