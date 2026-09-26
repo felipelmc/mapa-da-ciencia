@@ -48,7 +48,7 @@ Desde 2026 o OpenAlex cobra por uso. Sem chave, são mil créditos por dia; com 
 
 O enriquecimento pede os trabalhos de cada revista no período, então custa cerca de 1 crédito por revista para cada 200 artigos: o piloto inteiro (10 revistas, 16 anos) fica em torno de 32 créditos. O `mapa coletar` mostra quantos foram gastos, e `--sem-openalex` pula essa etapa.
 
-Quando a ArticleMeta não traz resumo de um artigo e o OpenAlex traz, o resumo do OpenAlex entra como **reserva**, marcado com a origem (`openalex`).
+Quando a ArticleMeta não traz resumo de um artigo e o OpenAlex traz, o resumo do OpenAlex entra como **reserva**, marcado com a origem (`openalex`). O mesmo vale para o título: no piloto, seis artigos da *Opinião Pública* e da *Novos Estudos* de 2010 a 2013 estão sem título na ArticleMeta.
 
 ## E o search.scielo.org?
 
