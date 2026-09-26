@@ -29,7 +29,7 @@ Todas as funções que recebem `projeto` aceitam um `Projeto` já aberto ou o ca
 
 ## Tabelas para consulta
 
-O corpus fica em `dados/documentos.parquet`. `consultar` e `conectar` abrem esse arquivo no [DuckDB](https://duckdb.org/docs/stable/sql/introduction) com quatro views:
+O corpus fica em `dados/documentos.parquet`. `consultar` e `conectar` abrem esse arquivo no [DuckDB](https://duckdb.org/docs/stable/sql/introduction) com as views abaixo (as três últimas depois da etapa de geografia):
 
 | View | Uma linha por | Colunas principais |
 |---|---|---|
@@ -38,8 +38,11 @@ O corpus fica em `dados/documentos.parquet`. `consultar` e `conectar` abrem esse
 | `autores` | autor de um documento | `id`, `ordem`, `nome`, `sobrenome`, `orcid`, `afiliacoes` (ids das afiliações) |
 | `afiliacoes` | afiliação de um documento | `id`, `afiliacao`, `instituicao`, `divisoes`, `cidade`, `uf`, `pais`, `fonte` (`v240`, `v70` ou `openalex`) |
 | `atribuicoes` | documento, depois de `topicos()` | `id`, `topico` (−1 = sem tópico), `atribuicao` (`cluster` ou `vizinho`), `x`, `y` (posição no mapa), `vizinhos` (5 ids), `idioma_analise`, `fonte_analise` |
+| `vinculos` | autor × afiliação, depois de `geografia()` | `doc`, `autor`, `afiliacao`, `fonte`, `texto`, `instituicao` (id; nula se não casou), `nivel` do casamento, `semelhanca`, `pais`, `uf` e o que a fonte escreveu (`pais_fonte`, `uf_fonte`, `cidade_fonte`) |
+| `pesos` | documento × (instituição, UF, país), depois de `geografia()` | `doc`, `instituicao` (nula = sem afiliação; `nao-identificada`), `uf`, `pais`, `peso` (contagem fracionária: soma 1 por documento) |
+| `instituicoes` | instituição, depois de `geografia()` | `id`, `nome`, `sigla`, `pais`, `uf`, `tipo`, `ror`, `peso`, `documentos` |
 
-A coluna `id` liga as quatro views. Os campos de `documentos` estão descritos em [Fontes de dados](../explicacoes/fontes.md). Para consultas longas, abra uma conexão:
+A coluna `id` liga as cinco primeiras views; nas da geografia, a coluna é `doc`. Os campos de `documentos` estão descritos em [Fontes de dados](../explicacoes/fontes.md). Para consultas longas, abra uma conexão:
 
 ```python
 with mapa.conectar(p) as con:
@@ -65,6 +68,8 @@ O Parquet também pode ser lido direto pelo pandas ou pelo polars (`pd.read_parq
 ::: mapa_da_ciencia.api.embeddings
 
 ::: mapa_da_ciencia.api.topicos
+
+::: mapa_da_ciencia.api.geografia
 
 ::: mapa_da_ciencia.api.consultar
 

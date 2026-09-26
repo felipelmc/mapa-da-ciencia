@@ -104,11 +104,51 @@ for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 			const esperados = tabelaDocumentos.colunas.ano.filter((a: number) => a >= 2012 && a <= 2020).length;
 			expect(d.visiveis).toBe(esperados);
 			await expect(page.getByTestId('cor-por')).toHaveValue('macrotema');
-			await expect(page.getByTestId('contador-mapa')).toContainText(inteiro(esperados));
+			await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(esperados));
 			expect(problemas).toEqual([]);
 		});
 	});
 }
+
+test('o trilho leva o recorte às vistas de análise, e só o recorte', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa?anos=2015-2020&revistas=dados&uf=SP&cor=ano&doc=exemplo:00001`);
+	await esperarMapa(page);
+	const link = (nome: string) => trilho(page).getByRole('link', { name: nome, exact: true });
+	await expect(link('Tópicos')).toHaveAttribute('href', '#/topicos?anos=2015-2020&revistas=dados&uf=SP');
+	await expect(link('Geografia')).toHaveAttribute('href', '#/geografia?anos=2015-2020&revistas=dados&uf=SP');
+	await expect(link('Validação')).toHaveAttribute('href', '#/validacao');
+	await expect(link('Início')).toHaveAttribute('href', '#/');
+	await link('Geografia').click();
+	await expect(page).toHaveURL(/#\/geografia\?anos=2015-2020&revistas=dados&uf=SP$/);
+});
+
+test('a barra do recorte mostra os filtros como chips, conta os documentos e limpa o recorte', async ({ page }) => {
+	const problemas = vigiar(page);
+	const [t1, t2] = topicos.topicos;
+	const revista = tabelaDocumentos.dicionarios.revista[0];
+	await page.goto(`${url('RAIZ')}#/mapa?anos=2014-2021&revistas=${revista}&topicos=${t1.id},${t2.id}&busca=coalizão`);
+	await esperarMapa(page);
+	const barra = page.getByTestId('barra-recorte');
+	await expect(barra.getByRole('listitem').filter({ hasText: t1.rotulo })).toBeVisible();
+	await expect(barra.getByText('Busca: “coalizão”')).toBeVisible();
+	const c = tabelaDocumentos.colunas;
+	const esperados = c.id.filter(
+		(_: string, i: number) =>
+			c.ano[i] >= 2014 && c.ano[i] <= 2021 && c.revista[i] === 0 && [t1.id, t2.id].includes(c.topico[i])
+	).length;
+	await barra.getByRole('button', { name: 'Tirar Busca: “coalizão”' }).click();
+	await expect(page).not.toHaveURL(/busca=/);
+	await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(esperados));
+	await page.screenshot({ path: join(TELAS, 'recorte-1440x900.png') });
+	await barra.getByRole('button', { name: 'Limpar recorte' }).click();
+	await expect(page).toHaveURL(/#\/mapa$/);
+	await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(tabelaDocumentos.n));
+	await expect(barra.getByRole('button', { name: 'Limpar recorte' })).toHaveCount(0);
+	// a barra não aparece fora das vistas de análise
+	await trilho(page).getByRole('link', { name: 'Validação', exact: true }).click();
+	await expect(page.getByTestId('barra-recorte')).toHaveCount(0);
+	expect(problemas).toEqual([]);
+});
 
 test.describe('tema', () => {
 	test('alterna, lembra a escolha e salva as telas nos dois temas', async ({ page }) => {
@@ -217,4 +257,28 @@ test.describe('projeto vazio (só o manifesto, como depois do `mapa novo`)', () 
 		expect(dados).toEqual(['/dados/manifesto.json']);
 		expect(problemas).toEqual([]);
 	});
+});
+
+test('a capa leva aos macrotemas e à geografia; a Ajuda explica o recorte', async ({ page }) => {
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await page.goto(url('RAIZ'));
+	const lista = page.getByTestId('lista-macrotemas');
+	await expect(lista.getByRole('img', { name: /^Participação de/ })).toHaveCount(7);
+	const emAlta = topicos.macrotemas.filter((m: { tendencia?: { direcao: string } }) =>
+		['alta', 'queda'].includes(m.tendencia?.direcao ?? '')
+	).length;
+	await expect(page.getByTestId('tendencia-macro')).toHaveCount(emAlta);
+	const primeiro = topicos.macrotemas[0];
+	await lista.getByRole('link', { name: primeiro.rotulo }).click();
+	await expect(page).toHaveURL(new RegExp(`#/topicos\\?macro=${primeiro.id}$`));
+	await expect(page.getByTestId('macro-aberto')).toHaveText(primeiro.rotulo);
+
+	await page.goto(url('RAIZ'));
+	await page.getByTestId('numero-afiliacao').click();
+	await expect(page).toHaveURL(/#\/geografia$/);
+	await expect(h1(page)).toHaveText('Geografia');
+
+	await page.goto(`${url('RAIZ')}#/ajuda`);
+	await expect(page.getByTestId('ajuda-recorte')).toContainText('um documento passa se tiver ao menos uma afiliação');
+	await expect(page.getByRole('heading', { name: 'Como ler a geografia' })).toBeVisible();
 });

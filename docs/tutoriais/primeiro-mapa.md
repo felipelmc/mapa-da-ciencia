@@ -2,7 +2,7 @@
 
 Neste tutorial você monta um corpus de verdade: os artigos da revista *Opinião Pública* publicados em 2024. No fim, você terá um projeto com 25 artigos, com títulos, resumos, autores, afiliações e licenças, e saberá conferir a cobertura desses dados. Leva uns 10 minutos.
 
-A parte 1 não usa modelos de linguagem: só precisa de internet, para consultar a [ArticleMeta](../explicacoes/fontes.md) do SciELO e o OpenAlex. A [parte 2](primeiro-mapa-topicos.md) descobre os tópicos e monta o mapa; a parte 3, com a classificação, chega com o marco M5.
+A parte 1 não usa modelos de linguagem: só precisa de internet, para consultar a [ArticleMeta](../explicacoes/fontes.md) do SciELO e o OpenAlex. A [parte 2](primeiro-mapa-topicos.md) descobre os tópicos e monta o mapa; a [parte 3](primeiro-mapa-tempo-e-geografia.md) mostra os tópicos no tempo e a geografia; a parte 4, com a classificação, chega com o marco M5.
 
 !!! info "Antes de começar"
     Você precisa do `mapa-da-ciencia` instalado. Se ainda não instalou, siga os passos 1 e 2 de [Explorar o exemplo](explorar-exemplo.md) e volte para cá. Todos os comandos abaixo rodam dentro da pasta `mapa-da-ciencia` que você baixou.
@@ -26,7 +26,7 @@ uv run mapa novo projetos/op-2024 --revista op --anos 2024
 O comando cria a pasta `projetos/op-2024` com dois arquivos de configuração:
 
 - `mapa.yaml`: o recorte (revistas e anos), as fontes e os modelos;
-- `codebook.yaml`: as variáveis da classificação, usadas na parte 3.
+- `codebook.yaml`: as variáveis da classificação, usadas na parte 4.
 
 Abra o `mapa.yaml` num editor. As opções `--revista` e `--anos` já deixaram o recorte pronto:
 
@@ -80,10 +80,10 @@ Coleta concluída em 7,2 s: 25 documento(s) de 1 revista(s), 2024.
 └─────────┴────────────┘
 Ficaram de fora — fora do período: 544.
 ArticleMeta: 26 requisição(ões), 0 resposta(s) do cache.
-OpenAlex: 25 de 25 casados; 1 requisição(ões), 1 crédito(s).
+OpenAlex: 25 de 25 casados; 2 requisição(ões), 2 crédito(s).
 ```
 
-Os 544 "fora do período" são os artigos da revista de outros anos. O OpenAlex cobra créditos por consulta, e sem cadastro são mil por dia: esta coleta gastou 1.
+Os 544 "fora do período" são os artigos da revista de outros anos. O OpenAlex cobra créditos por consulta, e sem cadastro são mil por dia: esta coleta gastou 2, um pela lista de artigos da revista e outro pelos registros das instituições dos autores.
 
 ## 4. Rode de novo
 

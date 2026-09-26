@@ -210,6 +210,29 @@ def _mostrar_topicos(p: Projeto) -> None:
         )
 
 
+def _mostrar_geografia(p: Projeto) -> None:
+    from mapa_da_ciencia.geografia.pipeline import geografia_em_dia
+    from mapa_da_ciencia.geografia.resultado import PASTA, Resultado
+
+    resultado = Resultado.ler(p.dados / PASTA)
+    if resultado is None:
+        console.print("[dim]Geografia: ainda não gerada. Rode `mapa geografia`.[/]")
+        return
+    c, cob = resultado.contagens, resultado.cobertura
+    ligados = sum(c["identificados"].values())
+    console.print(
+        f"[bold]Geografia[/]: {num(100 * ligados / max(1, c['vinculos']), 1)}% dos {num(c['vinculos'], 0)} vínculos "
+        f"ligados a uma de {num(c['instituicoes'], 0)} instituições; país conhecido em "
+        f"{num(100 * cob['pais_conhecido'], 1)}% do peso, UF em {num(100 * cob['uf_conhecida'], 1)}% do peso "
+        f"brasileiro."
+    )
+    if geografia_em_dia(p) is False:
+        console.print(
+            "[yellow]A geografia é de antes da última coleta ou das últimas correções.[/] Rode [bold]mapa "
+            "geografia[/] para atualizá-la."
+        )
+
+
 def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
     """Cobertura do corpus coletado (`dados/documentos.parquet`), se já houver coleta."""
     caminho = p.dados / ARQUIVO_DOCUMENTOS
@@ -230,6 +253,7 @@ def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
             f"{num(c.get('creditos_openalex', 0), 0)} crédito(s) do OpenAlex.[/]"
         )
     _mostrar_topicos(p)
+    _mostrar_geografia(p)
     if not total:
         return
     geral = {
@@ -538,6 +562,85 @@ def topicos(
     for aviso in resumo.avisos:
         console.print(f"[yellow]Aviso:[/] {aviso}")
     console.print("Próximo passo: [bold]mapa painel[/] para ver o mapa.")
+
+
+@app.command()
+def geografia(
+    projeto: OpcaoProjeto = Path("."),
+    revisar: Annotated[
+        bool,
+        typer.Option(
+            "--revisar",
+            help="Lista as afiliações que não casaram, com sugestões e um bloco pronto para o instituicoes.yaml.",
+        ),
+    ] = False,
+    limite: Annotated[int, typer.Option("--limite", help="Quantas afiliações listar na revisão.", min=1)] = 20,
+) -> None:
+    """Liga cada afiliação a uma instituição, com UF e país, e faz a contagem fracionária da produção."""
+    from mapa_da_ciencia.geografia.pipeline import gerar_geografia
+    from mapa_da_ciencia.geografia.resultado import PASTA, ler_instituicoes
+    from mapa_da_ciencia.progresso import ProgressoRich
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        resumo = gerar_geografia(p, ProgressoRich(console))
+    if revisar:
+        _revisar_geografia(p, limite)
+        return
+
+    console.print(f"\n[bold green]Geografia pronta[/]: {resumo}")
+    fontes = Table("Fonte das afiliações", "Vínculos", "Ligados a uma instituição")
+    nomes = {"v240": "ArticleMeta, normalizada (v240)", "v70": "ArticleMeta, texto livre (v70)", "openalex": "OpenAlex"}
+    for fonte, n in resumo.por_fonte.items():
+        ok = resumo.identificados.get(fonte, 0)
+        fontes.add_row(nomes.get(fonte, fonte), num(n, 0), f"{num(ok, 0)} ({num(100 * ok / n, 1)}%)")
+    console.print(fontes)
+    maiores = sorted(ler_instituicoes(p.dados / PASTA), key=lambda i: -i["peso"])[:10]
+    tabela = Table("Instituição", "Lugar", "Peso", "Documentos")
+    for i in maiores:
+        nome = f"{i['nome']} ({i['sigla']})" if i["sigla"] else i["nome"]
+        lugar = f"{i['uf']}, {i['pais']}" if i["uf"] else (i["pais"] or "")
+        tabela.add_row(nome, lugar, num(i["peso"], 1), num(i["documentos"], 0))
+    console.print(tabela)
+    niveis = ", ".join(f"{k} {num(v, 0)}" for k, v in resumo.por_nivel.items())
+    console.print(
+        f"[dim]Peso fracionário: cada documento vale 1, dividido entre os autores e as afiliações de cada um. "
+        f"Sem afiliação: {num(resumo.sem_afiliacao, 1)} de {num(resumo.documentos, 0)}. Casamentos por nível: "
+        f"{niveis}.[/]"
+    )
+    for aviso in resumo.avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
+    console.print(
+        "Próximo passo: [bold]mapa painel[/] para ver a geografia, ou [bold]mapa geografia --revisar[/] para "
+        "corrigir as afiliações que não casaram."
+    )
+
+
+def _revisar_geografia(p: Projeto, limite: int) -> None:
+    from mapa_da_ciencia.geografia.revisao import bloco_yaml, pendencias
+
+    lista = pendencias(p, limite)
+    if not lista:
+        console.print("\n[bold green]Todas as afiliações com texto casaram com uma instituição.[/]")
+        return
+    tabela = Table("Texto da afiliação", "Vínculos", "Docs", "País", "Instituição parecida", title_justify="left")
+    tabela.title = f"As {num(len(lista), 0)} afiliações sem instituição mais frequentes"
+    for pend in lista:
+        grafias = f" [dim](+{pend.grafias - 1} grafia(s))[/]" if pend.grafias > 1 else ""
+        sugestao = (
+            "\n".join(f"{s.nome} ({s.pais or '?'}, {num(s.nota, 2)})" for s in pend.sugestoes)
+            if pend.sugestoes
+            else "[dim]—[/]"
+        )
+        tabela.add_row(pend.texto + grafias, num(pend.vinculos, 0), num(pend.documentos, 0), pend.pais or "", sugestao)
+    console.print()
+    console.print(tabela)
+    console.print(
+        "\nCopie para o [bold]instituicoes.yaml[/] do projeto o que estiver certo (as linhas comentadas são "
+        "modelos de instituição própria) e rode [bold]mapa geografia[/] de novo:\n"
+    )
+    # sem quebrar as linhas, para o bloco poder ser copiado como está
+    console.print(bloco_yaml(lista), highlight=False, markup=False, soft_wrap=True)
 
 
 @app.command()

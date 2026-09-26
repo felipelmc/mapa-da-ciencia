@@ -62,6 +62,8 @@ def titulos_compativeis(a: Documento, b: Documento) -> bool:
 def fundir(principal: Documento, outro: Documento) -> Documento:
     """Mantém o principal e completa o que falta com o outro; as origens se somam."""
     mudancas: dict = {"origens": list(dict.fromkeys([*principal.origens, *outro.origens]))}
+    if not principal.autorias_openalex and outro.autorias_openalex:
+        mudancas["autorias_openalex"] = outro.autorias_openalex
     for campo in ("doi", "openalex_id", "citacoes", "pid", "url", "licenca_openalex"):
         if getattr(principal, campo) is None and getattr(outro, campo) is not None:
             mudancas[campo] = getattr(outro, campo)

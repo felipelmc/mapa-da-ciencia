@@ -18,13 +18,22 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSAO_CONTRATO = "1.1"  # 1.1: marcas do texto de análise, fonte do rótulo, núcleo dos tópicos, ruído por ano
+VERSAO_CONTRATO = "1.2"
+# 1.1: marcas do texto de análise, fonte do rótulo, núcleo dos tópicos, ruído por ano
+# 1.2: tendências (com o método), séries dos macrotemas, sem tópico por ano, geografia completa
 N_FRAGMENTOS = 64
+SIGLAS_UF = (
+    "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA",
+    "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO",
+)  # fmt: skip
+NAO_IDENTIFICADA = "nao-identificada"
 
 StatusEvidencia = Literal["literal", "aproximada", "ausente"]
 Atribuicao = Literal["cluster", "vizinho"]
 FonteAnalise = Literal["resumo", "reserva", "so_titulo"]
 FonteRotulo = Literal["llm", "palavras", "manual"]
+DirecaoTendencia = Literal["alta", "queda", "estavel", "insuficiente"]
+MotivoTendencia = Literal["poucos_anos", "poucos_documentos", "sem_variacao", "sem_convergencia"]
 
 
 class _Base(BaseModel):
@@ -78,6 +87,7 @@ class Contagens(_Base):
     classificados: int = 0
     validados: int = 0
     com_afiliacao: int = 0
+    com_instituicao: int = Field(0, description="Documentos com ao menos uma instituição identificada.")
 
 
 class ExecucaoInfo(_Base):
@@ -177,29 +187,37 @@ class Documentos(_Arquivo):
 class Instituicao(_Base):
     """Uma instituição de afiliação, já normalizada."""
 
-    id: str = Field(description="`ror:…` quando houver, senão um slug do nome normalizado.")
+    id: str = Field(
+        description="`ror:…` quando houver, `openalex:I…` sem ROR, um apelido do projeto, ou `nao-identificada` "
+        "(reservado: afiliação informada que não casou com nenhuma instituição)."
+    )
     nome: str
     sigla: str | None = None
     uf: str | None = None
-    pais: str
+    pais: str = Field(description="ISO 3166-1 alfa-2; vazio em `nao-identificada`.")
 
 
 class ColunasAfiliacoes(_Base):
-    """Colunas da tabela longa de afiliações (uma linha por documento × instituição)."""
+    """Colunas da tabela longa de afiliações: uma linha por documento × (instituição, UF, país), pesos somados."""
 
     doc: list[int] = Field(description="Índice do documento em documentos.json.")
-    instituicao: list[int]
+    instituicao: list[int] = Field(
+        description="Índice em `dicionarios.instituicao`, ou -1 quando o autor não informou afiliação."
+    )
     uf: list[int] = Field(description="Índice em `dicionarios.uf` ou -1 (fora do Brasil ou desconhecida).")
-    pais: list[int]
-    peso: list[float] = Field(description="Contagem fracionária: a soma por documento é 1.")
+    pais: list[int] = Field(description="Índice em `dicionarios.pais` ou -1 (desconhecido).")
+    peso: list[float] = Field(
+        description="Contagem fracionária: 1 por documento, dividido entre os autores e depois entre as afiliações "
+        "de cada um. A soma por documento é 1."
+    )
 
 
 class DicionariosAfiliacoes(_Base):
     """Instituições, UFs e países por trás dos índices."""
 
     instituicao: list[Instituicao]
-    uf: list[str] = Field(description="Siglas das UFs.")
-    pais: list[str] = Field(description="Códigos ISO 3166-1 alfa-2.")
+    uf: list[str] = Field(description="Siglas das UFs (as 27, em ordem alfabética, para índices estáveis).")
+    pais: list[str] = Field(description="Códigos ISO 3166-1 alfa-2 presentes nas afiliações.")
 
 
 class Afiliacoes(_Arquivo):
@@ -255,6 +273,33 @@ class Serie(_Base):
     prop: list[float] = Field(description="Proporção do total do ano.")
 
 
+class Tendencia(_Base):
+    """Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel."""
+
+    direcao: DirecaoTendencia
+    inclinacao: float | None = Field(None, description="Inclinação na escala logit, por ano.")
+    erro_padrao: float | None = Field(None, description="Erro-padrão da inclinação, já corrigido pela dispersão.")
+    ic95: tuple[float, float] | None = None
+    dispersao: float | None = Field(None, description="φ de Pearson (1 na binomial pura).")
+    prop_inicio: float | None = Field(None, description="Participação ajustada no primeiro ano com documentos.")
+    prop_fim: float | None = Field(None, description="Participação ajustada no último ano com documentos.")
+    pp_periodo: float | None = Field(None, description="Variação em pontos percentuais no período.")
+    pp_por_ano: float | None = None
+    anos: tuple[int, int] | None = None
+    motivo: MotivoTendencia | None = Field(None, description="Por que não há tendência, quando é `insuficiente`.")
+
+
+class MetodoTendencia(_Base):
+    """Como a tendência é calculada. O painel lê daqui os parâmetros para recalcular com os filtros."""
+
+    modelo: Literal["logistica_binomial"] = "logistica_binomial"
+    dispersao: Literal["quase", "binomial"] = "quase"
+    nivel: float = 0.95
+    z: float = 1.959963984540054
+    anos_minimos: int = 5
+    docs_minimos: int = 10
+
+
 class Topico(_Base):
     """Um tópico: rótulo e descrição escritos pelo LLM, palavras-chave, cor estável e série no tempo."""
 
@@ -275,6 +320,7 @@ class Topico(_Base):
     n_nucleo: int | None = Field(
         None, description="Documentos do núcleo, que o HDBSCAN agrupou (os demais foram reatribuídos por vizinhança)."
     )
+    tendencia: Tendencia | None = None
 
 
 class Macrotema(_Base):
@@ -285,6 +331,8 @@ class Macrotema(_Base):
     cor: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
     topicos: list[int]
     descricao: str = ""
+    serie: Serie | None = Field(None, description="Soma das séries dos tópicos do macrotema.")
+    tendencia: Tendencia | None = None
 
 
 class Outliers(_Base):
@@ -293,7 +341,12 @@ class Outliers(_Base):
     n: int = Field(description="Documentos que o HDBSCAN deixou sem tópico.")
     reatribuidos: int = Field(description="Quantos deles foram atribuídos ao tópico mais próximo.")
     por_ano: list[int] = Field(
-        default_factory=list, description="Documentos sem tópico no HDBSCAN, por ano, alinhado a `anos`."
+        default_factory=list,
+        description="Documentos que o HDBSCAN deixou de fora, por ano (inclui os reatribuídos depois), alinhado a "
+        "`anos`.",
+    )
+    sem_topico_por_ano: list[int] = Field(
+        default_factory=list, description="Documentos que ficaram sem tópico (−1) no fim, por ano."
     )
 
 
@@ -307,6 +360,7 @@ class Topicos(_Arquivo):
     macrotemas: list[Macrotema]
     topicos: list[Topico]
     outliers: Outliers
+    metodo_tendencia: MetodoTendencia | None = None
 
 
 # ---------------------------------------------------------------- codebook.json
@@ -404,8 +458,14 @@ class Agregados(_Arquivo):
     """Gabarito calculado no Python para testar o filtro cruzado do frontend."""
 
     topico_ano_revista: list[tuple[int, int, str, int]] = Field(description="(tópico, ano, revista, n).")
-    uf: dict[str, float]
-    pais: dict[str, float]
+    uf: dict[str, float] = Field(description="Contagem fracionária por UF (sigla).")
+    pais: dict[str, float] = Field(description="Contagem fracionária por país (ISO alfa-2).")
+    instituicao: dict[str, float] = Field(default_factory=dict, description="Contagem fracionária por instituição.")
+    uf_inteiro: dict[str, int] = Field(default_factory=dict, description="Documentos com alguma afiliação na UF.")
+    pais_inteiro: dict[str, int] = Field(default_factory=dict)
+    instituicao_inteiro: dict[str, int] = Field(default_factory=dict)
+    sem_afiliacao: float = Field(0, description="Peso dos autores sem afiliação informada.")
+    sem_pais: float = Field(0, description="Peso das afiliações de país desconhecido (inclui `sem_afiliacao`).")
 
 
 ARQUIVOS: dict[str, type[_Arquivo]] = {

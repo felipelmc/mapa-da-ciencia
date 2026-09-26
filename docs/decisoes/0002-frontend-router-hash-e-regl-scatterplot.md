@@ -64,3 +64,7 @@ Protótipo em `spikes/frontend/`, com relatório completo em `spikes/frontend/RE
     npx playwright install chromium
     npm run build
     node tests/spike.mjs --repeticoes=10
+
+## Adendo (2026-09-26, marco M3)
+
+A escolha do CI está confirmada: do M1 ao M3, o Chromium do Playwright com `--use-angle=swiftshader --enable-unsafe-swiftshader` desenhou o mapa com o regl-scatterplot no Linux do GitHub Actions. O primeiro desenho leva cerca de 2,5 s no CI (WebGL por software), contra 0,3 a 0,5 s num Mac; por isso a meta de 1,5 s é conferida só fora do CI, e os testes esperam o desenho pelo `window.__mapaDebug`, com prazos folgados.

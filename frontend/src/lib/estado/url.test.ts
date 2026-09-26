@@ -8,7 +8,10 @@ import {
 	normalizarFiltros,
 	parametrosDoHash,
 	rota,
+	limparRecorte,
+	recorteDe,
 	temFiltros,
+	temRecorte,
 	type Filtros
 } from './url';
 
@@ -160,5 +163,35 @@ describe('laço e vista', () => {
 		}).toString();
 		expect(texto).toBe('laco=v1%7E0%2C0%7E1%2C0%7E0%2C1&vista=0.5%2C-0.5%2C2');
 		expect(lerFiltros(new URLSearchParams('laco=v1~0,0~1,0&vista=1,2')).laco).toBeNull();
+	});
+});
+
+describe('recorte e parâmetros das vistas do M4', () => {
+	it('lugares, modo, macrotema e gaveta vão para a URL na ordem fixa, sem mexer nas chaves antigas', () => {
+		const f = lerFiltros(new URLSearchParams('topico=12&modo=proporcao&uf=SP,RJ&pais=US&inst=ror:036rp1748&macro=3'));
+		expect(f.uf).toEqual(['RJ', 'SP']);
+		expect(f.pais).toEqual(['US']);
+		expect(f.inst).toEqual(['ror:036rp1748']);
+		expect([f.modo, f.macro, f.topico]).toEqual(['proporcao', 3, 12]);
+		expect(escreverFiltros(f).toString()).toBe(
+			'uf=RJ%2CSP&pais=US&inst=ror%3A036rp1748&modo=proporcao&macro=3&topico=12'
+		);
+		// uma URL antiga continua canônica
+		const antiga = 'anos=2012-2020&revistas=dados&topicos=3&cor=ano&busca=voto&doc=S1';
+		expect(escreverFiltros(lerFiltros(new URLSearchParams(antiga))).toString()).toBe(antiga);
+	});
+
+	it('descarta valores inválidos', () => {
+		const f = lerFiltros(new URLSearchParams('uf=sp,SPX,MG&pais=Brasil&inst=a b&modo=pizza&macro=-1&topico=x'));
+		expect([f.uf, f.pais, f.inst, f.modo, f.macro, f.topico]).toEqual([['MG'], [], [], 'fluxo', null, null]);
+	});
+
+	it('o recorte leva só as chaves compartilhadas', () => {
+		const f = lerFiltros(new URLSearchParams('anos=2015-2020&uf=SP&cor=ano&vista=0.1,0.2,2&doc=S1&modo=absoluto&topico=4'));
+		expect(escreverFiltros(recorteDe(f)).toString()).toBe('anos=2015-2020&uf=SP');
+		expect(temRecorte(f)).toBe(true);
+		expect(temRecorte(lerFiltros(new URLSearchParams('cor=ano&doc=S1')))).toBe(false);
+		const limpo = normalizarFiltros({ ...f, ...limparRecorte() });
+		expect(escreverFiltros(limpo).toString()).toBe('cor=ano&modo=absoluto&vista=0.1%2C0.2%2C2&topico=4&doc=S1');
 	});
 });

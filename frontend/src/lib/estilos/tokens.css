@@ -50,6 +50,14 @@
 	--brilho-frio: rgb(91 141 239 / 0.08);
 	--grade: rgb(236 234 244 / 0);
 	--sombra: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 18px 40px -24px rgb(0 0 0 / 0.8);
+	/* escala sequencial dos mapas (do menor ao maior valor): do céu ao âmbar */
+	--seq-vazio: #1a2044;
+	--seq-1: #2d2f66;
+	--seq-2: #4f3d78;
+	--seq-3: #7f4c78;
+	--seq-4: #b8625f;
+	--seq-5: #e8894a;
+	--seq-6: #ffc463;
 }
 
 :root[data-tema='prancha'] {
@@ -71,4 +79,12 @@
 	--brilho-frio: rgb(120 100 60 / 0.07);
 	--grade: rgb(22 26 43 / 0.035);
 	--sombra: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 14px 30px -24px rgb(60 45 20 / 0.45);
+	/* escala sequencial dos mapas (do menor ao maior valor): do papel ao vermelhão escuro */
+	--seq-vazio: #e8e3d8;
+	--seq-1: #eec99a;
+	--seq-2: #e7ad7c;
+	--seq-3: #df8f60;
+	--seq-4: #c7643b;
+	--seq-5: #9c3e1f;
+	--seq-6: #5e2413;
 }

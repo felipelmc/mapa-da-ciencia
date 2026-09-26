@@ -60,6 +60,10 @@ export function parametrosDoHash(url: URL): URLSearchParams {
 export const CORES_POR = ['topico', 'macrotema', 'revista', 'ano'] as const;
 export type CorPor = (typeof CORES_POR)[number];
 
+/** Modos do fluxo dos tópicos: com a linha de base ondulada, empilhado em documentos, ou em proporção do ano. */
+export const MODOS = ['fluxo', 'absoluto', 'proporcao'] as const;
+export type Modo = (typeof MODOS)[number];
+
 /**
  * Laço desenhado no mapa: polígono em coordenadas dos dados (as do UMAP, que não dependem da tela), com a
  * versão do mapa em que foi desenhado. Um link de um mapa já regenerado ainda abre, mas com aviso.
@@ -76,7 +80,10 @@ export interface Vista {
 	zoom: number;
 }
 
-/** O recorte que as vistas compartilham. Cada campo vira um parâmetro do hash. */
+/**
+ * O estado das vistas, no hash. Uma parte é o **recorte** (`CHAVES_RECORTE`), que as vistas de análise
+ * compartilham e o trilho leva de uma seção a outra; o resto é de cada vista (câmera, cor, documento aberto…).
+ */
 export interface Filtros {
 	/** Intervalo de anos, inclusivo. `null` = todo o período. */
 	anos: [number, number] | null;
@@ -94,6 +101,18 @@ export interface Filtros {
 	laco: Laco | null;
 	/** Câmera do mapa. */
 	vista: Vista | null;
+	/** Siglas de UF: documentos com alguma afiliação nelas. Vazio = todas. */
+	uf: string[];
+	/** Países (ISO 3166-1 alfa-2): documentos com alguma afiliação neles. */
+	pais: string[];
+	/** Ids de instituição (`ror:…`, `openalex:I…`, apelido): documentos com alguma afiliação nelas. */
+	inst: string[];
+	/** Modo do fluxo na vista Tópicos. */
+	modo: Modo;
+	/** Macrotema aberto na vista Tópicos (mostra os tópicos dele). */
+	macro: number | null;
+	/** Tópico aberto na gaveta da vista Tópicos. Não confundir com `topicos`, que filtra. */
+	topico: number | null;
 }
 
 export const FILTROS_PADRAO: Readonly<Filtros> = Object.freeze({
@@ -104,11 +123,37 @@ export const FILTROS_PADRAO: Readonly<Filtros> = Object.freeze({
 	busca: '',
 	doc: null,
 	laco: null,
-	vista: null
+	vista: null,
+	uf: [],
+	pais: [],
+	inst: [],
+	modo: 'fluxo',
+	macro: null,
+	topico: null
 });
 
-/** Ordem fixa dos parâmetros na URL. */
-const ORDEM: (keyof Filtros)[] = ['anos', 'revistas', 'topicos', 'cor', 'busca', 'laco', 'vista', 'doc'];
+/** Ordem fixa dos parâmetros na URL (as chaves novas entram sem mudar a posição das antigas). */
+const ORDEM: (keyof Filtros)[] = [
+	'anos',
+	'revistas',
+	'topicos',
+	'cor',
+	'busca',
+	'laco',
+	'uf',
+	'pais',
+	'inst',
+	'modo',
+	'macro',
+	'vista',
+	'topico',
+	'doc'
+];
+
+/** O recorte: o que as vistas de análise compartilham e o trilho leva de uma seção a outra. */
+export const CHAVES_RECORTE = ['anos', 'revistas', 'topicos', 'busca', 'laco', 'uf', 'pais', 'inst'] as const;
+export type ChaveRecorte = (typeof CHAVES_RECORTE)[number];
+export type Recorte = Pick<Filtros, ChaveRecorte>;
 
 /** Arredonda para `casas` decimais (e troca −0 por 0, para o texto da URL ser estável). */
 function arredondar(v: number, casas = 3): number {
@@ -148,6 +193,18 @@ function lista(texto: string | null): string[] {
 	return texto ? texto.split(',').map((s) => s.trim()).filter(Boolean) : [];
 }
 
+function codigos(valores: string[], padrao: RegExp): string[] {
+	return [...new Set(valores.map((v) => v.trim()).filter((v) => padrao.test(v)))].sort();
+}
+
+function inteiroOuNulo(v: number | null): number | null {
+	return v !== null && Number.isInteger(v) && v >= 0 ? v : null;
+}
+
+function lerInteiro(texto: string | null): number | null {
+	return texto !== null && /^\d+$/.test(texto) ? Number(texto) : null;
+}
+
 function normalizarAnos(anos: [number, number] | null): [number, number] | null {
 	if (!anos) return null;
 	const [a, b] = anos;
@@ -166,7 +223,13 @@ export function normalizarFiltros(parcial: Partial<Filtros> = {}): Filtros {
 		busca: f.busca.trim(),
 		doc: f.doc || null,
 		laco: normalizarLaco(f.laco),
-		vista: normalizarVista(f.vista)
+		vista: normalizarVista(f.vista),
+		uf: codigos(f.uf, /^[A-Z]{2}$/),
+		pais: codigos(f.pais, /^[A-Z]{2}$/),
+		inst: codigos(f.inst, /^[\w:.-]{1,64}$/),
+		modo: (MODOS as readonly string[]).includes(f.modo) ? f.modo : FILTROS_PADRAO.modo,
+		macro: inteiroOuNulo(f.macro),
+		topico: inteiroOuNulo(f.topico)
 	};
 }
 
@@ -183,7 +246,13 @@ export function lerFiltros(params: URLSearchParams): Filtros {
 		busca: params.get('busca') ?? '',
 		doc: params.get('doc'),
 		laco: lerLaco(params.get('laco')),
-		vista: lerVista(params.get('vista'))
+		vista: lerVista(params.get('vista')),
+		uf: lista(params.get('uf')),
+		pais: lista(params.get('pais')),
+		inst: lista(params.get('inst')),
+		modo: (params.get('modo') ?? FILTROS_PADRAO.modo) as Modo,
+		macro: lerInteiro(params.get('macro')),
+		topico: lerInteiro(params.get('topico'))
 	});
 }
 
@@ -198,7 +267,13 @@ export function escreverFiltros(parcial: Partial<Filtros>): URLSearchParams {
 		busca: f.busca || null,
 		doc: f.doc,
 		laco: f.laco ? [f.laco.versao, ...f.laco.pontos.map(([x, y]) => `${x},${y}`)].join('~') : null,
-		vista: f.vista ? `${f.vista.x},${f.vista.y},${f.vista.zoom}` : null
+		vista: f.vista ? `${f.vista.x},${f.vista.y},${f.vista.zoom}` : null,
+		uf: f.uf.length ? f.uf.join(',') : null,
+		pais: f.pais.length ? f.pais.join(',') : null,
+		inst: f.inst.length ? f.inst.join(',') : null,
+		modo: f.modo === FILTROS_PADRAO.modo ? null : f.modo,
+		macro: f.macro === null ? null : String(f.macro),
+		topico: f.topico === null ? null : String(f.topico)
 	};
 	const busca = new URLSearchParams();
 	for (const chave of ORDEM) {
@@ -211,4 +286,23 @@ export function escreverFiltros(parcial: Partial<Filtros>): URLSearchParams {
 /** `true` se algum filtro difere do padrão. */
 export function temFiltros(f: Filtros): boolean {
 	return escreverFiltros(f).size > 0;
+}
+
+/** Só as chaves do recorte (o que o trilho leva de uma seção a outra). */
+export function recorteDe(f: Partial<Filtros>): Partial<Filtros> {
+	const saida: Partial<Filtros> = {};
+	for (const chave of CHAVES_RECORTE) {
+		if (chave in f) (saida as Record<string, unknown>)[chave] = f[chave];
+	}
+	return saida;
+}
+
+/** `true` se o recorte difere do corpus inteiro. */
+export function temRecorte(f: Filtros): boolean {
+	return escreverFiltros(recorteDe(f)).size > 0;
+}
+
+/** As chaves do recorte nos valores padrão: para "Limpar recorte" com `mudarFiltros`. */
+export function limparRecorte(): Partial<Filtros> {
+	return recorteDe(FILTROS_PADRAO);
 }

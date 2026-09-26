@@ -15,6 +15,9 @@ As decisões do marco M0 vêm de **spikes**: experimentos pequenos e descartáve
 | [0005](0005-modelo-de-classificacao.md) | Classificação com `qwen3.5:9b`, sem raciocínio, concorrência 1 e checagem de memória contínua | aceita |
 | [0006](0006-armazenamento-parquet-duckdb.md) | Corpus em Parquet via DuckDB, refeito a partir de `brutos/` | aceita |
 | [0007](0007-parametros-dos-topicos.md) | Parâmetros do agrupamento em tópicos, calibrados no piloto | aceita |
+| [0008](0008-geografia-casamento-das-afiliacoes.md) | Geografia: afiliações casadas com as instituições do OpenAlex | aceita |
+| [0009](0009-tendencia-dos-topicos.md) | Tendência dos tópicos por regressão logística quase-binomial | aceita |
+| [0010](0010-graficos-em-svg-proprio.md) | Gráficos em SVG próprio, com módulos pequenos do d3 | aceita |
 
 ## Modelo
 

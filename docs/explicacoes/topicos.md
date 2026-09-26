@@ -135,7 +135,18 @@ macrotemas:
 
 O que está no `rotulos.yaml` tem prioridade sobre o modelo, e continua valendo nas execuções seguintes, porque o número do tópico é estável. Sem modelo de linguagem (`mapa topicos --sem-rotulos`), os rótulos são as três palavras-chave mais fortes.
 
-## 12. Onde ficam os resultados
+## 12. Em alta e em queda
+
+Um tópico está **em alta** quando a participação dele no corpus (documentos do tópico ÷ documentos do ano) cresce de forma distinguível do acaso ao longo do período, e **em queda** quando diminui. A regra ([ADR 0009](../decisoes/0009-tendencia-dos-topicos.md)):
+
+- uma regressão logística da participação anual, com o ano como variável; a inclinação diz se a participação cresce ou cai;
+- o intervalo de 95% da inclinação é corrigido pela dispersão da série (quase-binomial): dossiês temáticos fazem picos isolados, que não devem contar como tendência;
+- o tópico só é marcado quando o intervalo não inclui zero; com menos de 5 anos com documentos ou menos de 10 documentos do tópico, não há tendência calculada;
+- o tamanho da mudança é dado em **pontos percentuais**: a diferença entre a participação ajustada no primeiro e no último ano.
+
+No piloto, 13 dos 57 tópicos são marcados: 7 em alta (como identificação partidária e polarização, +4,1 pontos percentuais de 2010 a 2025, e comunicação política nas redes sociais, +2,6) e 6 em queda (como modernidade e teoria social crítica, −2,0). Com 57 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço).
+
+## 13. Onde ficam os resultados
 
 Tudo o que a etapa produz fica em `dados/topicos/`, dentro da pasta do projeto:
 

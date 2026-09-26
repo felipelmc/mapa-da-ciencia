@@ -6,7 +6,7 @@ import pytest
 
 from mapa_da_ciencia.contrato import modelos as m
 from mapa_da_ciencia.contrato.exemplo import gerar_exemplo
-from mapa_da_ciencia.contrato.exportar import escrever_dados
+from mapa_da_ciencia.contrato.exportar import agregados_geograficos, escrever_dados, tendencia_contrato
 
 RAIZ = Path(__file__).resolve().parent.parent
 EXEMPLO = RAIZ / "contrato" / "exemplo" / "dados"
@@ -69,11 +69,27 @@ def test_consistencia_interna_do_exemplo(exemplo):
     por_doc = defaultdict(float)
     for d, p in zip(af.doc, af.peso, strict=True):
         por_doc[d] += p
-    assert all(abs(s - 1) < 1e-4 for s in por_doc.values())
-    # agregados batem com os documentos
+    assert all(abs(s - 1) < 1e-4 for s in por_doc.values()) and len(por_doc) == n  # todo documento aparece
+    # agregados batem com os documentos e com a tabela de afiliações
     agr = arquivos["agregados"]
     assert sum(t[3] for t in agr.topico_ano_revista) == n
-    assert abs(sum(agr.pais.values()) - len(por_doc)) < 0.01
+    assert abs(sum(agr.pais.values()) + agr.sem_pais - n) < 0.01
+    assert abs(sum(agr.instituicao.values()) + agr.sem_afiliacao - n) < 0.01
+    assert agr.model_dump() == {**agr.model_dump(), **agregados_geograficos(arquivos["afiliacoes"])}
+    assert all(agr.uf[u] <= agr.uf_inteiro[u] for u in agr.uf)  # fracionária ≤ inteira
+    dic = arquivos["afiliacoes"].dicionarios
+    assert list(dic.uf) == list(m.SIGLAS_UF) and dic.instituicao[-1].id == m.NAO_IDENTIFICADA
+    assert -1 in af.instituicao and agr.sem_afiliacao > 0 and agr.instituicao[m.NAO_IDENTIFICADA] > 0
+    # sem tópico por ano e tendências: o gabarito é a função de referência aplicada às séries
+    assert top.outliers.sem_topico_por_ano == [
+        top.total_por_ano[i] - sum(t.serie.n[i] for t in top.topicos) for i in range(len(top.anos))
+    ]
+    for t in [*top.topicos, *top.macrotemas]:
+        assert t.tendencia == tendencia_contrato(t.serie.n, top.total_por_ano, top.anos)
+    for mt in top.macrotemas:
+        series = [t.serie.n for t in top.topicos if t.id in mt.topicos]
+        assert mt.serie.n == [sum(col) for col in zip(*series, strict=True)]
+    assert {t.tendencia.direcao for t in top.topicos} >= {"alta", "queda", "estavel"}
     # vizinhos apontam para índices válidos e não para o próprio documento
     for i, viz in enumerate(docs.colunas.vizinhos):
         assert len(viz) == 5 and i not in viz and all(0 <= j < n for j in viz)

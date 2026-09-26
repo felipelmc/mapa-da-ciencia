@@ -19,6 +19,7 @@ import yaml
 
 from mapa_da_ciencia.config import Codebook
 from mapa_da_ciencia.contrato import modelos as m
+from mapa_da_ciencia.contrato.exportar import agregados_geograficos, tendencia_contrato
 from mapa_da_ciencia.topicos.paleta import cores_macrotemas, proxima_cor
 
 ANOS = list(range(2010, 2026))
@@ -448,21 +449,40 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
         dicionarios=m.DicionariosDocumentos(revista=id_revistas, idioma=idiomas, cls=dic_cls),
     )
 
-    # ---- afiliações (contagem fracionária: soma 1 por documento)
+    # ---- afiliações (contagem fracionária pela regra do glossário: 1 por documento, dividido entre os autores e
+    # depois entre as afiliações de cada um). Casos de borda como no piloto: documentos sem afiliação, concentrados
+    # nos primeiros anos; autores sem afiliação; instituições não identificadas; vínculos brasileiros sem UF.
     insts = [m.Instituicao(id=i[0], nome=i[1], sigla=i[2], uf=i[3], pais=i[4]) for i in INSTITUICOES]
-    ufs = sorted({i.uf for i in insts if i.uf})
-    paises = sorted({i.pais for i in insts})
+    insts.append(m.Instituicao(id=m.NAO_IDENTIFICADA, nome="Instituição não identificada", pais=""))
+    i_nao_identificada = len(insts) - 1
+    ufs = list(m.SIGLAS_UF)
+    paises = sorted({i.pais for i in insts if i.pais})
     pesos_inst = [i[5] for i in INSTITUICOES]
-    af = defaultdict(list)
+    linhas_af: dict[tuple[int, int, int, int], float] = defaultdict(float)
     for di, d in enumerate(docs):
-        escolhidas = {rng.choices(range(len(insts)), pesos_inst)[0] for _ in d["autores"]}
-        for ii in sorted(escolhidas):
-            inst = insts[ii]
-            af["doc"].append(di)
-            af["instituicao"].append(ii)
-            af["uf"].append(ufs.index(inst.uf) if inst.uf else -1)
-            af["pais"].append(paises.index(inst.pais))
-            af["peso"].append(round(1 / len(escolhidas), 6))
+        sem_afiliacao = rng.random() < (0.25 if d["ano"] <= 2014 else 0.02)
+        for _ in d["autores"]:
+            fracao = 1 / len(d["autores"])
+            if sem_afiliacao or rng.random() < 0.03:
+                linhas_af[(di, -1, -1, -1)] += fracao
+                continue
+            n_af = 2 if rng.random() < 0.2 else 1
+            for _ in range(n_af):
+                if rng.random() < 0.05:  # a afiliação foi informada, mas não casou com nenhuma instituição
+                    pais = paises.index("BR") if rng.random() < 0.7 else -1
+                    linhas_af[(di, i_nao_identificada, -1, pais)] += fracao / n_af
+                    continue
+                ii = rng.choices(range(len(INSTITUICOES)), pesos_inst)[0]
+                inst = insts[ii]
+                uf = ufs.index(inst.uf) if inst.uf and rng.random() > 0.03 else -1
+                linhas_af[(di, ii, uf, paises.index(inst.pais))] += fracao / n_af
+    af: dict[str, list] = defaultdict(list)
+    for (di, ii, uf, pais), peso in sorted(linhas_af.items()):
+        af["doc"].append(di)
+        af["instituicao"].append(ii)
+        af["uf"].append(uf)
+        af["pais"].append(pais)
+        af["peso"].append(round(peso, 6))
     afiliacoes = m.Afiliacoes(
         n=len(af["doc"]),
         colunas=m.ColunasAfiliacoes(**af),
@@ -471,6 +491,7 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
 
     # ---- topicos.json
     total_ano = Counter(d["ano"] for d in docs)
+    total = [total_ano[a] for a in ANOS]
     topicos = []
     for tid, mi, rotulo, palavras, _, (cx, cy), cor in topicos_def:
         membros = [d for d in docs if d["topico"] == tid]
@@ -497,17 +518,32 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
                 representativos=[d["id"] for d in repr_],
                 rotulo_fonte="llm",
                 n_nucleo=len(nucleo),
+                tendencia=tendencia_contrato([por_ano[a] for a in ANOS], total, ANOS),
             )
         )
-    macrotemas = [
-        m.Macrotema(id=mi, rotulo=mc.rotulo, cor=cores_macro[mi], topicos=[t[0] for t in topicos_def if t[1] == mi])
-        for mi, mc in enumerate(MACROS)
-    ]
+    macrotemas = []
+    for mi, mc in enumerate(MACROS):
+        ids_m = [t[0] for t in topicos_def if t[1] == mi]
+        por_ano_m = Counter(d["ano"] for d in docs if d["topico"] in ids_m)
+        macrotemas.append(
+            m.Macrotema(
+                id=mi,
+                rotulo=mc.rotulo,
+                cor=cores_macro[mi],
+                topicos=ids_m,
+                serie=m.Serie(
+                    n=[por_ano_m[a] for a in ANOS],
+                    prop=[round(por_ano_m[a] / total_ano[a], 5) if total_ano[a] else 0.0 for a in ANOS],
+                ),
+                tendencia=tendencia_contrato([por_ano_m[a] for a in ANOS], total, ANOS),
+            )
+        )
     ruido = [d for d in docs if d["atribuicao"] == "vizinho"]
     ruido_ano = Counter(d["ano"] for d in ruido)
+    sem_topico_ano = Counter(d["ano"] for d in docs if d["topico"] == -1)
     topicos_arq = m.Topicos(
         anos=ANOS,
-        total_por_ano=[total_ano[a] for a in ANOS],
+        total_por_ano=total,
         parametros={"modelo_embeddings": "exemplo", "min_cluster_size": 10, "semente": semente},
         estabilidade_ari=0.81,
         macrotemas=macrotemas,
@@ -516,7 +552,9 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
             n=len(ruido),
             reatribuidos=sum(d["topico"] != -1 for d in ruido),
             por_ano=[ruido_ano[a] for a in ANOS],
+            sem_topico_por_ano=[sem_topico_ano[a] for a in ANOS],
         ),
+        metodo_tendencia=m.MetodoTendencia(),
     )
 
     # ---- codebook, classificações e validação
@@ -558,17 +596,8 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
 
     # ---- agregados (gabarito do filtro cruzado)
     tar = Counter((d["topico"], d["ano"], d["revista"]) for d in docs)
-    soma_uf: dict[str, float] = defaultdict(float)
-    soma_pais: dict[str, float] = defaultdict(float)
-    for uf, pais, peso in zip(af["uf"], af["pais"], af["peso"], strict=True):
-        if uf >= 0:
-            soma_uf[ufs[uf]] += peso
-        soma_pais[paises[pais]] += peso
-    agregados = m.Agregados(
-        topico_ano_revista=[(t, a, r, n) for (t, a, r), n in sorted(tar.items())],
-        uf={k: round(v, 4) for k, v in sorted(soma_uf.items())},
-        pais={k: round(v, 4) for k, v in sorted(soma_pais.items())},
-    )
+    geo = agregados_geograficos(afiliacoes)
+    agregados = m.Agregados(topico_ano_revista=[(t, a, r, n) for (t, a, r), n in sorted(tar.items())], **geo)
 
     revistas = m.Revistas(
         revistas=[
@@ -601,7 +630,10 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
             topicos=len(topicos),
             classificados=len(docs),
             validados=validacao.amostra.n,
-            com_afiliacao=len(docs),
+            com_afiliacao=len({di for di, ii in zip(af["doc"], af["instituicao"], strict=True) if ii >= 0}),
+            com_instituicao=len(
+                {di for di, ii in zip(af["doc"], af["instituicao"], strict=True) if 0 <= ii != i_nao_identificada}
+            ),
         ),
         arquivos=["manifesto", *arquivos, "detalhes"],
         execucao=m.ExecucaoInfo(

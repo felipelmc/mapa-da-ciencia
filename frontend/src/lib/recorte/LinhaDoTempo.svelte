@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * Linha do tempo do mapa: o intervalo de anos (dois controles) e um play que passa ano a ano. Cada passo
+	 * Linha do tempo do recorte: o intervalo de anos (dois controles) e um play que passa ano a ano. Cada passo
 	 * troca a entrada do histórico em vez de criar outra (voltar no navegador não refaz o play). Com
 	 * `prefers-reduced-motion`, o play anda mais devagar.
 	 */

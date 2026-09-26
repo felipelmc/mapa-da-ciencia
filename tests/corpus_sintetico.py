@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import random
 
-from mapa_da_ciencia.documento import Autor, Documento, Texto
+from mapa_da_ciencia.documento import Afiliacao, Autor, AutoriaOpenAlex, Documento, InstituicaoOpenAlex, Texto
 
 TEMAS = {
     "legislativo": (
@@ -59,6 +59,30 @@ def _frase(rng: random.Random, tema: str, n: int) -> tuple[str, str]:
     return " ".join(palavras_en), " ".join(palavras_pt)
 
 
+# afiliações escolhidas pelo índice do documento (sem gastar sorteios: os temas ficam iguais). A cada 6 documentos,
+# um sem afiliação; a última instituição não tem registro no OpenAlex e fica "não identificada".
+AFILIACOES = [
+    ("Universidade de São Paulo", "São Paulo", "BR", "I1001"),
+    ("Universidade Federal de Minas Gerais", "Minas Gerais", "BR", "I1002"),
+    ("Universidade de Brasília", "Distrito Federal", "BR", "I1003"),
+    ("Universidad de Buenos Aires", None, "AR", "I1004"),
+    ("Centro de Estudos Sem Registro", "Rio de Janeiro", "BR", None),
+]
+
+
+def _afiliacao(i: int) -> dict:
+    autor = Autor(nome="Ana", sobrenome=f"Autora{i % 37}", afiliacoes=[] if i % 6 == 5 else ["aff1"])
+    if i % 6 == 5:
+        return {"autores": [autor]}
+    nome, uf, pais, id_ = AFILIACOES[i % len(AFILIACOES)]
+    instituicoes = [InstituicaoOpenAlex(id=id_, nome=nome, pais=pais, tipo="education")] if id_ else []
+    return {
+        "autores": [autor],
+        "afiliacoes": [Afiliacao(id="aff1", instituicao=nome, uf=uf, pais=pais, fonte="v240")],
+        "autorias_openalex": [AutoriaOpenAlex(nome=f"Ana Autora{i % 37}", instituicoes=instituicoes)],
+    }
+
+
 def corpus_sintetico(n_por_tema: int = 50, semente: int = 1) -> tuple[list[Documento], dict[str, str]]:
     """Documentos e o tema plantado de cada um (id → tema). ~3% ficam só com resumo em português (reserva) e
     ~1% sem resumo (só título), como no piloto."""
@@ -88,8 +112,8 @@ def corpus_sintetico(n_por_tema: int = 50, semente: int = 1) -> tuple[list[Docum
                     revista_issn=f"0000-000{i % len(REVISTAS)}",
                     titulos=[Texto(idioma="en", texto=titulo_en.capitalize()), Texto(idioma="pt", texto=titulo_pt)],
                     resumos=resumos,
-                    autores=[Autor(nome="Ana", sobrenome=f"Autora{i % 37}")],
                     licenca="cc-by",
+                    **_afiliacao(i),
                 )
             )
             temas[doc_id] = tema

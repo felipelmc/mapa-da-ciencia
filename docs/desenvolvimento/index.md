@@ -73,6 +73,8 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | `frontend/src/lib/contrato/tipos.ts` | `npm run tipos` (em `frontend/`) | Depois de regenerar os schemas |
 | `docs/referencia/{cli,configuracao,codebook,contrato}.md` | `uv run python scripts/gerar_referencias.py` | Ao mudar comandos, `config.py` ou o contrato |
 | `src/mapa_da_ciencia/fontes/scielo-revistas.json` | `uv run python scripts/gerar_revistas.py` (1 requisição à ArticleMeta) | Para atualizar a lista de revistas do SciELO Brasil |
+| `src/mapa_da_ciencia/geografia/dados/paises.csv` | `node scripts/gerar_paises.ts` (nomes do CLDR que vem no Node, sem rede) | Ao atualizar o Node; o teste confere quando a versão do CLDR é a mesma do cabeçalho do arquivo. As variantes (`variantes_paises.csv`) e as UFs (`ufs.csv`) são editadas à mão |
+| `src/mapa_da_ciencia/geografia/dados/municipios.csv` | `uv run python scripts/gerar_municipios.py` (1 requisição ao IBGE) | Quando o IBGE criar municípios |
 | `tests/fixtures/articlemeta/` | `uv run python scripts/recortar_fixtures.py` (precisa do cache do spike, `spikes/saida/brutos/`) | Ao precisar de novos casos de teste; os e-mails reais viram `anonimo@exemplo.invalid` |
 
 ## Convenções
@@ -91,7 +93,7 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | M1 | Esqueleto: pacote, CLI, configuração, diagnóstico, contrato, painel, documentação, CI | concluído (v0.1.0) |
 | M2 | Coleta: ArticleMeta, OpenAlex, importação, deduplicação, cache | concluído (v0.2.0) |
 | M3 | Tópicos com rótulos pelo modelo de linguagem e mapa de documentos | concluído (v0.3.0) |
-| M4 | Tópicos no tempo e geografia | |
+| M4 | Tópicos no tempo e geografia | concluído (v0.4.0) |
 | M5 | Classificação por codebook e validação | |
 | M6 | Painel completo: rodar etapas pela interface | |
 | M7 | Publicação, figuras, oficina no Colab, release | |

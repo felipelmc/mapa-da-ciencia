@@ -8,7 +8,7 @@
 	 * mesmo macrotema pela árvore geradora mínima, como numa constelação.
 	 *
 	 * É SVG puro e pequeno (algumas dezenas de pontos). O mapa de documentos, com
-	 * regl-scatterplot, chega no M3.
+	 * regl-scatterplot, fica na vista Mapa.
 	 */
 	let { topicos }: { topicos: Topicos } = $props();
 

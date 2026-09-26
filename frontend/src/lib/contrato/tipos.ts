@@ -44,17 +44,23 @@ export interface Afiliacoes {
 	versao_contrato?: string;
 }
 /**
- * Colunas da tabela longa de afiliações (uma linha por documento × instituição).
+ * Colunas da tabela longa de afiliações: uma linha por documento × (instituição, UF, país), pesos somados.
  */
 export interface ColunasAfiliacoes {
 	/**
 	 * Índice do documento em documentos.json.
 	 */
 	doc: number[];
+	/**
+	 * Índice em `dicionarios.instituicao`, ou -1 quando o autor não informou afiliação.
+	 */
 	instituicao: number[];
+	/**
+	 * Índice em `dicionarios.pais` ou -1 (desconhecido).
+	 */
 	pais: number[];
 	/**
-	 * Contagem fracionária: a soma por documento é 1.
+	 * Contagem fracionária: 1 por documento, dividido entre os autores e depois entre as afiliações de cada um. A soma por documento é 1.
 	 */
 	peso: number[];
 	/**
@@ -68,11 +74,11 @@ export interface ColunasAfiliacoes {
 export interface DicionariosAfiliacoes {
 	instituicao: Instituicao[];
 	/**
-	 * Códigos ISO 3166-1 alfa-2.
+	 * Códigos ISO 3166-1 alfa-2 presentes nas afiliações.
 	 */
 	pais: string[];
 	/**
-	 * Siglas das UFs.
+	 * Siglas das UFs (as 27, em ordem alfabética, para índices estáveis).
 	 */
 	uf: string[];
 }
@@ -81,10 +87,13 @@ export interface DicionariosAfiliacoes {
  */
 export interface Instituicao {
 	/**
-	 * `ror:…` quando houver, senão um slug do nome normalizado.
+	 * `ror:…` quando houver, `openalex:I…` sem ROR, um apelido do projeto, ou `nao-identificada` (reservado: afiliação informada que não casou com nenhuma instituição).
 	 */
 	id: string;
 	nome: string;
+	/**
+	 * ISO 3166-1 alfa-2; vazio em `nao-identificada`.
+	 */
 	pais: string;
 	sigla?: string | null;
 	uf?: string | null;
@@ -93,14 +102,46 @@ export interface Instituicao {
  * Gabarito calculado no Python para testar o filtro cruzado do frontend.
  */
 export interface Agregados {
+	/**
+	 * Contagem fracionária por instituição.
+	 */
+	instituicao?: {
+		[k: string]: number;
+	};
+	instituicao_inteiro?: {
+		[k: string]: number;
+	};
+	/**
+	 * Contagem fracionária por país (ISO alfa-2).
+	 */
 	pais: {
 		[k: string]: number;
 	};
+	pais_inteiro?: {
+		[k: string]: number;
+	};
+	/**
+	 * Peso dos autores sem afiliação informada.
+	 */
+	sem_afiliacao?: number;
+	/**
+	 * Peso das afiliações de país desconhecido (inclui `sem_afiliacao`).
+	 */
+	sem_pais?: number;
 	/**
 	 * (tópico, ano, revista, n).
 	 */
 	topico_ano_revista: [number, number, string, number][];
+	/**
+	 * Contagem fracionária por UF (sigla).
+	 */
 	uf: {
+		[k: string]: number;
+	};
+	/**
+	 * Documentos com alguma afiliação na UF.
+	 */
+	uf_inteiro?: {
 		[k: string]: number;
 	};
 	/**
@@ -316,6 +357,10 @@ export interface Manifesto {
 export interface Contagens {
 	classificados?: number;
 	com_afiliacao?: number;
+	/**
+	 * Documentos com ao menos uma instituição identificada.
+	 */
+	com_instituicao?: number;
 	documentos: number;
 	topicos?: number;
 	validados?: number;
@@ -396,6 +441,7 @@ export interface Topicos {
 	anos: number[];
 	estabilidade_ari: number | null;
 	macrotemas: Macrotema[];
+	metodo_tendencia?: MetodoTendencia | null;
 	outliers: Outliers;
 	parametros: {
 		[k: string]: number | string;
@@ -415,7 +461,73 @@ export interface Macrotema {
 	descricao?: string;
 	id: number;
 	rotulo: string;
+	/**
+	 * Soma das séries dos tópicos do macrotema.
+	 */
+	serie?: Serie | null;
+	tendencia?: Tendencia | null;
 	topicos: number[];
+}
+/**
+ * Série temporal de um tópico.
+ */
+export interface Serie {
+	/**
+	 * Documentos por ano, alinhado a `anos`.
+	 */
+	n: number[];
+	/**
+	 * Proporção do total do ano.
+	 */
+	prop: number[];
+}
+/**
+ * Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel.
+ */
+export interface Tendencia {
+	anos?: [number, number] | null;
+	direcao: 'alta' | 'queda' | 'estavel' | 'insuficiente';
+	/**
+	 * φ de Pearson (1 na binomial pura).
+	 */
+	dispersao?: number | null;
+	/**
+	 * Erro-padrão da inclinação, já corrigido pela dispersão.
+	 */
+	erro_padrao?: number | null;
+	ic95?: [number, number] | null;
+	/**
+	 * Inclinação na escala logit, por ano.
+	 */
+	inclinacao?: number | null;
+	/**
+	 * Por que não há tendência, quando é `insuficiente`.
+	 */
+	motivo?: ('poucos_anos' | 'poucos_documentos' | 'sem_variacao' | 'sem_convergencia') | null;
+	/**
+	 * Variação em pontos percentuais no período.
+	 */
+	pp_periodo?: number | null;
+	pp_por_ano?: number | null;
+	/**
+	 * Participação ajustada no último ano com documentos.
+	 */
+	prop_fim?: number | null;
+	/**
+	 * Participação ajustada no primeiro ano com documentos.
+	 */
+	prop_inicio?: number | null;
+}
+/**
+ * Como a tendência é calculada. O painel lê daqui os parâmetros para recalcular com os filtros.
+ */
+export interface MetodoTendencia {
+	anos_minimos?: number;
+	dispersao?: 'quase' | 'binomial';
+	docs_minimos?: number;
+	modelo?: 'logistica_binomial';
+	nivel?: number;
+	z?: number;
 }
 /**
  * Documentos que o agrupamento não encaixou em nenhum tópico.
@@ -426,13 +538,17 @@ export interface Outliers {
 	 */
 	n: number;
 	/**
-	 * Documentos sem tópico no HDBSCAN, por ano, alinhado a `anos`.
+	 * Documentos que o HDBSCAN deixou de fora, por ano (inclui os reatribuídos depois), alinhado a `anos`.
 	 */
 	por_ano?: number[];
 	/**
 	 * Quantos deles foram atribuídos ao tópico mais próximo.
 	 */
 	reatribuidos: number;
+	/**
+	 * Documentos que ficaram sem tópico (−1) no fim, por ano.
+	 */
+	sem_topico_por_ano?: number[];
 }
 /**
  * Um tópico: rótulo e descrição escritos pelo LLM, palavras-chave, cor estável e série no tempo.
@@ -466,19 +582,7 @@ export interface Topico {
 	 */
 	rotulo_fonte?: 'llm' | 'palavras' | 'manual';
 	serie: Serie;
-}
-/**
- * Série temporal de um tópico.
- */
-export interface Serie {
-	/**
-	 * Documentos por ano, alinhado a `anos`.
-	 */
-	n: number[];
-	/**
-	 * Proporção do total do ano.
-	 */
-	prop: number[];
+	tendencia?: Tendencia | null;
 }
 /**
  * Resultados da validação da classificação contra codificação humana.

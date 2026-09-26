@@ -48,6 +48,11 @@ def vetor_falso(texto: str) -> list[float]:
     return [x / norma for x in v]
 
 
+def _ler_jsonl(caminho: Path) -> list[dict]:
+    with gzip.open(caminho, "rt", encoding="utf-8") as f:
+        return [json.loads(linha) for linha in f]
+
+
 def obras_openalex() -> list[dict]:
     with gzip.open(FIXTURES / "openalex" / "obras.jsonl.gz", "rt", encoding="utf-8") as f:
         return [json.loads(linha) for linha in f]
@@ -96,6 +101,10 @@ class ApisFalsas:
         self.fora_dos_filtros: set[str] = set()  # DOIs que só o endereço direto /works/doi:… acha
         router.get(url__regex=rf"^{re.escape(OA)}/works/doi:").mock(side_effect=self._obra)
         router.get(f"{OA}/works").mock(side_effect=self._obras)
+        self.instituicoes = {
+            r["id"].rsplit("/", 1)[-1]: r for r in _ler_jsonl(FIXTURES / "openalex" / "instituicoes.jsonl.gz")
+        }
+        router.get(f"{OA}/institutions").mock(side_effect=self._instituicoes)
 
     def _tags(self, _: httpx.Request) -> httpx.Response:
         modelos = [
@@ -150,6 +159,14 @@ class ApisFalsas:
         doi = request.url.path.split("/works/doi:", 1)[1].lower()
         obra = next((o for o in self.obras if (o.get("doi") or "").lower().endswith(doi)), None)
         return httpx.Response(200, json=obra) if obra else httpx.Response(404, json={"error": "not found"})
+
+    def _instituicoes(self, request: httpx.Request) -> httpx.Response:
+        """Registros das instituições pelo filtro `openalex:I1|I2…` (até 100 por página)."""
+        self.chamadas["openalex_instituicoes"] += 1
+        filtro = request.url.params.get("filter", "")
+        ids = filtro.removeprefix("openalex:").split("|") if filtro.startswith("openalex:") else []
+        achadas = [self.instituicoes[i] for i in ids if i in self.instituicoes]
+        return httpx.Response(200, json={"meta": {"count": len(achadas)}, "results": achadas})
 
     def _obras(self, request: httpx.Request) -> httpx.Response:
         """Entende os filtros usados pelo mapa: ISSN (com |), intervalo de anos e lista de DOIs."""

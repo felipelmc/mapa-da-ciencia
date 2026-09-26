@@ -26,6 +26,7 @@ Cada registro da ArticleMeta vira um **documento** com títulos, resumos e palav
 - **Nenhum e-mail.** O registro traz e-mails em vários lugares: nas afiliações, no registro da revista embutido em cada artigo e nas referências. O `mapa` copia só campos de uma lista permitida (instituição, departamento, cidade, UF, país) e, no fim, ainda varre todo o documento e remove qualquer endereço que tenha escapado. Os testes conferem isso com e-mails falsos plantados nos dados.
 - **Texto limpo.** Um terço dos resumos traz entidades HTML, às vezes escapadas duas vezes (`&amp;#8217;` no lugar de `’`), e muitos começam com "Resumo:". Tudo isso sai na limpeza.
 - **Afiliações das duas versões.** A versão normalizada da afiliação (`v240`, com país em código ISO) é usada quando existe. As afiliações que ela não cobre vêm da versão original (`v70`).
+- **Autores segundo o OpenAlex.** Do OpenAlex, o documento guarda também os autores na ordem da obra, com as instituições que o OpenAlex reconheceu (com o identificador [ROR](https://ror.org), o país, o tipo e as instituições acima dela) e o texto de afiliação de cada um, sem e-mails. É a base da [geografia](../guias/painel.md): as afiliações da ArticleMeta são casadas com essas instituições.
 
 As referências citadas por cada artigo (cerca de 90% do tamanho de um registro) não entram no documento, só a contagem delas. Elas continuam guardadas nas respostas brutas, para as redes de citação da v2.
 
@@ -45,8 +46,11 @@ Desde 2026 o OpenAlex cobra por uso. Sem chave, são mil créditos por dia; com 
 | Uma lista de até 50 DOIs | 1 |
 | Uma página de busca por termo | 10 |
 | Um trabalho no endereço direto (`/works/doi:…`) | 0 |
+| Um lote de até 100 instituições (`/institutions`) | 1 |
 
 O enriquecimento pede os trabalhos de cada revista no período, então custa cerca de 1 crédito por revista para cada 200 artigos: o piloto inteiro (10 revistas, 16 anos) fica em torno de 32 créditos. O `mapa coletar` mostra quantos foram gastos, e `--sem-openalex` pula essa etapa.
+
+Depois do enriquecimento, a coleta busca os **registros das instituições** que aparecem nas autorias (e as instituições acima delas, como a universidade de um hospital universitário), em lotes de 100. Cada registro traz o nome, as siglas, os nomes alternativos, o país, a cidade, a região (a UF, quando existe) e o tipo. No piloto são cerca de mil instituições, uns 10 créditos na primeira vez e nenhum depois: as respostas ficam em `brutos/openalex/instituicoes/`, com um índice dos pedidos, e um identificador que o OpenAlex não devolve não é pedido de novo. Os registros vão para `dados/instituicoes_openalex.parquet` e alimentam a geografia, que roda sem rede. Se o OpenAlex estiver fora do ar, a coleta termina com um aviso, e a geografia usa só os nomes.
 
 Quando a ArticleMeta não traz resumo de um artigo e o OpenAlex traz, o resumo do OpenAlex entra como **reserva**, marcado com a origem (`openalex`). O mesmo vale para o título: no piloto, seis artigos da *Opinião Pública* e da *Novos Estudos* de 2010 a 2013 estão sem título na ArticleMeta.
 

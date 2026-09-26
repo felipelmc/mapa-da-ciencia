@@ -4,6 +4,38 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [0.4.0] - 2026-09-26
+
+Os tópicos no tempo e a geografia: o painel mostra como os assuntos do corpus mudam ano a ano, quais estão em alta e em queda, e de onde vêm os autores, por UF, país e instituição, com contagem fracionária. No piloto (4.275 artigos), 13 dos 57 tópicos têm tendência distinguível do acaso, 93,9% dos vínculos de autoria são ligados a uma de 639 instituições com precisão de 99,8% numa amostra lida à mão, e a geografia leva 2 segundos.
+
+### Adicionado
+
+- **Marco M4 (tópicos no tempo e geografia)**:
+  - tendência de cada tópico (em alta, em queda, estável) por regressão logística quase-binomial da participação anual, com `scripts/tendencias.py` para comparar os modelos (ADR 0009);
+  - a coleta guarda, de cada documento, os autores segundo o OpenAlex, com as instituições (ROR, país, tipo, linhagem) e os textos de afiliação, sem e-mails; um corpus coletado antes da 0.4.0 é reconhecido (`armazenamento.tem_coluna`);
+  - a coleta busca os registros dessas instituições no OpenAlex (siglas, nomes alternativos, cidade, região, linhagem), em lotes de 100, com cache em `brutos/` e gravação em `dados/instituicoes_openalex.parquet`; uns 10 créditos no piloto;
+  - tabelas de lugares para a geografia: países em português, inglês e espanhol (do CLDR, com variantes como EUA e Holanda), as 27 UFs com capitais e os 5.571 municípios do IBGE; `geografia/normalizar.py` reconhece o que as fontes escrevem ("Brazi", "RJ)", "Federal District", "Niterói, RJ");
+  - casamento das afiliações da ArticleMeta com as instituições do OpenAlex, do candidato mais próximo (a instituição que o OpenAlex deu ao mesmo autor) ao mais distante (todas as instituições conhecidas), com vetos contra nomes parecidos (UFPR × UFPA, UERJ × UFRJ) e contra países divergentes, subida até a universidade "mãe" (EAESP → FGV) e correções do projeto em `instituicoes.yaml`; no piloto, 99% das afiliações da `v240` e 84% das da `v70` identificadas, em menos de um segundo;
+  - contagem fracionária da produção (`geografia/contagem.py`): cada documento vale 1, dividido entre os autores e depois entre as afiliações de cada um, com "sem afiliação" para quem não informou; UF de cada vínculo brasileiro pela fonte, pela cidade (com o que a `v240` do corpus ensina sobre cidades homônimas), pelo projeto ou pelo registro do OpenAlex. No piloto, país conhecido em 98,7% do peso e UF em 99,2% do peso brasileiro;
+  - `mapa geografia` e `api.geografia()`: a etapa grava `dados/geografia/` (vínculos, pesos e instituições, com o nome em português para as instituições de países lusófonos), registra o manifesto e aparece no `mapa status`, com aviso quando o corpus ou o `instituicoes.yaml` mudaram; as views `vinculos`, `pesos` e `instituicoes` ficam disponíveis em `conectar()`. No piloto, leva 2 segundos;
+  - `mapa geografia --revisar [--limite N]`: as afiliações sem instituição mais frequentes, com as grafias agrupadas, as instituições parecidas e um bloco pronto para o `instituicoes.yaml` (apelidos para as sugestões muito parecidas; o resto comentado, como modelo de instituição própria). No piloto, uma rodada leva a `v70` de 83,8% a 86,5%;
+  - exportação de `afiliacoes.json` (a contagem fracionária por documento, instituição, UF e país; instituições com id `ror:…`) e dos campos geográficos de `agregados.json`, quando tópicos e geografia estão em dia; `Contagens.com_instituicao` no manifesto. No piloto, 5.959 linhas e 640 instituições em 170 KB;
+  - a vista **Geografia** do painel: coroplético das UFs, mapa-múndi com o Brasil fora da escala e ranking das instituições, todos com a contagem fracionária e no filtro cruzado (cada gráfico ignora o próprio filtro); clicar numa UF, num país ou numa instituição põe o lugar no recorte, que vale para as outras vistas; dicas, teclado, "Ver como tabela" e créditos das malhas; escala de cores sequencial nos dois temas, com teste de contraste;
+  - na Início, cada macrotema ganha a mini-série da participação por ano e a tendência, e o nome leva à vista Tópicos com ele aberto; "Com afiliação" leva à Geografia e diz quantos documentos têm instituição identificada. A Ajuda explica o recorte e como ler os tópicos e a geografia;
+  - cobertura da geografia por ano (peso com instituição identificada, não identificada e sem afiliação), com um aviso gerado dos dados para os anos em que mais de 20% do peso fica sem afiliação;
+  - malhas da vista Geografia, versionadas e carregadas sob demanda: as 27 UFs do IBGE (31 KB) e os países do Natural Earth (104 KB), com projeções equivalentes; `frontend/scripts/baixar-malhas.ts` as regenera (ADR 0010);
+  - `scripts/calibrar_geografia.py`: identificação por fonte e nível, amostra estratificada para rotular à mão (herdando rótulos antigos) e precisão por nível; no piloto, 92,9% dos vínculos identificados, com precisão de 99,8% numa amostra independente de 200 (ADR 0008, proposta);
+  - documentação: tutorial "Seu primeiro mapa, parte 3: tempo e geografia" (a classificação passa a ser a parte 4), guias "Ler os tópicos no tempo", "Gerar a geografia" e "Ler a geografia", explicação "Geografia da produção", ADRs 0008 (geografia), 0009 (tendência) e 0010 (gráficos) aceitos, glossário e capturas das vistas Tópicos e Geografia geradas do piloto (`frontend/scripts/capturas.ts`);
+  - contrato de dados 1.2 (só acréscimos): tendência de cada tópico e macrotema como gabarito, com o método; série dos macrotemas; documentos sem tópico por ano; geografia completa (instituição não identificada, autores sem afiliação, as 27 UFs, agregados fracionários e inteiros por UF, país e instituição); casos de referência em `contrato/casos/tendencia.json`; exemplo sintético com a contagem fracionária do glossário e casos de borda;
+
+### Corrigido
+
+- Revistas sem acrônimo (vindas de importações) têm a mesma chave, o ISSN, em `revistas.json`, nos documentos, nas séries por revista e nos agregados; antes, algumas contagens usavam "?".
+
+### Mudado
+
+- `mapa status` deixa de listar a "exportação" como etapa pendente: a exportação para o painel acontece no fim de cada etapa.
+
 ## [0.3.0] - 2026-09-26
 
 Os tópicos e o mapa: o `mapa` descobre os assuntos do corpus com modelos locais, dá nome a eles em português e os mostra num mapa navegável. No piloto (4.275 artigos de dez revistas de ciência política), são 57 tópicos em 7 macrotemas, com estabilidade de 0,89 entre sementes; a etapa leva uns 4 minutos nos embeddings e 3 nos rótulos na primeira vez, e segundos depois.
@@ -76,7 +108,8 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.3.0...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/felipelmc/mapa-da-ciencia/releases/tag/v0.1.0

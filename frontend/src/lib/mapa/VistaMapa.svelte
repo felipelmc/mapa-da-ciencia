@@ -9,22 +9,25 @@
 	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import type { Topicos } from '$lib/contrato/tipos';
+	import { buscar, indiceDe } from '$lib/dados/busca';
+	import type { Cubo } from '$lib/dados/cubo';
 	import { deNdc, paraNdc, type TabelaDocumentos } from '$lib/dados/documentos';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { tema } from '$lib/estado/tema.svelte';
 	import { CORES_POR, rota, type CorPor } from '$lib/estado/url';
-	import { formatarInteiro } from '$lib/formato';
 	import { simplificar, type Ponto } from '$lib/graficos/geometria';
 	import Nuvem, { type Anotacao, type Camera } from '$lib/graficos/Nuvem.svelte';
 	import Rotulos, { type Caixa, type ItemRotulo } from '$lib/graficos/Rotulos.svelte';
-	import { buscar, indexar, type IndiceBusca } from './busca';
 	import Cartao from './Cartao.svelte';
 	import { calcularContornos, centroDePeso } from './contornos';
 	import { colorir, type ItemLegenda } from './cores';
-	import { visiveis } from './filtro';
-	import LinhaDoTempo from './LinhaDoTempo.svelte';
 
-	let { tabela, topicos, versaoMapa }: { tabela: TabelaDocumentos; topicos: Topicos; versaoMapa: string } = $props();
+	let {
+		tabela,
+		topicos,
+		cubo,
+		versaoMapa
+	}: { tabela: TabelaDocumentos; topicos: Topicos; cubo: Cubo; versaoMapa: string } = $props();
 
 	const filtros = $derived(filtrosDaPagina());
 
@@ -42,8 +45,7 @@
 
 	const coloracao = $derived(colorir(tabela, topicos, filtros.cor, cinza));
 
-	// ---- busca (índice montado na primeira vez)
-	let indiceBusca: IndiceBusca | null = null;
+	// ---- busca (o índice é montado na primeira vez e compartilhado com o cubo)
 	let campoBusca = $state<HTMLInputElement>();
 	// svelte-ignore state_referenced_locally
 	let textoBusca = $state(filtros.busca);
@@ -51,30 +53,28 @@
 	function digitar(texto: string) {
 		textoBusca = texto;
 		clearTimeout(temporizadorBusca);
-		temporizadorBusca = setTimeout(() => mudarFiltros({ busca: texto }, { substituir: true, em: '/mapa' }), 250);
+		temporizadorBusca = setTimeout(() => {
+			temporizadorBusca = undefined;
+			mudarFiltros({ busca: texto }, { substituir: true, em: '/mapa' });
+		}, 250);
 	}
-	const buscados = $derived.by(() => {
-		if (!filtros.busca) return null;
-		indiceBusca ??= indexar(tabela);
-		return buscar(indiceBusca, filtros.busca);
+	const buscados = $derived(filtros.busca ? buscar(indiceDe(tabela), filtros.busca) : null);
+	// a barra do recorte pode limpar a busca: o campo acompanha
+	$effect(() => {
+		const busca = filtros.busca;
+		if (busca === '' && textoBusca !== '' && !temporizadorBusca) textoBusca = '';
 	});
 
-	// ---- laço: polígono na URL em coordenadas dos dados; aqui, em NDC
+	// ---- laço: polígono na URL em coordenadas dos dados (o cubo o converte para NDC)
 	let modoLaco = $state(false);
-	const lacoNdc = $derived(
-		filtros.laco ? filtros.laco.pontos.map(([x, y]) => paraNdc(tabela.escala, x, y) as Ponto) : null
-	);
-	const lacoAntigo = $derived(!!filtros.laco && filtros.laco.versao !== versaoMapa);
 	function aoLaco(vertices: Ponto[]) {
 		modoLaco = false;
 		const pontos = simplificar(vertices).map(([x, y]) => deNdc(tabela.escala, x, y));
 		mudarFiltros({ laco: { versao: versaoMapa, pontos } });
 	}
 
-	const indicesVisiveis = $derived(
-		visiveis(tabela, filtros, { buscados: buscados ? new Set(buscados) : null, laco: lacoNdc })
-	);
-	const nVisiveis = $derived(indicesVisiveis?.length ?? tabela.n);
+	// o recorte inteiro (anos, revistas, tópicos, busca, laço e lugares) sai do cubo compartilhado
+	const indicesVisiveis = $derived(cubo.indices(cubo.falhas(filtros), 0));
 	// A câmera do link vale só na montagem; depois, quem manda na câmera é quem usa o mapa.
 	// svelte-ignore state_referenced_locally
 	const vistaInicial = filtros.vista;
@@ -96,14 +96,6 @@
 			const novos = ativo(item) ? filtros.topicos.filter((t) => !ids.includes(t)) : [...new Set([...filtros.topicos, ...ids])];
 			mudarFiltros({ topicos: novos });
 		}
-	}
-
-	const temRecorte = $derived(
-		!!(filtros.anos || filtros.revistas.length || filtros.topicos.length || filtros.busca || filtros.laco)
-	);
-	function limpar() {
-		textoBusca = '';
-		mudarFiltros({ anos: null, revistas: [], topicos: [], busca: '', laco: null });
 	}
 
 	// ---- documento em destaque (cartão)
@@ -245,10 +237,6 @@
 				{recolhido ? 'Mostrar controles' : 'Recolher'}
 			</button>
 		</div>
-		<p class="contador numero" data-testid="contador-mapa" aria-live="polite">
-			{formatarInteiro(nVisiveis)}
-			<span>de {formatarInteiro(tabela.n)} documentos</span>
-		</p>
 		{#if !recolhido}
 			<label class="campo">
 				<span class="rotulo-miudo">Buscar título ou autor <kbd>/</kbd></span>
@@ -274,19 +262,7 @@
 				<button type="button" class="botao" aria-pressed={modoLaco} data-testid="botao-laco" onclick={() => (modoLaco = !modoLaco)}>
 					{modoLaco ? 'Desenhe o laço…' : 'Laço'} <kbd>L</kbd>
 				</button>
-				{#if temRecorte}
-					<button type="button" class="botao" onclick={limpar}>Limpar filtros</button>
-				{/if}
 			</div>
-			{#if filtros.laco}
-				<p class="chip" data-testid="chip-laco">
-					Laço: {formatarInteiro(nVisiveis)} documentos
-					<button type="button" aria-label="Tirar o laço" onclick={() => mudarFiltros({ laco: null })}>×</button>
-				</p>
-				{#if lacoAntigo}
-					<p class="suave" data-testid="aviso-laco">Este laço foi desenhado numa versão anterior do mapa: a seleção pode não corresponder.</p>
-				{/if}
-			{/if}
 			<label class="campo">
 				<span class="rotulo-miudo">Colorir por</span>
 				<select data-testid="cor-por" value={filtros.cor} onchange={(e) => mudarFiltros({ cor: e.currentTarget.value as CorPor })}>
@@ -313,14 +289,6 @@
 			{/if}
 		{/if}
 	</aside>
-
-	<div class="tempo" data-sobre-o-mapa>
-		<LinhaDoTempo
-			limites={tabela.anos}
-			anos={filtros.anos}
-			aoMudar={(anos, passo) => mudarFiltros({ anos }, { substituir: !!passo, em: '/mapa' })}
-		/>
-	</div>
 
 	{#if destaque !== null}
 		<div class="lado" data-sobre-o-mapa>
@@ -367,15 +335,7 @@
 		margin: 0;
 	}
 
-	.contador {
-		margin: 0;
-		font-size: 1.25rem;
-	}
 
-	.contador span {
-		font-size: 0.8rem;
-		color: var(--texto-suave);
-	}
 
 	.campo {
 		display: flex;
@@ -455,8 +415,7 @@
 		gap: 0.5rem;
 	}
 
-	.recolher,
-	.botao {
+	.recolher {
 		font: inherit;
 		font-size: 0.8rem;
 		color: var(--texto);
@@ -465,12 +424,6 @@
 		border-radius: 0.4rem;
 		padding: 0.25rem 0.55rem;
 		cursor: pointer;
-	}
-
-	.botao[aria-pressed='true'] {
-		color: var(--fundo);
-		background: var(--acento);
-		border-color: var(--acento);
 	}
 
 	.acoes {
@@ -524,36 +477,12 @@
 		color: var(--texto-suave);
 	}
 
-	.chip {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
-		margin: 0;
-		padding: 0.25rem 0.35rem 0.25rem 0.7rem;
-		font-size: 0.8rem;
-		border: 1px solid var(--acento);
-		border-radius: 999px;
-	}
 
-	.chip button {
-		color: var(--texto);
-		background: none;
-		border: 0;
-		cursor: pointer;
-		font-size: 1rem;
-	}
 
 	.painel.recolhido {
 		width: auto;
 	}
 
-	.tempo {
-		position: absolute;
-		left: 50%;
-		bottom: 1rem;
-		transform: translateX(-50%);
-	}
 
 	.lado {
 		position: absolute;

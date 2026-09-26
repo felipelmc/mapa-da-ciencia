@@ -2,12 +2,47 @@
   "additionalProperties": false,
   "description": "Gabarito calculado no Python para testar o filtro cruzado do frontend.",
   "properties": {
+    "instituicao": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "Contagem fracionária por instituição.",
+      "title": "Instituicao",
+      "type": "object"
+    },
+    "instituicao_inteiro": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Instituicao Inteiro",
+      "type": "object"
+    },
     "pais": {
       "additionalProperties": {
         "type": "number"
       },
+      "description": "Contagem fracionária por país (ISO alfa-2).",
       "title": "Pais",
       "type": "object"
+    },
+    "pais_inteiro": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Pais Inteiro",
+      "type": "object"
+    },
+    "sem_afiliacao": {
+      "default": 0,
+      "description": "Peso dos autores sem afiliação informada.",
+      "title": "Sem Afiliacao",
+      "type": "number"
+    },
+    "sem_pais": {
+      "default": 0,
+      "description": "Peso das afiliações de país desconhecido (inclui `sem_afiliacao`).",
+      "title": "Sem Pais",
+      "type": "number"
     },
     "topico_ano_revista": {
       "description": "(tópico, ano, revista, n).",
@@ -37,11 +72,20 @@
       "additionalProperties": {
         "type": "number"
       },
+      "description": "Contagem fracionária por UF (sigla).",
       "title": "Uf",
       "type": "object"
     },
+    "uf_inteiro": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "description": "Documentos com alguma afiliação na UF.",
+      "title": "Uf Inteiro",
+      "type": "object"
+    },
     "versao_contrato": {
-      "default": "1.1",
+      "default": "1.2",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",

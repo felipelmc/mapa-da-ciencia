@@ -2,7 +2,7 @@
   "$defs": {
     "ColunasAfiliacoes": {
       "additionalProperties": false,
-      "description": "Colunas da tabela longa de afiliações (uma linha por documento × instituição).",
+      "description": "Colunas da tabela longa de afiliações: uma linha por documento × (instituição, UF, país), pesos somados.",
       "properties": {
         "doc": {
           "description": "Índice do documento em documentos.json.",
@@ -13,6 +13,7 @@
           "type": "array"
         },
         "instituicao": {
+          "description": "Índice em `dicionarios.instituicao`, ou -1 quando o autor não informou afiliação.",
           "items": {
             "type": "integer"
           },
@@ -20,6 +21,7 @@
           "type": "array"
         },
         "pais": {
+          "description": "Índice em `dicionarios.pais` ou -1 (desconhecido).",
           "items": {
             "type": "integer"
           },
@@ -27,7 +29,7 @@
           "type": "array"
         },
         "peso": {
-          "description": "Contagem fracionária: a soma por documento é 1.",
+          "description": "Contagem fracionária: 1 por documento, dividido entre os autores e depois entre as afiliações de cada um. A soma por documento é 1.",
           "items": {
             "type": "number"
           },
@@ -65,7 +67,7 @@
           "type": "array"
         },
         "pais": {
-          "description": "Códigos ISO 3166-1 alfa-2.",
+          "description": "Códigos ISO 3166-1 alfa-2 presentes nas afiliações.",
           "items": {
             "type": "string"
           },
@@ -73,7 +75,7 @@
           "type": "array"
         },
         "uf": {
-          "description": "Siglas das UFs.",
+          "description": "Siglas das UFs (as 27, em ordem alfabética, para índices estáveis).",
           "items": {
             "type": "string"
           },
@@ -94,7 +96,7 @@
       "description": "Uma instituição de afiliação, já normalizada.",
       "properties": {
         "id": {
-          "description": "`ror:…` quando houver, senão um slug do nome normalizado.",
+          "description": "`ror:…` quando houver, `openalex:I…` sem ROR, um apelido do projeto, ou `nao-identificada` (reservado: afiliação informada que não casou com nenhuma instituição).",
           "title": "Id",
           "type": "string"
         },
@@ -103,6 +105,7 @@
           "type": "string"
         },
         "pais": {
+          "description": "ISO 3166-1 alfa-2; vazio em `nao-identificada`.",
           "title": "Pais",
           "type": "string"
         },
@@ -154,7 +157,7 @@
       "type": "integer"
     },
     "versao_contrato": {
-      "default": "1.1",
+      "default": "1.2",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",

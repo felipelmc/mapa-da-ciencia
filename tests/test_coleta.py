@@ -152,3 +152,42 @@ def test_cli_novo_coletar_e_status(tmp_path, apis_falsas, monkeypatch):
     assert "0 requisição(ões), 26 resposta(s) do cache" in r.output
     r = runner.invoke(app, ["coletar", "-P", "op-2024", "--anos", "abc"])
     assert r.exit_code == 1 and "Anos inválidos" in r.output
+
+
+def test_registros_das_instituicoes_do_openalex(projeto, apis_falsas):
+    import duckdb
+
+    from mapa_da_ciencia.armazenamento import ARQUIVO_INSTITUICOES
+
+    resumo = coletar(projeto)
+    assert apis_falsas.chamadas["openalex_instituicoes"] == 1  # menos de 100 ids: um lote, um crédito
+    tabela = duckdb.sql(f"SELECT * FROM read_parquet('{projeto.dados / ARQUIVO_INSTITUICOES}')").fetchall()
+    docs = ler_documentos(projeto.dados / ARQUIVO)
+    ids = {x.id for d in docs for a in d.autorias_openalex for x in a.instituicoes}
+    assert ids and ids <= {linha[0] for linha in tabela}
+    assert resumo.creditos_openalex >= 1
+    # a segunda coleta não pede de novo, nem os ids que o OpenAlex não devolveu
+    coletar(projeto)
+    assert apis_falsas.chamadas["openalex_instituicoes"] == 1
+
+
+def test_sem_cache_das_instituicoes_no_modo_offline_vira_aviso(projeto, apis_falsas):
+    from mapa_da_ciencia.coleta import OpcoesColeta
+
+    coletar(projeto)
+    pedidos = projeto.brutos / "openalex" / "instituicoes" / "pedidos.json.gz"
+    pedidos.unlink()  # como se as instituições nunca tivessem sido baixadas
+    for lote in (projeto.brutos / "openalex" / "instituicoes").glob("lote-*.json.gz"):
+        lote.unlink()
+    resumo = coletar(projeto, OpcoesColeta(offline=True))
+    assert any("instituições do OpenAlex indisponíveis" in a for a in resumo.avisos)
+
+
+def test_coleta_sem_openalex_nao_deixa_registros_antigos_das_instituicoes(projeto, apis_falsas):
+    from mapa_da_ciencia.armazenamento import ARQUIVO_INSTITUICOES
+    from mapa_da_ciencia.coleta import OpcoesColeta
+
+    coletar(projeto)
+    assert (projeto.dados / ARQUIVO_INSTITUICOES).exists()
+    coletar(projeto, OpcoesColeta(sem_openalex=True))
+    assert not (projeto.dados / ARQUIVO_INSTITUICOES).exists()

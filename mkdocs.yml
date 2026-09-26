@@ -93,6 +93,7 @@ nav:
       - Explorar o exemplo em 5 minutos: tutoriais/explorar-exemplo.md
       - "Seu primeiro mapa, parte 1: a coleta": tutoriais/primeiro-mapa.md
       - "Seu primeiro mapa, parte 2: tópicos e mapa": tutoriais/primeiro-mapa-topicos.md
+      - "Seu primeiro mapa, parte 3: tempo e geografia": tutoriais/primeiro-mapa-tempo-e-geografia.md
   - Guias:
       - guias/index.md
       - Instalar e escolher os modelos: guias/instalacao.md
@@ -101,6 +102,9 @@ nav:
       - Importar uma busca do SciELO: guias/importar.md
       - Gerar os tópicos: guias/topicos.md
       - Ler o mapa: guias/ler-o-mapa.md
+      - Ler os tópicos no tempo: guias/ler-os-topicos.md
+      - Gerar a geografia: guias/geografia.md
+      - Ler a geografia: guias/ler-a-geografia.md
       - Escrever um codebook: guias/codebook.md
       - Usar o painel: guias/painel.md
       - Solução de problemas: guias/problemas.md
@@ -116,6 +120,7 @@ nav:
       - explicacoes/index.md
       - Fontes de dados: explicacoes/fontes.md
       - Como os tópicos são construídos: explicacoes/topicos.md
+      - Geografia da produção: explicacoes/geografia.md
       - Modelos locais: explicacoes/modelos-locais.md
       - Reprodutibilidade: explicacoes/reprodutibilidade.md
       - Privacidade e licenças: explicacoes/privacidade-e-licencas.md
@@ -128,5 +133,8 @@ nav:
       - "0005 · Modelo de classificação": decisoes/0005-modelo-de-classificacao.md
       - "0006 · Armazenamento": decisoes/0006-armazenamento-parquet-duckdb.md
       - "0007 · Parâmetros dos tópicos": decisoes/0007-parametros-dos-topicos.md
+      - "0008 · Geografia das afiliações": decisoes/0008-geografia-casamento-das-afiliacoes.md
+      - "0009 · Tendência dos tópicos": decisoes/0009-tendencia-dos-topicos.md
+      - "0010 · Gráficos em SVG próprio": decisoes/0010-graficos-em-svg-proprio.md
   - Desenvolvimento:
       - desenvolvimento/index.md

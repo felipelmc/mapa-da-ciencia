@@ -1,6 +1,6 @@
 [project]
 name = "mapa-da-ciencia"
-version = "0.3.0"
+version = "0.4.0"
 description = "Observatório da literatura científica: tópicos no tempo, classificação por codebook com validação humana e geografia da produção, com modelos de linguagem locais."
 readme = "README.md"
 license = "MIT"
@@ -70,6 +70,7 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 [tool.ruff.lint.per-file-ignores]
 # Listas de stopwords ficam mais legíveis como texto corrido do que como listas literais.
 "src/mapa_da_ciencia/topicos/ctfidf.py" = ["SIM905"]
+"src/mapa_da_ciencia/geografia/casamento.py" = ["SIM905"]  # listas de palavras
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

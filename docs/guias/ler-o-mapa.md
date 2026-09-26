@@ -27,8 +27,6 @@ O **Mapa** do painel mostra cada documento do corpus como um ponto. Esta página
 | Legenda | Mostra só os documentos de um tópico, macrotema ou revista (clique de novo para desfazer) |
 | **Buscar título ou autor** (<kbd>/</kbd>) | Mostra só os documentos que respondem à busca, sem diferença de acentos; clique num resultado para abrir o cartão |
 | **Laço** (<kbd>L</kbd>) | Arraste em volta de uma região para ficar só com os documentos dela |
-| Linha do tempo | Escolhe o intervalo de anos; o **Play** passa ano a ano |
-| Limpar filtros | Volta ao corpus inteiro |
 | Recolher | Esconde o painel de controles e libera o mapa |
 
 <kbd>Esc</kbd> fecha o cartão ou desliga o laço, e <kbd>?</kbd> abre a lista de atalhos na Ajuda.
@@ -37,6 +35,18 @@ O **Mapa** do painel mostra cada documento do corpus como um ponto. Esta página
   ![O mapa com um laço desenhado: só os documentos de dentro continuam coloridos, e o painel mostra quantos são](../imagens/mapa-laco.png){ loading=lazy }
   <figcaption>Com o laço, o mapa fica só com os documentos da região desenhada; o painel mostra quantos são e permite tirar o laço.</figcaption>
 </figure>
+
+## A barra do recorte
+
+Acima do mapa fica a **barra do recorte**, a mesma das vistas Tópicos e Geografia. Ela mostra e controla o que está selecionado:
+
+- a **linha do tempo**, com o intervalo de anos e o **Play**, que passa ano a ano;
+- as **revistas** (um menu com uma caixa para cada revista);
+- os filtros ativos como etiquetas, cada uma com um × para tirar: tópicos (um macrotema inteiro aparece pelo nome dele), a busca, o laço, UFs, países e instituições;
+- quantos documentos estão no recorte;
+- **Limpar recorte**, que volta ao corpus inteiro.
+
+O recorte vai junto quando você passa para Tópicos ou Geografia pelo trilho: um laço desenhado aqui filtra também as outras vistas. O que é só do mapa (a câmera, a cor, o documento aberto) fica para trás.
 
 ## O cartão do documento
 

@@ -44,7 +44,58 @@
 		</dl>
 	</section>
 
+	<section aria-labelledby="ajuda-recorte" data-testid="ajuda-recorte">
+		<h2 id="ajuda-recorte">O recorte</h2>
+		<p>
+			A barra logo abaixo do título guarda o <strong>recorte</strong>: os documentos que as vistas de análise
+			(Mapa, Tópicos e Geografia) mostram. O contador à direita diz quantos passam em tudo. Entram no recorte:
+		</p>
+		<ul>
+			<li>o <strong>período</strong>, na linha do tempo (o <strong>Play</strong> anima ano a ano);</li>
+			<li>as <strong>revistas</strong>, no botão ao lado;</li>
+			<li>os <strong>tópicos</strong>, a <strong>busca</strong> e o <strong>laço</strong>, escolhidos no Mapa e nos Tópicos;</li>
+			<li>
+				<strong>UFs</strong>, <strong>países</strong> e <strong>instituições</strong>, escolhidos na Geografia: um
+				documento passa se tiver ao menos uma afiliação no lugar escolhido.
+			</li>
+		</ul>
+		<p>
+			Cada escolha vira um chip na barra; o × tira. O recorte vai junto quando você troca de vista pelo trilho, e o
+			que é só de uma vista (a câmera do mapa, o modo do fluxo, o documento ou o tópico aberto) fica para trás.
+			Cada gráfico ignora o próprio filtro: com São Paulo escolhido, o mapa das UFs continua mostrando as outras,
+			para você comparar e escolher mais.
+		</p>
+	</section>
+
 	<div class="colunas">
+		<section aria-labelledby="ajuda-topicos">
+			<h2 id="ajuda-topicos">Como ler os tópicos</h2>
+			<p>
+				O <strong>fluxo</strong> mostra os macrotemas (ou, clicando num deles, os tópicos dele) ano a ano. Em
+				<em>Fluxo</em>, a espessura é o número de documentos; em <em>Absoluto</em>, as faixas partem do zero; em
+				<em>100%</em>, cada ano soma 100%, e a altura é a participação.
+			</p>
+			<p>
+				<strong>Em alta</strong> e <strong>em queda</strong> são os tópicos cuja participação muda de forma
+				distinguível do acaso (regressão logística com intervalo de 95%, corrigida pela dispersão). Com dezenas de
+				tópicos testados, cerca de 1 em 20 aparece por acaso: leia a lista como pistas, não como conclusões.
+			</p>
+		</section>
+
+		<section aria-labelledby="ajuda-geografia">
+			<h2 id="ajuda-geografia">Como ler a geografia</h2>
+			<p>
+				Cada documento vale 1, dividido entre os autores e, para cada autor, entre as afiliações dele: um artigo de
+				dois autores, um da USP e um da UnB, dá 0,5 a cada uma. Assim, artigos com muitos autores não pesam mais.
+			</p>
+			<p>
+				No mapa-múndi, o Brasil fica <strong>fora da escala</strong> (hachurado), senão ele achataria os outros
+				países. Afiliações que não casaram com nenhuma instituição contam no país e na UF que a fonte informou; as de
+				autores sem afiliação não contam em lugar nenhum. A cobertura por ano mostra quanto do peso está em cada
+				caso: nos anos mais antigos, falta mais afiliação.
+			</p>
+		</section>
+
 		<section aria-labelledby="ajuda-links">
 			<h2 id="ajuda-links">Links que guardam a vista</h2>
 			<p>

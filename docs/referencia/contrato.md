@@ -14,7 +14,7 @@ Convenções:
   `detalhes/{00..3f}.json`, carregados sob demanda (ver `fragmento_de`).
 - Nenhum arquivo do contrato pode conter e-mails ou codificações humanas individuais.
 
-Versão atual: **1.1**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
+Versão atual: **1.2**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
 
 | Arquivo | Modelo |
 |---|---|
@@ -38,7 +38,7 @@ a interface lê.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `api` | sim/não | **obrigatório** | True no painel local (há API); False no site estático publicado. |
 | `gerado_em` | datetime | **obrigatório** |  |
 | `projeto` | [ProjetoInfo](#projetoinfo) | **obrigatório** | Identificação do projeto. |
@@ -80,6 +80,7 @@ Números do corpus, usados na capa do painel.
 | `classificados` | inteiro | `0` |  |
 | `validados` | inteiro | `0` |  |
 | `com_afiliacao` | inteiro | `0` |  |
+| `com_instituicao` | inteiro | `0` | Documentos com ao menos uma instituição identificada. |
 
 ### ExecucaoInfo
 
@@ -101,7 +102,7 @@ Revistas presentes no corpus, com o número de documentos de cada uma.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `revistas` | lista de [Revista](#revista) | **obrigatório** | Uma revista do corpus. |
 
 ### Revista
@@ -124,7 +125,7 @@ Tabela principal: um documento por posição, com coordenadas no mapa, tópico e
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
 | `colunas` | [ColunasDocumentos](#colunasdocumentos) | **obrigatório** | Colunas da tabela de documentos (todas com `n` itens, na mesma ordem). |
 | `dicionarios` | [DicionariosDocumentos](#dicionariosdocumentos) | **obrigatório** | Valores por trás dos índices das colunas categóricas. |
@@ -168,22 +169,22 @@ Afiliações com contagem fracionária, base da vista de geografia.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
-| `colunas` | [ColunasAfiliacoes](#colunasafiliacoes) | **obrigatório** | Colunas da tabela longa de afiliações (uma linha por documento × instituição). |
+| `colunas` | [ColunasAfiliacoes](#colunasafiliacoes) | **obrigatório** | Colunas da tabela longa de afiliações: uma linha por documento × (instituição, UF, país), pesos somados. |
 | `dicionarios` | [DicionariosAfiliacoes](#dicionariosafiliacoes) | **obrigatório** | Instituições, UFs e países por trás dos índices. |
 
 ### ColunasAfiliacoes
 
-Colunas da tabela longa de afiliações (uma linha por documento × instituição).
+Colunas da tabela longa de afiliações: uma linha por documento × (instituição, UF, país), pesos somados.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `doc` | lista de inteiro | **obrigatório** | Índice do documento em documentos.json. |
-| `instituicao` | lista de inteiro | **obrigatório** |  |
+| `instituicao` | lista de inteiro | **obrigatório** | Índice em `dicionarios.instituicao`, ou -1 quando o autor não informou afiliação. |
 | `uf` | lista de inteiro | **obrigatório** | Índice em `dicionarios.uf` ou -1 (fora do Brasil ou desconhecida). |
-| `pais` | lista de inteiro | **obrigatório** |  |
-| `peso` | lista de número | **obrigatório** | Contagem fracionária: a soma por documento é 1. |
+| `pais` | lista de inteiro | **obrigatório** | Índice em `dicionarios.pais` ou -1 (desconhecido). |
+| `peso` | lista de número | **obrigatório** | Contagem fracionária: 1 por documento, dividido entre os autores e depois entre as afiliações de cada um. A soma por documento é 1. |
 
 ### DicionariosAfiliacoes
 
@@ -192,8 +193,8 @@ Instituições, UFs e países por trás dos índices.
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `instituicao` | lista de [Instituicao](#instituicao) | **obrigatório** | Uma instituição de afiliação, já normalizada. |
-| `uf` | lista de texto | **obrigatório** | Siglas das UFs. |
-| `pais` | lista de texto | **obrigatório** | Códigos ISO 3166-1 alfa-2. |
+| `uf` | lista de texto | **obrigatório** | Siglas das UFs (as 27, em ordem alfabética, para índices estáveis). |
+| `pais` | lista de texto | **obrigatório** | Códigos ISO 3166-1 alfa-2 presentes nas afiliações. |
 
 ### Instituicao
 
@@ -201,11 +202,11 @@ Uma instituição de afiliação, já normalizada.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `id` | texto | **obrigatório** | `ror:…` quando houver, senão um slug do nome normalizado. |
+| `id` | texto | **obrigatório** | `ror:…` quando houver, `openalex:I…` sem ROR, um apelido do projeto, ou `nao-identificada` (reservado: afiliação informada que não casou com nenhuma instituição). |
 | `nome` | texto | **obrigatório** |  |
 | `sigla` | texto ou vazio | vazio |  |
 | `uf` | texto ou vazio | vazio |  |
-| `pais` | texto | **obrigatório** |  |
+| `pais` | texto | **obrigatório** | ISO 3166-1 alfa-2; vazio em `nao-identificada`. |
 
 ## `detalhes/{00..3f}.json`
 
@@ -215,7 +216,7 @@ Um dos 64 fragmentos de detalhes, carregados sob demanda.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `fragmento` | texto | **obrigatório** |  |
 | `documentos` | mapa de texto para [Detalhe](#detalhe) | **obrigatório** | O que a interface mostra ao abrir um documento: resumo, autores, licença e evidências. |
 
@@ -256,7 +257,7 @@ Tópicos e macrotemas do corpus, com as séries por ano.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `anos` | lista de inteiro | **obrigatório** |  |
 | `total_por_ano` | lista de inteiro | **obrigatório** |  |
 | `parametros` | mapa de texto para número ou inteiro ou texto | **obrigatório** |  |
@@ -264,6 +265,7 @@ Tópicos e macrotemas do corpus, com as séries por ano.
 | `macrotemas` | lista de [Macrotema](#macrotema) | **obrigatório** | Agrupamento de tópicos próximos, usado para a cor e a navegação. |
 | `topicos` | lista de [Topico](#topico) | **obrigatório** | Um tópico: rótulo e descrição escritos pelo LLM, palavras-chave, cor estável e série no tempo. |
 | `outliers` | [Outliers](#outliers) | **obrigatório** | Documentos que o agrupamento não encaixou em nenhum tópico. |
+| `metodo_tendencia` | [MetodoTendencia](#metodotendencia) ou vazio | vazio | Como a tendência é calculada. O painel lê daqui os parâmetros para recalcular com os filtros. |
 
 ### Macrotema
 
@@ -276,6 +278,35 @@ Agrupamento de tópicos próximos, usado para a cor e a navegação.
 | `cor` | texto | **obrigatório** |  |
 | `topicos` | lista de inteiro | **obrigatório** |  |
 | `descricao` | texto | `""` |  |
+| `serie` | [Serie](#serie) ou vazio | vazio | Soma das séries dos tópicos do macrotema. |
+| `tendencia` | [Tendencia](#tendencia) ou vazio | vazio | Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel. |
+
+### Serie
+
+Série temporal de um tópico.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `n` | lista de inteiro | **obrigatório** | Documentos por ano, alinhado a `anos`. |
+| `prop` | lista de número | **obrigatório** | Proporção do total do ano. |
+
+### Tendencia
+
+Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `direcao` | `"alta"` \\| `"queda"` \\| `"estavel"` \\| `"insuficiente"` | **obrigatório** |  |
+| `inclinacao` | número ou vazio | vazio | Inclinação na escala logit, por ano. |
+| `erro_padrao` | número ou vazio | vazio | Erro-padrão da inclinação, já corrigido pela dispersão. |
+| `ic95` | par de número e número ou vazio | vazio |  |
+| `dispersao` | número ou vazio | vazio | φ de Pearson (1 na binomial pura). |
+| `prop_inicio` | número ou vazio | vazio | Participação ajustada no primeiro ano com documentos. |
+| `prop_fim` | número ou vazio | vazio | Participação ajustada no último ano com documentos. |
+| `pp_periodo` | número ou vazio | vazio | Variação em pontos percentuais no período. |
+| `pp_por_ano` | número ou vazio | vazio |  |
+| `anos` | par de inteiro e inteiro ou vazio | vazio |  |
+| `motivo` | `"poucos_anos"` \\| `"poucos_documentos"` \\| `"sem_variacao"` \\| `"sem_convergencia"` ou vazio | vazio | Por que não há tendência, quando é `insuficiente`. |
 
 ### Topico
 
@@ -296,15 +327,7 @@ Um tópico: rótulo e descrição escritos pelo LLM, palavras-chave, cor estáve
 | `representativos` | lista de texto | **obrigatório** | Ids de documentos. |
 | `rotulo_fonte` | `"llm"` \\| `"palavras"` \\| `"manual"` | `"llm"` | Quem escreveu o rótulo: o modelo de linguagem, as palavras-chave ou você (rotulos.yaml). |
 | `n_nucleo` | inteiro ou vazio | vazio | Documentos do núcleo, que o HDBSCAN agrupou (os demais foram reatribuídos por vizinhança). |
-
-### Serie
-
-Série temporal de um tópico.
-
-| Campo | Tipo | Padrão | Descrição |
-|---|---|---|---|
-| `n` | lista de inteiro | **obrigatório** | Documentos por ano, alinhado a `anos`. |
-| `prop` | lista de número | **obrigatório** | Proporção do total do ano. |
+| `tendencia` | [Tendencia](#tendencia) ou vazio | vazio | Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel. |
 
 ### Outliers
 
@@ -314,7 +337,21 @@ Documentos que o agrupamento não encaixou em nenhum tópico.
 |---|---|---|---|
 | `n` | inteiro | **obrigatório** | Documentos que o HDBSCAN deixou sem tópico. |
 | `reatribuidos` | inteiro | **obrigatório** | Quantos deles foram atribuídos ao tópico mais próximo. |
-| `por_ano` | lista de inteiro | vazio | Documentos sem tópico no HDBSCAN, por ano, alinhado a `anos`. |
+| `por_ano` | lista de inteiro | vazio | Documentos que o HDBSCAN deixou de fora, por ano (inclui os reatribuídos depois), alinhado a `anos`. |
+| `sem_topico_por_ano` | lista de inteiro | vazio | Documentos que ficaram sem tópico (−1) no fim, por ano. |
+
+### MetodoTendencia
+
+Como a tendência é calculada. O painel lê daqui os parâmetros para recalcular com os filtros.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `modelo` | `"logistica_binomial"` | `"logistica_binomial"` |  |
+| `dispersao` | `"quase"` \\| `"binomial"` | `"quase"` |  |
+| `nivel` | número | `0.95` |  |
+| `z` | número | `1.959963984540054` |  |
+| `anos_minimos` | inteiro | `5` |  |
+| `docs_minimos` | inteiro | `10` |  |
 
 ## `codebook.json`
 
@@ -324,7 +361,7 @@ Cópia publicada do codebook, com o hash que identifica a versão usada.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `nome` | texto | **obrigatório** |  |
 | `versao` | texto | **obrigatório** |  |
 | `hash` | texto | **obrigatório** |  |
@@ -362,7 +399,7 @@ Resumo da classificação por codebook: modelo, cobertura e contagens por catego
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `modelo` | texto | **obrigatório** |  |
 | `hash_codebook` | texto | **obrigatório** |  |
 | `cobertura` | número | **obrigatório** | Fração dos documentos com classificação válida. |
@@ -377,7 +414,7 @@ Resultados da validação da classificação contra codificação humana.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `amostra` | [AmostraInfo](#amostrainfo) | **obrigatório** | Como a amostra de validação foi sorteada. |
 | `metricas` | lista de [MetricaVariavel](#metricavariavel) | **obrigatório** | Concordância entre humano e modelo (ou entre dois modelos) numa variável. |
 | `modelos` | lista de texto | **obrigatório** |  |
@@ -438,7 +475,13 @@ Gabarito calculado no Python para testar o filtro cruzado do frontend.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.1"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.2"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `topico_ano_revista` | lista de tupla | **obrigatório** | (tópico, ano, revista, n). |
-| `uf` | mapa de texto para número | **obrigatório** |  |
-| `pais` | mapa de texto para número | **obrigatório** |  |
+| `uf` | mapa de texto para número | **obrigatório** | Contagem fracionária por UF (sigla). |
+| `pais` | mapa de texto para número | **obrigatório** | Contagem fracionária por país (ISO alfa-2). |
+| `instituicao` | mapa de texto para número | vazio | Contagem fracionária por instituição. |
+| `uf_inteiro` | mapa de texto para inteiro | vazio | Documentos com alguma afiliação na UF. |
+| `pais_inteiro` | mapa de texto para inteiro | vazio |  |
+| `instituicao_inteiro` | mapa de texto para inteiro | vazio |  |
+| `sem_afiliacao` | número | `0` | Peso dos autores sem afiliação informada. |
+| `sem_pais` | número | `0` | Peso das afiliações de país desconhecido (inclui `sem_afiliacao`). |

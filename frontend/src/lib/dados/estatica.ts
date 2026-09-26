@@ -1,5 +1,6 @@
 import type {
 	Afiliacoes,
+	Agregados,
 	Classificacoes,
 	CodebookContrato,
 	Detalhe,
@@ -69,6 +70,10 @@ export class FonteEstatica implements FonteDeDados {
 
 	afiliacoes(): Promise<Afiliacoes | null> {
 		return this.#seHouver<Afiliacoes>('afiliacoes');
+	}
+
+	agregados(): Promise<Agregados | null> {
+		return this.#seHouver<Agregados>('agregados');
 	}
 
 	topicos(): Promise<Topicos | null> {

@@ -14,6 +14,12 @@
           "title": "Com Afiliacao",
           "type": "integer"
         },
+        "com_instituicao": {
+          "default": 0,
+          "description": "Documentos com ao menos uma instituição identificada.",
+          "title": "Com Instituicao",
+          "type": "integer"
+        },
         "documentos": {
           "title": "Documentos",
           "type": "integer"
@@ -197,7 +203,7 @@
       "$ref": "#/$defs/RecorteInfo"
     },
     "versao_contrato": {
-      "default": "1.1",
+      "default": "1.2",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",

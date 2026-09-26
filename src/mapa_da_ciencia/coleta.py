@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from mapa_da_ciencia.armazenamento import ARQUIVO, gravar_documentos
+from mapa_da_ciencia.armazenamento import ARQUIVO, ARQUIVO_INSTITUICOES, gravar_documentos, gravar_tabela
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.contrato.exportar import exportar
 from mapa_da_ciencia.documento import Documento
@@ -29,17 +29,20 @@ from mapa_da_ciencia.fontes.articlemeta import (
     normalizar,
     revista_do_registro,
 )
-from mapa_da_ciencia.fontes.base import Buscador, limpar_temporarios
+from mapa_da_ciencia.fontes.base import Buscador, ErroFonte, limpar_temporarios
 from mapa_da_ciencia.fontes.dedup import deduplicar
 from mapa_da_ciencia.fontes.importar import FORMATOS, Identificador, Importacao, ler_arquivo
 from mapa_da_ciencia.fontes.importar import colecao_da_url as colecao_da_url
 from mapa_da_ciencia.fontes.openalex import (
+    COLUNAS_INSTITUICOES,
+    buscar_instituicoes,
     buscar_obra,
     buscar_por_dois,
     casar_todos,
     consultar,
     documento_de_obra,
     issns_da_obra,
+    linha_de_instituicao,
     listar_por_revista,
     pid_da_obra,
 )
@@ -439,6 +442,21 @@ async def coletar_async(
                 excluidos[doc.tipo or "sem tipo"] += 1
             else:
                 documentos.append(doc)
+
+        # registros das instituições que o OpenAlex associou aos autores (siglas, nomes, local, linhagem):
+        # a base do casamento das afiliações na geografia
+        instituicoes: list[dict] = []
+        ids_inst = {
+            i for d in documentos for a in d.autorias_openalex for x in a.instituicoes for i in (x.id, *x.linhagem)
+        }
+        if ids_inst and plano.openalex and not opcoes.sem_openalex:
+            try:
+                api_key = variavel("OPENALEX_API_KEY", projeto.raiz)
+                instituicoes = await buscar_instituicoes(buscador, ids_inst, api_key=api_key)
+            except ErroFonte as erro:
+                avisos.append(
+                    f"Registros das instituições do OpenAlex indisponíveis ({erro}); a geografia vai usar só os nomes."
+                )
         contadores = buscador.contadores
 
     documentos, dedup = deduplicar(documentos)
@@ -453,6 +471,12 @@ async def coletar_async(
             f"diferentes (um texto padrão, e não o resumo do artigo), por exemplo em {exemplos}."
         )
     n = gravar_documentos(documentos, projeto.dados / ARQUIVO)
+    if instituicoes:
+        gravar_tabela(
+            [linha_de_instituicao(r) for r in instituicoes], COLUNAS_INSTITUICOES, projeto.dados / ARQUIVO_INSTITUICOES
+        )
+    else:  # sem registros nesta coleta: os de uma coleta anterior não valem para o corpus novo
+        (projeto.dados / ARQUIVO_INSTITUICOES).unlink(missing_ok=True)
     progresso.fim()
 
     resumo = ResumoColeta(
@@ -461,7 +485,7 @@ async def coletar_async(
         fundidos=len(dedup.fundidos),
         possiveis_duplicatas=dedup.suspeitas,
         importacoes=importacoes,
-        por_revista=dict(Counter(d.revista_acronimo or "?" for d in documentos).most_common()),
+        por_revista=dict(Counter(d.chave_revista for d in documentos).most_common()),
         fora_do_periodo=fora_do_periodo,
         excluidos_por_tipo=dict(excluidos.most_common()),
         nao_encontrados=nao_encontrados,

@@ -1,7 +1,7 @@
 /**
- * Busca por título e autores no mapa (minisearch), sem diferença de acentos nem de maiúsculas: "coalizao"
- * encontra "Coalizões". Aceita prefixos ("presid" → "presidencialismo") e pequenos erros de digitação.
- * O índice é montado na primeira busca.
+ * Busca por título e autores (minisearch), sem diferença de acentos nem de maiúsculas: "coalizao" encontra
+ * "Coalizões". Aceita prefixos ("presid" → "presidencialismo") e pequenos erros de digitação. O índice é
+ * montado na primeira busca e compartilhado pelas vistas (`indiceDe`).
  */
 import MiniSearch from 'minisearch';
 import type { TabelaDocumentos } from '$lib/dados/documentos';
@@ -29,4 +29,16 @@ export function buscar(indice: IndiceBusca, texto: string): number[] {
 	return indice
 		.search(texto, { prefix: true, fuzzy: (termo) => (termo.length > 4 ? 0.2 : false), combineWith: 'AND', boost: { titulo: 2 } })
 		.map((r) => r.id as number);
+}
+
+const indices = new WeakMap<TabelaDocumentos, IndiceBusca>();
+
+/** O índice da tabela, montado uma vez e compartilhado pelo mapa, pela barra de recorte e pelas vistas. */
+export function indiceDe(t: TabelaDocumentos): IndiceBusca {
+	let indice = indices.get(t);
+	if (!indice) {
+		indice = indexar(t);
+		indices.set(t, indice);
+	}
+	return indice;
 }

@@ -9,10 +9,15 @@
 	import Icone from './Icone.svelte';
 
 	/**
-	 * Página de uma seção que ainda não tem vista: cabeçalho com o que ela vai mostrar,
-	 * estado vazio dizendo quando chega e quais arquivos de dados o projeto já tem.
+	 * Página de uma seção sem conteúdo para mostrar: cabeçalho com o que ela mostra e um estado vazio com os
+	 * arquivos de dados que o projeto já tem. Sem `vazio`, diz em que marco a vista chega; com `vazio`, é a vista
+	 * pronta num projeto que ainda não rodou a etapa (o texto diz o que rodar).
 	 */
-	let { secao, children }: { secao: Secao; children?: Snippet } = $props();
+	let {
+		secao,
+		vazio,
+		children
+	}: { secao: Secao; vazio?: { titulo: string; sobretitulo: string }; children?: Snippet } = $props();
 
 	const { manifesto } = usarProjeto();
 
@@ -50,11 +55,16 @@
 		<p class="resumo">{secao.resumo}</p>
 	</header>
 
-	<EstadoVazio titulo="Chega {secao.chegada}" sobretitulo="Vista em construção">
-		<p>
-			A casca do app já está no ar. Esta vista entra {secao.chegada}, e o endereço
-			<code>#{secao.caminho}</code> continua o mesmo.
-		</p>
+	<EstadoVazio
+		titulo={vazio?.titulo ?? `Chega ${secao.chegada}`}
+		sobretitulo={vazio?.sobretitulo ?? 'Vista em construção'}
+	>
+		{#if !vazio}
+			<p>
+				A casca do app já está no ar. Esta vista entra {secao.chegada}, e o endereço
+				<code>#{secao.caminho}</code> continua o mesmo.
+			</p>
+		{/if}
 		{@render children?.()}
 		{#if arquivos.length}
 			<div class="dados">

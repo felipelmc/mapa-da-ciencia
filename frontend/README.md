@@ -5,7 +5,7 @@ App estático em SvelteKit que visualiza o **contrato de dados**: os arquivos JS
 - o **painel local** (`mapa painel`), servido pelo Python em `/`, com os dados em `/dados/` e a API em `/api/`;
 - o **site publicado** (GitHub Pages), servido num subcaminho como `/mapa-da-ciencia/demo/`, sem API e sem regra de reescrita.
 
-> **Estado:** marco M3, em andamento. Já funcionam a casca (trilho, barra superior, dois temas, estado na URL), a capa (Início) com os números do corpus e os macrotemas, e o **Mapa** (regl-scatterplot, `src/lib/graficos/Nuvem.svelte` e `src/lib/mapa/`). As outras vistas mostram um estado vazio que diz em que marco chegam.
+> **Estado:** marco M4, em andamento. Já funcionam a casca (trilho, barra superior, dois temas, estado na URL), a capa (Início) com os números do corpus e os macrotemas, e o **Mapa** (regl-scatterplot, `src/lib/graficos/Nuvem.svelte` e `src/lib/mapa/`). As outras vistas mostram um estado vazio que diz em que marco chegam.
 
 ## Como rodar
 
@@ -42,6 +42,7 @@ npx playwright install chromium
 | `npm run tipos` | Regenera `src/lib/contrato/tipos.ts` a partir de `../contrato/schema/*.schema.json`. |
 | `npm run tipos:checar` | Falha se `tipos.ts` estiver desatualizado em relação aos schemas. Roda no CI. |
 | `npm run empacotar` | Faz o build e copia `build/` para `../src/mapa_da_ciencia/web/estatico/` (apaga o destino antes), de onde o `mapa painel` serve a interface. |
+| `node scripts/baixar-malhas.ts` | Regrava as malhas da vista Geografia em `src/lib/geografia/malhas/`: as UFs do IBGE (1 requisição à API de malhas) e os países do Natural Earth (pacote `world-atlas`, sem rede). Com `--so-mundo`, só a do mundo. As malhas são versionadas; o painel não baixa nada. |
 | `node scripts/capturas.ts ../projetos/cp-scielo` | Gera as capturas do mapa da documentação (`../docs/imagens/`) a partir dos dados de um projeto, com o Playwright. Roda só localmente, depois do `npm run build`: o piloto não está no repositório. O cartão mostra sempre um artigo com licença CC BY. |
 
 A ordem do CI (`.github/workflows/ci.yml`) é: `npm ci`, `tipos:checar`, `check`, `test`, `build`, `e2e`.
@@ -56,6 +57,7 @@ frontend/
 ├── playwright.config.ts              e2e sobre o build, 1440×900, um worker
 ├── scripts/
 │   ├── gerar-tipos.ts                schemas do contrato → src/lib/contrato/tipos.ts
+│   ├── baixar-malhas.ts              IBGE e Natural Earth → src/lib/geografia/malhas/
 │   ├── relativizar-index.ts          pós-build: "/_app/ → "./_app/ no index.html
 │   └── empacotar.ts                  build/ → ../src/mapa_da_ciencia/web/estatico/
 ├── src/
@@ -68,6 +70,8 @@ frontend/
 │   │   ├── estilos/tokens.css        cores e fontes dos dois temas
 │   │   ├── estilos/base.css          reset, tipografia, foco, fundo, movimento
 │   │   ├── componentes/              casca (Trilho, BarraSuperior…), estados vazios, carta da capa
+│   │   ├── recorte/                  barra do recorte (comum às vistas de análise) e linha do tempo
+│   │   ├── geografia/                vista Geografia: mapas das UFs e do mundo, ranking, escala de cores, malhas
 │   │   ├── secoes.ts                 as seções: rótulo, rota, ícone, resumo, marco, arquivos usados
 │   │   └── formato.ts                números e datas em pt-BR
 │   └── routes/                       uma pasta por seção; +layout.svelte abre o projeto
@@ -75,7 +79,11 @@ frontend/
 └── tests/e2e/
     ├── preparar.ts                   globalSetup: monta e serve raiz, subcaminho e projeto vazio
     ├── servidor.ts                   estático sem reescrita (como o GitHub Pages)
-    └── casca.spec.ts                 os testes
+    ├── comum.ts                      ajudantes: vigiar o console, esperar o mapa, ler o exemplo
+    ├── casca.spec.ts                 casca, capa, temas, projeto vazio
+    ├── mapa.spec.ts                  a vista Mapa
+    ├── topicos.spec.ts               a vista Tópicos
+    └── geografia.spec.ts             a vista Geografia
 ```
 
 Os testes unitários ficam ao lado do código (`*.test.ts`).
@@ -113,6 +121,12 @@ const detalhe = await fonte.detalhe(id); // Detalhe | null (resumo, autores, evi
 
 A interface esconde o que a fonte não pode fazer. Por exemplo, a seção **Projeto** só aparece no trilho quando `manifesto.api` é verdadeiro.
 
+## O cubo do filtro cruzado
+
+`src/lib/dados/cubo.ts` responde, para o recorte da URL, quais documentos passam e quantos há por ano, tópico, revista e lugar. Cada dimensão (ano, revista, tópico, busca, laço, UF, país, instituição) tem um bit, e `falhas[i]` guarda as dimensões que o documento *não* atende. Cada vista agrega **excluindo a própria dimensão** (`exceto`): o fluxo por ano mostra o período inteiro com o intervalo destacado, e o mapa das UFs mantém as outras UFs clicáveis. Os filtros de lugar valem por documento (basta uma afiliação); o peso fracionário só entra nas somas geográficas.
+
+`src/lib/dados/corpus.ts` abre o corpus uma vez por fonte (`abrirCubo`): tabela de documentos, tópicos, afiliações (se houver) e o cubo, compartilhado pelas vistas e pela barra de recorte. A busca (`dados/busca.ts`) monta o índice uma vez (`indiceDe`).
+
 ## Estado na URL
 
 `src/lib/estado/url.ts` define o formato do endereço:
@@ -124,7 +138,17 @@ A interface esconde o que a fonte não pode fazer. Por exemplo, a seção **Proj
 | `topicos` | `3,12` (`-1` = sem tópico) | todos |
 | `cor` | `topico`, `macrotema`, `revista`, `ano` | `topico` |
 | `busca` | `coalizão` | vazio |
+| `laco` | `a1b2~0.1,0.2~0.3,0.1~…` (versão do mapa e vértices em coordenadas dos dados) | nenhum |
+| `uf` | `SP,RJ` (documentos com alguma afiliação nessas UFs) | todas |
+| `pais` | `AR,US` (ISO alfa-2) | todos |
+| `inst` | `ror:036rp1748` | todas |
+| `modo` | `fluxo`, `absoluto`, `proporcao` (vista Tópicos) | `fluxo` |
+| `macro` | `3` (macrotema aberto na vista Tópicos) | nenhum |
+| `vista` | `0.12,-0.3,2.5` (câmera do mapa: centro e zoom) | a câmera inicial |
+| `topico` | `12` (gaveta do tópico; não confundir com `topicos`, que filtra) | nenhum |
 | `doc` | `exemplo:00042` | nenhum |
+
+O **recorte** (`CHAVES_RECORTE`: `anos`, `revistas`, `topicos`, `busca`, `laco`, `uf`, `pais`, `inst`) é o que as vistas de análise compartilham: o trilho o leva de uma seção a outra (seções com `recorte: true` em `secoes.ts`). Os demais parâmetros são de cada vista e ficam para trás.
 
 `escreverFiltros()` omite os valores padrão e usa ordem fixa, então o mesmo estado gera sempre o mesmo link. `lerFiltros()` ignora valores inválidos sem erro. O teste de ida e volta (`url.test.ts`) cobre filtros → URL → filtros, URL canônica → filtros → mesma URL e 300 combinações aleatórias com semente fixa.
 
@@ -172,9 +196,20 @@ Um só sistema de tokens (`src/lib/estilos/tokens.css`) com dois temas, escolhid
 |---|---|
 | `dados/fragmentos.test.ts` | `fragmentoDe` igual ao Python; os 64 fragmentos cobertos; cada documento do exemplo no fragmento certo |
 | `dados/estatica.test.ts` | cache; detalhe no fragmento certo; escolha da fonte por `api`; projeto vazio sem nenhuma requisição além do manifesto (`fetch` falso); erro e nova tentativa; versão do contrato |
-| `estado/url.test.ts` | `rota()`, `lerHash()` e a ida e volta dos filtros |
+| `estatistica/glm.test.ts` | a tendência no navegador igual à referência em Python: os 13 casos de `contrato/casos/tendencia.json` e o gabarito de cada tópico e macrotema do exemplo |
+| `graficos/fluxo.test.ts` | empilhamento do fluxo (proporção soma 1, absoluto soma o total, fluxo preserva as espessuras, ordem fixa entre os modos) e rótulos dentro das faixas só onde cabem |
+| `formato.test.ts` | decimais, porcentagens e pontos percentuais em pt-BR |
+| `dados/cubo.test.ts` | o filtro cruzado contra o gabarito do Python (`agregados.json`): tópico × ano × revista com e sem filtros, UFs, países e instituições fracionários, séries; 300 recortes aleatórios contra uma filtragem ingênua; exclusão de dimensões; lugares por documento; busca e laço |
+| `dados/documentos.test.ts` | decodificação do `documentos.json`: NDC com a mesma escala nos dois eixos, enquadramento que resiste a ilhas, vizinhos, índice |
+| `estado/url.test.ts` | `rota()`, `lerHash()` e a ida e volta dos filtros, inclusive `laco` e `vista` |
 | `estado/sem-resolve.test.ts` | nenhum `resolve()` nem link absoluto em `src/` |
 | `estilos/contraste.test.ts` | contraste AA dos tokens nos dois temas |
+| `graficos/geometria.test.ts` | simplificação do laço (RDP) e ponto no polígono |
+| `mapa/busca.test.ts` | busca por título e autor sem diferença de acentos |
+| `mapa/contornos.test.ts` | contornos que envolvem o núcleo de cada tópico, banda adaptada, ~80% dentro |
+| `mapa/cores.test.ts` | paletas de revista e de ano |
+| `geografia/escala.test.ts` | classes de cor em escala logarítmica com limites redondos; a escala sequencial (`--seq-*`) muda de claridade sempre no mesmo sentido, com tons vizinhos distinguíveis e o mais forte com contraste 3:1 sobre o fundo, nos dois temas |
+| `geografia/malhas.test.ts` | as 27 UFs do IBGE com a sigla, os países com ISO-2 único, projeções que cabem na área de desenho |
 
 **De ponta a ponta** (`npm run e2e`). O `tests/e2e/preparar.ts` copia o build para uma pasta temporária, com os dados de exemplo em `dados/` ao lado do `index.html`, e serve três sites com um estático sem reescrita:
 
@@ -194,7 +229,9 @@ Os testes cobrem:
 - o link de pular;
 - rota inexistente;
 - tela estreita;
-- projeto vazio, sem pedir arquivos ausentes.
+- projeto vazio, sem pedir arquivos ausentes;
+- no Mapa (`mapa.spec.ts`): o desenho dos pontos, contornos e rótulos pelo zoom, legenda, cor por revista, cartão pelo link e pelo clique, busca, laço pelo link e pelo mouse, play da linha do tempo e atalhos.
+- na Geografia (`geografia.spec.ts`): o peso de cada UF igual ao gabarito do Python, o ranking pela instituição de maior peso, o Brasil fora da escala do mundo, o clique numa UF que vai para o recorte e dali para o Mapa, o teclado, "Ver como tabela", "Mostrar mais", a cobertura por ano (o aviso dos anos com muito peso sem afiliação) e o projeto vazio.
 
 As capturas ficam em `test-results/` (ignorado pelo git): `tema-observatorio-1440x900.png`, `tema-prancha-1440x900.png` e `estreita-observatorio-390x844.png`.
 
