@@ -8,6 +8,8 @@ uv run mapa validar metricas
 
 Cada par tem uma tabela, com uma linha por variável. O primeiro nome do par é tomado como referência na matriz de confusão e na precisão e revocação por classe.
 
+No painel, a vista **Validação** mostra o mesmo: escolha o par no alto e uma variável na tabela para ver a matriz de confusão, a precisão e a revocação por categoria e as divergências, cada uma com o trecho que o modelo citou. No painel local, os números são calculados na hora, incluindo as codificações que acabaram de ser feitas.
+
 ## Os números
 
 | Número | O que diz | Cuidado |
