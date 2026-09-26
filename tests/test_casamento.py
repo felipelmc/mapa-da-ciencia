@@ -15,7 +15,14 @@ from mapa_da_ciencia.documento import (
 )
 from mapa_da_ciencia.fontes.openalex import COLUNAS_INSTITUICOES
 from mapa_da_ciencia.geografia import instituicoes as inst
-from mapa_da_ciencia.geografia.casamento import Casador, Indice, alinhar, palavras, parece_organizacao
+from mapa_da_ciencia.geografia.casamento import (
+    Casador,
+    Indice,
+    alinhar,
+    palavras,
+    parece_afiliacao,
+    parece_organizacao,
+)
 from mapa_da_ciencia.geografia.instituicoes import Registro
 from mapa_da_ciencia.llm.perfis import PERFIS
 from mapa_da_ciencia.projeto import Projeto
@@ -85,6 +92,33 @@ def test_parece_organizacao():
     assert parece_organizacao("Câmara dos Deputados")
     assert not parece_organizacao("O Brasil tem")
     assert not parece_organizacao("tradução de")
+
+
+def test_parece_afiliacao():
+    assert parece_afiliacao("Universidade Federal Fluminense")
+    assert parece_afiliacao("universidade Federal Fluminense")  # curto: vale mesmo em minúscula
+    assert not parece_afiliacao("Cambridge: Cambridge University Press, 1997")  # citação
+    assert not parece_afiliacao("Cambridge: Cambridge University")
+    assert not parece_afiliacao("versão anterior deste artigo foi apresentada na Universidade de São Paulo")
+
+
+def test_so_o_lugar_em_comum_nao_casa():
+    indice = Indice({**REGISTROS, "I30": Registro("I30", "SOAS University of London", pais="GB", cidade="London")})
+    assert indice.semelhanca("Womankind Worldwide, London", "I30") == 0.0
+    assert indice.semelhanca("SOAS University of London", "I30") == 1.0
+
+
+def test_instituicao_do_openalex_precisa_do_texto(indice):
+    lixo = AutoriaOpenAlex(
+        nome="Clara Mafra",
+        instituicoes=[InstituicaoOpenAlex(id="I10", nome="King's College London")],
+        afiliacoes=[AfiliacaoOpenAlex(texto="Falwell, de Susan Harding", instituicoes=["I10"])],
+    )
+    assert Casador(indice).confiaveis(lixo) == {}
+    boa = autoria("Ana Souza", "I10", textos=["King's College London, Reino Unido"])
+    assert set(Casador(indice).confiaveis(boa)) == {"I10"}
+    sem_texto = autoria("Ana Souza", "I10")
+    assert set(Casador(indice).confiaveis(sem_texto)) == {"I10"}
 
 
 def test_mae(indice):

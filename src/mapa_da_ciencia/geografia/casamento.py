@@ -79,6 +79,21 @@ _EQUIVALENTES = {
         "nacional": "national nazionale nationale",
         "tecnologica": "tecnologico technological tecnologia technology technologie",
         "fundacao": "foundation fundacion fondation fondazione",
+        "conselho": "consejo council conseil consiglio",
+        "comissao": "comision commission",
+        "corporacao": "corporacion corporation",
+        "associacao": "asociacion association",
+        "sociedade": "sociedad society societe",
+        "universitario": "universitaria universitary",
+        "educacao": "education educacion",
+        "camara": "chamber camera",
+        "deputados": "deputies diputados deputes",
+        "senado": "senate senat senato",
+        "ministerio": "ministry ministere ministero",
+        "secretaria": "secretariat secretary",
+        "exercito": "army ejercito",
+        "marinha": "navy naval armada",
+        "guerra": "war",
         "ciencias": "ciencia science sciences scienze",
         "sociais": "social sociales sociale sociali",
         "politica": "politicas political politics politique politiques politico politicos",
@@ -115,12 +130,13 @@ _SUBUNIDADES = frozenset(
 )
 # palavras que começam o nome da organização que contém uma unidade ("… da Universidade de Brasília")
 _CONTEM = frozenset("universidade fundacao faculdade escola instituto centro".split())
-_LIGACOES = frozenset("da do de das dos na no em pela pelo of at in del".split())  # não "State University of…"
+_LIGACOES = frozenset("da do de das dos na no em pela pelo of the at in del".split())  # não "State University of…"
 # um texto de afiliação do OpenAlex sem instituição reconhecida só vale se nomeia uma organização (muitos são
 # pedaços do PDF raspado: "O Brasil tem", "tradução de")
 _ORGANIZACOES = _SUBUNIDADES | frozenset(
-    "universidade fundacao ministerio secretaria conselho observatorio college academia agencia banco camara "
-    "senado tribunal assembleia prefeitura governo empresa associacao sociedade".split()
+    "universidade universitario fundacao ministerio secretaria conselho comissao observatorio college academia "
+    "agencia banco camara senado tribunal assembleia prefeitura governo empresa associacao sociedade corporacao "
+    "exercito marinha aeronautica policia embaixada organizacao institutofederal".split()
 )
 TAMANHO_MAXIMO_AFILIACAO = 200
 
@@ -137,9 +153,17 @@ def _expressoes() -> tuple[tuple[re.Pattern[str], str], ...]:
         for n in (u.nome, *u.variantes)
         if " " in n or n != u.nome  # os nomes de uma palavra (Bahia, Paraná) já são uma palavra só
     ]
-    nomes += [("instituto federal", "institutofederal"), ("federal instituto", "institutofederal")]
     nomes.sort(key=lambda par: -len(par[0]))
-    return tuple((re.compile(rf"\b{re.escape(nome)}\b"), marca) for nome, marca in nomes)
+    categorias = (
+        # "Instituto Federal de Educação, Ciência e Tecnologia de Goiás" = "Instituto Federal de Goiás"
+        (r"\b(?:instituto federal|federal instituto)(?: (?:de|of) educacao ciencias (?:e|and) tecnologica)?\b",
+         "institutofederal"),
+        (r"\b(?:centro federal de educacao tecnologica|federal centro (?:of|for) tecnologica educacao)\b", "cefet"),
+    )  # fmt: skip
+    return (
+        *((re.compile(padrao), marca) for padrao, marca in categorias),
+        *((re.compile(rf"\b{re.escape(nome)}\b"), marca) for nome, marca in nomes),
+    )
 
 
 _MARCAS = ("lugar", "institutofederal")
@@ -150,6 +174,7 @@ _LETRAS_SOLTAS = re.compile(r"\b[a-z](?: [a-z]\b)+")
 def palavras(texto: str) -> frozenset[str]:
     """As palavras que contam na comparação de nomes de instituição."""
     # letras soltas em sequência formam uma palavra ("Texas A&M" → "am"); uma letra sozinha (inicial) não conta
+    texto = texto.replace("#TAB#", " ")  # resto de tabulação nos textos do OpenAlex
     base = _LETRAS_SOLTAS.sub(lambda m: m.group().replace(" ", ""), normalizar.chave(texto))
     base = " ".join(_EQUIVALENTES.get(p, p) for p in base.split())
     for padrao, marca in _expressoes():
@@ -157,9 +182,31 @@ def palavras(texto: str) -> frozenset[str]:
     return frozenset(p for p in base.split() if p not in _VAZIAS and (len(p) >= 2 or p.isdigit()))
 
 
+_ANO = re.compile(r"\b(?:19|20)\d\d\b")
+_CIDADE_EDITORA = re.compile(r"^[^\W\d_][\w .'-]{1,30}:\s")  # "Cambridge: Cambridge University Press"
+
+
+def parece_afiliacao(texto: str) -> bool:
+    """Um texto de afiliação, e não um pedaço do artigo raspado pelo OpenAlex: curto, sem ano (as citações têm:
+    "Cambridge University Press, 1997") e sem cara de frase (seis palavras ou mais começando em minúscula ou
+    pontuação: ". Swanson diz que…", "versão anterior deste artigo foi apresentada…")."""
+    texto = texto.strip()
+    if not 0 < len(texto) <= TAMANHO_MAXIMO_AFILIACAO or _ANO.search(texto) or _CIDADE_EDITORA.match(texto):
+        return False
+    return len(texto.split()) < 6 or texto[0].isupper()
+
+
 def parece_organizacao(texto: str) -> bool:
-    """Um texto curto que nomeia uma organização (universidade, instituto, ministério…)."""
-    return 0 < len(texto) <= TAMANHO_MAXIMO_AFILIACAO and bool(palavras(texto) & _ORGANIZACOES)
+    """Um texto curto em que alguma parte nomeia uma organização (universidade, instituto, ministério…) ou é uma
+    sigla ("CONICET, Argentina")."""
+    if not 0 < len(texto) <= TAMANHO_MAXIMO_AFILIACAO:
+        return False
+    for parte in (p.strip() for p in _PARTES.split(texto)):
+        if " " not in parte and sum(c.isupper() for c in parte) >= 2 and len(parte) <= 15:
+            return True
+        if palavras(parte) & _ORGANIZACOES:
+            return True
+    return False
 
 
 def _chave_sigla(texto: str) -> str:
@@ -258,7 +305,7 @@ class Indice:
             # cada nome também sem a sigla que ele carrega ("Iscte – Instituto Universitário de Lisboa"), que casa
             # por outro caminho; com ela, para não perder uma palavra que também é sigla ("Nova", da Nova de Lisboa)
             # (a variante sem a sigla precisa continuar nomeando uma organização: "CONACYT México" não vira "México")
-            proprias = {_chave_sigla(p) for x in r.siglas for p in (x, *x.split("-"))}
+            proprias = {_chave_sigla(p) for x in r.siglas for p in (x, *x.split("-"))} - DISCRIMINANTES
             nomes = [palavras(n) for n in (r.nome, *r.nomes) if n]
             sem_sigla = [n - proprias for n in nomes if n & proprias]
             sem_sigla = [n for n in sem_sigla if len(n) >= 2 and n & _ORGANIZACOES]
@@ -271,6 +318,14 @@ class Indice:
             for s in r.siglas:
                 if len(k := _chave_sigla(s)) >= SIGLA_MINIMA:
                     self._por_sigla[k].add(r.id)
+        # palavras que são lugar: as UFs juntadas, as cidades de uma palavra só das instituições (não o "college" de
+        # College Park, nem o "nova" de Nova York) e os nomes de países
+        cidades = (palavras(r.cidade) for r in registros.values() if r.cidade)
+        self._lugares = (
+            frozenset(p for p in frequencia if p.startswith("lugar"))
+            | (frozenset(next(iter(c)) for c in cidades if len(c) == 1) - GENERICAS - _ORGANIZACOES - DISCRIMINANTES)
+            | frozenset(p for p in frequencia if len(p) >= 4 and normalizar.pais(p))
+        )
         total = max(1, len(registros))
         self._peso = {p: math.log(1 + total / n) for p, n in frequencia.items()}
         self._peso_desconhecida = math.log(1 + total)
@@ -284,8 +339,8 @@ class Indice:
         if (a & DISCRIMINANTES) != (b & DISCRIMINANTES):
             return 0.0
         a, b = _aproximar(a, b)
-        if _conflito(a, b):
-            return 0.0
+        if _conflito(a, b) or (a & b) <= self._lugares:
+            return 0.0  # só o lugar em comum ("London" × "SOAS University of London") não é a mesma organização
         comum = sum(self.peso(p) for p in a & b)
         if not comum:
             return 0.0
@@ -298,7 +353,7 @@ class Indice:
         for sg in siglas_do_texto(texto):
             if id_ in self._por_sigla.get(sg.chave, ()) and any(not _conflito(sg.resto, n) for n in nomes):
                 return 1.0
-        return max((self._dice(p, n) for p in partes(texto) for n in nomes), default=0.0)
+        return self.pelo_nome(texto, id_)
 
     def apelido(self, texto: str) -> str | None:
         if id_ := self.apelidos.get(normalizar.chave(texto)):
@@ -311,7 +366,16 @@ class Indice:
         r = self.registros.get(id_)
         return r is not None and not (pais and r.pais and r.pais != pais)
 
+    def pelo_nome(self, texto: str, id_: str) -> float:
+        """A semelhança só pelos nomes, sem as siglas (que se repetem entre países: USP, PUC)."""
+        nomes = self._nomes.get(id_, ())
+        return max((self._dice(p, n) for p in partes(texto) for n in nomes), default=0.0)
+
     def melhores(self, texto: str, candidatos: Iterable[str], pais: str | None) -> list[tuple[float, str]]:
+        """Candidatos do país da fonte (ou de qualquer um, sem o país) com semelhança positiva, do melhor ao pior.
+
+        O veto pelo país vale mesmo quando a `v70` erra o país ("Universidade de Cambridge, Brasil"): aceitar nomes
+        idênticos de outro país casaria a Escola Superior de Guerra com a da Colômbia."""
         notas = [(self.semelhanca(texto, c), c) for c in dict.fromkeys(candidatos) if self.compativel(c, pais)]
         return sorted((n for n in notas if n[0] > 0), key=lambda n: (-n[0], n[1]))
 
@@ -460,21 +524,50 @@ class Casador:
         melhor = next((n for n, c in globais if self.indice.mae(c) != mae), 0.0)
         return melhor >= LIMIAR_INDICE and melhor - nota >= MARGEM_INDICE
 
-    def _do_openalex(self, autoria: AutoriaOpenAlex, posicao: int) -> list[Vinculo]:
+    def confiaveis(self, autoria: AutoriaOpenAlex) -> dict[str, tuple[str, float | None]]:
+        """As instituições do OpenAlex que valem para o autor, com o texto de afiliação que as sustenta.
+
+        Nos artigos antigos, o OpenAlex tira "afiliações" do texto raspado do PDF ("Em maio de 2007 o Ministério
+        Público Federal ingressou…", "Falwell, de Susan Harding") e as liga a instituições sem relação com o autor
+        (Harding University). Uma instituição só vale quando o texto que a sustenta parece uma afiliação (sem ano,
+        sem ser uma frase) e se parece com o nome dela (os vetos da semelhança descartam "Falwell, de Susan
+        Harding"); sem nenhum texto de afiliação na autoria, valem todas. Devolve id → (texto, semelhança).
+        """
+        if not autoria.afiliacoes:
+            return {i.id: (i.nome or i.id, None) for i in autoria.instituicoes if i.id in self.indice.registros}
+        saida: dict[str, tuple[str, float | None]] = {}
+        for af in autoria.afiliacoes:
+            for texto in (t.strip() for t in af.texto.split(";")):
+                if not parece_afiliacao(texto):
+                    continue
+                for id_ in af.instituicoes:
+                    if id_ not in self.indice.registros or id_ in saida:
+                        continue
+                    if (nota := self.indice.semelhanca(texto, id_)) >= LIMIAR_AUTORIA:
+                        saida[id_] = (texto, nota)
+        return saida
+
+    def _do_openalex(
+        self, autoria: AutoriaOpenAlex, confiaveis: dict[str, tuple[str, float | None]], posicao: int
+    ) -> list[Vinculo]:
+        """Os vínculos de um autor que só o OpenAlex descreve: as instituições confiáveis (sem o texto da ArticleMeta
+        para conferir, com a mesma exigência do índice global, `LIMIAR_INDICE`) e, para os casamentos da segunda
+        passada, os textos de afiliação que não sustentaram nenhuma."""
         vinculos = []
-        for inst in autoria.instituicoes:
-            if inst.id in self.indice.registros:
-                v = Vinculo(autor=posicao, afiliacao=None, fonte="openalex", texto=inst.nome or inst.id)
-                v.pais_fonte = inst.pais
-                self._decidir(v, inst.id, "openalex", None)
-                vinculos.append(v)
-        reconhecidas = {i.id for i in autoria.instituicoes}
+        usados = set()
+        for id_, (texto, nota) in confiaveis.items():
+            if nota is not None and nota < LIMIAR_INDICE:
+                continue
+            v = Vinculo(autor=posicao, afiliacao=None, fonte="openalex", texto=texto)
+            v.pais_fonte = self.indice.registros[id_].pais
+            self._decidir(v, id_, "openalex", None if nota is None else round(nota, 4))
+            vinculos.append(v)
+            usados.add(texto)
         pais = autoria.paises[0] if len(autoria.paises) == 1 else None
         for af in autoria.afiliacoes:
-            if af.instituicoes and set(af.instituicoes) & reconhecidas:
-                continue
             for texto in (t.strip() for t in af.texto.split(";")):
-                if parece_organizacao(texto):
+                if parece_afiliacao(texto) and parece_organizacao(texto) and texto not in usados:
+                    usados.add(texto)
                     vinculos.append(
                         Vinculo(autor=posicao, afiliacao=None, fonte="openalex", texto=texto, pais_fonte=pais)
                     )
@@ -482,9 +575,10 @@ class Casador:
 
     def documento(self, doc: Documento) -> Casamento:
         autorias = doc.autorias_openalex
-        obra = {i.id for a in autorias for i in a.instituicoes}
+        confiaveis = [self.confiaveis(a) for a in autorias]
+        obra = set().union(*confiaveis)
         if not doc.autores:
-            vinculos = [v for j, a in enumerate(autorias) for v in self._do_openalex(a, j)]
+            vinculos = [v for j, a in enumerate(autorias) for v in self._do_openalex(a, confiaveis[j], j)]
             orfas = [_vinculo_da_fonte(af, None, k) for k, af in enumerate(doc.afiliacoes)]
             for v in orfas:
                 self._local(v, set(), obra)
@@ -499,14 +593,14 @@ class Casador:
 
         def da_autoria(i: int) -> set[str]:
             j = pares.get(i)
-            return {x.id for x in autorias[j].instituicoes} if j is not None else set()
+            return set(confiaveis[j]) if j is not None else set()
 
         vinculos: list[Vinculo] = []
         for i, ks in enumerate(citadas_por):
             if not ks:
                 # sem afiliação citada: fica com as órfãs (na contagem) ou, sem órfãs, com as do OpenAlex
                 if not orfas and (j := pares.get(i)) is not None:
-                    vinculos += self._do_openalex(autorias[j], i)
+                    vinculos += self._do_openalex(autorias[j], confiaveis[j], i)
                 continue
             for k in ks:
                 v = _vinculo_da_fonte(doc.afiliacoes[k], i, k)
