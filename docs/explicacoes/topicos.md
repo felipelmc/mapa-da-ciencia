@@ -3,7 +3,7 @@
 Os tópicos do `mapa-da-ciencia` não vêm de uma lista pronta: eles saem dos próprios textos. Artigos que tratam de assuntos parecidos ficam perto uns dos outros num espaço de muitas dimensões, e o agrupamento encontra as regiões mais densas desse espaço. Esta página descreve cada passo e as escolhas por trás deles.
 
 !!! note "Em construção no marco M3"
-    Por enquanto, esta página descreve o texto de análise, os embeddings, a vizinhança, o UMAP e o HDBSCAN. A reatribuição do ruído, as palavras-chave, os rótulos, os macrotemas e a estabilidade entram ao longo do M3.
+    Por enquanto, esta página descreve o texto de análise, os embeddings, a vizinhança, o UMAP, o HDBSCAN, a reatribuição do ruído e a estabilidade. As palavras-chave, os rótulos, os macrotemas e a identidade estável entram ao longo do M3.
 
 ## 1. O texto de análise
 
@@ -58,3 +58,21 @@ O [HDBSCAN](https://scikit-learn.org/stable/modules/clustering.html#hdbscan) pro
 Os padrões foram calibrados no piloto ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)): 50 tópicos, com o mesmo número nas três sementes testadas e nenhum tópico acima de 6% do corpus.
 
 Os documentos que o HDBSCAN agrupa formam o **núcleo** de cada tópico. Os demais ficam como **ruído**: não pertencem claramente a nenhuma região densa. O ruído não é um erro, e sim uma informação: são trabalhos isolados, de fronteira ou que misturam assuntos. Com menos de 50 documentos, não há tópicos: a etapa para e sugere ampliar o recorte.
+
+## 6. Reatribuição do ruído
+
+No piloto, um terço dos documentos fica como ruído, com qualquer configuração estável do agrupamento ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)). Deixá-los de fora esconderia um terço do corpus, e forçar parâmetros para reduzir o ruído cria tópicos gigantes e instáveis. O `mapa` faz outra coisa: **reatribui por vizinhança**.
+
+- Cada documento de ruído olha para os seus 15 vizinhos mais próximos (no espaço dos embeddings, não no UMAP).
+- Os vizinhos que estão no núcleo de algum tópico votam no próprio tópico, com peso igual à similaridade.
+- O documento vai para o tópico vencedor se ele tiver ao menos 3 desses vizinhos (`topicos.votos_minimos`). Senão, fica **sem tópico**.
+
+No piloto, 67,5% dos documentos estão no núcleo, 21,5% são reatribuídos e 11% ficam sem tópico. Os reatribuídos ficam marcados (`atribuicao: vizinho`) e aparecem assim no cartão do mapa.
+
+O núcleo é a base de tudo o que descreve um tópico: palavras-chave, documentos representativos, contornos no mapa e estabilidade. Os reatribuídos entram nas contagens e nas séries no tempo. As séries quase não mudam com eles: a correlação entre a proporção anual de cada tópico só com o núcleo e com os reatribuídos tem mediana 0,93.
+
+## 7. Estabilidade
+
+O UMAP depende de uma semente aleatória. Para saber se os tópicos são do corpus e não do acaso, o agrupamento roda com três sementes (`topicos.sementes`), e o `mapa` mede a concordância entre elas pelo **índice de Rand ajustado** (ARI), sobre os documentos que estão no núcleo nas duas execuções comparadas. O ARI vai de 0 (concordância de acaso) a 1 (os mesmos grupos).
+
+No piloto, o ARI é 0,90. Os tópicos publicados vêm da primeira semente; as outras só medem a estabilidade.

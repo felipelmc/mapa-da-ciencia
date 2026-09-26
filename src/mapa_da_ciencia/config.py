@@ -140,6 +140,13 @@ class ConfigTopicos(_Base):
     min_samples: int = Field(
         5, ge=1, description="Quão conservador é o HDBSCAN: maior, mais documentos ficam de fora dos tópicos."
     )
+    votos_minimos: int = Field(
+        3,
+        ge=1,
+        le=50,
+        description="Um documento que o HDBSCAN deixou sem tópico vai para o tópico com mais vizinhos seus no núcleo, "
+        "se forem pelo menos estes (entre os `vizinhos` mais próximos). Menos que isso, fica sem tópico.",
+    )
     selecao: Literal["eom", "leaf"] = Field(
         "eom", description="`eom` prefere tópicos maiores e mais estáveis; `leaf`, tópicos menores e mais numerosos."
     )

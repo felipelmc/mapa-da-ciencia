@@ -10,7 +10,13 @@ from mapa_da_ciencia.config import ConfigTopicos, ErroConfig
 from mapa_da_ciencia.embeddings import texto_de_analise
 from mapa_da_ciencia.llm.perfis import PERFIS
 from mapa_da_ciencia.projeto import Projeto
-from mapa_da_ciencia.topicos.agrupamento import agrupar, conferir_tamanho, min_cluster_size_automatico
+from mapa_da_ciencia.topicos.agrupamento import (
+    agrupar,
+    conferir_tamanho,
+    estabilidade,
+    min_cluster_size_automatico,
+    reatribuir,
+)
 from mapa_da_ciencia.topicos.reducao import reduzir
 from mapa_da_ciencia.topicos.vizinhos import knn_exato
 
@@ -76,3 +82,48 @@ def test_secao_topicos_do_mapa_yaml(tmp_path):
     p = Projeto.criar(tmp_path / "cp", modelo="ciencia-politica", perfil=PERFIS["padrao"])
     t = p.config.topicos
     assert t == ConfigTopicos() and t.min_cluster_size is None and t.sementes[0] == 42
+
+
+def _knn(vizinhos: list[list[int]], sims: list[list[float]]) -> tuple[np.ndarray, np.ndarray]:
+    """Grafo de vizinhança à mão: a coluna 0 é o próprio documento."""
+    indices = np.array([[i, *v] for i, v in enumerate(vizinhos)])
+    dist = np.array([[0.0, *(1 - np.array(s))] for s in sims])
+    return indices, dist
+
+
+def test_reatribuicao_por_votos_dos_vizinhos_do_nucleo():
+    #        0  1  2  3  4  5  6   7   8   9
+    rotulos = np.array([0, 0, 1, 1, 1, 1, -1, -1, -1, -1])
+    vizinhos = [[1, 2, 3, 4]] * 6 + [
+        [2, 3, 4, 0],  # 6: três do tópico 1 → vai para o 1
+        [0, 1, 2, 9],  # 7: dois do 0, um do 1 → só 2 votos, fica sem tópico
+        [9, 7, 6, 8],  # 8: nenhum vizinho no núcleo
+        [0, 1, 2, 3],  # 9: empate 2 × 2, desfeito pela similaridade
+    ]
+    sims = [[0.9, 0.8, 0.7, 0.6]] * 9 + [[0.5, 0.5, 0.9, 0.9]]
+    indices, dist = _knn(vizinhos, sims)
+    saida = reatribuir(rotulos, indices, dist, votos_minimos=3)
+    assert saida.tolist() == [0, 0, 1, 1, 1, 1, 1, -1, -1, -1]
+    assert reatribuir(rotulos, indices, dist, votos_minimos=2).tolist()[7:] == [0, -1, 1]
+    assert (saida[rotulos >= 0] == rotulos[rotulos >= 0]).all()  # o núcleo não muda
+
+
+def test_estabilidade_entre_sementes():
+    a = np.array([0, 0, 1, 1, 2, 2, -1])
+    assert estabilidade([a, a]) == 1.0
+    assert estabilidade([a, np.array([5, 5, 3, 3, 9, 9, 0])]) == 1.0  # os números dos tópicos não importam
+    assert estabilidade([a, np.array([0, 1, 0, 1, 0, 1, 0])]) < 0.2
+    assert estabilidade([a]) is None
+
+
+def test_reatribuicao_no_corpus_sintetico(sintetico):
+    """Documentos arrancados do núcleo (20%, como ruído) voltam, pela vizinhança, para o tema certo."""
+    from sklearn.metrics import adjusted_rand_score
+
+    agr = agrupar(sintetico["coords5"], min_cluster_size=15, min_samples=5)
+    arrancados = np.random.default_rng(3).random(len(agr.rotulos)) < 0.2
+    com_ruido = np.where(arrancados, -1, agr.rotulos)
+    finais = reatribuir(com_ruido, *sintetico["knn"], votos_minimos=3)
+    voltaram = arrancados & (finais >= 0)
+    assert voltaram.sum() >= 0.9 * arrancados.sum()
+    assert adjusted_rand_score(sintetico["temas"][voltaram], finais[voltaram]) >= 0.85

@@ -30,6 +30,7 @@ modelos:
 topicos:
   min_cluster_size:         # menor tópico; vazio = automático (1 a cada 200 documentos, mínimo 10)
   min_samples: 5            # maior = mais documentos ficam de fora dos tópicos
+  votos_minimos: 3          # quem ficou de fora vai para o tópico com ao menos 3 vizinhos seus
 
 validacao:
   n: 200
