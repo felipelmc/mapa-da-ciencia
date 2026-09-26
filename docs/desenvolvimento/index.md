@@ -93,7 +93,7 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | M1 | Esqueleto: pacote, CLI, configuração, diagnóstico, contrato, painel, documentação, CI | concluído (v0.1.0) |
 | M2 | Coleta: ArticleMeta, OpenAlex, importação, deduplicação, cache | concluído (v0.2.0) |
 | M3 | Tópicos com rótulos pelo modelo de linguagem e mapa de documentos | concluído (v0.3.0) |
-| M4 | Tópicos no tempo e geografia | |
+| M4 | Tópicos no tempo e geografia | concluído (v0.4.0) |
 | M5 | Classificação por codebook e validação | |
 | M6 | Painel completo: rodar etapas pela interface | |
 | M7 | Publicação, figuras, oficina no Colab, release | |

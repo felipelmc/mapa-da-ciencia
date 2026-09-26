@@ -60,6 +60,8 @@ O país de cada vínculo é o da instituição identificada (o casamento já des
 5. a região do registro no OpenAlex, que falta em 45% das instituições brasileiras;
 6. a cidade do registro no OpenAlex.
 
+Nos passos 3 a 6, vale primeiro a unidade que casou (uma escola, um hospital) e só depois a instituição "mãe" para a qual ela subiu: a Escola de Administração de Empresas de São Paulo fica em São Paulo, mesmo que a FGV seja do Rio.
+
 No piloto, o país é conhecido em 98,9% do peso com afiliação, e a UF em 99,2% do peso brasileiro.
 
 ## Filtrar por lugar

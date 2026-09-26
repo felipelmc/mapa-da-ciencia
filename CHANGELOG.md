@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [0.4.0] - 2026-09-26
+
+Os tópicos no tempo e a geografia: o painel mostra como os assuntos do corpus mudam ano a ano, quais estão em alta e em queda, e de onde vêm os autores, por UF, país e instituição, com contagem fracionária. No piloto (4.275 artigos), 13 dos 57 tópicos têm tendência distinguível do acaso, 93,9% dos vínculos de autoria são ligados a uma de 639 instituições com precisão de 99,8% numa amostra lida à mão, e a geografia leva 2 segundos.
+
 ### Adicionado
 
 - **Marco M4 (tópicos no tempo e geografia)**:
@@ -104,7 +108,8 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.3.0...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/felipelmc/mapa-da-ciencia/releases/tag/v0.1.0
