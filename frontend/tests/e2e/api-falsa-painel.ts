@@ -1,7 +1,7 @@
 // A API do painel falsa (etapas, jobs com SSE, modelos, configuração e codebook), em memória, para os e2e da vista
 // Projeto. Espelha as respostas de `servidor/rotas_jobs.py` e `servidor/rotas_projeto.py`, que o pytest testa.
 //
-// Cada job emite, a cada 60 ms: `estado` rodando, `etapa` (20 passos), um `avanco` por passo, algumas mensagens,
+// Cada job emite, a cada 150 ms: `estado` rodando, `etapa` (20 passos), um `avanco` por passo, algumas mensagens,
 // `resumo` e `fim`. A PRIMEIRA conexão SSE de cada job cai depois de 5 eventos, de propósito: o navegador reconecta
 // com o `Last-Event-ID`, e os testes conferem que nada se perde nem se repete.
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -28,6 +28,7 @@ interface JobFalso {
 }
 
 const PASSOS = 20;
+const PASSO_MS = 150; // um job leva uns 3 s: dá tempo de os testes o pegarem no meio, mesmo no CI
 const REVISTAS = [
 	{ issn: '0104-6276', acronimo: 'op', titulo: 'Opinião Pública', areas: ['Ciências Humanas'] },
 	{ issn: '0011-5258', acronimo: 'dados', titulo: 'Dados', areas: ['Ciências Humanas'] },
@@ -112,7 +113,7 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 				emitir(j, 'fim', { estado: 'concluido' });
 			}
 			passo += 1;
-		}, 60);
+		}, PASSO_MS);
 		return j;
 	}
 

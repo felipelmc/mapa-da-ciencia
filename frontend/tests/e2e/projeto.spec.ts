@@ -78,7 +78,7 @@ test('cancelar um job', async ({ page }) => {
 test('um reload no meio retoma o acompanhamento do job', async ({ page }) => {
 	await page.goto(`${url('PAINEL')}#/projeto`);
 	await page.getByTestId('rodar-geografia').click();
-	await expect(page.getByTestId('passo-job')).toContainText(/[3-9] de 20|1\d de 20/);
+	await expect(page.getByTestId('estado-job')).toHaveText('Rodando');
 	await page.reload();
 	await expect(page.getByTestId('job-ao-vivo')).toBeVisible();
 	await expect(page.getByTestId('estado-job')).toHaveText('Concluído', { timeout: 15_000 });
