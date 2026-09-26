@@ -32,6 +32,8 @@ export interface Secao {
 	selo?: string;
 	/** Só aparece quando `manifesto.api` é verdadeiro (painel local). */
 	soNoPainel?: boolean;
+	/** A vista ocupa toda a área de conteúdo, sem margens nem largura máxima (o mapa). */
+	telaCheia?: boolean;
 }
 
 // Os marcos seguem o plano do projeto (docs/desenvolvimento/index.md): mapa no M3;
@@ -54,7 +56,8 @@ export const SECOES: readonly Secao[] = [
 		resumo:
 			'Cada documento vira um ponto, e textos parecidos ficam perto. Dá para filtrar por ano, revista e tópico, colorir por categoria e selecionar grupos com o laço.',
 		chegada: 'no marco M3',
-		arquivos: ['documentos', 'topicos']
+		arquivos: ['documentos', 'topicos'],
+		telaCheia: true
 	},
 	{
 		id: 'topicos',

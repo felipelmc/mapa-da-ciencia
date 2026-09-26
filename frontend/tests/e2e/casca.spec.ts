@@ -1,9 +1,8 @@
 // Testes e2e da casca (M1), sobre o build servido por um estático sem reescrita.
 // Os sites e as URLs vêm de tests/e2e/preparar.ts.
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { escapar, esperarMapa, h1, inteiro, ler, TELAS, trilho, url, vigiar } from './comum';
 
 declare global {
 	interface Window {
@@ -12,21 +11,10 @@ declare global {
 	}
 }
 
-const RAIZ = fileURLToPath(new URL('../..', import.meta.url));
-const TELAS = join(RAIZ, 'test-results');
-const EXEMPLO = join(RAIZ, '..', 'contrato', 'exemplo', 'dados');
-const ler = (arquivo: string) => JSON.parse(readFileSync(join(EXEMPLO, arquivo), 'utf8'));
-
 const manifesto = ler('manifesto.json');
 const topicos = ler('topicos.json');
 const revistas = ler('revistas.json');
-const inteiro = (n: number) => new Intl.NumberFormat('pt-BR').format(n);
-
-const url = (nome: 'RAIZ' | 'SUBCAMINHO' | 'VAZIO') => {
-	const valor = process.env[`E2E_URL_${nome}`];
-	if (!valor) throw new Error(`E2E_URL_${nome} não definida; o globalSetup (tests/e2e/preparar.ts) rodou?`);
-	return valor;
-};
+const tabelaDocumentos = ler('documentos.json');
 
 /** Seções ativas do trilho, na ordem, com o h1 esperado em cada uma. */
 const SECOES = [
@@ -38,23 +26,6 @@ const SECOES = [
 	{ rotulo: 'Início', caminho: '/', h1: manifesto.projeto.titulo }
 ];
 
-/** Junta erros e avisos do console, exceções, respostas ≥ 400 e requisições que falharam. */
-function vigiar(page: Page) {
-	const problemas: string[] = [];
-	page.on('console', (m) => {
-		if (m.type() === 'error' || m.type() === 'warning') problemas.push(`console ${m.type()}: ${m.text()}`);
-	});
-	page.on('pageerror', (e) => problemas.push(`exceção: ${e.message}`));
-	page.on('response', (r) => {
-		if (r.status() >= 400) problemas.push(`${r.status()} ${new URL(r.url()).pathname}`);
-	});
-	page.on('requestfailed', (r) => problemas.push(`falhou: ${r.url()} ${r.failure()?.errorText}`));
-	return problemas;
-}
-
-const h1 = (page: Page) => page.getByRole('heading', { level: 1 });
-const trilho = (page: Page) => page.getByRole('navigation', { name: 'Seções' });
-const escapar = (texto: string) => texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 	test.describe(`servido ${site === 'RAIZ' ? 'na raiz' : 'num subcaminho'}`, () => {
@@ -129,7 +100,11 @@ for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 			const problemas = vigiar(page);
 			await page.goto(`${url(site)}#/mapa?anos=2012-2020&cor=macrotema`);
 			await expect(h1(page)).toHaveText('Mapa');
-			await expect(page.getByTestId('filtros-do-link')).toContainText('anos 2012–2020 · cor por macrotema');
+			const d = await esperarMapa(page);
+			const esperados = tabelaDocumentos.colunas.ano.filter((a: number) => a >= 2012 && a <= 2020).length;
+			expect(d.visiveis).toBe(esperados);
+			await expect(page.getByTestId('cor-por')).toHaveValue('macrotema');
+			await expect(page.getByTestId('contador-mapa')).toContainText(inteiro(esperados));
 			expect(problemas).toEqual([]);
 		});
 	});

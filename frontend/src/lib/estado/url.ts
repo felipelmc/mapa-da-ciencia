@@ -127,7 +127,9 @@ function normalizarLaco(l: Laco | null): Laco | null {
 
 function normalizarVista(v: Vista | null): Vista | null {
 	if (!v || ![v.x, v.y, v.zoom].every(Number.isFinite) || v.zoom <= 0) return null;
-	return { x: arredondar(v.x), y: arredondar(v.y), zoom: arredondar(v.zoom) };
+	const vista = { x: arredondar(v.x), y: arredondar(v.y), zoom: arredondar(v.zoom) };
+	// a câmera inicial (centro, sem zoom) é o padrão e não vai para o link
+	return vista.x === 0 && vista.y === 0 && vista.zoom === 1 ? null : vista;
 }
 
 function lerLaco(texto: string | null): Laco | null {

@@ -5,7 +5,7 @@ App estático em SvelteKit que visualiza o **contrato de dados**: os arquivos JS
 - o **painel local** (`mapa painel`), servido pelo Python em `/`, com os dados em `/dados/` e a API em `/api/`;
 - o **site publicado** (GitHub Pages), servido num subcaminho como `/mapa-da-ciencia/demo/`, sem API e sem regra de reescrita.
 
-> **Estado:** marco M1, a casca. Já funcionam o trilho de seções, a barra superior, os dois temas, a capa (Início) com os números do corpus, a camada de dados e o estado na URL. As outras vistas mostram um estado vazio que diz em que marco chegam. O mapa (regl-scatterplot) e os gráficos entram a partir do M3.
+> **Estado:** marco M3, em andamento. Já funcionam a casca (trilho, barra superior, dois temas, estado na URL), a capa (Início) com os números do corpus e os macrotemas, e o **Mapa** (regl-scatterplot, `src/lib/graficos/Nuvem.svelte` e `src/lib/mapa/`). As outras vistas mostram um estado vazio que diz em que marco chegam.
 
 ## Como rodar
 

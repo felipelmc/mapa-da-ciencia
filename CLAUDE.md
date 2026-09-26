@@ -65,4 +65,6 @@ Frontend (SvelteKit), em `frontend/`: veja `frontend/README.md`. Depois de mudar
 - `ruff format` também formata Python dentro de Markdown: em exemplos com SQL, ponha a consulta numa variável, senão ele quebra a chamada em várias linhas.
 - O servidor do painel não sobe pelo `preview_start` do app (sem permissão para ler `~/Desktop`): rode `mapa painel --nao-abrir` pelo terminal e abra `http://localhost:8765` no navegador do app.
 - `search.scielo.org` bloqueia scripts (desafio anti-bot). Não tente raspá-lo.
-- No frontend, com o router por hash, nunca use `resolve()` para links, e o estado dos filtros fica dentro do hash (ADR 0002).
+- No frontend, com o router por hash, nunca use `resolve()` para links, e o estado dos filtros fica dentro do hash (ADR 0002). Mude filtros só por `estado/filtros.mudarFiltros` (com `em: '/mapa'` para avisos atrasados, como a câmera).
+- O minificador do Vite 8 (oxc) quebra o regl-scatterplot quando renomeia variáveis ("Cannot read properties of null (reading '0')" só no build): `vite.config.ts` desliga o `mangle`. O mapa só se testa de verdade no build (`npm run build` + e2e).
+- O navegador do app não desenha quadros com o painel oculto (sem `requestAnimationFrame`): meça o tempo do mapa no Playwright (`window.__mapaDebug`), não ali. O e2e ignora os avisos "GL Driver Message" do Chrome.

@@ -14,9 +14,17 @@ export function filtrosDaPagina(): Filtros {
 /**
  * Muda parte dos filtros e grava no hash. `substituir` troca a entrada atual do histórico em vez de criar
  * outra: é o que se quer para a câmera e o play da linha do tempo, que mudam muitas vezes por segundo.
+ *
+ * Com `em`, só age se a página ainda for aquela rota: um aviso atrasado (a câmera parou de mexer) que chegue
+ * durante a navegação para outra seção não pode puxar a pessoa de volta. Sem mudança, não navega.
  */
-export function mudarFiltros(parcial: Partial<Filtros>, { substituir = false } = {}): Promise<void> {
+export async function mudarFiltros(
+	parcial: Partial<Filtros>,
+	{ substituir = false, em }: { substituir?: boolean; em?: string } = {}
+): Promise<void> {
 	const { caminho, params } = lerHash(page.url.hash);
-	const novos = normalizarFiltros({ ...lerFiltros(params), ...parcial });
-	return goto(rota(caminho, escreverFiltros(novos)), { replaceState: substituir, noScroll: true, keepFocus: true });
+	if (em && caminho !== em) return;
+	const novos = escreverFiltros(normalizarFiltros({ ...lerFiltros(params), ...parcial }));
+	if (novos.toString() === escreverFiltros(lerFiltros(params)).toString()) return;
+	await goto(rota(caminho, novos), { replaceState: substituir, noScroll: true, keepFocus: true });
 }

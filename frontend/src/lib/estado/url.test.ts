@@ -149,6 +149,7 @@ describe('laço e vista', () => {
 		expect(f.vista).toEqual({ x: 0, y: 0.4, zoom: 2 });
 		expect(normalizarFiltros({ laco: { versao: 'v1', pontos: [[0, 0], [1, 1]] } }).laco).toBeNull();
 		expect(normalizarFiltros({ vista: { x: 0, y: 0, zoom: 0 } }).vista).toBeNull();
+		expect(normalizarFiltros({ vista: { x: 0.0001, y: 0, zoom: 1.0002 } }).vista).toBeNull(); // a câmera inicial
 		expect(normalizarFiltros({ laco: { versao: 'não vale!', pontos: [[0, 0], [1, 0], [0, 1]] } }).laco?.versao).toBe('');
 	});
 
