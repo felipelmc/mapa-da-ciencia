@@ -39,6 +39,7 @@ Frontend (SvelteKit), em `frontend/`: veja `frontend/README.md`. Depois de mudar
 - Coleta: `coleta.py` orquestra, `fontes/` tem os adaptadores (`base.py` com o `Buscador`: cache em `brutos/*.json.gz` gravado de forma atômica, retentativas, contagem de créditos; `articlemeta.py`, `openalex.py`, `importar.py`, `dedup.py`). Tudo vira `documento.Documento`, gravado por `armazenamento.py` em `dados/documentos.parquet` via DuckDB (ADR 0006), com as views `documentos`, `textos`, `autores` e `afiliacoes`. `armazenamento.ESQUEMA` precisa bater com `Documento.model_fields` (há teste). No fim, `contrato/exportar.exportar_coleta` grava `saida/dados/manifesto.json` e `revistas.json`.
 - `api.py`: fachada para notebooks (mesmas etapas da CLI). Mantenha as assinaturas estáveis.
 - `llm/`: interface de provedor e adaptador do Ollama (httpx direto, sem SDK). No MVP não há nuvem.
+- Bibliotecas numéricas (numpy, scipy, scikit-learn, umap-learn/numba) só são importadas **dentro** das funções das etapas que as usam: `mapa --help`, a API e o gerador de referências abrem sem elas (`tests/test_importacao.py`). O numba não suporta Python novo logo que sai, por isso o teto em `requires-python`.
 - `rede.py`: **todo** HTTP externo passa por aqui (truststore, ADR 0001). `recursos.py`: memória, swap e disco.
 
 ## Regras do projeto

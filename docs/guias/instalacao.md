@@ -13,7 +13,7 @@ uv sync
 uv run mapa --versao
 ```
 
-O Python 3.11 ou mais recente é necessário; o `uv` baixa um sozinho, se preciso. Nos exemplos a seguir, `mapa` significa `uv run mapa` quando você estiver dentro da pasta do código.
+É necessário o Python 3.11, 3.12, 3.13 ou 3.14; o `uv` baixa um sozinho, se preciso. O pacote e suas dependências ocupam cerca de 400 MB, a maior parte das bibliotecas numéricas usadas nos tópicos (UMAP, HDBSCAN). Nos exemplos a seguir, `mapa` significa `uv run mapa` quando você estiver dentro da pasta do código.
 
 ## 2. Ollama
 
