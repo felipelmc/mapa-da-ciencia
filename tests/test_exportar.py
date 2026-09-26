@@ -18,6 +18,8 @@ from mapa_da_ciencia.topicos.pipeline import gerar_topicos
 def projeto(tmp_path, apis_falsas):
     p = Projeto.criar(tmp_path / "sintetico", modelo="vazio", perfil=PERFIS["leve"])
     docs, _ = corpus_sintetico()
+    # uma revista importada sem acrônimo: a chave é o ISSN em todos os arquivos
+    docs = [d.model_copy(update={"revista_acronimo": None}) if d.revista_acronimo == "op" else d for d in docs]
     gravar_documentos(docs, p.dados / ARQUIVO)
     gerar_topicos(p)
     return p
@@ -52,6 +54,13 @@ def test_contrato_completo_depois_dos_topicos(projeto):
 
     agregados = _ler(projeto, "agregados", m.Agregados)
     assert sum(n for *_, n in agregados.topico_ano_revista) == docs.n and agregados.uf == {} == agregados.pais
+
+    # a mesma chave de revista em revistas.json, no dicionário dos documentos, em por_revista e nos agregados
+    ids_revistas = {r.id for r in _ler(projeto, "revistas", m.Revistas).revistas}
+    assert "0000-0001" in ids_revistas and "op" not in ids_revistas
+    assert set(docs.dicionarios.revista) == ids_revistas
+    assert {r for t in topicos.topicos for r in t.por_revista} <= ids_revistas
+    assert {r for *_, r, _ in agregados.topico_ano_revista} <= ids_revistas
 
 
 def test_detalhes_sem_o_texto_de_analise_e_sem_emails(projeto):

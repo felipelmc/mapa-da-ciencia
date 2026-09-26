@@ -97,6 +97,11 @@ class Documento(_Base):
     casamento: Casamento = "nao_tentado"
     possivel_duplicata_de: str | None = Field(None, description="Id de outro documento suspeito de ser o mesmo.")
 
+    @property
+    def chave_revista(self) -> str:
+        """Identificador da revista no contrato e nas contagens: o acrônimo, ou o ISSN, ou "?"."""
+        return self.revista_acronimo or self.revista_issn or "?"
+
     def texto_em(self, campo: Literal["titulos", "resumos"], preferidos: list[str]) -> Texto | None:
         """O primeiro texto nos idiomas preferidos, ou qualquer um, ou `None`."""
         textos: list[Texto] = getattr(self, campo)

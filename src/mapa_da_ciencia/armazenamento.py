@@ -144,7 +144,10 @@ def cobertura(caminho: Path) -> dict[str, Any]:
         contagem = lambda sql: dict(con.execute(sql).fetchall())  # noqa: E731
         return {
             "documentos": um("SELECT count(*) FROM documentos"),
-            "por_revista": contagem("SELECT revista_acronimo, count(*) FROM documentos GROUP BY 1 ORDER BY 2 DESC"),
+            "por_revista": contagem(
+                "SELECT coalesce(revista_acronimo, revista_issn, '?'), count(*) "
+                "FROM documentos GROUP BY 1 ORDER BY 2 DESC"
+            ),
             "por_tipo": contagem("SELECT tipo, count(*) FROM documentos GROUP BY 1 ORDER BY 2 DESC"),
             "com_resumo": um("SELECT count(*) FROM documentos WHERE len(resumos) > 0"),
             "resumo_por_idioma": contagem(

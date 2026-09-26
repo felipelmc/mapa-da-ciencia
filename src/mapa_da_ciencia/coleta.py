@@ -461,7 +461,7 @@ async def coletar_async(
         fundidos=len(dedup.fundidos),
         possiveis_duplicatas=dedup.suspeitas,
         importacoes=importacoes,
-        por_revista=dict(Counter(d.revista_acronimo or "?" for d in documentos).most_common()),
+        por_revista=dict(Counter(d.chave_revista for d in documentos).most_common()),
         fora_do_periodo=fora_do_periodo,
         excluidos_por_tipo=dict(excluidos.most_common()),
         nao_encontrados=nao_encontrados,

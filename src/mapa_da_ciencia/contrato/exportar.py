@@ -185,7 +185,7 @@ def _arquivos_de_topicos(
         colunas["doi"].append(d.doi)
         colunas["titulo"].append(titulo.texto if titulo else "")
         colunas["ano"].append(d.ano)
-        colunas["revista"].append(revistas.index(d.revista_acronimo or d.revista_issn or "?"))
+        colunas["revista"].append(revistas.index(d.chave_revista))
         colunas["idioma"].append(idiomas_dic.index(idioma))
         colunas["x"].append(round(a["x"], 4))
         colunas["y"].append(round(a["y"], 4))
@@ -224,7 +224,7 @@ def _arquivos_de_topicos(
                     n=[por_ano[ano] for ano in anos],
                     prop=[round(por_ano[ano] / total_ano[ano], 5) if total_ano[ano] else 0.0 for ano in anos],
                 ),
-                por_revista=dict(sorted(Counter(d.revista_acronimo or "?" for d in docs_t).items())),
+                por_revista=dict(sorted(Counter(d.chave_revista for d in docs_t).items())),
                 representativos=t.representativos,
                 rotulo_fonte=t.rotulo_fonte,
                 n_nucleo=t.n_nucleo,
@@ -244,7 +244,7 @@ def _arquivos_de_topicos(
             n=resultado.ruido, reatribuidos=resultado.reatribuidos, por_ano=[ruido_ano[ano] for ano in anos]
         ),
     )
-    trio = Counter((a["topico"], d.ano, d.revista_acronimo or "?") for a, d in linhas)
+    trio = Counter((a["topico"], d.ano, d.chave_revista) for a, d in linhas)
     agregados = Agregados(
         topico_ano_revista=[(t, ano, r, n) for (t, ano, r), n in sorted(trio.items())], uf={}, pais={}
     )
