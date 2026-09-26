@@ -125,6 +125,15 @@ def _alocar(tamanhos: dict[str, int], n: int) -> dict[str, int]:
     return alocado
 
 
+def nomes_dos_estratos(projeto: Projeto, estratos: list[str]) -> dict[str, str]:
+    """Como mostrar cada estrato: `topico 3` vira o rótulo do tópico; os outros ficam como estão."""
+    from ..topicos.resultado import PASTA, Resultado
+
+    resultado = Resultado.ler(projeto.dados / PASTA)
+    rotulos = {f"topico {t.id}": t.rotulo for t in resultado.topicos} if resultado else {}
+    return {e: rotulos.get(e, e) for e in estratos}
+
+
 def textos_do_projeto(projeto: Projeto) -> list[Texto]:
     cfg = projeto.config
     docs = ler_documentos(projeto.dados / ARQUIVO)
