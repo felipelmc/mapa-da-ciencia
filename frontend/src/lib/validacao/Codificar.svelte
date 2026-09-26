@@ -11,6 +11,7 @@
 	 * Cada mudança é gravada sozinha (ver `Gravador`): primeiro no navegador, depois no painel.
 	 */
 	import { onMount, tick } from 'svelte';
+	import { usarProjeto } from '$lib/dados/contexto';
 	import { formatarInteiro } from '$lib/formato';
 	import { Gravador, type Fila, type RespostaVariavel } from './api';
 	import { escolher, faltando, ondeRetomar, opcoesDe, paraGravar, respondida, RESPOSTA_VAZIA } from './ficha';
@@ -21,11 +22,14 @@
 	const vars = $derived(codebook.variaveis);
 	let pendentes = $state(0);
 	let erro = $state<string | null>(null);
-	const gravador = $derived(new Gravador(fila.codificador, (n, e) => ((pendentes = n), (erro = e))));
+	const { manifesto } = usarProjeto();
+	const gravador = $derived(
+		new Gravador(manifesto.projeto.nome, fila.codificador, (n, e) => ((pendentes = n), (erro = e)))
+	);
 
 	// respostas de cada ficha: as do painel, com o que ficou pendente neste navegador por cima
 	function inicial() {
-		const pend = new Gravador(fila.codificador).pendencias();
+		const pend = new Gravador(manifesto.projeto.nome, fila.codificador).pendencias();
 		const respostas: Record<string, Record<string, RespostaVariavel>> = {};
 		const completas = new Set<string>();
 		for (const f of fila.fila) {
@@ -62,6 +66,12 @@
 		const voltar = () => gravador.enviar();
 		window.addEventListener('online', voltar);
 		return () => window.removeEventListener('online', voltar);
+	});
+	$effect(() => {
+		// um reload ou uma aba fechada logo depois de uma mudança: grava já o que estava esperando o atraso
+		const sair = () => descarregar();
+		window.addEventListener('pagehide', sair);
+		return () => window.removeEventListener('pagehide', sair);
 	});
 
 	// ---- gravação (com um pequeno atraso, e na hora ao trocar de ficha ou confirmar)
