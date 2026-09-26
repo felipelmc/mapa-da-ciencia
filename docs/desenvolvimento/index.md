@@ -61,13 +61,15 @@ npm run dev                   # com os dados de exemplo; veja o README do fronte
 
 ## Arquivos gerados a partir do código
 
-Três conjuntos de arquivos são **gerados** e versionados. O CI falha se estiverem desatualizados:
+Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros estiverem desatualizados:
 
 | O quê | Gerado por | Quando regenerar |
 |---|---|---|
 | `contrato/schema/*.json` e `contrato/exemplo/dados/` | `uv run python scripts/gerar_contrato.py` | Ao mudar `contrato/modelos.py` ou o gerador de exemplo |
 | `frontend/src/lib/contrato/tipos.ts` | `npm run tipos` (em `frontend/`) | Depois de regenerar os schemas |
 | `docs/referencia/{cli,configuracao,codebook,contrato}.md` | `uv run python scripts/gerar_referencias.py` | Ao mudar comandos, `config.py` ou o contrato |
+| `src/mapa_da_ciencia/fontes/scielo-revistas.json` | `uv run python scripts/gerar_revistas.py` (1 requisição à ArticleMeta) | Para atualizar a lista de revistas do SciELO Brasil |
+| `tests/fixtures/articlemeta/` | `uv run python scripts/recortar_fixtures.py` (precisa do cache do spike, `spikes/saida/brutos/`) | Ao precisar de novos casos de teste; os e-mails reais viram `anonimo@exemplo.invalid` |
 
 ## Convenções
 

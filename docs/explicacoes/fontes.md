@@ -19,6 +19,16 @@ Duas limitações moldam o desenho:
 - **Não tem busca por termo.** A coleta é feita revista a revista: listam-se os PIDs de cada revista e busca-se o registro de cada artigo.
 - **Não filtra por ano de publicação.** O filtro de datas da API usa a data em que o registro foi *processado*, e artigos antigos são reprocessados com frequência. O ano de publicação sai do próprio PID (`S0104-6276`**`2024`**`000100200`), que no piloto bateu com o ano de publicação em 100% dos casos.
 
+## O que o `mapa` guarda de cada artigo
+
+Cada registro da ArticleMeta vira um **documento** com títulos, resumos e palavras-chave em cada idioma, autores (com ORCID, quando há), afiliações, revista, ano, tipo, DOI e licença. Três cuidados entram nessa normalização:
+
+- **Nenhum e-mail.** O registro traz e-mails em vários lugares: nas afiliações, no registro da revista embutido em cada artigo e nas referências. O `mapa` copia só campos de uma lista permitida (instituição, departamento, cidade, UF, país) e, no fim, ainda varre todo o documento e remove qualquer endereço que tenha escapado. Os testes conferem isso com e-mails falsos plantados nos dados.
+- **Texto limpo.** Um terço dos resumos traz entidades HTML, às vezes escapadas duas vezes (`&amp;#8217;` no lugar de `’`), e muitos começam com "Resumo:". Tudo isso sai na limpeza.
+- **Afiliações das duas versões.** A versão normalizada da afiliação (`v240`, com país em código ISO) é usada quando existe. As afiliações que ela não cobre vêm da versão original (`v70`).
+
+As referências citadas por cada artigo (cerca de 90% do tamanho de um registro) não entram no documento, só a contagem delas. Elas continuam guardadas nas respostas brutas, para as redes de citação da v2.
+
 ## OpenAlex
 
 O [OpenAlex](https://openalex.org) é um catálogo aberto (licença CC0) de publicações científicas do mundo todo. No `mapa-da-ciencia`, ele entra para:
