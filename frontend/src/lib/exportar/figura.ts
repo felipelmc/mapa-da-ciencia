@@ -1,0 +1,298 @@
+/**
+ * Exportar uma figura do painel como SVG, PNG ou CSV, para artigos, slides e telões.
+ *
+ * - **SVG:** o gráfico da figura é clonado com os estilos já resolvidos (as variáveis CSS viram cores do tema
+ *   escolhido, que pode não ser o da tela), ganha um cabeçalho (título, recorte) e um rodapé (fonte, n, modelo,
+ *   data), e leva as fontes embutidas (`@font-face` com `data:`), para abrir igual em qualquer programa.
+ * - **PNG:** o mesmo SVG rasterizado num `canvas`, na resolução do preset.
+ * - **CSV:** as colunas e as linhas da tabela da figura ("Ver como tabela"), em UTF-8 com BOM (abre no Excel).
+ *
+ * Presets: **Artigo** (85 ou 174 mm, 300 ou 600 dpi, tema Prancha), **Slide** (1920 px de largura) e **Telão**
+ * (3840 px, tema Observatório).
+ */
+import type { Tema } from '$lib/estado/tema.svelte';
+
+export type Formato = 'svg' | 'png' | 'csv';
+
+export interface Preset {
+	id: string;
+	nome: string;
+	/** Largura final: em milímetros (artigo) ou em pixels (tela). */
+	largura: { mm: number; dpi: number } | { px: number };
+	tema: Tema | null; // null = o tema da tela
+	/** Tamanho da letra do cabeçalho e do rodapé, relativo à largura. */
+	escalaTexto: number;
+}
+
+export const PRESETS: Preset[] = [
+	{
+		id: 'artigo-1',
+		nome: 'Artigo, 1 coluna (85 mm, 300 dpi)',
+		largura: { mm: 85, dpi: 300 },
+		tema: 'prancha',
+		escalaTexto: 1.25
+	},
+	{
+		id: 'artigo-2',
+		nome: 'Artigo, 2 colunas (174 mm, 300 dpi)',
+		largura: { mm: 174, dpi: 300 },
+		tema: 'prancha',
+		escalaTexto: 1
+	},
+	{
+		id: 'artigo-2-600',
+		nome: 'Artigo, 2 colunas (174 mm, 600 dpi)',
+		largura: { mm: 174, dpi: 600 },
+		tema: 'prancha',
+		escalaTexto: 1
+	},
+	{ id: 'slide', nome: 'Slide (1920 px)', largura: { px: 1920 }, tema: null, escalaTexto: 1.2 },
+	{ id: 'telao', nome: 'Telão (3840 px, Observatório)', largura: { px: 3840 }, tema: 'observatorio', escalaTexto: 1.4 }
+];
+
+export interface Metadados {
+	titulo: string;
+	/** O recorte, em palavras ("2015–2020 · Dados, Opinião Pública"). */
+	recorte: string;
+	/** A fonte e o modelo ("SciELO/ArticleMeta e OpenAlex · qwen3.5:9b"). */
+	fonte: string;
+	/** Documentos no recorte. */
+	n: number | null;
+}
+
+/** Largura final em pixels de um preset. */
+export function larguraPx(p: Preset): number {
+	return 'px' in p.largura ? p.largura.px : Math.round((p.largura.mm / 25.4) * p.largura.dpi);
+}
+
+// ---------------------------------------------------------------- CSV
+function campo(v: string | number): string {
+	const texto = String(v);
+	return /[",;\n]/.test(texto) ? `"${texto.replaceAll('"', '""')}"` : texto;
+}
+
+export function paraCsv(colunas: string[], linhas: (string | number)[][]): string {
+	return '﻿' + [colunas, ...linhas].map((l) => l.map(campo).join(',')).join('\r\n') + '\r\n';
+}
+
+// ---------------------------------------------------------------- estilos
+const PROPRIEDADES = [
+	'fill',
+	'fill-opacity',
+	'stroke',
+	'stroke-width',
+	'stroke-opacity',
+	'stroke-dasharray',
+	'stroke-linecap',
+	'stroke-linejoin',
+	'opacity',
+	'font-family',
+	'font-size',
+	'font-weight',
+	'font-style',
+	'letter-spacing',
+	'text-anchor',
+	'dominant-baseline',
+	'paint-order',
+	'visibility',
+	'display'
+];
+
+/** Lê as cores do tema `tema` sem mudar a tela: troca o `data-tema`, lê e devolve, na mesma tarefa. */
+export function comTema<T>(tema: Tema | null, ler: () => T): T {
+	const raiz = document.documentElement;
+	const antes = raiz.dataset.tema;
+	if (tema && tema !== antes) raiz.dataset.tema = tema;
+	try {
+		return ler();
+	} finally {
+		if (antes === undefined) delete raiz.dataset.tema;
+		else raiz.dataset.tema = antes;
+	}
+}
+
+/** Copia para o clone os estilos calculados de cada elemento do original (mesma ordem na árvore). */
+function fixarEstilos(original: Element, clone: Element) {
+	const a = [original, ...original.querySelectorAll('*')];
+	const b = [clone, ...clone.querySelectorAll('*')];
+	a.forEach((el, i) => {
+		const c = b[i] as SVGElement | undefined;
+		if (!c || !('style' in c)) return;
+		// atributos com variáveis CSS (fill="var(--seq-3)") não valem fora da página: o estilo calculado os substitui
+		for (const attr of Array.from(c.attributes)) if (attr.value.includes('var(')) c.removeAttribute(attr.name);
+		const s = getComputedStyle(el);
+		const partes = PROPRIEDADES.map((p) => [p, s.getPropertyValue(p)] as const).filter(([, v]) => v && v !== 'normal');
+		c.removeAttribute('class');
+		c.setAttribute('style', partes.map(([p, v]) => `${p}:${v}`).join(';'));
+	});
+}
+
+// ---------------------------------------------------------------- fontes
+const cacheFontes = new Map<string, Promise<string>>();
+
+async function dataUri(url: string): Promise<string> {
+	const blob = await (await fetch(url)).blob();
+	return new Promise((resolver) => {
+		const leitor = new FileReader();
+		leitor.onload = () => resolver(String(leitor.result));
+		leitor.readAsDataURL(blob);
+	});
+}
+
+/** As regras `@font-face` das famílias usadas, com os arquivos embutidos (só os subconjuntos latinos). */
+async function fontesEmbutidas(familias: Set<string>): Promise<string> {
+	const regras: string[] = [];
+	for (const folha of Array.from(document.styleSheets)) {
+		let lista: CSSRuleList;
+		try {
+			lista = folha.cssRules;
+		} catch {
+			continue; // folha de outro domínio
+		}
+		for (const r of Array.from(lista)) {
+			if (!(r instanceof CSSFontFaceRule)) continue;
+			const familia = r.style.getPropertyValue('font-family').replaceAll(/['"]/g, '').trim();
+			const faixa = r.style.getPropertyValue('unicode-range');
+			if (!familias.has(familia) || (faixa && !/U\+0-FF|U\+0000-00FF/i.test(faixa))) continue;
+			const url = r.style.getPropertyValue('src').match(/url\(["']?([^"')]+)["']?\)/)?.[1];
+			if (!url) continue;
+			const absoluta = new URL(url, folha.href ?? document.baseURI).toString();
+			if (!cacheFontes.has(absoluta)) cacheFontes.set(absoluta, dataUri(absoluta));
+			const dados = await cacheFontes.get(absoluta)!;
+			const peso = r.style.getPropertyValue('font-weight') || 'normal';
+			const estilo = r.style.getPropertyValue('font-style') || 'normal';
+			regras.push(
+				`@font-face{font-family:'${familia}';src:url(${dados}) format('woff2');font-weight:${peso};font-style:${estilo};}`
+			);
+		}
+	}
+	return regras.join('\n');
+}
+
+// ---------------------------------------------------------------- SVG
+const NS = 'http://www.w3.org/2000/svg';
+const escapar = (t: string) =>
+	t.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+
+/** O primeiro gráfico SVG da figura (o que vale exportar), ignorando ícones e sparklines pequenas. */
+export function graficoDe(figura: HTMLElement): SVGSVGElement | null {
+	const svgs = Array.from(figura.querySelectorAll<SVGSVGElement>('.grafico svg'));
+	return svgs.find((s) => s.getBoundingClientRect().width >= 200) ?? null;
+}
+
+export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Preset): Promise<string | null> {
+	const grafico = graficoDe(figura);
+	if (!grafico) return null;
+	const caixa = grafico.getBoundingClientRect();
+	const w = caixa.width;
+	const h = caixa.height;
+	const tema = preset.tema;
+	const { clone, fundo, texto, suave, familias } = comTema(tema, () => {
+		const clone = grafico.cloneNode(true) as SVGSVGElement;
+		fixarEstilos(grafico, clone);
+		const s = getComputedStyle(document.body);
+		const familias = new Set<string>();
+		for (const el of [grafico, ...grafico.querySelectorAll('text')]) {
+			getComputedStyle(el)
+				.fontFamily.split(',')
+				.forEach((f) => familias.add(f.replaceAll(/['"]/g, '').trim()));
+		}
+		const raiz = getComputedStyle(document.documentElement);
+		familias.add(raiz.getPropertyValue('--fonte-titulo').split(',')[0].replaceAll(/['"]/g, '').trim());
+		familias.add(raiz.getPropertyValue('--fonte-interface').split(',')[0].replaceAll(/['"]/g, '').trim());
+		return {
+			clone,
+			fundo: s.backgroundColor,
+			texto: raiz.getPropertyValue('--texto').trim() || s.color,
+			suave: raiz.getPropertyValue('--texto-suave').trim() || s.color,
+			familias
+		};
+	});
+	const raiz = getComputedStyle(document.documentElement);
+	const fonteTitulo = raiz.getPropertyValue('--fonte-titulo').trim();
+	const fonteTexto = raiz.getPropertyValue('--fonte-interface').trim();
+	const k = preset.escalaTexto * Math.max(0.8, w / 900);
+	const margem = 24 * k;
+	const topo = margem + 30 * k + (meta.recorte ? 22 * k : 0) + 12 * k;
+	const rodape = 22 * k + margem;
+	const W = w + 2 * margem;
+	const H = topo + h + rodape;
+	const fontes = await fontesEmbutidas(familias);
+	const data = new Date().toLocaleDateString('pt-BR');
+	const linhaRodape = [
+		meta.fonte,
+		meta.n !== null ? `n = ${meta.n.toLocaleString('pt-BR')}` : '',
+		`mapa-da-ciencia, ${data}`
+	]
+		.filter(Boolean)
+		.join(' · ');
+	clone.setAttribute('x', String(margem));
+	clone.setAttribute('y', String(topo));
+	clone.setAttribute('width', String(w));
+	clone.setAttribute('height', String(h));
+	clone.removeAttribute('style');
+	const final = preset.largura;
+	const tamanho =
+		'mm' in final
+			? `width="${final.mm}mm" height="${((final.mm * H) / W).toFixed(2)}mm"`
+			: `width="${W}" height="${H}"`;
+	return [
+		`<svg xmlns="${NS}" ${tamanho} viewBox="0 0 ${W} ${H}">`,
+		`<defs><style>${fontes}</style></defs>`,
+		`<rect width="${W}" height="${H}" fill="${fundo}"/>`,
+		`<text x="${margem}" y="${margem + 24 * k}" font-family="${escapar(fonteTitulo)}" font-size="${24 * k}" fill="${texto}">${escapar(meta.titulo)}</text>`,
+		meta.recorte
+			? `<text x="${margem}" y="${margem + 50 * k}" font-family="${escapar(fonteTexto)}" font-size="${13 * k}" fill="${suave}">${escapar(meta.recorte)}</text>`
+			: '',
+		new XMLSerializer().serializeToString(clone),
+		`<text x="${margem}" y="${H - margem}" font-family="${escapar(fonteTexto)}" font-size="${11 * k}" fill="${suave}">${escapar(linhaRodape)}</text>`,
+		'</svg>'
+	].join('\n');
+}
+
+/** O SVG rasterizado na largura do preset. */
+export async function paraPng(svg: string, largura: number): Promise<Blob> {
+	const erroXml = new DOMParser().parseFromString(svg, 'image/svg+xml').querySelector('parsererror');
+	if (erroXml) throw new Error(`o SVG ficou inválido (${erroXml.textContent?.slice(0, 160)})`);
+	const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+	try {
+		const img = new Image();
+		img.decoding = 'sync';
+		await new Promise<void>((resolver, rejeitar) => {
+			img.onload = () => resolver();
+			img.onerror = () => rejeitar(new Error('não foi possível desenhar o SVG'));
+			img.src = url;
+		});
+		const vb = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/)!;
+		const escala = largura / Number(vb[1]);
+		const canvas = document.createElement('canvas');
+		canvas.width = Math.round(largura);
+		canvas.height = Math.round(Number(vb[2]) * escala);
+		const ctx = canvas.getContext('2d')!;
+		ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+		return await new Promise<Blob>((resolver, rejeitar) =>
+			canvas.toBlob((b) => (b ? resolver(b) : rejeitar(new Error('PNG vazio'))), 'image/png')
+		);
+	} finally {
+		URL.revokeObjectURL(url);
+	}
+}
+
+export function baixar(conteudo: Blob | string, nome: string, tipo = 'text/plain') {
+	const blob = typeof conteudo === 'string' ? new Blob([conteudo], { type: tipo }) : conteudo;
+	const url = URL.createObjectURL(blob);
+	const a = Object.assign(document.createElement('a'), { href: url, download: nome });
+	document.body.append(a);
+	a.click();
+	a.remove();
+	setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** `Por ano` → `por-ano`, para o nome do arquivo. */
+export const nomeDeArquivo = (titulo: string) =>
+	titulo
+		.normalize('NFKD')
+		.replace(/[̀-ͯ]/g, '')
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-|-$/g, '') || 'figura';

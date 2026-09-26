@@ -19,6 +19,7 @@ Guias resolvem uma tarefa específica, do jeito mais direto. Para aprender o con
 | [Codificar a amostra](codificar-a-amostra.md) | Sortear a amostra de validação e importar codificações feitas fora do painel |
 | [Ler kappa e PABAK](ler-kappa-e-pabak.md) | Entender as métricas de concordância e decidir o que fazer com uma variável fraca |
 | [Usar o painel](painel.md) | Abrir a interface local, com um projeto ou com o exemplo |
+| [Exportar figuras](exportar-figuras.md) | Baixar um gráfico em SVG ou PNG no tamanho de um artigo, de um slide ou de um telão, e os dados em CSV |
 | [Solução de problemas](problemas.md) | Ollama que não responde, falta de memória ou disco, certificados, porta ocupada |
 
-Guias que chegam com os próximos marcos: exportar figuras e publicar no GitHub Pages (M7).
+Guias que chegam com os próximos marcos: publicar no GitHub Pages (M7).

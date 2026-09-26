@@ -33,6 +33,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - documentação do painel: referência da API HTTP gerada do OpenAPI (`docs/referencia/api-http.md`, conferida no CI com as outras referências), tutorial "Seu primeiro mapa pela interface", guia do painel (rodar as etapas e configurar o projeto) e ADR 0013 (jobs, progresso por SSE e edição do projeto);
 - sortear a amostra de validação pelo painel: `POST /api/validacao/amostra` e, na estação Validação da linha de metrô, o tamanho e o botão "Sortear a amostra";
 
+### Adicionado no M7 (publicação, figuras e oficina)
+
+- **Exportar figuras** (`lib/exportar/`): cada gráfico do painel baixa em SVG (com título, recorte, fonte, n e data, as cores do tema resolvidas e as fontes embutidas), PNG (rasterizado na resolução do tamanho) ou CSV (os dados da tabela); tamanhos Artigo (85 ou 174 mm, 300 ou 600 dpi, tema Prancha), Slide (1.920 px) e Telão (3.840 px, Observatório); guia "Exportar figuras";
+
 ## [0.4.0] - 2026-09-26
 
 Os tópicos no tempo e a geografia: o painel mostra como os assuntos do corpus mudam ano a ano, quais estão em alta e em queda, e de onde vêm os autores, por UF, país e instituição, com contagem fracionária. No piloto (4.275 artigos), 13 dos 57 tópicos têm tendência distinguível do acaso, 93,9% dos vínculos de autoria são ligados a uma de 639 instituições com precisão de 99,8% numa amostra lida à mão, e a geografia leva 2 segundos.
