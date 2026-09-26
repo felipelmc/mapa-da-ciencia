@@ -118,6 +118,37 @@ class Modelos(_Base):
     rotulos: ModeloLLM = ModeloLLM()
 
 
+class ConfigTopicos(_Base):
+    """Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007)."""
+
+    vizinhos: int = Field(
+        15,
+        ge=2,
+        le=200,
+        description="Vizinhos de cada documento no grafo do UMAP: mais vizinhos, estrutura mais global.",
+    )
+    min_dist: float = Field(
+        0.0, ge=0, le=1, description="Distância mínima entre pontos no UMAP de 5 dimensões, usado no agrupamento."
+    )
+    min_dist_mapa: float = Field(
+        0.1, ge=0, le=1, description="A mesma distância no mapa de 2 dimensões: maior, pontos mais espalhados."
+    )
+    min_cluster_size: int | None = Field(
+        None, ge=5, description="Menor tópico, em documentos. Vazio: automático, 1 a cada 200 documentos (mínimo 10)."
+    )
+    min_samples: int = Field(
+        5, ge=1, description="Quão conservador é o HDBSCAN: maior, mais documentos ficam de fora dos tópicos."
+    )
+    selecao: Literal["eom", "leaf"] = Field(
+        "eom", description="`eom` prefere tópicos maiores e mais estáveis; `leaf`, tópicos menores e mais numerosos."
+    )
+    sementes: list[int] = Field(
+        [42, 7, 2024],
+        min_length=1,
+        description="A primeira gera os tópicos; as demais medem a estabilidade (ARI entre as execuções).",
+    )
+
+
 class Validacao(_Base):
     """Amostra de resumos codificados por pessoas para medir a qualidade da classificação."""
 
@@ -139,6 +170,7 @@ class ConfigProjeto(_Base):
     fontes: Fontes
     recorte: Recorte
     modelos: Modelos = Modelos()
+    topicos: ConfigTopicos = ConfigTopicos()
     validacao: Validacao = Validacao()
 
 

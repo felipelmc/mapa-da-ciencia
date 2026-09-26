@@ -17,6 +17,7 @@ Conteúdo do `mapa.yaml`.
 | `fontes` | [Fontes](#fontes) | **obrigatório** | De onde vêm os artigos. Pode combinar mais de uma fonte. |
 | `recorte` | [Recorte](#recorte) | **obrigatório** | Período e idiomas do corpus. |
 | `modelos` | [Modelos](#modelos) | valores padrão da seção | Modelos locais de cada papel. `mapa novo` preenche conforme a memória da máquina. |
+| `topicos` | [ConfigTopicos](#configtopicos) | valores padrão da seção | Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007). |
 | `validacao` | [Validacao](#validacao) | valores padrão da seção | Amostra de resumos codificados por pessoas para medir a qualidade da classificação. |
 
 ### Fontes
@@ -92,6 +93,20 @@ Modelo de linguagem usado para classificar resumos ou nomear tópicos.
 | `pensar` | sim/não | `false` | Liga o modo de raciocínio do modelo (mais lento). |
 | `concorrencia` | inteiro | `1` | Chamadas simultâneas ao Ollama. |
 | `semente` | inteiro | `7` | Semente do gerador, para resultados reprodutíveis. |
+
+### ConfigTopicos
+
+Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007).
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `vizinhos` | inteiro | `15` | Vizinhos de cada documento no grafo do UMAP: mais vizinhos, estrutura mais global. |
+| `min_dist` | número | `0.0` | Distância mínima entre pontos no UMAP de 5 dimensões, usado no agrupamento. |
+| `min_dist_mapa` | número | `0.1` | A mesma distância no mapa de 2 dimensões: maior, pontos mais espalhados. |
+| `min_cluster_size` | inteiro ou vazio | vazio | Menor tópico, em documentos. Vazio: automático, 1 a cada 200 documentos (mínimo 10). |
+| `min_samples` | inteiro | `5` | Quão conservador é o HDBSCAN: maior, mais documentos ficam de fora dos tópicos. |
+| `selecao` | `"eom"` \\| `"leaf"` | `"eom"` | `eom` prefere tópicos maiores e mais estáveis; `leaf`, tópicos menores e mais numerosos. |
+| `sementes` | lista de inteiro | `[42, 7, 2024]` | A primeira gera os tópicos; as demais medem a estabilidade (ARI entre as execuções). |
 
 ### Validacao
 

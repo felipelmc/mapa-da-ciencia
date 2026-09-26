@@ -43,6 +43,11 @@ modelos:
   rotulos:
     modelo: $modelo_rotulos
 
+# Agrupamento em tópicos (veja "Como os tópicos são construídos" na documentação).
+topicos:
+  min_cluster_size:         # menor tópico; vazio = automático (1 a cada 200 documentos, mínimo 10)
+  min_samples: 5            # maior = mais documentos ficam de fora dos tópicos
+
 validacao:
   n: 200                    # resumos codificados por você para medir a concordância
   estratificar_por: topico
