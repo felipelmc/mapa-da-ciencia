@@ -3,7 +3,7 @@
 Os tópicos do `mapa-da-ciencia` não vêm de uma lista pronta: eles saem dos próprios textos. Artigos que tratam de assuntos parecidos ficam perto uns dos outros num espaço de muitas dimensões, e o agrupamento encontra as regiões mais densas desse espaço. Esta página descreve cada passo e as escolhas por trás deles.
 
 !!! note "Em construção no marco M3"
-    Por enquanto, esta página descreve o texto de análise, os embeddings, a vizinhança, o UMAP, o HDBSCAN, a reatribuição do ruído e a estabilidade. As palavras-chave, os rótulos, os macrotemas e a identidade estável entram ao longo do M3.
+    Por enquanto, esta página descreve o texto de análise, os embeddings, a vizinhança, o UMAP, o HDBSCAN, a reatribuição do ruído, a estabilidade e as palavras-chave. Os rótulos, os macrotemas e a identidade estável entram ao longo do M3.
 
 ## 1. O texto de análise
 
@@ -76,3 +76,17 @@ O núcleo é a base de tudo o que descreve um tópico: palavras-chave, documento
 O UMAP depende de uma semente aleatória. Para saber se os tópicos são do corpus e não do acaso, o agrupamento roda com três sementes (`topicos.sementes`), e o `mapa` mede a concordância entre elas pelo **índice de Rand ajustado** (ARI), sobre os documentos que estão no núcleo nas duas execuções comparadas. O ARI vai de 0 (concordância de acaso) a 1 (os mesmos grupos).
 
 No piloto, o ARI é 0,90. Os tópicos publicados vêm da primeira semente; as outras só medem a estabilidade.
+
+## 8. Palavras-chave e documentos representativos
+
+As palavras-chave de cada tópico saem de uma variante do TF-IDF por classe, o **c-TF-IDF** (a mesma ideia do BERTopic): cada tópico é tratado como um grande documento, e um termo pesa mais quanto mais frequente é nele e mais raro no resto do corpus.
+
+- Os termos são palavras de três letras ou mais e pares de palavras vizinhas ("ciência política", "rio janeiro").
+- Palavras vazias em português, inglês e espanhol ficam de fora, assim como palavras do gênero acadêmico ("artigo", "análise", "resultados") que aparecem em quase todo resumo.
+- Um termo precisa aparecer em ao menos três documentos do corpus.
+- Um par de palavras substitui as palavras soltas que contém: entra "rio janeiro", e não "rio" e "janeiro".
+- Só o **núcleo** de cada tópico conta.
+
+As palavras-chave são calculadas nos textos no **idioma de exibição** (`recorte.idioma_exibicao`, português por padrão), com o de análise como reserva. Revistas que publicam só em inglês (comuns em relações internacionais) trazem termos em inglês para os tópicos em que predominam.
+
+Os **documentos representativos** são os cinco do núcleo mais próximos do centro do tópico (a média dos embeddings). Eles aparecem no painel e, junto com as palavras-chave, orientam o rótulo.
