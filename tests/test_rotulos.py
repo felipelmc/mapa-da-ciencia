@@ -91,11 +91,13 @@ def test_rotulos_yaml_tem_prioridade(tmp_path, apis_falsas):
     r = _rotulador(tmp_path)
     saida = r.topicos(ENTRADAS, sem_llm=False, manuais=manuais)
     assert saida[3] == Rotulo("Presidencialismo de coalizão", "Como governam os presidentes.", "manual")
-    macros = r.macrotemas(
-        {0: [3, 7], 1: [7]}, saida, {0: [("x", 1.0)], 1: [("gênero", 2.0)]}, sem_llm=False, manuais=manuais
-    )
-    assert macros[0].fonte == "manual" and macros[1].fonte == "llm"
-    assert "- Presidencialismo de coalizão" not in apis_falsas.pedidos_chat[-1]["messages"][-1]["content"]
+    chamadas = apis_falsas.chamadas["ollama_chat"]
+    palavras = {0: [("x", 1.0)], 1: [("gênero", 2.0)], 2: [("veto", 3.0)]}
+    macros = r.macrotemas({0: [3, 7], 1: [7], 2: [7, 3]}, saida, palavras, sem_llm=False, manuais=manuais)
+    assert macros[0].fonte == "manual" and macros[1] == saida[7]  # um tópico só: o macrotema leva o nome dele
+    assert apis_falsas.chamadas["ollama_chat"] == chamadas + 1  # só o macrotema 2 foi ao modelo
+    pedido = apis_falsas.pedidos_chat[-1]["messages"][-1]["content"]
+    assert "- Presidencialismo de coalizão" in pedido and "Palavras-chave da área: veto" in pedido
     (tmp_path / "rotulos.yaml").write_text("topicos:\n  3: rotulo sem chaves\n", encoding="utf-8")
     with pytest.raises(ErroConfig, match=r"rotulos\.yaml inválido"):
         ler_manuais(tmp_path)

@@ -39,7 +39,7 @@ from mapa_da_ciencia.llm.ollama import Ollama
 from mapa_da_ciencia.progresso import Progresso, ProgressoNulo
 
 TAREFA = "rotulos"
-VERSAO_PROMPT = 3  # 2: acentos sem os falsos positivos de "e"/"é" e "a"/"à"; 3: rótulos em caixa de frase
+VERSAO_PROMPT = 4  # 2: acentos sem falsos positivos ("e"/"é", "a"/"à"); 3: caixa de frase; 4: macrotemas com palavras
 ARQUIVO_MANUAL = "rotulos.yaml"
 REUSO_MINIMO = 0.5  # Jaccard das 10 palavras-chave para manter o rótulo de um tópico casado
 FonteRotulo = Literal["llm", "palavras", "manual"]
@@ -59,10 +59,11 @@ SISTEMA_TOPICO = (
     "'Tópico' ou 'Pesquisas'."
 )
 SISTEMA_MACRO = (
-    "Você nomeia grandes áreas de um mapa da literatura científica. Dados os rótulos dos tópicos de uma área, "
-    "escreva em português do Brasil, com todos os acentos: um rótulo curto (no máximo 4 palavras, sem aspas nem "
-    "ponto final, em caixa de frase: maiúscula só na primeira palavra, nas siglas e nos nomes próprios) que "
-    "englobe os tópicos, e uma descrição de uma frase."
+    "Você nomeia grandes áreas de um mapa da literatura científica. Dados os rótulos dos tópicos de uma área e as "
+    "palavras-chave mais fortes dela, escreva em português do Brasil, com todos os acentos: um rótulo curto (de 2 a "
+    "5 palavras, sem aspas nem ponto final, em caixa de frase: maiúscula só na primeira palavra, nas siglas e nos "
+    "nomes próprios) que dê nome ao que os tópicos têm em comum, como o nome de uma subárea da disciplina, e não "
+    "uma lista dos tópicos; use só palavras que existem em português. E uma descrição de uma frase."
 )
 
 
@@ -341,8 +342,12 @@ class Rotulador:
                 if sem_llm:
                     saida[m] = Rotulo(", ".join(termos[:3]), f"Palavras-chave: {', '.join(termos[:8])}.", "palavras")
                     continue
+                if len(topicos) == 1:  # um macrotema de um tópico só leva o nome dele
+                    saida[m] = rotulos_topicos[topicos[0]]
+                    continue
                 nomes = [rotulos_topicos[t].rotulo for t in topicos]
                 pedido = "Tópicos desta área:\n" + "\n".join(f"- {n}" for n in nomes)
+                pedido += "\n\nPalavras-chave da área: " + ", ".join(termos[:10])
                 saida[m] = self._perguntar(cache, SISTEMA_MACRO, pedido, nomes + termos)
         return saida
 
