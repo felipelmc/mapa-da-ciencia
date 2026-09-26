@@ -110,6 +110,7 @@ class Estabilizados:
     cores_macro: dict[int, str]
     casados: dict[int, int]  # índice do tópico novo → id anterior
     identidade: Identidade
+    mesma_cor: int = 0  # casados que também mantiveram a cor (não mudaram de macrotema)
 
 
 def estabilizar(
@@ -186,11 +187,13 @@ def estabilizar(
     # recebem cores, evitando as reservadas (senão um recém-chegado podia tomar a cor de quem ficou)
     cores = [""] * len(nucleos)
     usadas: dict[int, list[str]] = {m: [] for m in cores_macro}
+    mesma_cor = 0
     for i in sorted(casados, key=lambda i: (-tamanhos[i], i)):
         anterior_t = valida.topicos[casados[i]] if valida else None
         if anterior_t and anterior_t.macro == macros[i] and anterior_t.cor not in usadas[macros[i]]:
             cores[i] = anterior_t.cor
             usadas[macros[i]].append(cores[i])
+            mesma_cor += 1
     for i in sorted((i for i in range(len(nucleos)) if not cores[i]), key=lambda i: (-tamanhos[i], i)):
         cores[i] = proxima_cor(cores_macro[macros[i]], usadas[macros[i]])
         usadas[macros[i]].append(cores[i])
@@ -220,4 +223,4 @@ def estabilizar(
             rotulo_fonte=velho_m.rotulo_fonte if velho_m else None,
         )
     nova = Identidade(chave, proximo_id, proximo_macro, topicos, macrotemas)
-    return Estabilizados(ids, macros, cores, cores_macro, casados, nova)
+    return Estabilizados(ids, macros, cores, cores_macro, casados, nova, mesma_cor)

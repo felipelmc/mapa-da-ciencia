@@ -52,7 +52,8 @@ class ResumoTopicos:
     """O que a etapa de tópicos fez. `print(resumo)` mostra os números principais numa frase.
 
     `nucleo`, `reatribuidos` e `sem_topico` somam `documentos`; `casados` conta os tópicos que mantiveram o número
-    e a cor da execução anterior; `rotulos` diz quantos rótulos vieram do modelo, do cache ou do `rotulos.yaml`.
+    da execução anterior e `mesma_cor`, os que mantiveram também a cor (não mudaram de macrotema); `rotulos` diz
+    quantos rótulos vieram do modelo, do cache ou do `rotulos.yaml`.
     """
 
     documentos: int
@@ -63,6 +64,7 @@ class ResumoTopicos:
     sem_topico: int
     estabilidade_ari: float | None
     casados: int
+    mesma_cor: int
     embeddings_novos: int
     rotulos: ResumoRotulos
     duracao_s: float
@@ -282,6 +284,7 @@ def gerar_topicos(
         sem_topico=ruido - reatribuidos,
         estabilidade_ari=ari,
         casados=len(est.casados),
+        mesma_cor=est.mesma_cor,
         embeddings_novos=e.novos,
         rotulos=rotulador.resumo,
         duracao_s=round(time.perf_counter() - t0, 2),

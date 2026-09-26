@@ -3,7 +3,7 @@ import random
 import numpy as np
 
 from mapa_da_ciencia.topicos.identidade import Identidade, estabilizar
-from mapa_da_ciencia.topicos.macrotemas import agrupar_macrotemas
+from mapa_da_ciencia.topicos.macrotemas import agrupar_macrotemas, numero_de_macrotemas
 from mapa_da_ciencia.topicos.paleta import cores_macrotemas
 
 CHAVE = {"modelo": "qwen3-embedding:0.6b@abc", "idioma_analise": "en", "versao_texto": 1}
@@ -76,6 +76,7 @@ def test_topico_que_muda_de_macrotema_muda_de_cor():
     r2 = estabilizar(nucleos, grupos, r.identidade, CHAVE, corpus)
     assert r2.ids == r.ids and r2.macros[0] == r.macros[1] and r2.cores[0] != r.cores[0]
     assert r2.cores[1:] == r.cores[1:]
+    assert len(r2.casados) == 6 and r2.mesma_cor == 5
 
 
 def test_recem_chegado_grande_nao_toma_a_cor_de_quem_ficou():
@@ -90,8 +91,13 @@ def test_recem_chegado_grande_nao_toma_a_cor_de_quem_ficou():
 def test_macrotemas_por_ward_e_ordem_pelo_tamanho():
     rng = np.random.default_rng(0)
     base = rng.normal(size=(3, 16))
-    centros = np.vstack([base[g] + 0.05 * rng.normal(size=16) for g in (0, 0, 1, 1, 2, 2)])
+    centros = np.vstack([base[g] + 0.05 * rng.normal(size=16) for g in (0, 0, 0, 1, 1, 1, 2, 2, 2)])
     centros /= np.linalg.norm(centros, axis=1, keepdims=True)
-    grupos = agrupar_macrotemas(centros, [10, 10, 50, 50, 20, 20], 3)
-    assert grupos == [2, 2, 0, 0, 1, 1]  # o grupo 0 é o de mais documentos
+    grupos = agrupar_macrotemas(centros, [10, 10, 10, 50, 50, 50, 20, 20, 20], 7)
+    assert grupos == [2, 2, 2, 0, 0, 0, 1, 1, 1]  # 9 tópicos → 3 grupos; o grupo 0 é o de mais documentos
     assert agrupar_macrotemas(centros[:2], [5, 9], 7) == [1, 0] and agrupar_macrotemas(centros[:0], [], 7) == []
+
+
+def test_numero_de_macrotemas_acompanha_os_topicos():
+    assert [numero_de_macrotemas(k, 7) for k in (1, 2, 5, 9, 13, 21, 50)] == [1, 2, 2, 3, 4, 7, 7]
+    assert numero_de_macrotemas(50, 3) == 3

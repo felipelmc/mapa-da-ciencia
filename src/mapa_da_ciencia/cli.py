@@ -505,8 +505,13 @@ def topicos(
         f"[dim]Núcleo: {num(resumo.nucleo, 0)}; reatribuídos pela vizinhança: {num(resumo.reatribuidos, 0)}; "
         f"sem tópico: {num(resumo.sem_topico, 0)}. Estabilidade entre sementes (ARI): {ari}.[/]"
     )
-    if resumo.casados:
+    if resumo.casados == resumo.mesma_cor > 0:
         console.print(f"[dim]{num(resumo.casados, 0)} tópico(s) mantiveram o número e a cor da execução anterior.[/]")
+    elif resumo.casados:
+        console.print(
+            f"[dim]{num(resumo.casados, 0)} tópico(s) mantiveram o número da execução anterior; "
+            f"{num(resumo.mesma_cor, 0)} também a cor (os outros mudaram de macrotema).[/]"
+        )
     console.print(f"[dim]Embeddings novos: {num(resumo.embeddings_novos, 0)} (os demais vieram do cache).[/]")
     r = resumo.rotulos
     if sem_rotulos:

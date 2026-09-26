@@ -47,7 +47,7 @@ def test_topicos_de_ponta_a_ponta_e_segunda_execucao(tmp_path, apis_falsas):
     embeds, chats = apis_falsas.chamadas["ollama"], apis_falsas.chamadas["ollama_chat"]
     de_novo = gerar_topicos(p)
     assert apis_falsas.chamadas["ollama"] == embeds and apis_falsas.chamadas["ollama_chat"] == chats  # tudo do cache
-    assert de_novo.casados == de_novo.topicos
+    assert de_novo.casados == de_novo.mesma_cor == de_novo.topicos
     resultado2 = Resultado.ler(p.dados / PASTA)
     assert [(t.id, t.cor, t.rotulo) for t in resultado2.topicos] == [(t.id, t.cor, t.rotulo) for t in resultado.topicos]
     assert Identidade.ler(p.dados / PASTA).proximo_id == r.topicos

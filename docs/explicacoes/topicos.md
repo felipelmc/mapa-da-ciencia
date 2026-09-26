@@ -93,7 +93,7 @@ Os **documentos representativos** são os cinco do núcleo mais próximos do cen
 
 ## 9. Macrotemas
 
-Cinquenta tópicos com cinquenta cores seriam ilegíveis. Os tópicos próximos são agrupados em **macrotemas** (7 por padrão, no máximo 8: `topicos.macrotemas`), por aglomeração hierárquica (método de Ward) dos centros dos tópicos no espaço dos embeddings.
+Cinquenta tópicos com cinquenta cores seriam ilegíveis. Os tópicos próximos são agrupados em **macrotemas** (até 7 por padrão, no máximo 8: `topicos.macrotemas`), por aglomeração hierárquica (método de Ward) dos centros dos tópicos no espaço dos embeddings. Com poucos tópicos, os macrotemas são menos, para que cada um reúna em média ao menos três tópicos: 13 tópicos formam 4 macrotemas, e não 7 grupos de um ou dois tópicos.
 
 Cada macrotema tem uma cor bem distinta das outras, inclusive para quem tem daltonismo, e os tópicos dele são variações dessa cor. As cores são geradas no espaço OKLCH, em que distâncias iguais parecem diferenças iguais, e conferidas em teste: contraste suficiente sobre os dois fundos da interface e diferença perceptível entre macrotemas sob simulação de protanopia, deuteranopia e tritanopia.
 
