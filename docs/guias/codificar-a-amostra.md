@@ -67,4 +67,18 @@ uv run mapa validar metricas
 
 Compara cada codificador com cada modelo que classificou a amostra, os codificadores entre si e os modelos entre si: concordância, kappa com intervalo de 95%, PABAK e alfa de Krippendorff, por variável. Veja [Ler kappa e PABAK](ler-kappa-e-pabak.md).
 
-Em Python, `mapa.amostra_de_validacao(p)`, `mapa.importar_codificacoes(p, arquivo, "maria")`, `mapa.codificacoes(p)` e `mapa.validacao(p)` fazem o mesmo (veja a [API Python](../referencia/api-python.md)).
+## O relatório
+
+```bash
+uv run mapa validar relatorio
+```
+
+Grava em `validacao/`:
+
+- `relatorio.md`: os participantes e o tipo de cada um, a concordância por variável e par, a precisão e a revocação por categoria, as matrizes de confusão, a comparação entre modelos, a taxa de evidência literal e todas as divergências com o modelo principal, com o trecho que o modelo citou;
+- `tabelas.tex`: as tabelas de concordância em LaTeX (pacote `booktabs`), com vírgula decimal, prontas para um artigo;
+- `validacao.json`: as mesmas métricas, para outras análises.
+
+O desenho da validação está no [ADR 0012](../decisoes/0012-validacao-e-codificador-de-referencia.md).
+
+Em Python, `mapa.amostra_de_validacao(p)`, `mapa.importar_codificacoes(p, arquivo, "maria")`, `mapa.codificacoes(p)`, `mapa.validacao(p)` e `mapa.relatorio_de_validacao(p)` fazem o mesmo (veja a [API Python](../referencia/api-python.md)).

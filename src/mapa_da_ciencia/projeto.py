@@ -8,6 +8,7 @@ Layout:
       dados/         tabelas analíticas (Parquet) e embeddings
       execucoes/     um manifesto JSON por execução de etapa
       saida/         arquivos do contrato de dados e site publicado
+      validacao/     amostra para codificar e relatório da validação
       estado.sqlite  cache do LLM, codificação humana e jobs do painel
 """
 
@@ -39,6 +40,7 @@ brutos/
 dados/
 saida/
 estado.sqlite*
+validacao/amostra.jsonl
 """
 
 _ENV_EXEMPLO = """\

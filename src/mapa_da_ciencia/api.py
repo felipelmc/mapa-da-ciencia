@@ -59,6 +59,7 @@ __all__ = [
     "importar",
     "importar_codificacoes",
     "novo",
+    "relatorio_de_validacao",
     "revistas",
     "topicos",
     "validacao",
@@ -355,3 +356,11 @@ def validacao(projeto: Projeto | str | Path = ".") -> Validacao:
     from mapa_da_ciencia.validacao.metricas import calcular
 
     return calcular(_projeto(projeto))
+
+
+def relatorio_de_validacao(projeto: Projeto | str | Path = ".") -> dict[str, Path]:
+    """Grava o relatório da validação, como `mapa validar relatorio`, e devolve os caminhos: `markdown`
+    (`validacao/relatorio.md`), `latex` (`validacao/tabelas.tex`) e `json` (`validacao/validacao.json`)."""
+    from mapa_da_ciencia.validacao.relatorio import gerar
+
+    return gerar(_projeto(projeto))[1]

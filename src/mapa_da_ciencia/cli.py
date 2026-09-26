@@ -763,6 +763,22 @@ def validar_metricas(projeto: OpcaoProjeto = Path(".")) -> None:
     _mostrar_validacao(r)
 
 
+@validar_app.command("relatorio")
+def validar_relatorio(projeto: OpcaoProjeto = Path(".")) -> None:
+    """Grava o relatório da validação em `validacao/`: Markdown, tabelas LaTeX e JSON."""
+    from mapa_da_ciencia.validacao.relatorio import gerar
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        v, arquivos = gerar(p)
+    _mostrar_validacao(v)
+    console.print(
+        "[bold green]Relatório gravado[/]: "
+        + ", ".join(f"[bold]{a.relative_to(p.raiz)}[/]" for a in arquivos.values())
+        + "."
+    )
+
+
 def _f(valor: float | None, casas: int = 2) -> str:
     return "—" if valor is None else num(valor, casas)
 

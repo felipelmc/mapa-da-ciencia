@@ -24,6 +24,7 @@ cp-scielo/
   dados/           tabelas do corpus e embeddings
   execucoes/       um registro (manifesto) por execução de cada etapa
   saida/           arquivos que o painel lê e o site publicado
+  validacao/       amostra para codificar e relatório da validação (depois de `mapa validar`)
 ```
 
 A configuração e o codebook podem ir para o git. Os dados ficam de fora: são grandes e podem ser recriados a partir das fontes e dos manifestos (veja [Reprodutibilidade](../explicacoes/reprodutibilidade.md)).

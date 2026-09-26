@@ -12,7 +12,7 @@ responderam:
 - **matriz de confusão** e **precisão, revocação e F1 por classe**, tomando o primeiro do par como referência.
 
 Nas variáveis de múltipla escolha, cada categoria vira uma variável sim/não (`variavel:categoria`). Nas de texto,
-só a concordância, depois de normalizar maiúsculas e espaços.
+só a concordância, sem diferença de maiúsculas, acentos, espaços e tipo de traço.
 
 Entre dois modelos comparados com a mesma referência, o **teste de McNemar exato** diz se a diferença de acertos
 é maior que o acaso: conta só os documentos em que um acertou e o outro errou.
@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import json
 import math
+import re
+import unicodedata
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from itertools import combinations
@@ -178,8 +180,13 @@ class VariavelMedida:
         return not self.rotulos
 
 
+_TRACOS = re.compile(r"\s*[-‐‑‒–—−]\s*")
+
+
 def _normalizar_texto(valor: str) -> str:
-    return " ".join(valor.casefold().split())
+    """Sem diferença de maiúsculas, acentos, espaços e tipo de traço: "1994 - 2018" = "1994–2018"."""
+    sem_acento = "".join(c for c in unicodedata.normalize("NFKD", valor) if not unicodedata.combining(c))
+    return " ".join(_TRACOS.sub("–", sem_acento.casefold()).split())
 
 
 _COMPARAR: dict[str, Callable[[str], str]] = {

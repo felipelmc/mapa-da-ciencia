@@ -177,3 +177,38 @@ def test_cli_validar_metricas(projeto, tmp_path):
     assert "claude-opus × qwen3.5:4b" in r.output and "referência, não humano" in r.output
     assert "75%" in r.output and "3 divergência(s)" in r.output
     assert mapa.validacao(projeto).metrica("abordagem", "claude-opus", "qwen3.5:4b").n == 12
+
+
+def test_texto_normalizado():
+    n = vm._normalizar_texto
+    assert n("1994 - 2018") == n("1994–2018") == n("1994—2018")
+    assert n("Não se aplica") == n("nao  se aplica")
+
+
+def test_relatorio(projeto, tmp_path):
+    from typer.testing import CliRunner
+
+    from mapa_da_ciencia.cli import app
+    from mapa_da_ciencia.validacao.relatorio import gerar
+
+    a = va.sortear(projeto)
+    _codificar(projeto, a.docs, tmp_path, "claude-opus", set(a.docs[:3]))
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    mapa.classificar(projeto, somente_amostra=True, modelo="qwen3.5:9b", progresso=False)
+    _, arquivos = gerar(projeto)
+    md = arquivos["markdown"].read_text(encoding="utf-8")
+    assert "`claude-opus` | referência (não humano) | 12" in md and "**Atenção:**" in md
+    assert "### `claude-opus` × `qwen3.5:4b`" in md and "| `abordagem` | 12 | 75% |" in md
+    assert "## Por classe: `claude-opus` (referência) × `qwen3.5:4b`" in md
+    assert "## Comparação entre modelos" in md and "## Divergências com `qwen3.5:4b`" in md
+    assert md.count("(marcado como incerto)") == 3 and "citando «" in md
+    tex = arquivos["latex"].read_text(encoding="utf-8")
+    assert tex.count(r"\begin{table}") == 3 and r"tecnica\_principal & 12 & 100\% &" in tex
+    assert r"\label{tab:concordancia-claude-opus-qwen3-5-4b}" in tex
+    dados = json.loads(arquivos["json"].read_text(encoding="utf-8"))
+    assert dados["modelo_principal"] == "qwen3.5:4b" and len(dados["divergencias"]) == 3
+    assert {a.parent.name for a in arquivos.values()} == {"validacao"}
+
+    r = CliRunner().invoke(app, ["validar", "relatorio", "-P", str(projeto.raiz)], env={"COLUMNS": "160"})
+    assert r.exit_code == 0, r.output
+    assert "Relatório gravado" in r.output and "validacao/relatorio.md" in r.output
