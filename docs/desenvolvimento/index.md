@@ -37,6 +37,7 @@ flowchart LR
 | Configuração | `config.py`, `projeto.py` | `mapa.yaml`, `codebook.yaml` e layout da pasta do projeto |
 | Reprodutibilidade | `manifesto.py` | Registro de cada execução de etapa |
 | Coleta | `coleta.py`, `fontes/`, `documento.py`, `texto.py` | Orquestração da etapa (`coleta.py`); buscador com cache (`fontes/base.py`), ArticleMeta, OpenAlex, importação, deduplicação; o `Documento` normalizado |
+| Tópicos | `topicos/` | Em construção no M3. Por enquanto, a paleta de cores (`paleta.py`): macrotemas no espaço OKLCH, com contraste sobre os dois fundos e distinção sob daltonismo conferidos em teste |
 | Armazenamento | `armazenamento.py` | Corpus em Parquet via DuckDB, com views para consulta ([ADR 0006](../decisoes/0006-armazenamento-parquet-duckdb.md)) |
 | Rede e máquina | `rede.py`, `recursos.py` | HTTP com `truststore`; memória, swap e disco |
 | Modelos | `llm/` | Interface de provedor e adaptador do Ollama; perfis |
