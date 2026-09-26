@@ -132,3 +132,16 @@ macrotemas:
 ```
 
 O que está no `rotulos.yaml` tem prioridade sobre o modelo, e continua valendo nas execuções seguintes, porque o número do tópico é estável. Sem modelo de linguagem (`mapa topicos --sem-rotulos`), os rótulos são as três palavras-chave mais fortes.
+
+## 12. Onde ficam os resultados
+
+Tudo o que a etapa produz fica em `dados/topicos/`, dentro da pasta do projeto:
+
+| Arquivo | Conteúdo |
+|---|---|
+| `atribuicoes.parquet` | Uma linha por documento: tópico (−1 = sem tópico), atribuição (`cluster` ou `vizinho`), coordenadas no mapa, os 5 vizinhos e o texto de análise usado (idioma e marca) |
+| `resultado.json` | Os tópicos e macrotemas: rótulos, cores, palavras-chave, representativos, parâmetros e estabilidade |
+| `identidade.json` | O estado da identidade estável, usado pela próxima execução |
+| `reducoes/` | As reduções do UMAP em cache |
+
+O `atribuicoes.parquet` pode ser lido direto pelo pandas, pelo polars ou pelo R, e cruzado com `dados/documentos.parquet` pelo `id`. No piloto, a etapa inteira leva cerca de 20 segundos quando os embeddings já estão em cache (4 minutos na primeira vez, mais uns 3 minutos para os rótulos).
