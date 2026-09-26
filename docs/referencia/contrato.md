@@ -15,7 +15,7 @@ Convenções:
 - Nenhum arquivo do contrato pode conter e-mails ou codificações humanas individuais (as divergências de
   `validacao.json` vêm só de codificadores de referência; as de pessoas ficam na API local do painel).
 
-Versão atual: **1.3**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
+Versão atual: **1.4**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
 
 | Arquivo | Modelo |
 |---|---|
@@ -39,7 +39,7 @@ a interface lê.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `api` | sim/não | **obrigatório** | True no painel local (há API); False no site estático publicado. |
 | `gerado_em` | datetime | **obrigatório** |  |
 | `projeto` | [ProjetoInfo](#projetoinfo) | **obrigatório** | Identificação do projeto. |
@@ -48,6 +48,7 @@ a interface lê.
 | `arquivos` | lista de texto | **obrigatório** | Arquivos do contrato presentes nesta pasta. |
 | `execucao` | [ExecucaoInfo](#execucaoinfo) | **obrigatório** | Dados de reprodutibilidade da última execução de cada etapa. |
 | `licencas` | mapa de texto para inteiro | vazio | Licença → número de documentos. |
+| `publicacao` | [PublicacaoInfo](#publicacaoinfo) ou vazio | vazio | Presente só no site publicado (`mapa publicar`). |
 
 ### ProjetoInfo
 
@@ -95,6 +96,17 @@ Dados de reprodutibilidade da última execução de cada etapa.
 | `sementes` | mapa de texto para inteiro | vazio |  |
 | `duracao_s` | mapa de texto para número | vazio | Etapa → segundos da última execução. |
 
+### PublicacaoInfo
+
+O que o `mapa publicar` fez: quando, e quantos resumos foram ou não publicados.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `em` | datetime | **obrigatório** |  |
+| `resumos_publicados` | inteiro | **obrigatório** | Resumos com licença Creative Commons, publicados sem alteração. |
+| `resumos_retirados` | inteiro | **obrigatório** | Resumos que ficaram de fora (licença não aberta, desconhecida ou `--sem-resumos`). |
+| `sem_resumos` | sim/não | `false` |  |
+
 ## `revistas.json`
 
 ### Revistas
@@ -103,7 +115,7 @@ Revistas presentes no corpus, com o número de documentos de cada uma.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `revistas` | lista de [Revista](#revista) | **obrigatório** | Uma revista do corpus. |
 
 ### Revista
@@ -126,7 +138,7 @@ Tabela principal: um documento por posição, com coordenadas no mapa, tópico e
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
 | `colunas` | [ColunasDocumentos](#colunasdocumentos) | **obrigatório** | Colunas da tabela de documentos (todas com `n` itens, na mesma ordem). |
 | `dicionarios` | [DicionariosDocumentos](#dicionariosdocumentos) | **obrigatório** | Valores por trás dos índices das colunas categóricas. |
@@ -170,7 +182,7 @@ Afiliações com contagem fracionária, base da vista de geografia.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
 | `colunas` | [ColunasAfiliacoes](#colunasafiliacoes) | **obrigatório** | Colunas da tabela longa de afiliações: uma linha por documento × (instituição, UF, país), pesos somados. |
 | `dicionarios` | [DicionariosAfiliacoes](#dicionariosafiliacoes) | **obrigatório** | Instituições, UFs e países por trás dos índices. |
@@ -217,7 +229,7 @@ Um dos 64 fragmentos de detalhes, carregados sob demanda.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `fragmento` | texto | **obrigatório** |  |
 | `documentos` | mapa de texto para [Detalhe](#detalhe) | **obrigatório** | O que a interface mostra ao abrir um documento: resumo, autores, licença e evidências. |
 
@@ -259,7 +271,7 @@ Tópicos e macrotemas do corpus, com as séries por ano.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `anos` | lista de inteiro | **obrigatório** |  |
 | `total_por_ano` | lista de inteiro | **obrigatório** |  |
 | `parametros` | mapa de texto para número ou inteiro ou texto | **obrigatório** |  |
@@ -363,7 +375,7 @@ Cópia publicada do codebook, com o hash que identifica a versão usada.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `nome` | texto | **obrigatório** |  |
 | `versao` | texto | **obrigatório** |  |
 | `hash` | texto | **obrigatório** |  |
@@ -401,7 +413,7 @@ Resumo da classificação por codebook: modelo, cobertura e contagens por catego
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `modelo` | texto | **obrigatório** |  |
 | `hash_codebook` | texto | **obrigatório** |  |
 | `cobertura` | número | **obrigatório** | Fração dos documentos com classificação válida. |
@@ -432,7 +444,7 @@ Resultados da validação da classificação: concordância por variável e por 
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `amostra` | [AmostraInfo](#amostrainfo) | **obrigatório** | Como a amostra de validação foi sorteada. |
 | `metricas` | lista de [MetricaVariavel](#metricavariavel) | **obrigatório** | Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável. |
 | `modelos` | lista de texto | **obrigatório** |  |
@@ -542,7 +554,7 @@ Gabarito calculado no Python para testar o filtro cruzado do frontend.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.3"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `topico_ano_revista` | lista de tupla | **obrigatório** | (tópico, ano, revista, n). |
 | `uf` | mapa de texto para número | **obrigatório** | Contagem fracionária por UF (sigla). |
 | `pais` | mapa de texto para número | **obrigatório** | Contagem fracionária por país (ISO alfa-2). |

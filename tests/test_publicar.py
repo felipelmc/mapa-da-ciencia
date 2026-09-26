@@ -1,0 +1,115 @@
+"""`mapa publicar`: o site estático, com resumos só de licença aberta, api false e nenhum e-mail."""
+
+import json
+
+import pytest
+from corpus_sintetico import corpus_sintetico
+from typer.testing import CliRunner
+
+import mapa_da_ciencia.api as mapa
+from mapa_da_ciencia.armazenamento import ARQUIVO, gravar_documentos
+from mapa_da_ciencia.cli import app
+from mapa_da_ciencia.config import ErroConfig
+from mapa_da_ciencia.contrato import modelos as m
+from mapa_da_ciencia.llm.perfis import PERFIS
+from mapa_da_ciencia.projeto import Projeto
+from mapa_da_ciencia.texto import EMAIL
+from mapa_da_ciencia.topicos.pipeline import gerar_topicos
+
+
+@pytest.fixture(scope="module")
+def projeto(tmp_path_factory):
+    import respx
+    from conftest import OLLAMA_FALSO, ApisFalsas
+
+    pasta = tmp_path_factory.mktemp("pub")
+    mp = pytest.MonkeyPatch()
+    mp.setenv("OLLAMA_HOST", OLLAMA_FALSO)
+    with respx.mock(assert_all_called=False) as router:
+        ApisFalsas(router)
+        p = Projeto.criar(pasta / "sintetico", modelo="vazio", perfil=PERFIS["leve"])
+        docs, _ = corpus_sintetico()
+        # um terço sem licença aberta: o resumo desses não pode ir para o site
+        docs = [d.model_copy(update={"licenca": "desconhecida"}) if i % 3 == 0 else d for i, d in enumerate(docs)]
+        gravar_documentos(docs, p.dados / ARQUIVO)
+        gerar_topicos(p)
+        mapa.classificar(p, limite=30, progresso=False)
+    mp.undo()
+    return p
+
+
+@pytest.fixture
+def estatico(tmp_path):
+    pasta = tmp_path / "estatico"
+    pasta.mkdir()
+    (pasta / "index.html").write_text("<!doctype html><title>mapa</title>")
+    return pasta
+
+
+def _detalhes(site):
+    saida = {}
+    for arq in (site / "dados" / "detalhes").glob("*.json"):
+        saida.update(m.Fragmento.model_validate_json(arq.read_text(encoding="utf-8")).documentos)
+    return saida
+
+
+def test_resumos_so_com_licenca_aberta(projeto, estatico, tmp_path):
+    from mapa_da_ciencia.publicar import publicar
+
+    r = publicar(projeto, tmp_path / "site", estatico=estatico)
+    site = r.destino
+    assert (site / "index.html").exists() and (site / "dados" / "manifesto.json").exists()
+    manifesto = m.Manifesto.model_validate_json((site / "dados" / "manifesto.json").read_text(encoding="utf-8"))
+    assert manifesto.api is False and manifesto.versao_contrato == m.VERSAO_CONTRATO
+    pub = manifesto.publicacao
+    assert (pub.resumos_publicados, pub.resumos_retirados) == (r.resumos_publicados, r.resumos_retirados)
+    assert r.resumos_retirados >= 90 and r.resumos_publicados >= 180
+
+    detalhes = _detalhes(site)
+    locais = _detalhes(projeto.saida)  # o painel local continua com tudo
+    for doc, d in detalhes.items():
+        if locais[doc].resumo is None:  # documento sem resumo
+            continue
+        if d.licenca.startswith("cc"):
+            assert d.resumo == locais[doc].resumo
+        else:
+            assert d.resumo is None and locais[doc].resumo is not None
+            assert all(e.evidencia == "" and e.inicio is None for e in d.evidencias.values())
+    com_evidencia = [d for d in detalhes.values() if d.licenca.startswith("cc") and d.evidencias]
+    assert com_evidencia and all(
+        e.evidencia for d in com_evidencia for e in d.evidencias.values() if e.status == "literal"
+    )
+    assert r.evidencias_retiradas > 0
+    assert not any(EMAIL.search(a.read_text(encoding="utf-8")) for a in (site / "dados").rglob("*.json"))
+    # publicar de novo troca o site inteiro (nada de sobras)
+    (site / "sobra.txt").write_text("x")
+    publicar(projeto, tmp_path / "site", estatico=estatico)
+    assert not (site / "sobra.txt").exists() and not (tmp_path / "site.novo").exists()
+
+
+def test_sem_resumos(projeto, estatico, tmp_path):
+    from mapa_da_ciencia.publicar import publicar
+
+    r = publicar(projeto, tmp_path / "site", sem_resumos=True, estatico=estatico)
+    assert r.resumos_publicados == 0
+    assert all(d.resumo is None for d in _detalhes(r.destino).values())
+    assert json.loads((r.destino / "dados" / "manifesto.json").read_text())["publicacao"]["sem_resumos"] is True
+
+
+def test_sem_interface_explica(projeto, tmp_path):
+    from mapa_da_ciencia.publicar import publicar
+
+    with pytest.raises(ErroConfig, match="npm run empacotar"):
+        publicar(projeto, tmp_path / "site", estatico=tmp_path / "nada")
+
+
+def test_cli(projeto, estatico, tmp_path, monkeypatch):
+    import mapa_da_ciencia.servidor.app as servidor_app
+
+    monkeypatch.setattr(servidor_app, "pasta_estatico", lambda: estatico)
+    r = CliRunner().invoke(
+        app, ["publicar", "-P", str(projeto.raiz), "--destino", str(tmp_path / "s")], env={"COLUMNS": "160"}
+    )
+    assert r.exit_code == 0, r.output
+    texto = " ".join(r.output.split())
+    assert "Site publicado em" in texto and "resumos com licença aberta" in texto and "http.server" in texto

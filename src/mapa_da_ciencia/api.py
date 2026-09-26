@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from mapa_da_ciencia.classificacao.pipeline import ResumoClassificacao
     from mapa_da_ciencia.embeddings import Embeddings
     from mapa_da_ciencia.geografia.pipeline import ResumoGeografia
+    from mapa_da_ciencia.publicar import ResumoPublicacao
     from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
     from mapa_da_ciencia.validacao.amostra import Amostra, ResumoImportacao
     from mapa_da_ciencia.validacao.metricas import Validacao
@@ -59,6 +60,7 @@ __all__ = [
     "importar",
     "importar_codificacoes",
     "novo",
+    "publicar",
     "relatorio_de_validacao",
     "revistas",
     "topicos",
@@ -372,3 +374,13 @@ def relatorio_de_validacao(projeto: Projeto | str | Path = ".") -> dict[str, Pat
     from mapa_da_ciencia.validacao.relatorio import gerar
 
     return gerar(_projeto(projeto))[1]
+
+
+def publicar(
+    projeto: Projeto | str | Path = ".", destino: str | Path | None = None, *, sem_resumos: bool = False
+) -> ResumoPublicacao:
+    """Gera o site estático do projeto, como `mapa publicar`: a interface e o contrato, com `api: false`, os resumos
+    só com licença aberta e nenhum e-mail. Devolve o resumo (onde ficou, quantos resumos foram e quantos saíram)."""
+    from mapa_da_ciencia.publicar import publicar as rodar
+
+    return rodar(_projeto(projeto), Path(destino) if destino else None, sem_resumos=sem_resumos)

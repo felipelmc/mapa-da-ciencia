@@ -388,6 +388,10 @@ export interface Manifesto {
 		[k: string]: number;
 	};
 	projeto: ProjetoInfo;
+	/**
+	 * Presente só no site publicado (`mapa publicar`).
+	 */
+	publicacao?: PublicacaoInfo | null;
 	recorte: RecorteInfo;
 	/**
 	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
@@ -437,6 +441,21 @@ export interface ProjetoInfo {
 	descricao?: string;
 	nome: string;
 	titulo: string;
+}
+/**
+ * O que o `mapa publicar` fez: quando, e quantos resumos foram ou não publicados.
+ */
+export interface PublicacaoInfo {
+	em: string;
+	/**
+	 * Resumos com licença Creative Commons, publicados sem alteração.
+	 */
+	resumos_publicados: number;
+	/**
+	 * Resumos que ficaram de fora (licença não aberta, desconhecida ou `--sem-resumos`).
+	 */
+	resumos_retirados: number;
+	sem_resumos?: boolean;
 }
 /**
  * Recorte do corpus: período, fontes e idiomas.

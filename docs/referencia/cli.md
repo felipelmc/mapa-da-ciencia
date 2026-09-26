@@ -47,6 +47,20 @@ mapa diagnostico [OPÇÕES]
 | `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
 | `--sem-rede` | Não testa a conexão com ArticleMeta e OpenAlex. |  |
 
+## `mapa publicar`
+
+Gera o site estático do projeto (para o GitHub Pages): resumos só com licença aberta, sem API.
+
+```
+mapa publicar [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--destino` | Pasta do site (padrão: saida/site do projeto). |  |
+| `--sem-resumos` | Publica sem nenhum resumo, nem os de licença aberta. |  |
+
 ## `mapa painel`
 
 Abre o painel no navegador: a interface do projeto, servida só nesta máquina.
