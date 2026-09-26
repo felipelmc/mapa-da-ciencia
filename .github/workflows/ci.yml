@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0  # o setup-uv não publica tags de versão principal
         with:
           enable-cache: true
       - run: uv sync --all-groups --locked
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0  # o setup-uv não publica tags de versão principal
       - uses: actions/download-artifact@v8
         with:
           name: interface
