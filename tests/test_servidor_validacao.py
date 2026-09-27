@@ -94,6 +94,9 @@ def test_escrita_so_desta_maquina(projeto, tmp_path):
     fora = _cliente(projeto, tmp_path, base="http://painel.example")  # DNS apontado para cá
     assert fora.put(url, json=corpo).status_code == 403
     assert va.codificacoes(projeto, "maria")[0]["valor"] == "mista"
+    # nem ler: as respostas de cada pessoa e as métricas ficam só nesta máquina
+    for rota in ("/api/validacao/fila?codificador=maria", "/api/validacao/metricas", "/api/projeto"):
+        assert fora.get(rota).status_code == 403
 
 
 def test_metricas_ao_vivo_com_divergencias_de_pessoas(projeto, tmp_path):

@@ -24,9 +24,9 @@ from pathlib import Path
 from typing import Any, Literal
 
 from ..armazenamento import ARQUIVO, ler_documentos
-from ..classificacao.codebook import validar
+from ..classificacao.codebook import conferir_valor, validar
 from ..classificacao.executor import Texto, textos_para_classificar
-from ..classificacao.resultado import valor_como_texto
+from ..classificacao.resultado import valor_como_texto, valor_do_texto
 from ..config import ErroConfig
 from ..projeto import Projeto
 from ..texto import contem_email
@@ -123,6 +123,15 @@ def _alocar(tamanhos: dict[str, int], n: int) -> dict[str, int]:
             alocado[e] += 1
             faltam -= 1
     return alocado
+
+
+def nomes_dos_estratos(projeto: Projeto, estratos: list[str]) -> dict[str, str]:
+    """Como mostrar cada estrato: `topico 3` vira o rótulo do tópico; os outros ficam como estão."""
+    from ..topicos.resultado import PASTA, Resultado
+
+    resultado = Resultado.ler(projeto.dados / PASTA)
+    rotulos = {f"topico {t.id}": t.rotulo for t in resultado.topicos} if resultado else {}
+    return {e: rotulos.get(e, e) for e in estratos}
 
 
 def textos_do_projeto(projeto: Projeto) -> list[Texto]:
@@ -309,14 +318,35 @@ def codificadores(projeto: Projeto) -> dict[str, TipoCodificador]:
         return dict(con.execute("SELECT nome, tipo FROM codificadores ORDER BY nome").fetchall())
 
 
-def codificacoes(projeto: Projeto, codificador: str | None = None) -> list[dict[str, Any]]:
-    """As codificações (de um codificador, ou de todos), uma por codificador × documento × variável."""
+def codificacoes(projeto: Projeto, codificador: str | None = None, *, todas: bool = False) -> list[dict[str, Any]]:
+    """As codificações (de um codificador, ou de todos), uma por codificador × documento × variável.
+
+    Só as que valem no codebook atual: a variável existe e o valor cabe nela. Uma categoria renomeada ou uma variável
+    que mudou de tipo deixam a ficha incompleta na fila, para codificar de novo, em vez de contar contra o modelo com
+    o valor antigo. Com `todas=True`, vêm também as que não valem mais.
+    """
     if not projeto.estado.exists():
         return []
     sql = "SELECT codificador, doc, variavel, valor, evidencia, incerto, nota, atualizado FROM codificacoes"
     with conectar(projeto) as con:
         con.row_factory = sqlite3.Row
-        linhas = con.execute(
-            sql + (" WHERE codificador = ?" if codificador else ""), (codificador,) if codificador else ()
-        )
-        return [dict(linha) for linha in linhas]
+        linhas = [
+            dict(linha)
+            for linha in con.execute(
+                sql + (" WHERE codificador = ?" if codificador else ""), (codificador,) if codificador else ()
+            )
+        ]
+    if todas:
+        return linhas
+    variaveis = {v.id: v for v in projeto.codebook.variaveis}
+
+    def vale(c: dict[str, Any]) -> bool:
+        v = variaveis.get(c["variavel"])
+        if v is None or (v.tipo == "booleana" and c["valor"] not in ("true", "false")):
+            return False
+        try:
+            return conferir_valor(v, valor_do_texto(c["valor"], v.tipo))[1] is None
+        except ValueError:  # uma variável que virou múltipla, com o valor antigo guardado como texto
+            return False
+
+    return [c for c in linhas if vale(c)]

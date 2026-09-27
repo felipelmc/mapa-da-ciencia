@@ -18,8 +18,8 @@ As decisões do marco M0 vêm de **spikes**: experimentos pequenos e descartáve
 | [0008](0008-geografia-casamento-das-afiliacoes.md) | Geografia: afiliações casadas com as instituições do OpenAlex | aceita |
 | [0009](0009-tendencia-dos-topicos.md) | Tendência dos tópicos por regressão logística quase-binomial | aceita |
 | [0010](0010-graficos-em-svg-proprio.md) | Gráficos em SVG próprio, com módulos pequenos do d3 | aceita |
-| [0011](0011-classificacao-ancorada-em-evidencia.md) | Classificação ancorada em evidência: texto, prompt, evidência curta, nova tentativa e cache | proposta |
-| [0012](0012-validacao-e-codificador-de-referencia.md) | Validação: amostra estratificada, codificação cega, codificador de referência e métricas por par | proposta |
+| [0011](0011-classificacao-ancorada-em-evidencia.md) | Classificação ancorada em evidência: texto, prompt, evidência curta, nova tentativa e cache | aceita |
+| [0012](0012-validacao-e-codificador-de-referencia.md) | Validação: amostra estratificada, codificação cega, codificador de referência e métricas por par | aceita |
 | [0013](0013-painel-jobs-sse-e-edicao.md) | Painel: jobs um por vez, progresso por SSE com retomada, cancelamento e edição do YAML sem perder comentários | proposta |
 
 ## Modelo

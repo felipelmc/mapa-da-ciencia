@@ -649,7 +649,8 @@ def _mostrar_classificacao(p: Projeto, resumo, *, estimar: bool) -> None:
         valores = Counter(linha["valor"] for linha in linhas if linha["variavel"] == v.id)
         status = [linha["status"] for linha in linhas if linha["variavel"] == v.id and linha["status"] != "dispensada"]
         literal = f"{num(100 * status.count('literal') / len(status), 0)}%" if status else "—"
-        mais = ", ".join(f"{k} ({num(n, 0)})" for k, n in valores.most_common(3))
+        rotulos = {c.valor: c.rotulo or c.valor for c in v.categorias} | {"true": "Sim", "false": "Não"}
+        mais = ", ".join(f"{rotulos.get(k, k)} ({num(n, 0)})" for k, n in valores.most_common(3))
         tabela.add_row(v.rotulo, mais, literal)
     if linhas:
         console.print(tabela)
@@ -709,8 +710,9 @@ def validar_amostra(
         f"semente {a.semente}."
     )
     tabela = Table("Estrato", "Documentos")
+    nomes = va.nomes_dos_estratos(p, list(a.por_estrato()))
     for estrato, n in sorted(a.por_estrato().items(), key=lambda e: (-e[1], e[0]))[:12]:
-        tabela.add_row(estrato, num(n, 0))
+        tabela.add_row(nomes[estrato], num(n, 0))
     if len(a.por_estrato()) > 12:
         tabela.add_row("…", "")
     console.print(tabela)

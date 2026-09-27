@@ -26,8 +26,8 @@ O `mapa` confere cada evidência contra o texto, sem depender do modelo:
 | Status | Quando | No piloto (amostra de 200) |
 |---|---|---|
 | `literal` | o trecho está no título ou no resumo, a menos de maiúsculas, espaços, aspas e tipo de traço | 94,8% das evidências |
-| `aproximada` | 90% dos caracteres do trecho casam em blocos com o texto (o modelo trocou uma palavra, juntou dois pedaços) | 3,6% |
-| `ausente` | o trecho não está no texto | 1,6% |
+| `aproximada` | 90% dos caracteres do trecho casam em blocos com um pedaço do texto de tamanho parecido (o modelo trocou uma palavra), ou o trecho foi cortado com reticências e cada pedaço está no texto | 3,5% |
+| `ausente` | o trecho não está no texto | 1,7% |
 | `dispensada` | evidência vazia numa resposta sem informação | 258 das 1.200 respostas |
 
 Nos dois primeiros casos, a posição do trecho no texto fica guardada, e o painel o marca no resumo. Uma evidência ausente não quer dizer que a resposta está errada, mas que ela não está ancorada: vale ler o resumo.

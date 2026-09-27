@@ -76,6 +76,13 @@ def test_validar(exemplo, com_multipla):
     assert v.valores == {"metodos": ["survey", "entrevista"], "periodo": "1994 – 2018"}
     r["metodos"]["valor"] = "survey"
     assert not validar(r, com_multipla).valida
+    # valores do tipo errado viram problema, não exceção (uma lista não entra num conjunto)
+    for errado in ({"a": 1}, [["survey"]], [{"a": 1}]):
+        r["metodos"]["valor"] = errado
+        assert not validar(r, com_multipla).valida
+    r = resposta_valida(exemplo)
+    r["abordagem"]["valor"] = ["quantitativa"]
+    assert any("abordagem" in p for p in validar(r, exemplo).problemas)
 
 
 def test_sem_informacao(exemplo, com_multipla):

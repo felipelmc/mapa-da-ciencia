@@ -1,6 +1,6 @@
 # 0012. Validação e codificador de referência
 
-- **Status:** proposta (M5)
+- **Status:** aceita (M5)
 - **Data:** 2026-09-26
 - **Marco:** M5
 
@@ -20,7 +20,22 @@ A classificação ([ADR 0011](0011-classificacao-ancorada-em-evidencia.md)) põe
 
 ## Evidência
 
-A preencher com a rodada do piloto: concordância e kappa `claude-opus` × `qwen3.5:9b` por variável, evidência literal na amostra, e a leitura das divergências.
+Piloto, amostra de 200 artigos (58 estratos), `claude-opus` (referência) × `qwen3.5:9b`:
+
+| Variável | Concordância | Kappa (IC 95%) | PABAK | Alfa |
+|---|---|---|---|---|
+| Brasil como caso | 96% | 0,93 (0,87 a 0,98) | 0,93 | 0,93 |
+| Recorte geográfico | 78% | 0,74 (0,67 a 0,80) | 0,74 | 0,73 |
+| Abordagem metodológica | 77% | 0,67 (0,59 a 0,75) | 0,72 | 0,67 |
+| Subárea | 68% | 0,63 (0,55 a 0,70) | 0,63 | 0,62 |
+| Técnica ou fonte de dados | 44% | 0,37 (0,30 a 0,45) | 0,37 | 0,34 |
+| Período analisado (texto) | 84% | — | — | — |
+
+A técnica é a variável fraca: 44 das 112 divergências são ensaios teóricos que a referência codificou como "bibliografia" e o modelo como "não informado". O codebook de exemplo não diz o que fazer quando o resumo não fala da fonte; é um problema de definição. No tutorial (*Opinião Pública*, 40 artigos, mais empíricos), a mesma variável teve kappa 0,71.
+
+Os lotes do codificador de referência trouxeram um desvio: em alguns resumos sem ano final, o período analisado foi deduzido do ano embutido no identificador do artigo ou da data de publicação. Esses casos foram refeitos só com o título e o resumo antes da importação, e a instrução passou a proibir explicitamente o identificador e a data. O desvio mostra uma ambiguidade do codebook (períodos abertos ou relativos) que também afeta a codificação humana.
+
+A comparação com outros modelos locais não foi feita: o `qwen3.5:4b` não está instalado (o plano não baixa modelos) e o `gemma4:26b` (17 GB) não cabe na memória livre ao lado do resto. O código da comparação (McNemar exato) está pronto e testado.
 
 ## Consequências
 

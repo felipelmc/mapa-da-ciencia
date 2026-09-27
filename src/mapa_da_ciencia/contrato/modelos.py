@@ -242,7 +242,11 @@ class Evidencia(_Base):
         description="`literal`: o trecho está no texto; `aproximada`: quase (90% dos caracteres); `ausente`: não "
         "está; `dispensada`: vazia numa resposta sem informação."
     )
-    inicio: int | None = Field(None, description="Posição do trecho no resumo exibido (caracteres), se localizado.")
+    inicio: int | None = Field(
+        None,
+        description="Posição do trecho no resumo exibido, se localizado, em pontos de código Unicode (como o Python "
+        "conta; em JavaScript, converta para UTF-16).",
+    )
     fim: int | None = None
     campo: Literal["titulo", "resumo"] | None = Field(
         None, description="Onde o trecho foi localizado; `inicio` e `fim` são posições nesse texto."

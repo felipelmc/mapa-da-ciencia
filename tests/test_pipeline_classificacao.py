@@ -49,6 +49,13 @@ def test_estimar_limite_e_completar(projeto, apis_falsas):
         n, variaveis = con.execute("SELECT count(*), count(DISTINCT variavel) FROM classificacoes").fetchone()
     assert variaveis == len(projeto.codebook.variaveis) and n == r.documentos * variaveis
 
+    # depois da rodada completa, só a amostra (ou um limite) não encolhe a classificação: o cache entra inteiro
+    mapa.amostra_de_validacao(projeto, n=5)
+    for opcoes in ({"somente_amostra": True}, {"limite": 3}):
+        r = mapa.classificar(projeto, progresso=False, **opcoes)
+        assert r.classificados == r.documentos and not r.parcial and r.novos == 0
+        assert classificacao_em_dia(projeto) is True
+
 
 def test_outro_modelo_para_comparar(projeto):
     mapa.classificar(projeto, limite=3, modelo="qwen3.5:9b", progresso=False)

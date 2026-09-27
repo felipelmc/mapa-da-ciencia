@@ -218,6 +218,12 @@ class Classificador:
         with CacheLLM(self.estado) as cache:
             return [t for t in textos if cache.obter(TAREFA, self.chave(t)) is None]
 
+    def do_cache(self, textos: Iterable[Texto]) -> list[Classificacao]:
+        """As classificações que já estão no cache, sem chamar o modelo nem mexer nos contadores."""
+        with CacheLLM(self.estado) as cache:
+            guardados = ((t, cache.obter(TAREFA, self.chave(t))) for t in textos)
+            return [self._montar(t, g, do_cache=True) for t, g in guardados if g is not None]
+
     def classificar(self, textos: list[Texto]) -> Iterator[Classificacao]:
         """As classificações, na ordem em que ficam prontas: primeiro as do cache, depois as novas."""
         with CacheLLM(self.estado) as cache:

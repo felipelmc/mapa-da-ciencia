@@ -1,5 +1,6 @@
 <script lang="ts" module>
 	import type { Evidencia } from '$lib/contrato/tipos';
+	import { posicoesJs } from './posicoes';
 
 	export interface Segmento {
 		texto: string;
@@ -10,17 +11,10 @@
 	/** O resumo partido nos limites das evidências localizadas nele (as do título e as ausentes ficam de fora). */
 	export function segmentar(resumo: string, evidencias: Record<string, Evidencia>): Segmento[] {
 		const faixas = Object.entries(evidencias)
-			.filter(
-				([, e]) =>
-					(e.campo ?? 'resumo') === 'resumo' &&
-					e.status !== 'ausente' &&
-					e.inicio != null &&
-					e.fim != null &&
-					e.inicio >= 0 &&
-					e.fim <= resumo.length &&
-					e.fim > e.inicio
-			)
-			.map(([v, e]) => ({ v, a: e.inicio!, b: e.fim! }));
+			.filter(([, e]) => (e.campo ?? 'resumo') === 'resumo' && e.status !== 'ausente')
+			.map(([v, e]) => ({ v, ...posicoesJs(resumo, e) }))
+			.filter(({ inicio, fim }) => inicio != null && fim != null && inicio >= 0 && fim <= resumo.length && fim > inicio)
+			.map(({ v, inicio, fim }) => ({ v, a: inicio!, b: fim! }));
 		const cortes = [...new Set([0, resumo.length, ...faixas.flatMap((f) => [f.a, f.b])])].sort((x, y) => x - y);
 		const saida: Segmento[] = [];
 		for (let k = 0; k < cortes.length - 1; k += 1) {

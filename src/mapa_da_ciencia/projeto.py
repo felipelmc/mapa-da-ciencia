@@ -40,7 +40,8 @@ brutos/
 dados/
 saida/
 estado.sqlite*
-validacao/amostra.jsonl
+# os textos da amostra e o relatório da validação, com as respostas de cada pessoa que codificou
+validacao/
 """
 
 _ENV_EXEMPLO = """\

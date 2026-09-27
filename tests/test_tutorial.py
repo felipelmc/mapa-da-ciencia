@@ -21,6 +21,7 @@ TUTORIAIS = Path(__file__).parents[1] / "docs" / "tutoriais"
 PARTE_1 = TUTORIAIS / "primeiro-mapa.md"
 PARTE_2 = TUTORIAIS / "primeiro-mapa-topicos.md"
 PARTE_3 = TUTORIAIS / "primeiro-mapa-tempo-e-geografia.md"
+PARTE_4 = TUTORIAIS / "primeiro-mapa-classificacao.md"
 PELA_INTERFACE = TUTORIAIS / "primeiro-mapa-pela-interface.md"
 FORA_DO_CI = "# fora do CI"
 runner = CliRunner()
@@ -108,6 +109,44 @@ def test_parte_3_tempo_e_geografia(tmp_path, apis_falsas, monkeypatch):
     assert "apelidos:" in revisao and "Geografia pronta" in segunda
     assert "Geografia:" in saidas["status"][0] and "vínculos ligados a uma de" in saidas["status"][0]
     assert (tmp_path / "projetos" / "op" / "saida" / "dados" / "afiliacoes.json").exists()
+
+
+def _codificar_no_painel(args: list[str]) -> None:
+    """A codificação da amostra é feita no painel (fora do CI): antes das métricas, uma pessoa falsa responde."""
+    if args[:2] != ["validar", "metricas"]:
+        return
+    from mapa_da_ciencia.projeto import Projeto
+    from mapa_da_ciencia.validacao import amostra as va
+
+    p = Projeto.abrir(Path.cwd())
+    for i, doc in enumerate(va.ler(p).docs):
+        respostas = {}
+        for v in p.codebook.variaveis:
+            if v.tipo == "booleana":
+                valor: object = True
+            elif v.tipo == "texto":
+                valor = "2010–2020"
+            else:
+                valor = v.categorias[i % 2].valor
+            respostas[v.id] = {"valor": valor}
+        assert va.salvar(p, "voce", doc, respostas) == []
+
+
+def test_parte_4_classificacao(tmp_path, apis_falsas, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    _rodar(PARTE_2, monkeypatch, antes=_semear)  # a parte 4 continua o projeto das partes 2 e 3
+    _rodar(PARTE_3, monkeypatch)
+    saidas = _rodar(PARTE_4, monkeypatch, antes=_codificar_no_painel)
+
+    assert "Amostra sorteada: 40 documentos" in saidas["validar"][0]
+    estimar, amostra, resto = saidas["classificar"]
+    assert "Estimativa:" in estimar and "5 de" in estimar
+    assert "40 de" in " ".join(amostra.split())
+    metricas = " ".join(saidas["validar"][1].split())
+    assert "voce × qwen3.5:" in metricas and "Kappa" in metricas and "voce (pessoa" in metricas
+    assert "Classificação pronta" in resto and "Faltam" not in resto
+    assert "Relatório gravado" in " ".join(saidas["validar"][2].split())
+    assert (tmp_path / "projetos" / "op" / "validacao" / "relatorio.md").exists()
 
 
 def test_pela_interface_cria_o_projeto(tmp_path, monkeypatch):

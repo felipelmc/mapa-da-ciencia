@@ -247,7 +247,7 @@ Valor de uma variável do codebook e o trecho do resumo que o justifica.
 | `valor` | texto ou sim/não ou lista de texto ou vazio | **obrigatório** |  |
 | `evidencia` | texto | **obrigatório** |  |
 | `status` | `"literal"` \\| `"aproximada"` \\| `"ausente"` \\| `"dispensada"` | **obrigatório** | `literal`: o trecho está no texto; `aproximada`: quase (90% dos caracteres); `ausente`: não está; `dispensada`: vazia numa resposta sem informação. |
-| `inicio` | inteiro ou vazio | vazio | Posição do trecho no resumo exibido (caracteres), se localizado. |
+| `inicio` | inteiro ou vazio | vazio | Posição do trecho no resumo exibido, se localizado, em pontos de código Unicode (como o Python conta; em JavaScript, converta para UTF-16). |
 | `fim` | inteiro ou vazio | vazio |  |
 | `campo` | `"titulo"` \\| `"resumo"` ou vazio | vazio | Onde o trecho foi localizado; `inicio` e `fim` são posições nesse texto. |
 

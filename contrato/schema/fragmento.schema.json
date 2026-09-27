@@ -157,7 +157,7 @@
             }
           ],
           "default": null,
-          "description": "Posição do trecho no resumo exibido (caracteres), se localizado.",
+          "description": "Posição do trecho no resumo exibido, se localizado, em pontos de código Unicode (como o Python conta; em JavaScript, converta para UTF-16).",
           "title": "Inicio"
         },
         "status": {
