@@ -113,6 +113,7 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | M5 | Classificação por codebook e validação | concluído (v0.5.0) |
 | M6 | Painel completo: rodar etapas pela interface | concluído (v0.6.0) |
 | M7 | Publicação, figuras, oficina no Colab, release | concluído (v0.7.0) |
+| Página | A abertura do site, "Céu que se forma" | concluído (v1.0.0) |
 
 ## Armadilhas conhecidas
 
