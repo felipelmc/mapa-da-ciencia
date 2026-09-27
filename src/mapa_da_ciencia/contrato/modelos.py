@@ -19,11 +19,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSAO_CONTRATO = "1.3"
+VERSAO_CONTRATO = "1.4"
 # 1.1: marcas do texto de análise, fonte do rótulo, núcleo dos tópicos, ruído por ano
 # 1.2: tendências (com o método), séries dos macrotemas, sem tópico por ano, geografia completa
 # 1.3: classificação por variável, evidência dispensada e campo da evidência, participantes da validação com o
 #      tipo, métricas por classe, comparação entre modelos
+# 1.4: publicação no manifesto (quando e o que o `mapa publicar` retirou)
 N_FRAGMENTOS = 64
 SIGLAS_UF = (
     "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA",
@@ -104,6 +105,17 @@ class ExecucaoInfo(_Base):
     duracao_s: dict[str, float] = Field(default_factory=dict, description="Etapa → segundos da última execução.")
 
 
+class PublicacaoInfo(_Base):
+    """O que o `mapa publicar` fez: quando, e quantos resumos foram ou não publicados."""
+
+    em: datetime
+    resumos_publicados: int = Field(description="Resumos com licença Creative Commons, publicados sem alteração.")
+    resumos_retirados: int = Field(
+        description="Resumos que ficaram de fora (licença não aberta, desconhecida ou `--sem-resumos`)."
+    )
+    sem_resumos: bool = False
+
+
 class Manifesto(_Arquivo):
     """Índice do projeto publicado: o que existe, de onde veio e como foi gerado. É o primeiro arquivo que
     a interface lê.
@@ -117,6 +129,7 @@ class Manifesto(_Arquivo):
     arquivos: list[str] = Field(description="Arquivos do contrato presentes nesta pasta.")
     execucao: ExecucaoInfo
     licencas: dict[str, int] = Field(default_factory=dict, description="Licença → número de documentos.")
+    publicacao: PublicacaoInfo | None = Field(None, description="Presente só no site publicado (`mapa publicar`).")
 
 
 # ---------------------------------------------------------------- revistas.json

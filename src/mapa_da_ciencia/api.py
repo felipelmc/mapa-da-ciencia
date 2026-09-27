@@ -14,6 +14,7 @@ Funciona dentro do Jupyter e do Colab: a coleta roda numa thread quando já há 
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -38,6 +39,7 @@ if TYPE_CHECKING:
     from mapa_da_ciencia.classificacao.pipeline import ResumoClassificacao
     from mapa_da_ciencia.embeddings import Embeddings
     from mapa_da_ciencia.geografia.pipeline import ResumoGeografia
+    from mapa_da_ciencia.publicar import ResumoPublicacao
     from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
     from mapa_da_ciencia.validacao.amostra import Amostra, ResumoImportacao
     from mapa_da_ciencia.validacao.metricas import Validacao
@@ -59,6 +61,8 @@ __all__ = [
     "importar",
     "importar_codificacoes",
     "novo",
+    "painel",
+    "publicar",
     "relatorio_de_validacao",
     "revistas",
     "topicos",
@@ -372,3 +376,78 @@ def relatorio_de_validacao(projeto: Projeto | str | Path = ".") -> dict[str, Pat
     from mapa_da_ciencia.validacao.relatorio import gerar
 
     return gerar(_projeto(projeto))[1]
+
+
+def publicar(
+    projeto: Projeto | str | Path = ".", destino: str | Path | None = None, *, sem_resumos: bool = False
+) -> ResumoPublicacao:
+    """Gera o site estático do projeto, como `mapa publicar`: a interface e o contrato, com `api: false`, os resumos
+    só com licença aberta e nenhum e-mail. Devolve o resumo (onde ficou, quantos resumos foram e quantos saíram)."""
+    from mapa_da_ciencia.publicar import publicar as rodar
+
+    return rodar(_projeto(projeto), Path(destino) if destino else None, sem_resumos=sem_resumos)
+
+
+@dataclass
+class Painel:
+    """O painel aberto por `painel()`: o endereço e como parar o servidor."""
+
+    url: str
+    _servidor: Any = field(repr=False)
+
+    def parar(self) -> None:
+        """Derruba o servidor do painel."""
+        self._servidor.should_exit = True
+
+    def _repr_html_(self) -> str:  # num notebook, o painel aparece como um link
+        return f'<a href="{self.url}" target="_blank">Painel do mapa-da-ciencia em {self.url}</a>'
+
+
+def _no_colab() -> bool:
+    try:
+        import google.colab  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: bool | None = None) -> Painel:
+    """Abre o painel do projeto de dentro de um notebook (Jupyter ou Colab), com o servidor numa thread: a célula
+    termina e o painel continua no ar enquanto o notebook estiver aberto (ou até `.parar()`).
+
+    No Colab (detectado sozinho, ou com `colab=True`), o painel abre numa janela nova pelo *proxy* do Colab, que
+    chega ao servidor com o endereço do Google: só nesse modo a API aceita pedidos de outro endereço. A máquina do
+    Colab é só sua, e o *proxy* exige o seu login.
+    """
+    import socket
+    import threading
+    import time
+
+    import uvicorn
+
+    from mapa_da_ciencia.servidor.app import criar_app
+
+    p = _projeto(projeto)
+    with socket.socket() as s:
+        try:
+            s.bind(("127.0.0.1", porta))
+        except OSError:
+            raise ErroConfig(f"A porta {porta} já está em uso: tente outra, com `porta=`.") from None
+    colab = _no_colab() if colab is None else colab
+    app = criar_app(pasta_dados=p.saida / "dados", projeto=p, api=True, so_local=not colab)
+    servidor = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning"))
+    fio = threading.Thread(target=servidor.run, daemon=True, name=f"mapa-painel-{porta}")
+    fio.start()
+    for _ in range(200):
+        if servidor.started or not fio.is_alive():
+            break
+        time.sleep(0.05)
+    if not servidor.started:
+        servidor.should_exit = True
+        raise ErroConfig(f"O painel não subiu na porta {porta}. Tente outra, com `porta=`.")
+    aberto = Painel(f"http://127.0.0.1:{porta}/", servidor)
+    if colab:
+        from google.colab import output  # só existe no Colab
+
+        output.serve_kernel_port_as_window(porta, path="/", anchor_text="Abrir o painel do mapa-da-ciencia")
+    return aberto

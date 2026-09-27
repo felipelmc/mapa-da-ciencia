@@ -3,14 +3,14 @@
 Este tutorial faz o percurso das partes 1 a 4 de "Seu primeiro mapa" quase todo pelo painel, sem digitar os comandos de cada etapa: você cria um projeto, abre o painel, confere a configuração no assistente e roda a coleta, os tópicos, a geografia e a classificação pela vista **Projeto**, acompanhando cada etapa ao vivo. No fim, codifica uma parte da amostra de validação e vê a concordância. Leva uns 30 minutos, a maior parte esperando os modelos.
 
 !!! info "Antes de começar"
-    - Instale o `mapa-da-ciencia` e o Ollama (veja [Instalar e escolher os modelos](../guias/instalacao.md)). O terminal só é usado para criar o projeto e abrir o painel.
+    - Instale o `mapa-da-ciencia` com a interface do painel: pelo *wheel* de uma *release*, que já a traz, ou pelo código, compilando a interface uma vez (os dois caminhos estão no passo 2 de [Explorar o exemplo](explorar-exemplo.md)). Instale também o Ollama (veja [Instalar e escolher os modelos](../guias/instalacao.md)). O terminal só é usado para criar o projeto e abrir o painel; os comandos abaixo são os de quem instalou pelo código (pelo *wheel*, digite só `mapa`, sem `uv run`).
     - A classificação usa o modelo do perfil sugerido para a sua máquina (`qwen3.5:9b` com 16 GB de memória ou mais). Se ele ainda não estiver instalado, o painel oferece o download, com o tamanho antes.
 
 ## 1. Crie o projeto e abra o painel
 
 ```bash
 uv run mapa novo projetos/pela-interface --revista op --anos 2010-2025
-uv run mapa painel -P projetos/pela-interface  # fora do CI
+uv run mapa painel -P projetos/pela-interface
 ```
 
 O primeiro comando cria a pasta do projeto com a *Opinião Pública* de 2010 a 2025, o recorte das partes 2 a 4. O segundo abre o painel no navegador, em `http://127.0.0.1:8765/`. Deixe o terminal aberto: o painel roda enquanto ele estiver ali.
@@ -41,11 +41,11 @@ Quando uma etapa termina, **Ver os dados novos** recarrega o painel: o Mapa, os 
 
 ## 4. Classifique a amostra
 
-A classificação de todo o corpus leva cerca de uma hora e meia neste recorte. Para começar, classifique só a amostra de validação:
+A classificação de todo o corpus leva cerca de uma hora neste recorte (67 minutos no computador de desenvolvimento). Para começar, classifique só a amostra de validação:
 
 1. Na estação **Validação**, escolha **40** documentos e clique em **Sortear a amostra**. A amostra é sorteada entre os documentos com resumo, espalhada pelos tópicos.
 2. Na estação **Classificação**, clique em **Estimar o tempo**: o modelo classifica 5 documentos e o painel mostra quanto falta, neste computador.
-3. Clique em **Só a amostra**. São uns 10 minutos.
+3. Clique em **Só a amostra**. São uns 7 minutos.
 
 A vista **Classificação** mostra o resultado: a distribuição de cada variável por ano e por macrotema e, numa célula, os documentos com o trecho do resumo que justifica cada resposta (veja [Ler a classificação](../guias/ler-a-classificacao.md)).
 
@@ -66,4 +66,4 @@ Depois, a vista **Validação** mostra a concordância do modelo com você, vari
 
 - Classifique o corpus inteiro: **Rodar** na estação Classificação. A etapa pode ser cancelada e retomada.
 - Revise o codebook no assistente, olhando as divergências, e classifique de novo (veja [Escrever um codebook](../guias/codebook.md)).
-- As mesmas etapas pela linha de comando estão nas partes [1](primeiro-mapa.md), [2](primeiro-mapa-topicos.md) e [3](primeiro-mapa-tempo-e-geografia.md) de "Seu primeiro mapa".
+- As mesmas etapas pela linha de comando estão nas partes [1](primeiro-mapa.md), [2](primeiro-mapa-topicos.md), [3](primeiro-mapa-tempo-e-geografia.md) e [4](primeiro-mapa-classificacao.md) de "Seu primeiro mapa".

@@ -22,6 +22,24 @@
 
 	let principal: HTMLElement;
 
+	// Modo apresentação (tecla P): esconde o trilho e as barras e aumenta a tipografia, para projetar. Esc sai.
+	// Não vale na codificação, que usa o teclado para responder.
+	let apresentando = $state(false);
+	const naCodificacao = $derived(lerHash(page.url.hash).caminho.startsWith('/validacao/codificar'));
+	function tecla(e: KeyboardEvent) {
+		const alvo = e.target as HTMLElement;
+		if (alvo.closest('input, textarea, select, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey) return;
+		if ((e.key === 'p' || e.key === 'P') && !naCodificacao) {
+			apresentando = !apresentando;
+			e.preventDefault();
+		} else if (e.key === 'Escape' && apresentando) {
+			apresentando = false;
+		}
+	}
+	$effect(() => {
+		document.documentElement.dataset.apresentacao = apresentando ? 'sim' : 'nao';
+	});
+
 	// Com o router por hash, um href="#conteudo" viraria uma navegação para a rota
 	// "conteudo" (404). O link de pular só move o foco, sem tocar na URL.
 	function pular(evento: MouseEvent) {
@@ -31,9 +49,15 @@
 	}
 </script>
 
+<svelte:window onkeydown={tecla} />
+
 <a class="pular" href="#conteudo" onclick={pular}>Pular para o conteúdo</a>
 
-<div class="casca" class:tela-cheia={telaCheia}>
+{#if apresentando}
+	<p class="aviso-apresentacao" role="status" data-testid="modo-apresentacao">Modo apresentação: <kbd>P</kbd> ou <kbd>Esc</kbd> para sair</p>
+{/if}
+
+<div class="casca" class:tela-cheia={telaCheia} class:apresentando>
 	<Trilho {secoes} {projeto} />
 	<BarraSuperior {projeto} />
 	{#if comRecorte}
@@ -62,6 +86,51 @@
 	.pular:focus-visible {
 		transform: none;
 		outline-color: var(--texto);
+	}
+
+	.casca.apresentando {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr);
+		grid-template-areas: 'conteudo';
+	}
+
+	.casca.apresentando > :global(:not(main)) {
+		display: none;
+	}
+
+	:global(html[data-apresentacao='sim']) {
+		font-size: 125%;
+	}
+
+	.aviso-apresentacao {
+		position: fixed;
+		right: 1rem;
+		bottom: 1rem;
+		z-index: 50;
+		margin: 0;
+		padding: 0.4rem 0.8rem;
+		border-radius: var(--raio);
+		background: var(--superficie-alta);
+		color: var(--texto-suave);
+		font-size: 0.75rem;
+		animation: sumir 4s ease forwards;
+	}
+
+	@keyframes sumir {
+		0%,
+		70% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.aviso-apresentacao {
+			animation: none;
+			opacity: 0.8;
+		}
 	}
 
 	.casca {

@@ -22,6 +22,21 @@ jobs:
       - name: Referência em dia com o código
         run: uv run python scripts/gerar_referencias.py --checar
       - run: uv run mkdocs build --strict
+      - name: Demo do piloto em /demo/ (asset da última release)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # O site do piloto (`mapa publicar`) vai como asset da release; sem ele, a documentação sai sem a demo.
+          if gh release download --repo "$GITHUB_REPOSITORY" --pattern piloto-publicado.zip --dir /tmp/demo; then
+            mkdir -p site/demo
+            unzip -q /tmp/demo/piloto-publicado.zip -d site/demo
+            test -f site/demo/index.html
+            test -f site/demo/dados/manifesto.json
+            echo "Demo do piloto publicada em /demo/."
+          else
+            echo "::warning::A última release não tem piloto-publicado.zip: a documentação vai sem a demo."
+          fi
       - if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v5
         with:

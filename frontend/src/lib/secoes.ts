@@ -32,6 +32,8 @@ export interface Secao {
 	selo?: string;
 	/** Só aparece quando `manifesto.api` é verdadeiro (painel local). */
 	soNoPainel?: boolean;
+	/** No site publicado (sem API), a seção aparece com outro nome e outro resumo (Projeto → Metodologia). */
+	noSite?: { rotulo: string; resumo: string };
 	/** A vista ocupa toda a área de conteúdo, sem margens nem largura máxima (o mapa). */
 	telaCheia?: boolean;
 	/** Vista de análise: recebe o recorte comum (anos, revistas, tópicos, laço, lugares) pelo trilho. */
@@ -124,7 +126,11 @@ export const SECOES: readonly Secao[] = [
 			'Configurar o projeto, acompanhar as etapas do pipeline e editar o codebook, direto no painel local.',
 		chegada: 'no marco M6',
 		arquivos: [],
-		soNoPainel: true
+		noSite: {
+			rotulo: 'Metodologia',
+			resumo:
+				'Como estes dados foram gerados: fontes, recorte, modelos, sementes, durações, licenças e o que ficou de fora da publicação.'
+		}
 	}
 ];
 
@@ -134,7 +140,9 @@ export function secao(id: IdSecao): Secao {
 	return s;
 }
 
-/** As seções do trilho para este projeto: "Projeto" só existe no painel local. */
+/** As seções do trilho para este projeto: no site publicado, "Projeto" vira "Metodologia". */
 export function secoesDoTrilho(manifesto: Pick<Manifesto, 'api'>): Secao[] {
-	return SECOES.filter((s) => !s.soNoPainel || manifesto.api);
+	return SECOES.filter((s) => !s.soNoPainel || manifesto.api).map((s) =>
+		!manifesto.api && s.noSite ? { ...s, ...s.noSite } : s
+	);
 }

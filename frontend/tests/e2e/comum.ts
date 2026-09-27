@@ -14,7 +14,7 @@ export const ler = (arquivo: string): any => JSON.parse(readFileSync(join(EXEMPL
 
 export const inteiro = (n: number) => new Intl.NumberFormat('pt-BR').format(n);
 
-export const url = (nome: 'RAIZ' | 'SUBCAMINHO' | 'VAZIO' | 'PAINEL') => {
+export const url = (nome: 'RAIZ' | 'SUBCAMINHO' | 'VAZIO' | 'PAINEL' | 'PUBLICADO') => {
 	const valor = process.env[`E2E_URL_${nome}`];
 	if (!valor) throw new Error(`E2E_URL_${nome} não definida; o globalSetup (tests/e2e/preparar.ts) rodou?`);
 	return valor;

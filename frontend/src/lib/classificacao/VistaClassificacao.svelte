@@ -173,6 +173,7 @@
 	</details>
 
 	<Figura
+		n={classificadosRecorte}
 		id="por-ano"
 		titulo="Por ano"
 		resumo={resumoAno}
@@ -190,6 +191,7 @@
 	</Figura>
 
 	<Figura
+		n={classificadosRecorte}
 		id="cruzamento"
 		titulo="Por {NOMES_CRUZAR[filtros.cruzar].toLowerCase()}"
 		resumo={resumoCruz}

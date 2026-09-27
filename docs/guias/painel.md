@@ -25,6 +25,16 @@ O navegador abre em `http://127.0.0.1:8765/`. Para encerrar, aperte ++ctrl+c++ n
 | `--nao-abrir` | Não abre o navegador (útil em servidores e no Colab) |
 | `--projeto`, `-P` | Indica a pasta do projeto quando você está fora dela |
 
+Num notebook (Jupyter ou Colab), `mapa painel` prenderia a célula. Use a API Python, que deixa o servidor rodando numa *thread*:
+
+```python
+import mapa_da_ciencia.api as mapa
+
+painel = mapa.painel("op")  # mostra o link; painel.parar() encerra
+```
+
+No Colab, o painel abre numa janela nova, pelo *proxy* do Google, e só nesse modo a API aceita pedidos que não vêm de `127.0.0.1`: a máquina do Colab é só de quem a abriu, e o *proxy* exige o login dessa pessoa. O caderno da oficina faz isso no fim (veja [Oficina no Colab](../tutoriais/oficina-colab.md)).
+
 ## O que aparece
 
 | Vista | Mostra | Disponível |
@@ -37,6 +47,8 @@ O navegador abre em `http://127.0.0.1:8765/`. Para encerrar, aperte ++ctrl+c++ n
 | Validação | A concordância do modelo com quem codificou a amostra, a matriz de confusão e as divergências; no painel local, a codificação da amostra pelo teclado ([Codificar a amostra](codificar-a-amostra.md), [Ler kappa e PABAK](ler-kappa-e-pabak.md)) | agora |
 | Projeto | As etapas do pipeline numa linha de metrô (em dia, desatualizadas ou pendentes), rodar e cancelar cada uma com o progresso ao vivo, a estimativa da classificação e os modelos do Ollama (só no painel local) | agora |
 | Redes | Coautoria e citação | v2 |
+
+Para projetar numa aula ou numa apresentação, aperte ++p++: o **modo apresentação** esconde o trilho e as barras e aumenta a letra; ++esc++ (ou ++p++ de novo) volta.
 
 A interface tem dois temas: **Observatório** (escuro, bom para projetar) e **Prancha** (claro, bom para figuras de artigo). Ela segue o tema do sistema, e o botão na barra superior alterna entre os dois.
 
@@ -80,4 +92,4 @@ Na CLI, as mesmas etapas são `mapa coletar`, `mapa topicos`, `mapa geografia` e
 
 ## Como funciona
 
-O `mapa painel` sobe um servidor local ([FastAPI](https://fastapi.tiangolo.com)) que entrega a interface compilada, os arquivos do [contrato de dados](../referencia/contrato.md) do projeto e uma API para o que só faz sentido localmente: rodar as etapas, editar o projeto e codificar a amostra de validação. As etapas rodam uma de cada vez numa fila do servidor, e o progresso chega ao navegador por *Server-Sent Events*, que se reconectam sozinhos se a conexão cair. O site publicado com `mapa publicar` (marco M7) é a mesma interface lendo os mesmos arquivos, só que sem a API: por isso ele é somente leitura.
+O `mapa painel` sobe um servidor local ([FastAPI](https://fastapi.tiangolo.com)) que entrega a interface compilada, os arquivos do [contrato de dados](../referencia/contrato.md) do projeto e uma API para o que só faz sentido localmente: rodar as etapas, editar o projeto e codificar a amostra de validação. As etapas rodam uma de cada vez numa fila do servidor, e o progresso chega ao navegador por *Server-Sent Events*, que se reconectam sozinhos se a conexão cair. O site publicado com [`mapa publicar`](publicar.md) é a mesma interface lendo os mesmos arquivos, só que sem a API: por isso ele é somente leitura.

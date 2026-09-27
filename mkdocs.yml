@@ -96,6 +96,7 @@ nav:
       - "Seu primeiro mapa, parte 3: tempo e geografia": tutoriais/primeiro-mapa-tempo-e-geografia.md
       - "Seu primeiro mapa, parte 4: classificação e validação": tutoriais/primeiro-mapa-classificacao.md
       - "Seu primeiro mapa pela interface": tutoriais/primeiro-mapa-pela-interface.md
+      - "Oficina no Colab": tutoriais/oficina-colab.md
   - Guias:
       - guias/index.md
       - Instalar e escolher os modelos: guias/instalacao.md
@@ -113,6 +114,8 @@ nav:
       - Codificar a amostra: guias/codificar-a-amostra.md
       - Ler kappa e PABAK: guias/ler-kappa-e-pabak.md
       - Usar o painel: guias/painel.md
+      - Exportar figuras: guias/exportar-figuras.md
+      - Publicar o site: guias/publicar.md
       - Solução de problemas: guias/problemas.md
   - Referência:
       - referencia/index.md
@@ -125,6 +128,7 @@ nav:
       - Glossário: referencia/glossario.md
   - Explicações:
       - explicacoes/index.md
+      - Metodologia em uma página: explicacoes/metodologia.md
       - Fontes de dados: explicacoes/fontes.md
       - Como os tópicos são construídos: explicacoes/topicos.md
       - Geografia da produção: explicacoes/geografia.md
@@ -133,6 +137,7 @@ nav:
       - Modelos locais: explicacoes/modelos-locais.md
       - Reprodutibilidade: explicacoes/reprodutibilidade.md
       - Privacidade e licenças: explicacoes/privacidade-e-licencas.md
+      - Limitações e vieses: explicacoes/limitacoes.md
   - Decisões:
       - decisoes/README.md
       - "0001 · Certificados do sistema": decisoes/0001-certificados-do-sistema-com-truststore.md

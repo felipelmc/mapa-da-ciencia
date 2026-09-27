@@ -2,10 +2,12 @@
 
 Neste tutorial você monta um corpus de verdade: os artigos da revista *Opinião Pública* publicados em 2024. No fim, você terá um projeto com 25 artigos, com títulos, resumos, autores, afiliações e licenças, e saberá conferir a cobertura desses dados. Leva uns 10 minutos.
 
-A parte 1 não usa modelos de linguagem: só precisa de internet, para consultar a [ArticleMeta](../explicacoes/fontes.md) do SciELO e o OpenAlex. A [parte 2](primeiro-mapa-topicos.md) descobre os tópicos e monta o mapa; a [parte 3](primeiro-mapa-tempo-e-geografia.md) mostra os tópicos no tempo e a geografia; a parte 4, com a classificação, chega com o marco M5.
+A parte 1 não usa modelos de linguagem: só precisa de internet, para consultar a [ArticleMeta](../explicacoes/fontes.md) do SciELO e o OpenAlex. A [parte 2](primeiro-mapa-topicos.md) descobre os tópicos e monta o mapa; a [parte 3](primeiro-mapa-tempo-e-geografia.md) mostra os tópicos no tempo e a geografia; e a [parte 4](primeiro-mapa-classificacao.md) classifica os resumos com um codebook e mede a concordância.
 
 !!! info "Antes de começar"
-    Você precisa do `mapa-da-ciencia` instalado. Se ainda não instalou, siga os passos 1 e 2 de [Explorar o exemplo](explorar-exemplo.md) e volte para cá. Todos os comandos abaixo rodam dentro da pasta `mapa-da-ciencia` que você baixou.
+    Você precisa do `mapa-da-ciencia` instalado. Se ainda não instalou, siga os passos 1 e 2 de [Explorar o exemplo](explorar-exemplo.md) e volte para cá.
+
+    Os comandos abaixo são os de quem instalou **pelo código**: começam com `uv run` e rodam dentro da pasta `mapa-da-ciencia` que você baixou. Quando o próprio `mapa` sugerir um próximo passo (por exemplo, `mapa status`), ponha `uv run` na frente. Se instalou **pelo *wheel***, digite só `mapa` (sem `uv run`), em qualquer pasta.
 
 ## 1. Escolha a revista
 
@@ -48,13 +50,13 @@ cd projetos/op-2024
 ```
 
 !!! tip "Identifique-se para as APIs (opcional)"
-    A ArticleMeta e o OpenAlex pedem que quem faz muitas consultas se identifique. Crie um arquivo `.env` na pasta do projeto com o seu e-mail:
+    A ArticleMeta e o OpenAlex pedem que quem faz muitas consultas se identifique. O `mapa novo` deixou na pasta do projeto um modelo, `.env.exemplo`. Copie-o para `.env` e preencha o seu e-mail:
 
-    ```text
-    MAPA_EMAIL=voce@exemplo.org
+    ```bash
+    cp .env.exemplo .env
     ```
 
-    O e-mail vai só no cabeçalho das requisições. O `.env` fica fora do git: `mapa novo` já o colocou no `.gitignore` do projeto.
+    Depois, abra o `.env` num editor de texto e complete a linha `MAPA_EMAIL=` (por exemplo, `MAPA_EMAIL=voce@exemplo.org`). O e-mail vai só no cabeçalho das requisições, e o `.env` fica fora do git (`mapa novo` já o colocou no `.gitignore`). Sem ele, a coleta funciona igual: é uma cortesia com as APIs, que respondem a quem se identifica.
 
 ## 3. Colete
 
@@ -138,12 +140,12 @@ mais_citados = """
 mapa.consultar(p, mais_citados)
 ```
 
-O resultado lista os três artigos mais citados da revista em 2024, segundo o OpenAlex. O mesmo código funciona num notebook do Jupyter.
+O resultado lista os três artigos mais citados da revista em 2024, segundo o OpenAlex. Para sair do Python, digite `exit()`. O mesmo código funciona num notebook do Jupyter.
 
 ## 7. Veja no painel
 
 ```bash
-uv run mapa painel  # fora do CI
+uv run mapa painel
 ```
 
 A página inicial do painel agora mostra os números do seu corpus: 25 documentos, 1 revista, 2024. O mapa e os tópicos aparecem depois da etapa de tópicos, na [parte 2](primeiro-mapa-topicos.md). Para encerrar, aperte ++ctrl+c++ no terminal.
@@ -160,8 +162,8 @@ A página inicial do painel agora mostra os números do seu corpus: 25 documento
 
     ```bash
     cd ../..
-    uv run mapa novo projetos/cp-scielo  # fora do CI
-    uv run mapa coletar -P projetos/cp-scielo  # fora do CI
+    uv run mapa novo projetos/cp-scielo
+    uv run mapa coletar -P projetos/cp-scielo
     ```
 
 - **Uma busca, em vez de revistas inteiras:** [Importar do search.scielo.org](../guias/importar.md) ou a busca por termo em [Montar um recorte](../guias/recorte.md).

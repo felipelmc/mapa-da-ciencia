@@ -1,0 +1,92 @@
+name: Release
+
+# Ao publicar uma release no GitHub: o wheel com a interface compilada é construído, testado sem Node e anexado à
+# release (o caderno da oficina no Colab e o README instalam por ele). A publicação no PyPI, por trusted publishing,
+# só roda depois de configurada: o projeto no PyPI com este repositório e o workflow `release.yml` como publicador
+# confiável, o ambiente `pypi` no GitHub e a variável de repositório `PUBLICAR_NO_PYPI` igual a `true`
+# (veja docs/desenvolvimento/index.md, "Fazer uma release").
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  construir:
+    name: Wheel com a interface
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: astral-sh/setup-uv@v10.2.0  # o setup-uv não publica tags de versão principal
+      - name: A tag bate com a versão do pacote
+        if: github.event_name == 'release'
+        run: |
+          versao=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
+          if [ "v$versao" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::A tag $GITHUB_REF_NAME não bate com a versão $versao do pyproject.toml."
+            exit 1
+          fi
+      - name: Interface compilada dentro do pacote
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npm run empacotar
+      - run: uv build
+      - run: bash scripts/testar_wheel.sh dist/mapa_da_ciencia-*.whl
+      - uses: actions/upload-artifact@v7
+        with:
+          name: distribuicao
+          path: dist/
+          if-no-files-found: error
+
+  anexar:
+    name: Wheel anexado à release
+    needs: construir
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: distribuicao
+          path: dist
+      - run: gh release upload "$GITHUB_REF_NAME" dist/*.whl --clobber --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  demo:
+    name: Demo do piloto no Pages
+    needs: anexar
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      # A documentação baixa a demo (piloto-publicado.zip) da release mais recente: roda de novo agora que ela existe.
+      - run: gh workflow run docs.yml --ref main --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  pypi:
+    name: PyPI (trusted publishing)
+    needs: construir
+    if: github.event_name == 'release' && vars.PUBLICAR_NO_PYPI == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: distribuicao
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1

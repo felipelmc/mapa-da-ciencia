@@ -25,6 +25,7 @@ Todas as funções que recebem `projeto` aceitam um `Projeto` já aberto ou o ca
 
 - A coleta roda dentro do notebook, com barras de progresso na própria célula. Para desligá-las, use `progresso=False`.
 - `mapa.importar(p, "export.ris")` só guarda o arquivo em `importados/`. Diferente de `mapa importar` na CLI, ela não roda a coleta: chame `mapa.coletar(p)` em seguida.
+- `mapa.painel(p)` abre o painel com o servidor numa *thread*: a célula termina e o painel fica no ar enquanto o notebook estiver aberto (`.parar()` o derruba). No Colab, ele abre numa janela nova, pelo *proxy* do Google (veja [Oficina no Colab](../tutoriais/oficina-colab.md)).
 - `como="pandas"` e `como="polars"` em `consultar` devolvem um DataFrame, mas precisam da biblioteca instalada (`pip install pandas`). O `mapa-da-ciencia` não depende de nenhuma das duas.
 
 ## Tabelas para consulta
@@ -84,6 +85,10 @@ O Parquet também pode ser lido direto pelo pandas ou pelo polars (`pd.read_parq
 
 ::: mapa_da_ciencia.api.relatorio_de_validacao
 
+::: mapa_da_ciencia.api.publicar
+
+::: mapa_da_ciencia.api.painel
+
 ::: mapa_da_ciencia.api.consultar
 
 ::: mapa_da_ciencia.api.conectar
@@ -93,6 +98,8 @@ O Parquet também pode ser lido direto pelo pandas ou pelo polars (`pd.read_parq
 ::: mapa_da_ciencia.api.etapas
 
 ## Objetos devolvidos
+
+::: mapa_da_ciencia.api.Painel
 
 ::: mapa_da_ciencia.coleta.ResumoColeta
     options:

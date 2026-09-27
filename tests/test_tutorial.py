@@ -1,13 +1,14 @@
 """Roda os comandos do tutorial "Seu primeiro mapa" contra as APIs falsas, para o passo a passo não quebrar.
 
 Os blocos `bash` viram chamadas da CLI (sem o `uv run`), e `cd` muda a pasta do teste. Os blocos `python`
-rodam com `exec`. Linhas marcadas com `# fora do CI` são puladas (o painel, que não termina sozinho, o
-`ollama pull` e as coletas que não estão nas fixtures). Nas partes 2 e 3, o corpus sintético faz o papel da coleta
-da *Opinião Pública* de 2010 a 2025.
+rodam com `exec`. Ficam de fora o painel (que não termina sozinho), o `ollama pull`, os comandos no piloto
+(`projetos/cp-scielo`, que não está nas fixtures) e, nas partes 2 e 3, a coleta de 2010 a 2025: o corpus sintético
+faz o papel dela. A lista fica aqui, e não nos tutoriais, para os comandos aparecerem limpos para quem lê.
 """
 
 import re
 import shlex
+import shutil
 from collections.abc import Callable
 from pathlib import Path
 
@@ -23,7 +24,9 @@ PARTE_2 = TUTORIAIS / "primeiro-mapa-topicos.md"
 PARTE_3 = TUTORIAIS / "primeiro-mapa-tempo-e-geografia.md"
 PARTE_4 = TUTORIAIS / "primeiro-mapa-classificacao.md"
 PELA_INTERFACE = TUTORIAIS / "primeiro-mapa-pela-interface.md"
-FORA_DO_CI = "# fora do CI"
+SEMPRE_FORA = ("uv run mapa painel", "ollama pull")
+PILOTO = "projetos/cp-scielo"
+COLETA = ("uv run mapa coletar",)  # nas partes 2 a 4, o corpus sintético faz o papel da coleta de 2010 a 2025
 runner = CliRunner()
 
 
@@ -37,12 +40,19 @@ def _blocos(texto: str) -> list[tuple[str, str]]:
     return blocos
 
 
-def _comandos(bloco: str) -> list[str]:
+def _comandos(bloco: str, pular: tuple[str, ...] = ()) -> list[str]:
     linhas = [linha.strip() for linha in bloco.splitlines()]
-    return [linha for linha in linhas if linha and not linha.startswith("#") and FORA_DO_CI not in linha]
+    return [
+        linha for linha in linhas if linha and not linha.startswith(("#", *SEMPRE_FORA, *pular)) and PILOTO not in linha
+    ]
 
 
-def _rodar(tutorial: Path, monkeypatch, antes: Callable[[list[str]], None] | None = None) -> dict[str, list[str]]:
+def _rodar(
+    tutorial: Path,
+    monkeypatch,
+    antes: Callable[[list[str]], None] | None = None,
+    pular: tuple[str, ...] = (),
+) -> dict[str, list[str]]:
     """Roda os blocos do tutorial na ordem e devolve a saída de cada comando `mapa`, por subcomando."""
     saidas: dict[str, list[str]] = {}
     blocos = _blocos(tutorial.read_text(encoding="utf-8"))
@@ -51,9 +61,13 @@ def _rodar(tutorial: Path, monkeypatch, antes: Callable[[list[str]], None] | Non
         if lingua == "python":
             exec(compile(codigo, str(tutorial), "exec"), {})
             continue
-        for linha in _comandos(codigo):
+        for linha in _comandos(codigo, pular):
             if linha.startswith("cd "):
                 monkeypatch.chdir(Path.cwd() / linha[3:])
+                continue
+            if linha.startswith("cp "):  # o .env a partir do modelo que o `mapa novo` cria
+                origem, destino = shlex.split(linha)[1:]
+                shutil.copy(origem, destino)
                 continue
             assert linha.startswith("uv run mapa "), f"comando que o teste não sabe rodar: {linha}"
             args = shlex.split(linha.split("#", 1)[0])[3:]
@@ -88,7 +102,7 @@ def test_parte_1_coleta(tmp_path, apis_falsas, monkeypatch):
 def test_parte_2_topicos(tmp_path, apis_falsas, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
-    saidas = _rodar(PARTE_2, monkeypatch, antes=_semear)
+    saidas = _rodar(PARTE_2, monkeypatch, antes=_semear, pular=COLETA)
 
     assert "Modelos do perfil" in saidas["diagnostico"][0]
     primeira, segunda = saidas["topicos"]
@@ -100,8 +114,8 @@ def test_parte_2_topicos(tmp_path, apis_falsas, monkeypatch):
 
 def test_parte_3_tempo_e_geografia(tmp_path, apis_falsas, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    _rodar(PARTE_2, monkeypatch, antes=_semear)  # a parte 3 continua o projeto da parte 2
-    saidas = _rodar(PARTE_3, monkeypatch)
+    _rodar(PARTE_2, monkeypatch, antes=_semear, pular=COLETA)  # a parte 3 continua o projeto da parte 2
+    saidas = _rodar(PARTE_3, monkeypatch, pular=COLETA)
 
     primeira, segunda = saidas["geografia"][0], saidas["geografia"][-1]
     assert "Geografia pronta" in primeira and "Fonte das afiliações" in primeira
@@ -134,8 +148,8 @@ def _codificar_no_painel(args: list[str]) -> None:
 
 def test_parte_4_classificacao(tmp_path, apis_falsas, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    _rodar(PARTE_2, monkeypatch, antes=_semear)  # a parte 4 continua o projeto das partes 2 e 3
-    _rodar(PARTE_3, monkeypatch)
+    _rodar(PARTE_2, monkeypatch, antes=_semear, pular=COLETA)  # a parte 4 continua o projeto das partes 2 e 3
+    _rodar(PARTE_3, monkeypatch, pular=COLETA)
     saidas = _rodar(PARTE_4, monkeypatch, antes=_codificar_no_painel)
 
     assert "Amostra sorteada: 40 documentos" in saidas["validar"][0]

@@ -149,6 +149,12 @@
 				<kbd>Tab</kbd> percorre os controles, e o primeiro deles é “Pular para o conteúdo”. O foco fica sempre
 				visível, e as animações somem se o sistema pedir menos movimento.
 			</p>
+			<h3 id="atalhos-todas">Em todas as vistas</h3>
+			<dl class="atalhos" data-testid="atalhos-todas">
+				<dt><kbd>P</kbd></dt>
+				<dd>modo apresentação: esconde o trilho e as barras e aumenta a letra, para projetar (<kbd>Esc</kbd> sai)</dd>
+			</dl>
+
 			<h3 id="atalhos-mapa">No mapa</h3>
 			<dl class="atalhos" data-testid="atalhos-mapa">
 				<dt><kbd>/</kbd></dt>

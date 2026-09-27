@@ -1,10 +1,11 @@
 <script lang="ts">
 	/**
-	 * Moldura de um gráfico: título, frase-resumo (para quem não vê o gráfico, e para todo mundo) e "Ver como
-	 * tabela", que mostra os mesmos números numa tabela embaixo do gráfico. `pronto` vira `data-pronto`, que os
-	 * testes e as capturas esperam.
+	 * Moldura de um gráfico: título, frase-resumo (para quem não vê o gráfico, e para todo mundo), "Ver como
+	 * tabela", que mostra os mesmos números numa tabela embaixo do gráfico, e "Exportar" (SVG, PNG ou CSV). `pronto`
+	 * vira `data-pronto`, que os testes e as capturas esperam.
 	 */
 	import type { Snippet } from 'svelte';
+	import Exportar from '$lib/exportar/Exportar.svelte';
 
 	let {
 		titulo,
@@ -14,7 +15,8 @@
 		pronto = true,
 		id,
 		children,
-		controles
+		controles,
+		n = null
 	}: {
 		titulo: string;
 		resumo: string;
@@ -24,12 +26,15 @@
 		id: string;
 		children: Snippet;
 		controles?: Snippet;
+		/** Documentos no recorte, para o rodapé da figura exportada. */
+		n?: number | null;
 	} = $props();
 
 	let tabela = $state(false);
+	let elemento = $state<HTMLElement | null>(null);
 </script>
 
-<figure class="figura" data-testid="figura-{id}" data-pronto={pronto ? 'sim' : undefined}>
+<figure class="figura" data-testid="figura-{id}" data-pronto={pronto ? 'sim' : undefined} bind:this={elemento}>
 	<header>
 		<h2>{titulo}</h2>
 		{#if controles}<div class="controles">{@render controles()}</div>{/if}
@@ -38,15 +43,18 @@
 	<div class="grafico">
 		{@render children()}
 	</div>
-	<button
-		type="button"
-		class="ver-tabela"
-		aria-expanded={tabela}
-		aria-controls="tabela-{id}"
-		onclick={() => (tabela = !tabela)}
-	>
-		{tabela ? 'Esconder a tabela' : 'Ver como tabela'}
-	</button>
+	<div class="acoes">
+		<button
+			type="button"
+			class="ver-tabela"
+			aria-expanded={tabela}
+			aria-controls="tabela-{id}"
+			onclick={() => (tabela = !tabela)}
+		>
+			{tabela ? 'Esconder a tabela' : 'Ver como tabela'}
+		</button>
+		<Exportar figura={elemento} {titulo} {colunas} {linhas} {n} />
+	</div>
 	{#if tabela}
 		<div class="rolagem" id="tabela-{id}">
 			<table data-testid="tabela-{id}">
@@ -106,8 +114,14 @@
 		position: relative;
 	}
 
-	.ver-tabela {
+	.acoes {
+		display: flex;
+		gap: 1.2rem;
+		align-items: baseline;
 		margin-top: 0.5rem;
+	}
+
+	.ver-tabela {
 		padding: 0;
 		border: none;
 		background: none;

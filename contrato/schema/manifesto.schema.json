@@ -116,6 +116,39 @@
       "title": "ProjetoInfo",
       "type": "object"
     },
+    "PublicacaoInfo": {
+      "additionalProperties": false,
+      "description": "O que o `mapa publicar` fez: quando, e quantos resumos foram ou não publicados.",
+      "properties": {
+        "em": {
+          "format": "date-time",
+          "title": "Em",
+          "type": "string"
+        },
+        "resumos_publicados": {
+          "description": "Resumos com licença Creative Commons, publicados sem alteração.",
+          "title": "Resumos Publicados",
+          "type": "integer"
+        },
+        "resumos_retirados": {
+          "description": "Resumos que ficaram de fora (licença não aberta, desconhecida ou `--sem-resumos`).",
+          "title": "Resumos Retirados",
+          "type": "integer"
+        },
+        "sem_resumos": {
+          "default": false,
+          "title": "Sem Resumos",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "em",
+        "resumos_publicados",
+        "resumos_retirados"
+      ],
+      "title": "PublicacaoInfo",
+      "type": "object"
+    },
     "RecorteInfo": {
       "additionalProperties": false,
       "description": "Recorte do corpus: período, fontes e idiomas.",
@@ -199,11 +232,23 @@
     "projeto": {
       "$ref": "#/$defs/ProjetoInfo"
     },
+    "publicacao": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PublicacaoInfo"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Presente só no site publicado (`mapa publicar`)."
+    },
     "recorte": {
       "$ref": "#/$defs/RecorteInfo"
     },
     "versao_contrato": {
-      "default": "1.3",
+      "default": "1.4",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",

@@ -1,0 +1,30 @@
+# Exportar figuras
+
+Cada gráfico do painel (e do site publicado) tem, embaixo, o botão **Exportar**. Ele baixa a figura como está na tela, com o recorte atual, em três formatos:
+
+| Formato | Para quê | O que leva |
+|---|---|---|
+| **SVG** | Artigos e edição (Illustrator, Inkscape, LibreOffice) | O gráfico vetorial, com o título, o recorte, a fonte, o n e a data, e as fontes embutidas: abre igual em qualquer programa |
+| **PNG** | Slides, redes, documentos de texto | O mesmo SVG em imagem, na resolução do tamanho escolhido |
+| **CSV** | Refazer o gráfico em outro programa, conferir os números | As colunas e as linhas da tabela da figura ("Ver como tabela"), em UTF-8 (abre no Excel e no R) |
+
+## Tamanhos
+
+| Tamanho | Largura | Tema |
+|---|---|---|
+| Artigo, 1 coluna | 85 mm, 300 dpi | Prancha (claro) |
+| Artigo, 2 colunas | 174 mm, 300 dpi | Prancha |
+| Artigo, 2 colunas, 600 dpi | 174 mm, 600 dpi | Prancha |
+| Slide | 1.920 px | o da tela |
+| Telão | 3.840 px | Observatório (escuro) |
+
+Os tamanhos de artigo usam sempre o tema **Prancha**, feito para papel, mesmo que a tela esteja no Observatório. No SVG, a largura vai em milímetros: ao inserir a figura no editor de texto, ela já entra no tamanho da coluna.
+
+## O que não vai
+
+- Legendas e controles feitos em HTML fora do gráfico (a escala de cores dos mapas, os botões de modo) não entram no SVG nem no PNG. Descreva a escala na legenda da figura, ou use o CSV.
+- Figuras que são tabelas (o cruzamento da vista Classificação, o ranking das instituições) só exportam o CSV.
+
+## Citar
+
+O rodapé da figura diz de onde vêm os dados, quantos documentos entraram e quando ela foi gerada. Numa publicação, cite também o projeto (o [CITATION.cff](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CITATION.cff) do repositório) e informe o modelo e a versão do codebook, que estão na página Metodologia do site publicado ou no `mapa status`.

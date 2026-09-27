@@ -350,6 +350,36 @@ def _porta_livre(porta: int) -> bool:
 
 
 @app.command()
+def publicar(
+    projeto: OpcaoProjeto = Path("."),
+    destino: Annotated[
+        Path | None, typer.Option("--destino", help="Pasta do site (padrão: saida/site do projeto).")
+    ] = None,
+    sem_resumos: Annotated[
+        bool, typer.Option("--sem-resumos", help="Publica sem nenhum resumo, nem os de licença aberta.")
+    ] = False,
+) -> None:
+    """Gera o site estático do projeto (para o GitHub Pages): resumos só com licença aberta, sem API."""
+    from mapa_da_ciencia.publicar import publicar as rodar
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        r = rodar(p, destino, sem_resumos=sem_resumos)
+    console.print(f"[bold green]{r}[/]")
+    if r.evidencias_retiradas:
+        console.print(
+            f"[dim]O texto de {num(r.evidencias_retiradas, 0)} evidência(s) da classificação também saiu (são trechos "
+            "de resumos sem licença aberta); os valores continuam.[/]"
+        )
+    for aviso in r.avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
+    console.print(
+        f"Para ver antes de publicar: [bold]python -m http.server -d {r.destino}[/] e abra http://localhost:8000. "
+        "Veja o guia Publicar para o GitHub Pages."
+    )
+
+
+@app.command()
 def painel(
     projeto: OpcaoProjeto = Path("."),
     exemplo: Annotated[

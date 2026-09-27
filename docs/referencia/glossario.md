@@ -3,6 +3,9 @@
 **Apelido**
 : Texto de afiliação ligado à mão a uma instituição, no `instituicoes.yaml` do projeto (ou na tabela do pacote). Tem prioridade sobre o casamento automático. Veja [Gerar a geografia](../guias/geografia.md#o-arquivo-instituicoesyaml).
 
+**ARI (índice de Rand ajustado)**
+: Mede quanto dois agrupamentos dos mesmos documentos concordam: 0 é concordância de acaso, 1 são os mesmos grupos. O `mapa` compara os tópicos de três sementes diferentes; no piloto, o ARI é 0,89. Veja [Estabilidade](../explicacoes/topicos.md#7-estabilidade).
+
 **ArticleMeta**
 : API pública do SciELO com os metadados de cada artigo: títulos, resumos, palavras-chave, autores e afiliações. É a fonte principal do corpus. Veja [Fontes de dados](../explicacoes/fontes.md).
 
@@ -11,6 +14,9 @@
 
 **Codebook**
 : Conjunto de variáveis, categorias e definições que o modelo usa para classificar cada resumo. Veja [Escrever um codebook](../guias/codebook.md).
+
+**Codificador de referência**
+: Quem codifica a amostra de validação sem ser uma pessoa: no piloto, um modelo maior (o Claude), lendo às cegas. O relatório e o painel nunca o chamam de humano. Veja [Desenho da validação](../explicacoes/validacao.md).
 
 **Contagem fracionária**
 : Forma de atribuir um artigo a instituições: cada artigo vale 1, dividido entre os autores e, para cada autor, entre as suas afiliações. Evita que artigos com muitos autores pesem mais. Veja [Geografia da produção](../explicacoes/geografia.md#quanto-cada-documento-conta).
@@ -69,14 +75,23 @@
 **Recorte**
 : Os documentos que as vistas de análise mostram, definidos pela barra no alto do painel: período, revistas, tópicos, busca, laço, UFs, países e instituições. Vai junto de uma vista para outra e fica no endereço da página.
 
+**Release**
+: Uma versão publicada do `mapa-da-ciencia` no GitHub, com as notas do que mudou e o *wheel* para instalar. Veja as [releases](https://github.com/felipelmc/mapa-da-ciencia/releases).
+
 **Sem afiliação**
 : A parte do peso de um documento que cabe a autores sem afiliação informada. Não é redistribuída entre os coautores nem entra em nenhum lugar.
 
 **Tópico**
 : Grupo de artigos de assunto próximo, encontrado automaticamente. Recebe um rótulo e uma descrição escritos por um modelo de linguagem a partir de palavras-chave e títulos representativos.
 
+**Trilho**
+: A barra à esquerda do painel, com as vistas (Início, Mapa, Tópicos, Classificação, Geografia, Validação, Projeto). O recorte escolhido numa vista vai junto quando se troca de vista pelo trilho.
+
 **UMAP**
 : Técnica que reduz os embeddings a poucas dimensões, preservando vizinhanças. Com 5 dimensões, alimenta o agrupamento; com 2, desenha o mapa.
 
 **Vínculo**
 : Um autor ligado a uma afiliação, e a afiliação ligada (ou não) a uma instituição, com UF e país. É a unidade da geografia, antes da contagem fracionária.
+
+**Wheel**
+: O arquivo de instalação de um pacote Python (`.whl`). O de cada *release* do `mapa-da-ciencia` já traz a interface do painel compilada. Veja [Instalar](../guias/instalacao.md#sem-compilar-a-interface-o-wheel-da-release).

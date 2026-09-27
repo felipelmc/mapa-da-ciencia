@@ -4,6 +4,24 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [0.7.0] - 2026-09-27
+
+A publicação, as figuras e a oficina: o projeto vira um site estático, com os resumos só de licença Creative Commons e nenhum e-mail; cada gráfico do painel sai em SVG, PNG ou CSV no tamanho de um artigo ou de um slide; e um caderno do Colab monta um mapa do zero numa GPU gratuita. O piloto inteiro está publicado na [demo](https://felipelamarca.com/mapa-da-ciencia/demo/): os 4.247 resumos classificados pelo `qwen3.5:9b` num notebook, em cerca de 10 horas (9,6 s por resumo), com 100% de JSON válido na primeira tentativa e 93,4% das evidências copiadas literalmente do resumo.
+
+### Adicionado
+
+- **Marco M7 (publicação, figuras e oficina)**:
+  - **Exportar figuras** (`lib/exportar/`): cada gráfico do painel baixa em SVG (com título, recorte, fonte, n e data, as cores do tema resolvidas e as fontes embutidas), PNG (rasterizado na resolução do tamanho) ou CSV (os dados da tabela); tamanhos Artigo (85 ou 174 mm, 300 ou 600 dpi, tema Prancha), Slide (1.920 px) e Telão (3.840 px, Observatório); guia "Exportar figuras";
+  - **modo apresentação** (tecla ++p++, em todas as vistas menos a codificação): esconde o trilho e as barras e aumenta a letra, para projetar; ++esc++ sai; atalho na Ajuda;
+  - **`mapa publicar [--destino] [--sem-resumos]`** e `api.publicar()`: o site estático do projeto, com a interface e o contrato, `api: false`, resumos (e o texto das evidências) só com licença Creative Commons, sem e-mails (varredura final), montado numa pasta nova e trocado de uma vez; contrato 1.4 (`Manifesto.publicacao`); guia "Publicar o site";
+  - **Metodologia** no site publicado: sem API, a seção Projeto vira a página Metodologia, tirada do manifesto (fontes, recorte, contagens, modelos com o digest, hash do codebook, sementes, durações, licenças e o que a publicação retirou), com os links para as explicações;
+  - o GitHub Pages do projeto publica a documentação em `/` e, a partir do *asset* `piloto-publicado.zip` da última *release*, a demo do piloto em `/demo/` (sem o *asset*, sai só a documentação, com um aviso);
+  - **oficina no Colab**: o caderno `notebooks/oficina_colab.ipynb` (GPU T4, Ollama com o perfil padrão, *Opinião Pública* de 2020 a 2024, tópicos, geografia, uma amostra de 30 classificada e o painel), gerado por `scripts/gerar_notebook.py` para instalar sempre o *wheel* da *release* da versão, com os comandos rodados no CI; `api.painel()` abre o painel de dentro de um notebook, com o servidor numa *thread*, e no Colab pelo *proxy* do Google (só nesse modo a API aceita pedidos de outro endereço);
+  - explicações "Metodologia em uma página" (o método inteiro com os parâmetros e os números do piloto, um rascunho da seção de métodos, e como citar) e "Limitações e vieses" (corpus, resumos, tópicos, geografia, classificação e reprodutibilidade); o guia de instalação ensina a instalar pelo *wheel* da *release*, com a interface já compilada;
+  - README bilíngue (português e inglês), com o GIF do painel do piloto (`frontend/scripts/gif-readme.ts`), a demo, a oficina no Colab e a instalação pelo *wheel* da *release*; `.zenodo.json` e o `CITATION.cff` completos para o DOI; o workflow **Release** constrói o *wheel* com a interface, testa-o sem Node, anexa-o à *release*, atualiza a demo e, depois de configurado, publica no PyPI por *trusted publishing*; o passo a passo de uma *release* no guia de desenvolvimento;
+  - o teste do tutorial por uma pessoa de fora (um subagente, num clone limpo, sem ajuda) virou correções: "Explorar o exemplo" com dois caminhos de instalação (o *wheel* da *release* ou o código, com a interface compilada como passo, não como dica, e o Node.js 22.18), a página "interface não compilada" diz para reabrir o painel, os tutoriais explicam `uv run` antes das dicas da CLI, o `.env` a partir do `.env.exemplo`, tempos e memória iguais entre os tutoriais, textos de marcos antigos removidos, os comandos sem o marcador `# fora do CI` (a lista do que o teste pula fica no teste), o caderno do Colab instala o `zstd` e volta para `/content`, e o glossário ganha ARI, codificador de referência, *release*, trilho e *wheel*;
+  - `contrato/exemplo-publicado/`: o exemplo sintético passado pelas regras do `mapa publicar`, gerado e conferido pelo `scripts/gerar_contrato.py`; os testes e2e ganham o site publicado (sem API, a Metodologia com a publicação, o cartão de um artigo sem licença aberta com os valores da classificação e sem os trechos);
+
 ## [0.6.0] - 2026-09-26
 
 O painel completo: quem não usa o terminal cria e configura o projeto e roda o pipeline pela interface, com o progresso ao vivo. As etapas rodam no servidor local, uma por vez, e o acompanhamento sobrevive a um reload ou a uma queda de conexão. Pela interface, o projeto do tutorial (396 artigos da *Opinião Pública*) teve a coleta refeita do cache, 13 tópicos em 5 minutos, 94,4% dos vínculos de autoria ligados a uma instituição e uma amostra de 20 resumos classificada.
@@ -148,7 +166,8 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.6.0...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.3.0...v0.4.0

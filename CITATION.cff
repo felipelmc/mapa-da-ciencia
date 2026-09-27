@@ -8,17 +8,20 @@ authors:
 repository-code: "https://github.com/felipelmc/mapa-da-ciencia"
 url: "https://felipelmc.github.io/mapa-da-ciencia/"
 license: MIT
-version: 0.6.0
-date-released: 2026-09-26
+version: 0.7.0
+date-released: 2026-09-27
 abstract: >-
   Ferramenta de código aberto que coleta artigos científicos (inicialmente do SciELO),
   mapeia tópicos ao longo do tempo com embeddings, classifica resumos segundo um codebook
   definido pelo pesquisador, com evidência textual e validação contra codificação humana,
   e mostra a geografia da produção. Os modelos de linguagem rodam localmente, via Ollama.
+  Linha de comando, API Python, painel web local e publicação como site estático.
 keywords:
   - bibliometria
   - revisão de literatura
   - SciELO
   - modelos de linguagem
   - análise de conteúdo
+  - modelagem de tópicos
+  - OpenAlex
   - ciências sociais computacionais

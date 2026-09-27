@@ -23,8 +23,8 @@ A seção **Modelos do perfil** lista os modelos sugeridos para a memória do se
 Se algum aparecer como ausente, baixe-o. São 0,6 GB e 6,6 GB:
 
 ```bash
-ollama pull qwen3-embedding:0.6b  # fora do CI
-ollama pull qwen3.5:9b  # fora do CI
+ollama pull qwen3-embedding:0.6b
+ollama pull qwen3.5:9b
 ```
 
 O `diagnostico` também avisa quando a memória livre não basta para o modelo de rótulos. Nesse caso, feche programas pesados ou siga com `--sem-rotulos` no passo 3. O guia [Instalar e escolher os modelos](../guias/instalacao.md#3-escolha-um-perfil-de-modelos) mostra modelos menores para máquinas com pouca memória.
@@ -34,7 +34,7 @@ O `diagnostico` também avisa quando a memória livre não basta para o modelo d
 ```bash
 uv run mapa novo projetos/op --revista op
 cd projetos/op
-uv run mapa coletar  # fora do CI
+uv run mapa coletar
 ```
 
 Sem `--anos`, o recorte vai de 2010 a 2025, o padrão do modelo de projeto. A coleta leva um ou dois minutos na primeira vez e deve reunir perto de 400 artigos: quando escrevemos este tutorial, foram 396. O número pode variar um pouco, porque a revista continua publicando e a ArticleMeta corrige registros de vez em quando.
@@ -119,7 +119,7 @@ Se você coletar de novo e o corpus mudar, essa linha avisa que os tópicos fica
 ## 6. Explore o mapa
 
 ```bash
-uv run mapa painel  # fora do CI
+uv run mapa painel
 ```
 
 Abra a vista **Mapa**. Cada ponto é um artigo, e artigos parecidos ficam perto uns dos outros. A imagem abaixo é o mapa do projeto piloto, com dez revistas; o da *Opinião Pública* tem menos pontos e menos tópicos, mas se lê do mesmo jeito.
@@ -185,7 +185,7 @@ Rode `uv run mapa topicos` de novo: o rótulo escrito à mão tem prioridade sob
 
     ```bash
     cd ../..
-    uv run mapa topicos -P projetos/cp-scielo  # fora do CI
+    uv run mapa topicos -P projetos/cp-scielo
     ```
 
 - **Ajustar os tópicos** (mais ou menos tópicos, outro idioma de análise): o guia [Gerar os tópicos](../guias/topicos.md#ajustar).

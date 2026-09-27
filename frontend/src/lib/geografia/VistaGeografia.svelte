@@ -180,6 +180,7 @@
 
 	<div class="lado-a-lado">
 		<Figura
+		n={total}
 			id="ufs"
 			titulo="Por UF"
 			resumo={resumoUf}
@@ -205,6 +206,7 @@
 		</Figura>
 
 		<Figura
+		n={total}
 			id="instituicoes"
 			titulo="Instituições"
 			resumo={resumoRanking}
@@ -216,6 +218,7 @@
 	</div>
 
 	<Figura
+		n={total}
 		id="mundo"
 		titulo="No mundo"
 		resumo={resumoMundo}
@@ -242,6 +245,7 @@
 	</Figura>
 
 	<Figura
+		n={total}
 		id="cobertura"
 		titulo="Cobertura por ano"
 		resumo={resumoCobertura}

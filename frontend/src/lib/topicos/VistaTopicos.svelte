@@ -218,6 +218,7 @@
 	</header>
 
 	<Figura
+		n={noRecorte}
 		id="fluxo"
 		titulo={macroAberto ? `Os tópicos de “${macroAberto.rotulo}” no tempo` : 'Os macrotemas no tempo'}
 		{resumo}
@@ -266,6 +267,7 @@
 	</Figura>
 
 	<Figura
+		n={noRecorte}
 		id="tendencias"
 		titulo="Em alta e em queda"
 		resumo={resumoTendencias}
@@ -298,6 +300,7 @@
 
 	{#if porRevista.length > 1}
 		<Figura
+		n={noRecorte}
 			id="por-revista"
 			titulo="Os macrotemas em cada revista"
 			resumo="A participação de cada macrotema nos artigos de cada revista, ano a ano (cada ano soma 100%). Clique numa revista para filtrar o recorte por ela."

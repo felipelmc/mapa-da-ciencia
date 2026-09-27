@@ -27,44 +27,50 @@ O [uv](https://docs.astral.sh/uv/) gerencia o Python e as dependências do proje
     powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
     ```
 
-## 2. Baixe o projeto
+## 2. Instale o `mapa-da-ciencia`
 
-Enquanto não há versão publicada, a instalação é a partir do código:
+Há dois caminhos. Para usar, o primeiro basta; o segundo é para quem vai mexer no código.
 
-```bash
-git clone https://github.com/felipelmc/mapa-da-ciencia.git
-cd mapa-da-ciencia
-uv sync
-```
+=== "Pelo *wheel* (mais simples)"
 
-Confira a instalação:
+    Cada [*release*](https://github.com/felipelmc/mapa-da-ciencia/releases) tem um arquivo `.whl` com tudo pronto, inclusive a interface do painel. Instale o da mais recente (troque a versão, se houver uma mais nova):
 
-```bash
-uv run mapa --versao
-```
+    ```bash
+    uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v0.7.0/mapa_da_ciencia-0.7.0-py3-none-any.whl"
+    mapa --versao
+    ```
+
+    A última linha mostra a versão instalada, por exemplo `mapa-da-ciencia 0.7.0`.
+
+=== "Pelo código"
+
+    Além do `uv`, é preciso o [Node.js](https://nodejs.org) 22.18 ou mais recente, para compilar a interface do painel uma vez:
+
+    ```bash
+    git clone https://github.com/felipelmc/mapa-da-ciencia.git
+    cd mapa-da-ciencia
+    uv sync
+    cd frontend
+    npm ci
+    npm run empacotar
+    cd ..
+    uv run mapa --versao
+    ```
+
+    O `npm` pode sugerir `npm audit fix --force` ou `npm run preview` no fim: não é preciso, pode ignorar. Neste caminho, os comandos do `mapa` começam com `uv run` (`uv run mapa painel`), e as dicas que o próprio `mapa` imprime (`mapa status`) também.
 
 ## 3. Abra o painel com o exemplo
 
 ```bash
-uv run mapa painel --exemplo
+mapa painel --exemplo
 ```
 
-O navegador abre em `http://127.0.0.1:8765/`. A página inicial mostra os números do corpus e os sete macrotemas, cada um com sua cor. Use o trilho à esquerda para passear pelas vistas. O **Mapa** mostra os 1.500 documentos fictícios como pontos: arraste para mover, use a roda do mouse para aproximar, clique num ponto para ver o documento, e experimente a busca (<kbd>/</kbd>), o laço (<kbd>L</kbd>) e o Play da linha do tempo ([Ler o mapa](../guias/ler-o-mapa.md)). Tópicos, Classificação, Geografia e Validação ganham conteúdo nos próximos marcos.
+(Pelo código: `uv run mapa painel --exemplo`.) O navegador abre em `http://127.0.0.1:8765/`. A página inicial mostra os números do corpus e os sete macrotemas, cada um com sua cor. Use o trilho à esquerda para passear pelas vistas. O **Mapa** mostra os 1.500 documentos fictícios como pontos: arraste para mover, use a roda do mouse para aproximar, clique num ponto para ver o documento, e experimente a busca (<kbd>/</kbd>), o laço (<kbd>L</kbd>) e o Play da linha do tempo ([Ler o mapa](../guias/ler-o-mapa.md)). **Tópicos** mostra os assuntos no tempo, **Geografia** as UFs, os países e as instituições dos autores, e **Classificação** e **Validação**, a leitura dos resumos por um codebook e a concordância numa amostra.
 
 Para encerrar, volte ao terminal e aperte ++ctrl+c++.
 
 !!! tip "A página diz que a interface não foi compilada?"
-    Quem instala a partir do código precisa compilar a interface uma vez (é preciso ter o [Node.js](https://nodejs.org) 20 ou mais recente):
-
-    ```bash
-    cd frontend
-    npm ci
-    npm run build
-    npm run empacotar
-    cd ..
-    ```
-
-    Na versão publicada no PyPI (a partir do M7), a interface já vem compilada.
+    Você instalou pelo código e a interface ainda não foi compilada. Encerre o painel (++ctrl+c++), rode os comandos do `npm` do passo 2 e abra o painel de novo: o painel só enxerga a interface nova quando é aberto de novo.
 
 ## O que aconteceu
 

@@ -4,6 +4,7 @@ Textos para entender o **porquê**: de onde vêm os dados, por que modelos locai
 
 | Página | Assunto |
 |---|---|
+| [Metodologia em uma página](metodologia.md) | O método inteiro, etapa por etapa, com os parâmetros e os números do piloto: um rascunho da seção de métodos |
 | [Fontes de dados](fontes.md) | ArticleMeta, OpenAlex, cobertura do piloto e como os registros são casados |
 | [Como os tópicos são construídos](topicos.md) | Texto de análise, embeddings, agrupamento, rótulos, macrotemas, estabilidade e tendências |
 | [Geografia da produção](geografia.md) | Como as afiliações viram instituições, a contagem fracionária, UF e país, e os vieses |
@@ -12,5 +13,5 @@ Textos para entender o **porquê**: de onde vêm os dados, por que modelos locai
 | [Modelos locais](modelos-locais.md) | Por que rodar os modelos na sua máquina, quais modelos e com que cuidados |
 | [Reprodutibilidade](reprodutibilidade.md) | Manifestos, hashes, sementes e caches |
 | [Privacidade e licenças](privacidade-e-licencas.md) | O que nunca é exportado e quando um resumo pode ser publicado |
+| [Limitações e vieses](limitacoes.md) | O que o método deixa de fora, etapa por etapa, para a seção de limitações de um artigo |
 
-Com o marco M7 chega a página de **limitações e vieses** do método como um todo.

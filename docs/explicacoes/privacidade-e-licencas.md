@@ -11,7 +11,7 @@ As únicas chamadas externas são as da coleta de metadados públicos (ArticleMe
 
 ## Licenças dos resumos
 
-O painel local mostra os resumos para você trabalhar. O site publicado (`mapa publicar`, que chega no marco M7) é outra coisa: redistribui os resumos na internet, e aí a licença de cada artigo importa.
+O painel local mostra os resumos para você trabalhar. O site publicado ([`mapa publicar`](../guias/publicar.md)) é outra coisa: redistribui os resumos na internet, e aí a licença de cada artigo importa.
 
 As fontes nem sempre concordam sobre a licença:
 
