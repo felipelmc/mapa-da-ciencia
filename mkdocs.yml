@@ -47,6 +47,13 @@ extra_css:
   - css/tema.css
 
 # a versão do pacote no rodapé da abertura (overrides/hooks.py)
+# As cópias do iCloud Drive ("index 2.md") são versões antigas das páginas: ficam fora do site.
+exclude_docs: |
+  * [0-9]
+  * [0-9].*
+  * [0-9][0-9]
+  * [0-9][0-9].*
+
 hooks:
   - overrides/hooks.py
 

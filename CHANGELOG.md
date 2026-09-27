@@ -4,6 +4,15 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Adicionado
+
+- o DOI de conceito do Zenodo ([10.5281/zenodo.22998585](https://doi.org/10.5281/zenodo.22998585), todas as versões) no `CITATION.cff`, no README (com o selo e uma seção "Como citar" com o BibTeX), na metodologia (também com o BibTeX) e no rodapé da abertura do site, que o lê do `CITATION.cff`.
+- a seção "Como citar" na abertura do site, com a referência, o BibTeX e um botão de copiar, gerados do `CITATION.cff` (`overrides/hooks.py`); um teste confere que o BibTeX do README e da metodologia é o mesmo.
+
+### Mudado
+
+- o repositório ignora as cópias que o iCloud Drive cria ("teste 2.py", "index 2.md") no git, no pytest e no MkDocs, e o CI falha se alguma entrar num commit (armadilha em `desenvolvimento`).
+
 ## [1.0.1] - 2026-09-27
 
 A versão 1.0.1 é a primeira com DOI: o repositório passa a ser arquivado no Zenodo a cada *release*. E o pacote fica pronto para o PyPI.

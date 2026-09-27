@@ -85,3 +85,19 @@ def test_sem_classificacao_validacao_nem_geografia(pagina, projeto):
     assert h["validacao"] is None and h["geografia"] is None  # a classificação continua nas colunas de documentos
     assert dados["numeros"]["kappa_mediano"] is None and dados["numeros"]["instituicoes"] is None
     assert dados["ceu"]["n"] > 0
+
+
+def test_citacao_sai_do_citation_cff_e_bate_com_o_readme():
+    import yaml
+
+    spec = importlib.util.spec_from_file_location("hooks_docs", RAIZ / "overrides" / "hooks.py")
+    hooks = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(hooks)
+    cff = yaml.safe_load((RAIZ / "CITATION.cff").read_text(encoding="utf-8"))
+    citacao = hooks.citacao(cff)
+    assert citacao["doi"] == cff["doi"]
+    assert f"  doi       = {{{cff['doi']}}}," in citacao["bibtex"]
+    # o BibTeX escrito à mão no README e na metodologia é o mesmo que a abertura gera
+    for arquivo in ("README.md", "docs/explicacoes/metodologia.md"):
+        assert citacao["bibtex"] in (RAIZ / arquivo).read_text(encoding="utf-8"), arquivo
+    assert hooks.citacao({**cff, "doi": ""}) == {}

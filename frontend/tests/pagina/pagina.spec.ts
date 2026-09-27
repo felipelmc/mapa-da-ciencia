@@ -109,6 +109,18 @@ test('os links da abertura levam a páginas do site ou às vistas da demo', asyn
 	for (const h of demo) expect(h, h).toMatch(/\/demo\/(#\/(mapa|topicos|geografia|classificacao|validacao)(\?.*)?)?$/);
 });
 
+test('a seção "Como citar" traz o DOI e copia o BibTeX', async ({ page, context }) => {
+	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+	await page.goto(url());
+	const bibtex = await page.locator('#citar-bibtex').textContent();
+	expect(bibtex).toMatch(/^@software\{/);
+	expect(bibtex).toMatch(/doi +=+ \{10\.5281\/zenodo\.\d+\}/);
+	await expect(page.locator('.citar__referencia a')).toHaveAttribute('href', /^https:\/\/doi\.org\/10\.5281\/zenodo\.\d+$/);
+	await page.getByRole('button', { name: 'Copiar o BibTeX' }).click();
+	await expect(page.locator('#citar-aviso')).toHaveText('BibTeX copiado.');
+	expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(bibtex);
+});
+
 test('a abertura pesa menos de 400 KB, dados incluídos', () => {
 	const pasta = join(SITE, 'assets', 'pagina');
 	const total = readdirSync(pasta).reduce((s, f) => s + statSync(join(pasta, f)).size, 0);

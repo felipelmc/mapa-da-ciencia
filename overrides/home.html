@@ -77,6 +77,24 @@
       </div>
     </section>
 
+    {%- set citacao = config.extra.citacao %}
+    {%- if citacao %}
+    <section class="faixa citar" aria-labelledby="citar-titulo">
+      <div class="faixa__cabeca">
+        <h2 id="citar-titulo" data-t="citar_titulo">Como citar</h2>
+        <p data-t="citar_lide">Se usar o mapa-da-ciencia numa pesquisa, cite-o pelo DOI do Zenodo, que reúne todas as versões. A página do Zenodo tem também o DOI de cada versão.</p>
+      </div>
+      <div class="citar__corpo">
+        <p class="citar__referencia">{{ citacao.autores | e }} ({{ citacao.ano | e }}). <cite>{{ citacao.titulo | e }}</cite> [software]. Zenodo. <a href="https://doi.org/{{ citacao.doi | e }}">https://doi.org/{{ citacao.doi | e }}</a></p>
+        <pre class="citar__bibtex" id="citar-bibtex" tabindex="0" aria-label="BibTeX"><code>{{ citacao.bibtex | e }}</code></pre>
+        <div class="citar__acoes">
+          <button type="button" class="botao citar__copiar" id="citar-copiar" data-t="citar_copiar">Copiar o BibTeX</button>
+          <span class="citar__aviso" id="citar-aviso" role="status"></span>
+        </div>
+      </div>
+    </section>
+    {%- endif %}
+
     <section class="faixa creditos" aria-labelledby="creditos-titulo">
       <h2 id="creditos-titulo" class="visualmente-oculto" data-t="creditos_titulo">Créditos</h2>
       <div class="creditos__grade">
@@ -91,7 +109,7 @@
         <div>
           <h3 data-t="creditos_projeto">Projeto</h3>
           <p data-t="creditos_projeto_texto">Feito por Felipe Lamarca, sucessor do <a href="https://github.com/felipelmc/SciELO-Summarizer">SciELO-Summarizer</a> (SICSS Brasil 2024). Código aberto, licença MIT, em <a href="https://github.com/felipelmc/mapa-da-ciencia">github.com/felipelmc/mapa-da-ciencia</a>. Independente, sem vínculo oficial com SciELO, OpenAlex ou IBGE.</p>
-          <p class="creditos__versao"><span data-t="versao">Versão</span> {{ config.extra.versao or "" }}</p>
+          <p class="creditos__versao"><span data-t="versao">Versão</span> {{ config.extra.versao or "" }}{% if config.extra.doi %} · DOI <a href="https://doi.org/{{ config.extra.doi }}">{{ config.extra.doi }}</a>{% endif %}</p>
         </div>
       </div>
     </section>
