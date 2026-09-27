@@ -140,6 +140,7 @@ def test_topicos_de_outro_corpus_nao_sao_exportados(projeto):
     docs, _ = corpus_sintetico()
     docs.append(docs[0].model_copy(update={"id": "S0000-00002030000100999", "pid": "S0000-00002030000100999"}))
     gravar_documentos(docs, projeto.dados / ARQUIVO)  # uma coleta nova mudou o corpus
+    identidade = (projeto.saida / "dados").stat().st_ino
     avisos = exportar(projeto)
     assert "mapa topicos" in avisos[0]
     pasta = projeto.saida / "dados"
@@ -149,6 +150,8 @@ def test_topicos_de_outro_corpus_nao_sao_exportados(projeto):
     )
     assert not (pasta / "documentos.json").exists() and not (pasta / "detalhes").exists()
     assert not (projeto.saida / "dados.novo").exists() and not (projeto.saida / "dados.velho").exists()
+    # a mesma pasta de antes, com o conteúdo trocado (uma pasta renomeada vira "dados 2" no iCloud Drive)
+    assert pasta.stat().st_ino == identidade
 
 
 MULTIPLA = """

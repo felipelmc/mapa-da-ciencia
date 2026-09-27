@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Corrigido
+
+- a exportação (`saida/dados`) e o `mapa publicar` trocam o conteúdo da pasta arquivo por arquivo, e não a pasta inteira: numa pasta sincronizada pelo iCloud Drive (a Mesa ou os Documentos do macOS), trocar a pasta de nome fazia o serviço guardar a nova como "dados 2" e deixava o projeto sem `saida/dados` (`pastas.substituir_conteudo`; guia de problemas);
+
 ### Adicionado
 
 - **Abertura do site, "Céu que se forma"**: a página inicial da documentação vira uma abertura própria (`overrides/home.html`). Os 4.275 artigos do piloto acendem como estrelas, ano a ano, e se juntam nas constelações dos macrotemas (a árvore geradora mínima entre os tópicos de cada um), com os rótulos levando à demo; os números do piloto, seis histórias com mini-gráficos tirados dos dados (o tópico em alta, o mais recente, a concentração em SP, RJ e DF, o inglês nas revistas de RI, a abordagem das pesquisas e o kappa por variável), os seis passos do método e uma busca nos tópicos. Em português e inglês, nos temas Observatório e Prancha, com movimento reduzido e no celular. Os dados vêm de `scripts/gerar_pagina.py`; os testes, do Playwright sobre o site montado (no CI) e do pytest. A página inicial antiga vira "Documentação";

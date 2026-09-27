@@ -24,6 +24,7 @@ from .config import ErroConfig
 from .contrato import modelos as m
 from .contrato.exportar import exportar
 from .documento import pode_publicar_resumo
+from .pastas import substituir_conteudo
 from .projeto import Projeto
 from .texto import EMAIL
 
@@ -122,12 +123,7 @@ def publicar(
             shutil.rmtree(novo, ignore_errors=True)
             raise ErroConfig(f"Um e-mail apareceu em {arq.name}; a publicação foi interrompida. Avise o projeto.")
 
-    velho = destino.with_name(destino.name + ".velho")
-    shutil.rmtree(velho, ignore_errors=True)
-    if destino.exists():
-        destino.rename(velho)
-    novo.rename(destino)
-    shutil.rmtree(velho, ignore_errors=True)
+    substituir_conteudo(novo, destino)
     tamanho = sum(a.stat().st_size for a in destino.rglob("*") if a.is_file()) / 1e6
     return ResumoPublicacao(
         destino=destino,

@@ -40,6 +40,7 @@ from mapa_da_ciencia.contrato.modelos import (
     Topicos,
     fragmento_de,
 )
+from mapa_da_ciencia.pastas import substituir_conteudo
 from mapa_da_ciencia.projeto import Projeto
 
 if TYPE_CHECKING:
@@ -503,14 +504,8 @@ def exportar(projeto: Projeto) -> list[str]:
     )
     manifesto = manifesto.model_copy(update={"licencas": cob["licencas"], "execucao": execucao})
 
-    destino = projeto.saida / "dados"
     novo = projeto.saida / "dados.novo"
-    velho = projeto.saida / "dados.velho"
     shutil.rmtree(novo, ignore_errors=True)
-    shutil.rmtree(velho, ignore_errors=True)
     escrever_dados(novo, {"manifesto": manifesto, **arquivos}, fragmentos)
-    if destino.exists():
-        destino.rename(velho)
-    novo.rename(destino)
-    shutil.rmtree(velho, ignore_errors=True)
+    substituir_conteudo(novo, projeto.saida / "dados")
     return avisos

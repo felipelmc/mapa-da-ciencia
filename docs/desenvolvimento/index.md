@@ -125,3 +125,5 @@ chflags nohidden .venv/lib/python3.*/site-packages/*.pth
 Os testes não dependem disso (o pytest usa `pythonpath = ["src"]`).
 
 **Typer embute o Click.** Desde a 0.27, o Typer traz a própria cópia do Click (`typer._click`). Use `typer.core.TyperGroup` e `TyperArgument` para inspecionar comandos (veja `scripts/gerar_referencias.py`).
+
+**Não renomeie pastas geradas.** Muitos projetos ficam na Mesa ou nos Documentos, que o macOS sincroniza com o iCloud Drive. Trocar uma pasta inteira de nome (a nova entra com o nome da velha) faz o iCloud guardar a nova como "dados 2", e o projeto fica sem `saida/dados`: aconteceu com o piloto. Para pôr no lugar uma versão nova de uma pasta gerada, escreva-a numa pasta temporária ao lado e use `pastas.substituir_conteudo`, que troca os arquivos um a um e mantém a pasta.
