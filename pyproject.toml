@@ -72,6 +72,7 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 # Listas de stopwords ficam mais legíveis como texto corrido do que como listas literais.
 "src/mapa_da_ciencia/topicos/ctfidf.py" = ["SIM905"]
 "src/mapa_da_ciencia/geografia/casamento.py" = ["SIM905"]  # listas de palavras
+"scripts/gerar_notebook.py" = ["E501"]  # o texto das células do caderno, uma linha por parágrafo
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

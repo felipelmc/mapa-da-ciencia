@@ -58,9 +58,10 @@ def criar_app(
     api: bool = True,
     estatico: Path | None = None,
     etapas: dict | None = None,
+    so_local: bool = True,
 ) -> FastAPI:
     """A aplicação do painel. `etapas` troca o registro das etapas que rodam como jobs (os testes usam etapas
-    falsas)."""
+    falsas); `so_local=False` aceita pedidos de outro endereço (só no Colab, pelo *proxy*; ver `origem.py`)."""
     jobs = None
     if projeto is not None and api:
         from mapa_da_ciencia.servidor.etapas import ETAPAS_DO_PAINEL
@@ -76,11 +77,12 @@ def criar_app(
 
     app = FastAPI(title="mapa-da-ciencia", version=__version__, docs_url="/api/docs", redoc_url=None, lifespan=ciclo)
     app.state.jobs = jobs
+    app.state.so_local = so_local
     estatico = estatico if estatico is not None else pasta_estatico()
 
     @app.middleware("http")
     async def so_desta_maquina(request: Request, seguir):
-        if request.url.path.startswith("/api/") and request.url.hostname not in HOSTS_LOCAIS:
+        if so_local and request.url.path.startswith("/api/") and request.url.hostname not in HOSTS_LOCAIS:
             return JSONResponse({"detail": "O painel só responde a pedidos feitos desta máquina."}, status_code=403)
         return await seguir(request)
 

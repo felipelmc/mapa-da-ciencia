@@ -20,6 +20,7 @@ uv run ruff check && uv run ruff format      # lint e formatação (formata tamb
 uv run mkdocs build --strict                 # documentação, sem avisos
 uv run python scripts/gerar_contrato.py      # regenera contrato/schema, contrato/exemplo e contrato/exemplo-publicado (--checar no CI)
 uv run python scripts/gerar_referencias.py   # regenera docs/referencia/{cli,configuracao,codebook,contrato,api-http}.md
+uv run python scripts/gerar_notebook.py      # regenera notebooks/oficina_colab.ipynb (conferido em tests/test_notebook.py)
 uv run mapa diagnostico                      # memória, Ollama, modelos, rede
 uv run mapa painel --exemplo                 # painel com dados sintéticos
 uv run mapa coletar -P projetos/op-2024      # coleta de verdade (projetos/ fica fora do git)

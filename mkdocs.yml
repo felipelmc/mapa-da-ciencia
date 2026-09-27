@@ -96,6 +96,7 @@ nav:
       - "Seu primeiro mapa, parte 3: tempo e geografia": tutoriais/primeiro-mapa-tempo-e-geografia.md
       - "Seu primeiro mapa, parte 4: classificação e validação": tutoriais/primeiro-mapa-classificacao.md
       - "Seu primeiro mapa pela interface": tutoriais/primeiro-mapa-pela-interface.md
+      - "Oficina no Colab": tutoriais/oficina-colab.md
   - Guias:
       - guias/index.md
       - Instalar e escolher os modelos: guias/instalacao.md

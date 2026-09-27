@@ -25,6 +25,16 @@ O navegador abre em `http://127.0.0.1:8765/`. Para encerrar, aperte ++ctrl+c++ n
 | `--nao-abrir` | Não abre o navegador (útil em servidores e no Colab) |
 | `--projeto`, `-P` | Indica a pasta do projeto quando você está fora dela |
 
+Num notebook (Jupyter ou Colab), `mapa painel` prenderia a célula. Use a API Python, que deixa o servidor rodando numa *thread*:
+
+```python
+import mapa_da_ciencia.api as mapa
+
+painel = mapa.painel("op")  # mostra o link; painel.parar() encerra
+```
+
+No Colab, o painel abre numa janela nova, pelo *proxy* do Google, e só nesse modo a API aceita pedidos que não vêm de `127.0.0.1`: a máquina do Colab é só de quem a abriu, e o *proxy* exige o login dessa pessoa. O caderno da oficina faz isso no fim (veja [Oficina no Colab](../tutoriais/oficina-colab.md)).
+
 ## O que aparece
 
 | Vista | Mostra | Disponível |
