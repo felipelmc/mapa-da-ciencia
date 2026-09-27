@@ -4,6 +4,18 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [1.0.1] - 2026-09-27
+
+A versão 1.0.1 é a primeira com DOI: o repositório passa a ser arquivado no Zenodo a cada *release*. E o pacote fica pronto para o PyPI.
+
+### Adicionado
+
+- arquivamento no Zenodo: cada *release* ganha um DOI, com o ORCID e a afiliação do autor no `.zenodo.json` e no `CITATION.cff` (a licença usa o identificador do vocabulário do Zenodo, `mit`).
+
+### Mudado
+
+- o pacote fica pronto para o PyPI: endereços do site, da documentação, da demo e das mudanças nos metadados, classificadores de uma versão estável, imagens e links do README com endereço completo (o PyPI não resolve caminhos relativos) e um *sdist* só com o código do pacote (antes levava os spikes e o frontend); o CI e o workflow Release conferem os metadados com `twine check`.
+
 ## [1.0.0] - 2026-09-27
 
 A versão 1.0.0 fecha o plano do projeto. A abertura do site, "Céu que se forma", mostra os 4.275 artigos do piloto acendendo ano a ano e se juntando nas constelações dos seus assuntos, com as histórias que os dados contam: a polarização em alta, as redes sociais depois de 2018, SP, RJ e DF com 61% da produção brasileira, as revistas de relações internacionais só em inglês desde 2016, os ensaios teóricos caindo de 49% para 26% dos artigos. E a exportação passa a funcionar em pastas sincronizadas pelo iCloud Drive.
@@ -179,7 +191,8 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.0...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.7.0...v1.0.0
 [0.7.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.5.0...v0.6.0

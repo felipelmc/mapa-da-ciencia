@@ -41,6 +41,8 @@ jobs:
           npm run build
           npm run empacotar
       - run: uv build
+      - name: Metadados e README aceitos pelo PyPI
+        run: uvx twine check --strict dist/*
       - run: bash scripts/testar_wheel.sh dist/mapa_da_ciencia-*.whl
       - uses: actions/upload-artifact@v7
         with:

@@ -36,11 +36,11 @@ Há dois caminhos. Para usar, o primeiro basta; o segundo é para quem vai mexer
     Cada [*release*](https://github.com/felipelmc/mapa-da-ciencia/releases) tem um arquivo `.whl` com tudo pronto, inclusive a interface do painel. Instale o da mais recente (troque a versão, se houver uma mais nova):
 
     ```bash
-    uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v1.0.0/mapa_da_ciencia-1.0.0-py3-none-any.whl"
+    uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v1.0.1/mapa_da_ciencia-1.0.1-py3-none-any.whl"
     mapa --versao
     ```
 
-    A última linha mostra a versão instalada, por exemplo `mapa-da-ciencia 1.0.0`.
+    A última linha mostra a versão instalada, por exemplo `mapa-da-ciencia 1.0.1`.
 
 === "Pelo código"
 

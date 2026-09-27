@@ -1,6 +1,6 @@
 [project]
 name = "mapa-da-ciencia"
-version = "1.0.0"
+version = "1.0.1"
 description = "Observatório da literatura científica: tópicos no tempo, classificação por codebook com validação humana e geografia da produção, com modelos de linguagem locais."
 readme = "README.md"
 license = "MIT"
@@ -9,12 +9,21 @@ authors = [{ name = "Felipe Lamarca" }]
 requires-python = ">=3.11,<3.15"
 keywords = ["scielo", "bibliometria", "revisão de literatura", "llm", "ollama", "ciências sociais computacionais"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
     "Natural Language :: Portuguese (Brazilian)",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Sociology",
 ]
 dependencies = [
     "typer>=0.27",
@@ -37,7 +46,12 @@ dependencies = [
 mapa = "mapa_da_ciencia.cli:app"
 
 [project.urls]
-Repositorio = "https://github.com/felipelmc/mapa-da-ciencia"
+Homepage = "https://felipelamarca.com/mapa-da-ciencia/"
+Documentation = "https://felipelamarca.com/mapa-da-ciencia/documentacao/"
+Demo = "https://felipelamarca.com/mapa-da-ciencia/demo/"
+Repository = "https://github.com/felipelmc/mapa-da-ciencia"
+Changelog = "https://github.com/felipelmc/mapa-da-ciencia/blob/main/CHANGELOG.md"
+Issues = "https://github.com/felipelmc/mapa-da-ciencia/issues"
 
 [dependency-groups]
 dev = ["pytest>=9.1", "respx>=0.23", "ruff>=0.16"]
@@ -57,6 +71,10 @@ artifacts = ["src/mapa_da_ciencia/web/estatico/"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mapa_da_ciencia"]
+
+[tool.hatch.build.targets.sdist]
+# Só o pacote: os testes dependem do repositório inteiro (contrato, docs, scripts), que fica no GitHub.
+include = ["/src/mapa_da_ciencia/", "/README.md", "/LICENSE", "/CHANGELOG.md", "/CITATION.cff"]
 
 [tool.ruff]
 line-length = 120
