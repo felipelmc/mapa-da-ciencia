@@ -672,6 +672,48 @@
 
 /* créditos */
 
+.citar__corpo {
+  max-width: 44rem;
+}
+.citar__referencia {
+  margin: 0 0 1.2rem;
+  line-height: 1.6;
+}
+.citar__referencia a {
+  overflow-wrap: anywhere;
+}
+.citar__bibtex {
+  margin: 0 0 0.9rem;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  border: 1px solid var(--ceu-linha);
+  border-radius: 0.75rem;
+  background: var(--ceu-superficie);
+  color: var(--ceu-texto);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.citar__bibtex:focus-visible {
+  outline: 2px solid var(--ceu-acento);
+  outline-offset: 2px;
+}
+.citar__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+.ceu-pagina .citar__copiar {
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.citar__aviso {
+  color: var(--ceu-suave);
+  font-size: 0.9rem;
+}
 .creditos__grade {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));

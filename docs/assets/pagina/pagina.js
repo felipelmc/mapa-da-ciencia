@@ -45,6 +45,9 @@
     busca_lide: 'In the labels and keywords of the topics (in Portuguese). The demo also searches the article titles.',
     busca_rotulo: 'Subject',
     busca_placeholder: 'eleições, saúde, China, gênero…',
+    citar_titulo: 'How to cite',
+    citar_lide: 'If you use mapa-da-ciencia in your research, cite it by its Zenodo DOI, which covers all versions. The Zenodo page also has the DOI of each version.',
+    citar_copiar: 'Copy BibTeX',
     creditos_titulo: 'Credits',
     creditos_dados: 'Data',
     creditos_dados_texto: '<a href="https://scielo.org">SciELO</a> (ArticleMeta), <a href="https://openalex.org">OpenAlex</a> (CC0), <a href="https://www.ibge.gov.br">IBGE</a> and <a href="https://www.naturalearthdata.com">Natural Earth</a>. Abstracts appear in the demo only when the article has a Creative Commons license.',
@@ -868,6 +871,28 @@
   }
 
   campo.addEventListener('input', buscar);
+
+  // ------------------------------------------------------------------ citação
+
+  var copiar = document.getElementById('citar-copiar');
+  if (copiar) {
+    var bibtex = document.getElementById('citar-bibtex');
+    var aviso = document.getElementById('citar-aviso');
+    var selecionar = function () {
+      var faixa = document.createRange();
+      faixa.selectNodeContents(bibtex);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(faixa);
+      aviso.textContent = t('Texto selecionado: copie com Ctrl+C (⌘C no Mac).', 'Text selected: copy it with Ctrl+C (⌘C on a Mac).');
+    };
+    copiar.addEventListener('click', function () {
+      if (!navigator.clipboard) return selecionar();
+      navigator.clipboard.writeText(bibtex.textContent).then(function () {
+        aviso.textContent = t('BibTeX copiado.', 'BibTeX copied.');
+      }, selecionar);
+    });
+  }
 
   // ------------------------------------------------------------------ começo
 
