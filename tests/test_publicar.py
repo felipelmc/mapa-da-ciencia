@@ -136,3 +136,20 @@ def test_a_regra_e_a_licenca_mesmo_sem_resumo(tmp_path):
     abertos = {doc for doc, d in detalhes.items() if d.licenca.startswith("cc")}
     val = m.Validacao.model_validate_json((pasta / "validacao.json").read_text(encoding="utf-8"))
     assert all(d.evidencia == "" for d in val.divergencias if d.doc not in abertos)
+
+
+def test_o_destino_so_pode_ser_uma_pasta_vazia_ou_um_site_publicado(projeto, estatico, tmp_path):
+    from mapa_da_ciencia.publicar import publicar
+
+    for destino in (projeto.raiz, projeto.raiz.parent):
+        with pytest.raises(ErroConfig, match="contém o projeto"):
+            publicar(projeto, destino, estatico=estatico)
+    outra = tmp_path / "docs"
+    outra.mkdir()
+    (outra / "CNAME").write_text("exemplo.org")
+    with pytest.raises(ErroConfig, match="já tem arquivos"):
+        publicar(projeto, outra, estatico=estatico)
+    assert (outra / "CNAME").read_text() == "exemplo.org" and (projeto.raiz / "mapa.yaml").exists()
+    site = publicar(projeto, tmp_path / "vazia", estatico=estatico).destino
+    assert (site / ".mapa-site").exists()
+    publicar(projeto, site, estatico=estatico)  # um site publicado antes pode ser trocado

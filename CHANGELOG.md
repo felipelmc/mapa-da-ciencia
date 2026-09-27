@@ -10,6 +10,7 @@ A versão 1.0.0 fecha o plano do projeto. A abertura do site, "Céu que se forma
 
 ### Corrigido
 
+- o `mapa publicar --destino` só escreve numa pasta vazia, numa que ainda não existe ou num site publicado antes (marcado com `.mapa-site`), e nunca na pasta do projeto ou numa que a contenha: como a publicação troca todo o conteúdo do destino, `--destino .` apagava o projeto;
 - a exportação (`saida/dados`) e o `mapa publicar` trocam o conteúdo da pasta arquivo por arquivo, e não a pasta inteira: numa pasta sincronizada pelo iCloud Drive (a Mesa ou os Documentos do macOS), trocar a pasta de nome fazia o serviço guardar a nova como "dados 2" e deixava o projeto sem `saida/dados` (`pastas.substituir_conteudo`; guia de problemas);
 
 ### Adicionado

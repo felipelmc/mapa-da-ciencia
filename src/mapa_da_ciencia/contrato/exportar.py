@@ -437,8 +437,9 @@ def exportar(projeto: Projeto) -> list[str]:
     `detalhes/`; com a geografia também em dia, `afiliacoes.json` e os campos geográficos de `agregados.json`.
     Com a classificação do modelo principal e do codebook atual, `classificacoes.json`, as colunas `cls` e as
     evidências dos detalhes; com a amostra de validação respondida, `validacao.json`. Tudo é escrito
-    numa pasta nova, que substitui a antiga de uma vez: o painel nunca vê uma exportação pela metade, e
-    arquivos de uma etapa desatualizada não sobram.
+    numa pasta nova e posto no lugar arquivo por arquivo, com o manifesto por último
+    (`pastas.substituir_conteudo`, que mantém a pasta por causa do iCloud Drive); arquivos de uma etapa
+    desatualizada não sobram.
     """
     import shutil
 
