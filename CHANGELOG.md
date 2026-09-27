@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Adicionado
+
+- arquivamento no Zenodo: cada *release* ganha um DOI, com o ORCID e a afiliação do autor no `.zenodo.json` e no `CITATION.cff` (a licença usa o identificador do vocabulário do Zenodo, `mit`).
+
 ### Mudado
 
 - o pacote fica pronto para o PyPI: endereços do site, da documentação, da demo e das mudanças nos metadados, classificadores de uma versão estável, imagens e links do README com endereço completo (o PyPI não resolve caminhos relativos) e um *sdist* só com o código do pacote (antes levava os spikes e o frontend); o CI e o workflow Release conferem os metadados com `twine check`.

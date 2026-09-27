@@ -5,8 +5,10 @@ type: software
 authors:
   - family-names: Lamarca
     given-names: Felipe
+    affiliation: "Instituto de Estudos Sociais e Políticos (IESP-UERJ)"
+    orcid: "https://orcid.org/0000-0003-0002-3627"
 repository-code: "https://github.com/felipelmc/mapa-da-ciencia"
-url: "https://felipelmc.github.io/mapa-da-ciencia/"
+url: "https://felipelamarca.com/mapa-da-ciencia/"
 license: MIT
 version: 1.0.0
 date-released: 2026-09-27
