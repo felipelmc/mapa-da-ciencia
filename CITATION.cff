@@ -10,6 +10,7 @@ authors:
 repository-code: "https://github.com/felipelmc/mapa-da-ciencia"
 url: "https://felipelamarca.com/mapa-da-ciencia/"
 license: MIT
+doi: 10.5281/zenodo.22998585
 version: 1.0.1
 date-released: 2026-09-27
 abstract: >-

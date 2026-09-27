@@ -1,5 +1,7 @@
 # mapa-da-ciencia
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22998585.svg)](https://doi.org/10.5281/zenodo.22998585)
+
 **Observatório da literatura científica com modelos de linguagem locais.** O `mapa-da-ciencia` coleta milhares de artigos, começando pelo SciELO, e mostra:
 
 - **sobre o que se escreve**, com tópicos num mapa e a evolução deles no tempo;
@@ -50,9 +52,26 @@ O passo a passo está em [Seu primeiro mapa](https://felipelmc.github.io/mapa-da
 
 [felipelmc.github.io/mapa-da-ciencia](https://felipelmc.github.io/mapa-da-ciencia/) tem os tutoriais, os guias, a referência e a metodologia ([em uma página](https://felipelmc.github.io/mapa-da-ciencia/explicacoes/metodologia/), com as [limitações e vieses](https://felipelmc.github.io/mapa-da-ciencia/explicacoes/limitacoes/)). Para ler localmente, rode `uv run --group docs mkdocs serve` e abra `http://127.0.0.1:8000`.
 
+## Como citar
+
+Se usar o `mapa-da-ciencia` numa pesquisa, cite-o pelo DOI do Zenodo, [10.5281/zenodo.22998585](https://doi.org/10.5281/zenodo.22998585), que reúne todas as versões (a [página do Zenodo](https://doi.org/10.5281/zenodo.22998585) tem também o DOI de cada versão):
+
+```bibtex
+@software{lamarca_mapa_da_ciencia,
+  author    = {Lamarca, Felipe},
+  title     = {mapa-da-ciencia: observatório da literatura científica com modelos de linguagem locais},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.22998585},
+  url       = {https://doi.org/10.5281/zenodo.22998585}
+}
+```
+
+O [`CITATION.cff`](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CITATION.cff) tem os mesmos dados, e o GitHub mostra a citação em outros formatos em *Cite this repository*, na coluna da direita.
+
 ## Sobre
 
-Sucessor do [SciELO-Summarizer](https://github.com/felipelmc/SciELO-Summarizer), criado no SICSS Brasil 2024. Código sob licença [MIT](https://github.com/felipelmc/mapa-da-ciencia/blob/main/LICENSE). Para citar, veja [`CITATION.cff`](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CITATION.cff) (o GitHub mostra a citação em *Cite this repository*). Para contribuir, veja [`CONTRIBUTING.md`](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CONTRIBUTING.md).
+Sucessor do [SciELO-Summarizer](https://github.com/felipelmc/SciELO-Summarizer), criado no SICSS Brasil 2024. Código sob licença [MIT](https://github.com/felipelmc/mapa-da-ciencia/blob/main/LICENSE). Para citar, veja [Como citar](#como-citar). Para contribuir, veja [`CONTRIBUTING.md`](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CONTRIBUTING.md).
 
 É um projeto independente e **não oficial**: não tem vínculo com o SciELO, o OpenAlex ou o IBGE, cujos dados públicos ele usa.
 
@@ -68,4 +87,4 @@ All models run on your computer through [Ollama](https://ollama.com) (by default
 
 The pilot maps 4,275 political science articles from ten Brazilian journals, 2010–2025 ([live demo](https://felipelamarca.com/mapa-da-ciencia/demo/); the [project site](https://felipelamarca.com/mapa-da-ciencia/) tells its stories, in English too). The interface and the [documentation](https://felipelmc.github.io/mapa-da-ciencia/) are in Portuguese; the [methodology page](https://felipelmc.github.io/mapa-da-ciencia/explicacoes/metodologia/) summarizes the whole method with its parameters. To try it, install the wheel above and run `mapa painel --exemplo`, or open the [Colab workshop notebook](https://colab.research.google.com/github/felipelmc/mapa-da-ciencia/blob/main/notebooks/oficina_colab.ipynb).
 
-MIT licensed. An independent project, not affiliated with SciELO, OpenAlex or IBGE.
+To cite it, use the Zenodo DOI [10.5281/zenodo.22998585](https://doi.org/10.5281/zenodo.22998585) (all versions; BibTeX in [Como citar](#como-citar)). MIT licensed. An independent project, not affiliated with SciELO, OpenAlex or IBGE.

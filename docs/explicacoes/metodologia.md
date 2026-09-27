@@ -40,4 +40,17 @@ Os resultados descrevem os títulos e resumos de um conjunto de revistas, com mo
 
 ## Como citar
 
-Cite o software pela versão usada (o arquivo [`CITATION.cff`](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CITATION.cff) do repositório tem os dados; o GitHub mostra a citação em "Cite this repository") e informe, do manifesto do projeto, os modelos com o *digest*, a versão do codebook e a data da coleta.
+Cite o software pelo DOI do Zenodo, [10.5281/zenodo.22998585](https://doi.org/10.5281/zenodo.22998585), que reúne todas as versões; a página do Zenodo tem também o DOI de cada versão, para citar exatamente a usada (o arquivo [`CITATION.cff`](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CITATION.cff) do repositório tem os dados; o GitHub mostra a citação em "Cite this repository") e informe, do manifesto do projeto, os modelos com o *digest*, a versão do codebook e a data da coleta.
+
+Em BibTeX:
+
+```bibtex
+@software{lamarca_mapa_da_ciencia,
+  author    = {Lamarca, Felipe},
+  title     = {mapa-da-ciencia: observatório da literatura científica com modelos de linguagem locais},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.22998585},
+  url       = {https://doi.org/10.5281/zenodo.22998585}
+}
+```
