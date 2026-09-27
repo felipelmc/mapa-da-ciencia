@@ -94,8 +94,8 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | M2 | Coleta: ArticleMeta, OpenAlex, importação, deduplicação, cache | concluído (v0.2.0) |
 | M3 | Tópicos com rótulos pelo modelo de linguagem e mapa de documentos | concluído (v0.3.0) |
 | M4 | Tópicos no tempo e geografia | concluído (v0.4.0) |
-| M5 | Classificação por codebook e validação | |
-| M6 | Painel completo: rodar etapas pela interface | |
+| M5 | Classificação por codebook e validação | concluído (v0.5.0) |
+| M6 | Painel completo: rodar etapas pela interface | concluído (v0.6.0) |
 | M7 | Publicação, figuras, oficina no Colab, release | |
 
 ## Armadilhas conhecidas

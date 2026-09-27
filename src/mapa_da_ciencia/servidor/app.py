@@ -8,6 +8,10 @@ Rotas:
 
 O `manifesto.json` é servido dinamicamente para marcar `api: true` no painel. No site
 publicado (`mapa publicar`) ele vai com `api: false` e a interface fica só de leitura.
+
+A API só responde a pedidos feitos a um endereço local (`Host` 127.0.0.1 ou localhost). Assim uma página de outro
+site que faça o próprio domínio apontar para 127.0.0.1 (*DNS rebinding*) não lê as codificações nem as métricas;
+as rotas de escrita conferem também o `Origin` (`servidor/validacao.py`).
 """
 
 from __future__ import annotations
@@ -17,7 +21,7 @@ from contextlib import asynccontextmanager
 from importlib import resources
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -25,6 +29,7 @@ from mapa_da_ciencia import __version__
 from mapa_da_ciencia.contrato.exportar import manifesto_do_projeto
 from mapa_da_ciencia.manifesto import status_das_etapas
 from mapa_da_ciencia.projeto import Projeto
+from mapa_da_ciencia.servidor.origem import HOSTS_LOCAIS
 
 _SEM_BUILD = """<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><title>mapa-da-ciencia</title>
@@ -72,6 +77,12 @@ def criar_app(
     app = FastAPI(title="mapa-da-ciencia", version=__version__, docs_url="/api/docs", redoc_url=None, lifespan=ciclo)
     app.state.jobs = jobs
     estatico = estatico if estatico is not None else pasta_estatico()
+
+    @app.middleware("http")
+    async def so_desta_maquina(request: Request, seguir):
+        if request.url.path.startswith("/api/") and request.url.hostname not in HOSTS_LOCAIS:
+            return JSONResponse({"detail": "O painel só responde a pedidos feitos desta máquina."}, status_code=403)
+        return await seguir(request)
 
     @app.get("/api/saude")
     def saude() -> dict:

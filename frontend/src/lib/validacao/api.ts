@@ -4,8 +4,10 @@
  * - `lerFila(nome)`: a amostra na ordem da fila do codificador, com o codebook e as respostas já dadas (nunca as
  *   de um modelo: a codificação é cega);
  * - `Gravador`: grava as respostas de cada ficha. Cada mudança vai primeiro para o `localStorage` (a fila de
- *   pendências) e depois para a API; se a API falhar (servidor parado, rede), as pendências ficam guardadas e são
- *   reenviadas na próxima mudança ou quando a página voltar a ficar on-line. Nada se perde num reload.
+ *   pendências, por projeto e codificador) e depois para a API; se o painel não responder (servidor parado, rede),
+ *   as pendências ficam guardadas e são reenviadas na próxima mudança ou quando a página voltar a ficar on-line.
+ *   Nada se perde num reload. Uma ficha que o painel recusa (fora da amostra, resposta inválida) é avisada e sai da
+ *   fila, sem travar as outras. Sem `localStorage` (dados do site bloqueados), as pendências ficam na memória.
  * - `lerMetricas()`: a concordância calculada na hora (o formato de `validacao.json`).
  *
  * Os caminhos são relativos à página (`./api/...`), como os dados: funcionam na raiz e num subcaminho.
@@ -58,34 +60,51 @@ interface Pendencia {
 	completa: boolean;
 }
 
-/** Guarda e envia as respostas de um codificador, com as pendências no `localStorage`. */
+/** Guarda e envia as respostas de um codificador, com as pendências no `localStorage` (ou na memória). */
 export class Gravador {
 	readonly codificador: string;
 	readonly chave: string;
 	#enviando = false;
+	#memoria: Record<string, Pendencia> | null = null; // em uso quando o localStorage não funciona
 	#aoMudar: (pendentes: number, erro: string | null) => void;
 
-	constructor(codificador: string, aoMudar: (pendentes: number, erro: string | null) => void = () => {}) {
+	constructor(
+		projeto: string,
+		codificador: string,
+		aoMudar: (pendentes: number, erro: string | null) => void = () => {}
+	) {
 		this.codificador = codificador;
-		this.chave = `mapa.codificacao.pendentes.${codificador}`;
+		this.chave = `mapa.codificacao.pendentes.${projeto}.${codificador}`;
 		this.#aoMudar = aoMudar;
 	}
 
 	pendencias(): Record<string, Pendencia> {
+		if (this.#memoria) return structuredClone(this.#memoria);
+		let guardado: string | null;
 		try {
-			return JSON.parse(localStorage.getItem(this.chave) ?? '{}');
+			guardado = localStorage.getItem(this.chave);
+		} catch {
+			this.#memoria = {};
+			return {};
+		}
+		try {
+			return JSON.parse(guardado ?? '{}');
 		} catch {
 			return {};
 		}
 	}
 
 	#guardar(p: Record<string, Pendencia>) {
-		try {
-			if (Object.keys(p).length) localStorage.setItem(this.chave, JSON.stringify(p));
-			else localStorage.removeItem(this.chave);
-		} catch {
-			/* sem localStorage (modo privado): segue só com a API */
+		if (!this.#memoria) {
+			try {
+				if (Object.keys(p).length) localStorage.setItem(this.chave, JSON.stringify(p));
+				else localStorage.removeItem(this.chave);
+				return;
+			} catch {
+				/* sem localStorage (dados do site bloqueados, cota cheia): as pendências passam para a memória */
+			}
 		}
+		this.#memoria = structuredClone(p);
 	}
 
 	/** Registra as respostas de uma ficha e tenta enviar tudo o que está pendente. */
@@ -96,15 +115,17 @@ export class Gravador {
 		await this.enviar();
 	}
 
-	/** Envia as pendências, uma ficha por vez. Devolve os problemas de validação, se a API recusar alguma. */
+	/** Envia as pendências, uma ficha por vez. Sem resposta do painel, para e guarda tudo; uma ficha recusada sai
+	 * da fila com um aviso; um erro do servidor deixa a ficha para a próxima vez e segue com as outras. */
 	async enviar(): Promise<void> {
 		if (this.#enviando) return;
 		this.#enviando = true;
 		let erro: string | null = null;
+		const adiadas = new Set<string>();
 		try {
-			// o que chegar enquanto envia entra na volta seguinte; a rede fora do ar interrompe tudo
+			// o que chegar enquanto envia entra na volta seguinte
 			for (let volta = 0, parar = false; volta < 10 && !parar; volta += 1) {
-				const entradas = Object.entries(this.pendencias());
+				const entradas = Object.entries(this.pendencias()).filter(([doc]) => !adiadas.has(doc));
 				if (!entradas.length) break;
 				for (const [doc, { respostas, completa }] of entradas) {
 					try {
@@ -113,14 +134,18 @@ export class Gravador {
 							body: JSON.stringify({ codificador: this.codificador, respostas, completa })
 						});
 					} catch (e) {
-						if (e instanceof ErroDaApi && e.status === 422) {
-							// resposta inválida (ex.: variável que saiu do codebook): não adianta reenviar
-							erro = `Não foi possível gravar ${doc}: ${e.message}`;
-						} else {
+						if (!(e instanceof ErroDaApi)) {
 							erro = 'Sem conexão com o painel: as respostas ficam guardadas neste navegador e vão quando ele voltar.';
 							parar = true;
 							break;
 						}
+						if (e.status >= 500) {
+							erro = `O painel não conseguiu gravar ${doc} (${e.message}); a ficha fica guardada e vai na próxima vez.`;
+							adiadas.add(doc);
+							continue;
+						}
+						// recusada (fora da amostra, resposta inválida): não adianta reenviar
+						erro = `Não foi possível gravar ${doc}: ${e.message}`;
 					}
 					const resto = this.pendencias();
 					if (JSON.stringify(resto[doc]) === JSON.stringify({ respostas, completa })) delete resto[doc];

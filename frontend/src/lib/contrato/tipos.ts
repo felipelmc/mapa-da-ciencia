@@ -356,7 +356,7 @@ export interface Evidencia {
 	evidencia: string;
 	fim?: number | null;
 	/**
-	 * Posição do trecho no resumo exibido (caracteres), se localizado.
+	 * Posição do trecho no resumo exibido, se localizado, em pontos de código Unicode (como o Python conta; em JavaScript, converta para UTF-16).
 	 */
 	inicio?: number | null;
 	/**

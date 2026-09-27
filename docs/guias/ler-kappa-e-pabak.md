@@ -10,6 +10,11 @@ Cada par tem uma tabela, com uma linha por variável. O primeiro nome do par é 
 
 No painel, a vista **Validação** mostra o mesmo: escolha o par no alto e uma variável na tabela para ver a matriz de confusão, a precisão e a revocação por categoria e as divergências, cada uma com o trecho que o modelo citou. No painel local, os números são calculados na hora, incluindo as codificações que acabaram de ser feitas.
 
+<figure markdown="span">
+  ![A vista Validação: o par claude-opus × qwen3.5:9b, com concordância, kappa e intervalo, PABAK e alfa de cada variável](../imagens/validacao.png){ loading=lazy }
+  <figcaption>A validação do tutorial: 40 artigos da <em>Opinião Pública</em>, o <code>qwen3.5:9b</code> contra o codificador de referência.</figcaption>
+</figure>
+
 ## Os números
 
 | Número | O que diz | Cuidado |
@@ -45,6 +50,11 @@ Na análise de conteúdo, Krippendorff recomenda alfa ≥ 0,80 para conclusões 
 - **F1**: a média harmônica das duas.
 
 Uma categoria com revocação baixa é uma que o modelo não reconhece; com precisão baixa, uma que ele usa demais. A matriz mostra para onde vão os erros: duas categorias que se confundem muito talvez devam ser definidas melhor, ou fundidas.
+
+<figure markdown="span">
+  ![A matriz de confusão da abordagem: a referência nas linhas, o modelo nas colunas; 14 quantitativas concordam, 6 viram qualitativas e 4 mistas](../imagens/validacao-matriz.png){ loading=lazy }
+  <figcaption>Na amostra do tutorial, o modelo leu como qualitativos ou mistos 10 dos 25 artigos que a referência leu como quantitativos.</figcaption>
+</figure>
 
 ## Comparar modelos
 

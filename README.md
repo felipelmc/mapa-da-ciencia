@@ -10,7 +10,7 @@ Os modelos rodam no seu computador, via [Ollama](https://ollama.com).
 
 *A literature observatory for scientific publishing, built on local language models: topic maps over time, codebook-based classification of abstracts with textual evidence and human validation, and the geography of research production. Documentation in Portuguese.*
 
-> **Status:** versão 0.4.0, com a coleta de artigos, os tópicos num mapa navegável e no tempo, e a geografia da produção (marcos M2 a M4). A classificação por codebook chega no M5. Ainda não há versão no PyPI.
+> **Status:** versão 0.6.0, com a coleta de artigos, os tópicos num mapa navegável e no tempo, a geografia da produção e a classificação por codebook com validação (marcos M2 a M5), tudo também pela interface, com o progresso ao vivo (M6). A publicação do site e as figuras chegam no M7. Ainda não há versão no PyPI.
 
 ![O mapa de 4.275 artigos de dez revistas de ciência política no SciELO Brasil, de 2010 a 2025, com os tópicos contornados e os rótulos dos macrotemas](docs/imagens/mapa.png)
 
@@ -32,10 +32,11 @@ uv run mapa novo projetos/op --revista op
 uv run mapa coletar -P projetos/op
 uv run mapa topicos -P projetos/op
 uv run mapa geografia -P projetos/op
+uv run mapa classificar -P projetos/op
 uv run mapa painel -P projetos/op
 ```
 
-O passo a passo está em [Seu primeiro mapa](https://felipelmc.github.io/mapa-da-ciencia/tutoriais/primeiro-mapa/) (a coleta), na [parte 2](https://felipelmc.github.io/mapa-da-ciencia/tutoriais/primeiro-mapa-topicos/) (tópicos e mapa) e na [parte 3](https://felipelmc.github.io/mapa-da-ciencia/tutoriais/primeiro-mapa-tempo-e-geografia/) (tempo e geografia).
+O passo a passo está em [Seu primeiro mapa](https://felipelmc.github.io/mapa-da-ciencia/tutoriais/primeiro-mapa/) (a coleta), na [parte 2](https://felipelmc.github.io/mapa-da-ciencia/tutoriais/primeiro-mapa-topicos/) (tópicos e mapa), na [parte 3](https://felipelmc.github.io/mapa-da-ciencia/tutoriais/primeiro-mapa-tempo-e-geografia/) (tempo e geografia) e na [parte 4](https://felipelmc.github.io/mapa-da-ciencia/tutoriais/primeiro-mapa-classificacao/) (classificação e validação). Sem o terminal, o mesmo percurso está em [Seu primeiro mapa pela interface](https://felipelmc.github.io/mapa-da-ciencia/tutoriais/primeiro-mapa-pela-interface/).
 
 ## Documentação
 

@@ -24,7 +24,7 @@ def test_criar_projeto_gera_arquivos_validos(projeto):
         assert (raiz / nome).exists(), nome
     for sub in ("brutos", "dados", "execucoes", "saida"):
         assert (raiz / sub).is_dir(), sub
-    assert ".env" in (raiz / ".gitignore").read_text()
+    assert ".env" in (raiz / ".gitignore").read_text() and "validacao/" in (raiz / ".gitignore").read_text()
     cfg = projeto.config
     assert cfg.nome == "piloto"
     assert len(cfg.fontes.scielo.revistas) == 10

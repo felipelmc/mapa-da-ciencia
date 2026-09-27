@@ -1,8 +1,12 @@
 // Gera as capturas usadas na documentação (docs/imagens/), a partir dos dados de um projeto: o Mapa, os Tópicos
-// e, se o projeto tiver geografia, a Geografia.
+// e, se o projeto tiver, a Geografia, a Classificação e a Validação.
 //
 // Uso (da pasta frontend/, depois de `npm run build`):
-//   node scripts/capturas.ts ../projetos/cp-scielo
+//   node scripts/capturas.ts ../projetos/cp-scielo                            # todas
+//   node scripts/capturas.ts ../projetos/op classificacao,validacao           # só algumas
+//
+// As capturas da Classificação e da Validação não abrem listas de documentos: os trechos de resumos sem licença
+// aberta não podem ir para a documentação pública.
 //
 // Roda localmente, não no CI: o piloto não está no repositório. O build e a pasta saida/dados do projeto
 // são copiados para uma pasta temporária e servidos pelo mesmo servidor estático dos testes e2e. O cartão
@@ -21,6 +25,8 @@ const LARGURA = 1280;
 const ALTURA = 800;
 
 const projeto = resolve(process.argv[2] ?? join(FRONTEND, '..', 'projetos', 'cp-scielo'));
+const so = process.argv[3]?.split(',') ?? null;
+const quero = (secao: string) => !so || so.includes(secao);
 const dados = join(projeto, 'saida', 'dados');
 for (const arquivo of ['documentos.json', 'topicos.json', 'detalhes']) {
 	if (!existsSync(join(dados, arquivo))) {
@@ -56,7 +62,9 @@ function escolherDocumento(): string {
 
 async function abrir(page: Page, hash: string) {
 	await page.goto(`${origem}/#/mapa${hash}`);
-	await page.waitForFunction(() => window.__mapaDebug?.desenhado || window.__mapaDebug?.erro, null, { timeout: 30_000 });
+	await page.waitForFunction(() => window.__mapaDebug?.desenhado || window.__mapaDebug?.erro, null, {
+		timeout: 30_000
+	});
 	const erro = await page.evaluate(() => window.__mapaDebug?.erro);
 	if (erro) throw new Error(`O mapa não desenhou: ${erro}`);
 	await page.waitForTimeout(600); // rótulos e contornos entram depois do primeiro desenho
@@ -86,55 +94,59 @@ try {
 	const id = escolherDocumento();
 	const indice = (documentos.colunas.id as string[]).indexOf(id);
 
-	// 1. o corpus inteiro, com os rótulos dos macrotemas
-	await abrir(page, '');
-	await capturar(page, 'mapa');
+	if (quero('mapa')) {
+		// 1. o corpus inteiro, com os rótulos dos macrotemas
+		await abrir(page, '');
+		await capturar(page, 'mapa');
 
-	// 2. um laço em volta da região do documento escolhido
-	const canvas = page.getByTestId('canvas-mapa');
-	const caixa = (await canvas.boundingBox())!;
-	const [px, py] = (await page.evaluate((i) => window.__mapaDebug!.posicaoNaTela!(i), indice))!;
-	const [nx, ny] = [(px / caixa.width) * 2 - 1, 1 - (py / caixa.height) * 2];
-	const vertices = Array.from({ length: 16 }, (_, k): [number, number] => {
-		const a = (2 * Math.PI * k) / 16;
-		return [nx + 0.22 * Math.cos(a), ny + 0.3 * Math.sin(a)];
-	});
-	await page.evaluate((v) => window.__mapaDebug!.laco!(v), vertices);
-	await page.getByTestId('chip-laco').waitFor();
-	await page.waitForTimeout(400);
-	await capturar(page, 'mapa-laco');
-
-	// 3. o cartão do documento, com o zoom sobre o tópico dele (os rótulos passam a ser dos tópicos)
-	await abrir(page, `?doc=${encodeURIComponent(id)}`);
-	await page.getByTestId('cartao-documento').waitFor();
-	const [qx, qy] = (await page.evaluate((i) => window.__mapaDebug!.posicaoNaTela!(i), indice))!;
-	await page.mouse.move(caixa.x + qx, caixa.y + qy);
-	for (let i = 0; i < 3; i += 1) await page.mouse.wheel(0, -300);
-	await page.waitForFunction(() => (window.__mapaDebug?.zoom ?? 1) > 2.2);
-	await page.waitForTimeout(800);
-	await capturar(page, 'mapa-cartao');
-
-	// 4. os Tópicos: o fluxo dos macrotemas e, abaixo, as listas em alta e em queda
-	await page.goto(`${origem}/#/topicos`);
-	await page.getByTestId('figura-fluxo').and(page.locator('[data-pronto="sim"]')).waitFor();
-	await page.waitForTimeout(500);
-	await capturar(page, 'topicos');
-	await page.getByTestId('figura-tendencias').screenshot({ path: join(DESTINO, 'topicos-tendencias.png') });
-	console.log(join(DESTINO, 'topicos-tendencias.png'));
-
-	// 5. a gaveta do tópico que mais cresceu
-	const emAlta = [...topicos.topicos]
-		.filter((t) => t.tendencia?.direcao === 'alta')
-		.sort((a, b) => (b.tendencia.pp_periodo ?? 0) - (a.tendencia.pp_periodo ?? 0))[0];
-	if (emAlta) {
-		await page.goto(`${origem}/#/topicos?topico=${emAlta.id}`);
-		await page.getByTestId('gaveta-topico').waitFor();
+		// 2. um laço em volta da região do documento escolhido
+		const canvas = page.getByTestId('canvas-mapa');
+		const caixa = (await canvas.boundingBox())!;
+		const [px, py] = (await page.evaluate((i) => window.__mapaDebug!.posicaoNaTela!(i), indice))!;
+		const [nx, ny] = [(px / caixa.width) * 2 - 1, 1 - (py / caixa.height) * 2];
+		const vertices = Array.from({ length: 16 }, (_, k): [number, number] => {
+			const a = (2 * Math.PI * k) / 16;
+			return [nx + 0.22 * Math.cos(a), ny + 0.3 * Math.sin(a)];
+		});
+		await page.evaluate((v) => window.__mapaDebug!.laco!(v), vertices);
+		await page.getByTestId('chip-laco').waitFor();
 		await page.waitForTimeout(400);
-		await capturar(page, 'topicos-gaveta');
+		await capturar(page, 'mapa-laco');
+
+		// 3. o cartão do documento, com o zoom sobre o tópico dele (os rótulos passam a ser dos tópicos)
+		await abrir(page, `?doc=${encodeURIComponent(id)}`);
+		await page.getByTestId('cartao-documento').waitFor();
+		const [qx, qy] = (await page.evaluate((i) => window.__mapaDebug!.posicaoNaTela!(i), indice))!;
+		await page.mouse.move(caixa.x + qx, caixa.y + qy);
+		for (let i = 0; i < 3; i += 1) await page.mouse.wheel(0, -300);
+		await page.waitForFunction(() => (window.__mapaDebug?.zoom ?? 1) > 2.2);
+		await page.waitForTimeout(800);
+		await capturar(page, 'mapa-cartao');
+	}
+
+	if (quero('topicos')) {
+		// 4. os Tópicos: o fluxo dos macrotemas e, abaixo, as listas em alta e em queda
+		await page.goto(`${origem}/#/topicos`);
+		await page.getByTestId('figura-fluxo').and(page.locator('[data-pronto="sim"]')).waitFor();
+		await page.waitForTimeout(500);
+		await capturar(page, 'topicos');
+		await page.getByTestId('figura-tendencias').screenshot({ path: join(DESTINO, 'topicos-tendencias.png') });
+		console.log(join(DESTINO, 'topicos-tendencias.png'));
+
+		// 5. a gaveta do tópico que mais cresceu
+		const emAlta = [...topicos.topicos]
+			.filter((t) => t.tendencia?.direcao === 'alta')
+			.sort((a, b) => (b.tendencia.pp_periodo ?? 0) - (a.tendencia.pp_periodo ?? 0))[0];
+		if (emAlta) {
+			await page.goto(`${origem}/#/topicos?topico=${emAlta.id}`);
+			await page.getByTestId('gaveta-topico').waitFor();
+			await page.waitForTimeout(400);
+			await capturar(page, 'topicos-gaveta');
+		}
 	}
 
 	// 6. a Geografia: UFs e instituições, o mundo e a cobertura por ano
-	if (existsSync(join(dados, 'afiliacoes.json'))) {
+	if (quero('geografia') && existsSync(join(dados, 'afiliacoes.json'))) {
 		await page.goto(`${origem}/#/geografia`);
 		await page.getByTestId('figura-ufs').and(page.locator('[data-pronto="sim"]')).waitFor();
 		await page.getByTestId('figura-mundo').and(page.locator('[data-pronto="sim"]')).waitFor();
@@ -145,8 +157,28 @@ try {
 			await page.getByTestId(`figura-${figura}`).screenshot({ path: arquivo });
 			console.log(arquivo);
 		}
-	} else {
+	} else if (quero('geografia')) {
 		console.log('Sem afiliacoes.json: rode `mapa geografia` no projeto para capturar a Geografia.');
+	}
+
+	// 7. a Classificação: a variável "abordagem", as barras por ano e o cruzamento com os macrotemas
+	if (quero('classificacao') && existsSync(join(dados, 'classificacoes.json'))) {
+		await page.goto(`${origem}/#/classificacao`);
+		await page.getByTestId('figura-por-ano').waitFor();
+		await page.waitForTimeout(400);
+		await capturar(page, 'classificacao');
+		await page.getByTestId('figura-cruzamento').screenshot({ path: join(DESTINO, 'classificacao-cruzamento.png') });
+		console.log(join(DESTINO, 'classificacao-cruzamento.png'));
+	}
+
+	// 8. a Validação: a concordância por variável e a matriz de confusão da variável escolhida
+	if (quero('validacao') && existsSync(join(dados, 'validacao.json'))) {
+		await page.goto(`${origem}/#/validacao`);
+		await page.getByTestId('tabela-metricas').waitFor();
+		await page.waitForTimeout(300);
+		await capturar(page, 'validacao');
+		await page.getByTestId('matriz-confusao').screenshot({ path: join(DESTINO, 'validacao-matriz.png') });
+		console.log(join(DESTINO, 'validacao-matriz.png'));
 	}
 	await contexto.close();
 } finally {

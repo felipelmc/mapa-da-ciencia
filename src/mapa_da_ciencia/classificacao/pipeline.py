@@ -121,17 +121,20 @@ def classificar(
     textos = sorted(textos, key=lambda t: (posicao.get(t.doc, len(posicao)), t.doc))
 
     classificador = Classificador(modelo_cfg, codebook, projeto.estado, ollama=Ollama(), progresso=progresso)
-    alvo, parcial = textos, False
+    alvo = textos
     if opcoes.somente_amostra:
         alvo = [t for t in textos if t.doc in posicao]
-        parcial = len(alvo) < len(textos)
     if opcoes.estimar or opcoes.limite is not None:
         pendentes = classificador.pendentes(alvo)
         faltando = set(pendentes)
         ja = [t for t in alvo if t not in faltando]
         extra = AMOSTRA_ESTIMATIVA if opcoes.estimar else max(0, (opcoes.limite or 0) - len(ja))
         alvo = ja + pendentes[:extra]
-        parcial = len(alvo) < len(textos)
+
+    # o resultado cobre tudo o que o cache já tem, não só o alvo desta execução: `--somente-amostra` ou `--limite`
+    # depois de uma rodada completa não encolhem a classificação
+    no_alvo = {t.doc for t in alvo}
+    fora_do_alvo = classificador.do_cache(t for t in textos if t.doc not in no_alvo)
 
     variaveis = [v.id for v in codebook.variaveis]
     k = classificador.contadores
@@ -141,6 +144,8 @@ def classificar(
     def gravar(resultados: list[Classificacao], *, parcial: bool) -> Resultado:
         """Grava o resultado com o que já foi classificado: no fim, e a cada `GRAVAR_A_CADA` documentos novos,
         com uma exportação para o painel (assim a rodada longa aparece enquanto corre)."""
+        resultados = resultados + fora_do_alvo
+        parcial = parcial or len(resultados) < len(textos)
         linhas = [linha for c in sorted(resultados, key=lambda c: c.doc) for linha in _linhas(c, variaveis)]
         status = Counter(linha["status"] for linha in linhas if linha["status"] != "dispensada")
         total_status = sum(status.values()) or 1
@@ -189,11 +194,12 @@ def classificar(
         classificador.fim()
         progresso.fim()
 
-    faltam = len(textos) - len(resultados)
+    classificados = len(resultados) + len(fora_do_alvo)
+    faltam = len(textos) - classificados
     estimativa = None
     if opcoes.estimar and k.segundos:
         estimativa = round(statistics.median(k.segundos) * faltam / max(1, modelo_cfg.concorrencia), 0)
-    resultado = gravar(resultados, parcial=parcial)
+    resultado = gravar(resultados, parcial=False)  # parcial se algo ficou de fora (ver `gravar`)
     json_ok, evidencia, mediana = (
         resultado.json_valido_na_primeira,
         resultado.evidencia,
@@ -202,7 +208,7 @@ def classificar(
     resumo = ResumoClassificacao(
         modelo=classificador.modelo,
         documentos=len(textos),
-        classificados=len(resultados),
+        classificados=classificados,
         do_cache=k.do_cache,
         novos=k.novos,
         falhas=k.falhas,
@@ -226,7 +232,7 @@ def classificar(
         inicio=inicio,
         fim=datetime.now(UTC),
         contagens={
-            "classificados": len(resultados),
+            "classificados": classificados,
             "documentos": len(textos),
             "novos": k.novos,
             "chamadas": k.chamadas,

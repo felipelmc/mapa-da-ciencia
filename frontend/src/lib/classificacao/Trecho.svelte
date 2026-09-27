@@ -1,5 +1,6 @@
 <script lang="ts" module>
 	import type { Evidencia } from '$lib/contrato/tipos';
+	import { posicoesJs } from './posicoes';
 
 	/** Quantos caracteres de contexto mostrar antes e depois do trecho. */
 	export const CONTEXTO = 110;
@@ -14,7 +15,7 @@
 
 	/** O trecho da evidência dentro do texto, com um pouco de contexto (cortado em espaços, sem partir palavras). */
 	export function partesDoTrecho(texto: string, e: Pick<Evidencia, 'inicio' | 'fim'>, contexto = CONTEXTO): PartesDoTrecho | null {
-		const { inicio, fim } = e;
+		const { inicio, fim } = posicoesJs(texto, e);
 		if (inicio == null || fim == null || inicio < 0 || fim > texto.length || fim <= inicio) return null;
 		let a = Math.max(0, inicio - contexto);
 		let b = Math.min(texto.length, fim + contexto);

@@ -370,7 +370,7 @@ def validacao(projeto: Projeto | str | Path = ".") -> Validacao:
 
 def relatorio_de_validacao(projeto: Projeto | str | Path = ".") -> dict[str, Path]:
     """Grava o relatório da validação, como `mapa validar relatorio`, e devolve os caminhos: `markdown`
-    (`validacao/relatorio.md`), `latex` (`validacao/tabelas.tex`) e `json` (`validacao/validacao.json`)."""
+    (`validacao/relatorio.md`), `latex` (`validacao/tabelas.tex`) e `json` (`validacao/metricas.json`)."""
     from mapa_da_ciencia.validacao.relatorio import gerar
 
     return gerar(_projeto(projeto))[1]

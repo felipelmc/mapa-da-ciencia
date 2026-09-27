@@ -241,8 +241,9 @@ def pagina_api_http() -> str:
         "# API HTTP do painel",
         "",
         "O `mapa painel` serve, além da interface e dos arquivos do contrato (`/dados/…`), uma API local em `/api/…`. "
-        "Ela só existe no painel com um projeto aberto, só escuta em `127.0.0.1`, e as rotas de escrita recusam "
-        "pedidos cujo `Host` ou `Origin` não sejam desta máquina. O site publicado não tem API. Com o painel aberto, "
+        "Ela só existe no painel com um projeto aberto, só escuta em `127.0.0.1` e só responde a pedidos cujo `Host` "
+        "seja desta máquina; as rotas de escrita recusam também um `Origin` de fora. O site publicado não tem API. "
+        "Com o painel aberto, "
         "a documentação interativa fica em `/api/docs`.",
         "",
         "O progresso das etapas chega por *Server-Sent Events* (`GET /api/jobs/{job}/eventos`): cada evento tem "

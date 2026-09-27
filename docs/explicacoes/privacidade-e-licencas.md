@@ -4,7 +4,7 @@
 
 - **Textos para modelos:** os embeddings, os rótulos dos tópicos e a classificação rodam no Ollama local.
 - **E-mails de autores:** a ArticleMeta traz o e-mail de alguns autores nas afiliações. A normalização da coleta (marco M2) descarta esse campo, e ele nunca chega aos dados do projeto nem ao site publicado. Os testes do contrato de dados verificam que nenhum arquivo exportado contém e-mails.
-- **Codificações humanas individuais:** ficam no `estado.sqlite` do projeto. Os arquivos que o painel lê (`saida/dados/`) e o site publicado trazem só as métricas agregadas de concordância; as divergências caso a caso saem apenas para codificadores de referência, que não são pessoas. As divergências de uma pessoa aparecem só no painel local, pela API, e no relatório em `validacao/`, que não é publicado.
+- **Codificações humanas individuais:** ficam no `estado.sqlite` do projeto. Os arquivos que o painel lê (`saida/dados/`) e o site publicado trazem só as métricas agregadas de concordância; as divergências caso a caso saem apenas para codificadores de referência, que não são pessoas. As divergências de uma pessoa aparecem só no painel local, pela API, e no relatório em `validacao/`, que não é publicado e que o `.gitignore` do projeto deixa fora do git.
 - **Chaves e e-mail de contato:** ficam no `.env` do projeto, que o `mapa novo` já coloca no `.gitignore`.
 
 As únicas chamadas externas são as da coleta de metadados públicos (ArticleMeta e OpenAlex), identificadas por um User-Agent do projeto.
