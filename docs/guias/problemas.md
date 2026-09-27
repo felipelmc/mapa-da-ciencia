@@ -31,7 +31,7 @@ O modelo não cabe na memória livre, e o sistema passou a usar o disco como mem
 3. Descarregue modelos esquecidos na memória: `ollama ps` lista os carregados, e `ollama stop <modelo>` descarrega um deles.
 4. Se não bastar, troque para um modelo menor no `mapa.yaml` (veja os [perfis](instalacao.md#3-escolha-um-perfil-de-modelos)).
 
-A partir do marco M3, as etapas que carregam modelos conferem a memória antes e param com uma mensagem clara se o modelo não couber.
+As etapas que carregam modelos conferem a memória antes e param com uma mensagem clara se o modelo não couber.
 
 ## Pouco espaço em disco
 

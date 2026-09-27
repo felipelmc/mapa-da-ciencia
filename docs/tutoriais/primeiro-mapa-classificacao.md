@@ -4,7 +4,7 @@ Na [parte 3](primeiro-mapa-tempo-e-geografia.md) você viu os tópicos no tempo 
 
 !!! info "Antes de começar"
     - Você precisa ter feito as partes 2 e 3, no projeto `projetos/op`.
-    - A classificação usa o modelo de `modelos.classificacao` do `mapa.yaml` (`qwen3.5:9b` no perfil padrão, uns 7 GB de memória). Confira com `uv run mapa diagnostico`.
+    - A classificação usa o modelo de `modelos.classificacao` do `mapa.yaml` (`qwen3.5:9b` no perfil padrão, que precisa de uns 8 GB de memória livre). Confira com `uv run mapa diagnostico`.
     - Todos os comandos rodam na pasta do projeto:
 
         ```bash
@@ -61,7 +61,7 @@ A amostra de validação vem primeiro na fila, e `--somente-amostra` classifica 
 Abra o painel e vá a **Validação › Codificar a amostra**:
 
 ```bash
-uv run mapa painel  # fora do CI
+uv run mapa painel
 ```
 
 Escreva o seu nome (sem acentos nem espaços) e codifique as 40 fichas. Cada ficha mostra o título e o resumo; responda com o teclado (++1++ a ++9++ escolhem a opção e passam para a próxima variável, ++enter++ confirma a ficha). A ficha nunca mostra o que o modelo respondeu. Tudo é gravado sozinho; você pode parar e voltar. Veja [Codificar a amostra](../guias/codificar-a-amostra.md).
@@ -72,7 +72,7 @@ Escreva o seu nome (sem acentos nem espaços) e codifique as 40 fichas. Cada fic
 uv run mapa validar metricas
 ```
 
-Para cada variável, a concordância entre você e o modelo: a fração de respostas iguais, o kappa com o intervalo de 95%, o PABAK e o alfa. Na nossa rodada, a amostra foi codificada por um **codificador de referência** (um modelo muito maior, lendo às cegas; ver o [ADR 0012](../decisoes/0012-validacao-e-codificador-de-referencia.md)), e não por uma pessoa:
+Para cada variável, a concordância entre você e o modelo: a fração de respostas iguais, o kappa com o intervalo de 95%, o PABAK e o alfa. Na nossa rodada, a amostra foi codificada por um **codificador de referência**, e não por uma pessoa: o Claude (`claude-opus`), um modelo muito maior, lendo às cegas os títulos e resumos da amostra, só para esta documentação (ver o [ADR 0012](../decisoes/0012-validacao-e-codificador-de-referencia.md)). Foi a única vez em que textos saíram da máquina; no seu projeto, quem codifica é você, no painel:
 
 ```text
 claude-opus × qwen3.5:9b
@@ -122,6 +122,8 @@ Grava em `validacao/` o relatório em Markdown (com todas as divergências e o t
 
 ## 10. Consulte em Python
 
+Abra o Python do projeto com `uv run python` e rode:
+
 ```python
 import mapa_da_ciencia.api as mapa
 
@@ -146,4 +148,4 @@ A view `classificacoes` tem uma linha por artigo e variável, com o valor, a evi
 ## Próximos passos
 
 - Leia as divergências no relatório ou na vista Validação, revise as definições do codebook e classifique de novo.
-- Para comparar com outro modelo local, classifique a amostra com `uv run mapa classificar --somente-amostra --modelo <outro>` e rode `mapa validar metricas`: a comparação entre os dois (teste de McNemar) aparece no fim.
+- Para comparar com outro modelo local, classifique a amostra com `uv run mapa classificar --somente-amostra --modelo <outro>` e rode `uv run mapa validar metricas`: a comparação entre os dois (teste de McNemar) aparece no fim.

@@ -15,7 +15,7 @@ Na [parte 2](primeiro-mapa-topicos.md) você descobriu os tópicos dos cerca de 
 A geografia usa os registros das instituições do OpenAlex, que a coleta busca desde a versão 0.4.0. Se você fez a parte 2 com uma versão anterior, colete de novo. As respostas da ArticleMeta vêm do cache, e o OpenAlex gasta uns 2 créditos:
 
 ```bash
-uv run mapa coletar  # fora do CI
+uv run mapa coletar
 ```
 
 ## 2. Gere a geografia
@@ -101,10 +101,10 @@ Se você coletar de novo ou mudar o `instituicoes.yaml`, essa linha avisa que a 
 ## 5. Veja os tópicos no tempo
 
 ```bash
-uv run mapa painel  # fora do CI
+uv run mapa painel
 ```
 
-Abra a vista **Tópicos**. O fluxo mostra os cinco macrotemas ano a ano; troque para o modo **100%** para ver a participação de cada um. Clique em "Comunicação Política Eleitoral" para abrir os tópicos dele.
+Abra a vista **Tópicos**. O fluxo mostra os cinco macrotemas ano a ano; troque para o modo **100%** para ver a participação de cada um. Clique no macrotema de comunicação política e eleições para abrir os tópicos dele (o nome foi escrito pelo modelo de linguagem, e o seu pode ser outro).
 
 Abaixo do fluxo, a lista **em alta e em queda** mostra os tópicos cuja participação mudou de forma distinguível do acaso. Na *Opinião Pública*, três estão em alta, todos ligados às eleições recentes: a direita radical e o voto bolsonarista (+15,8 pontos percentuais de 2010 a 2025), a comunicação política em redes sociais (+14,8) e a direita brasileira (+6,7). A deliberação em ambientes online está em queda (−8,1). Clique num deles para abrir a gaveta, com a série, as palavras-chave e os artigos representativos.
 
@@ -153,8 +153,8 @@ Na *Opinião Pública*, São Paulo soma 66,4 de peso em 88 artigos, Minas Gerais
 
     ```bash
     cd ../..
-    uv run mapa geografia -P projetos/cp-scielo  # fora do CI
+    uv run mapa geografia -P projetos/cp-scielo
     ```
 
 - **Por que estes limiares**, e como a precisão foi medida: a decisão [0008](../decisoes/0008-geografia-casamento-das-afiliacoes.md).
-- A parte 4, com a **classificação** dos resumos por um codebook, chega com o marco M5.
+- A [parte 4](primeiro-mapa-classificacao.md) **classifica** os resumos com um codebook e mede a concordância numa amostra.

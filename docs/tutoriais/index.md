@@ -2,6 +2,8 @@
 
 Tutoriais ensinam fazendo: você segue os passos do começo ao fim e sai com algo funcionando. Se o que você procura é resolver uma tarefa específica, vá para os [Guias](../guias/index.md).
 
+Um termo novo no caminho (*embedding*, kappa, *wheel*, trilho)? O [Glossário](../referencia/glossario.md) explica cada um.
+
 | Tutorial | O que você faz | Disponível |
 |---|---|---|
 | [Explorar o exemplo em 5 minutos](explorar-exemplo.md) | Abre o painel com dados sintéticos e conhece as vistas | agora |

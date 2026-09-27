@@ -48,7 +48,7 @@ Para analisar os tópicos num notebook, a view `atribuicoes` da [API Python](../
 - **Parâmetros.** A seção `topicos:` do `mapa.yaml` controla o tamanho mínimo dos tópicos, o número de macrotemas e a reatribuição (veja a [referência da configuração](../referencia/configuracao.md)). Os padrões foram calibrados no piloto ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)). Para um corpus muito diferente, refaça a calibração:
 
     ```bash
-    uv run python scripts/calibrar_topicos.py caminho/do/projeto  # fora do CI
+    uv run python scripts/calibrar_topicos.py caminho/do/projeto
     ```
 
 ## Problemas comuns

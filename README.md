@@ -45,7 +45,7 @@ O passo a passo está em [Seu primeiro mapa](https://felipelmc.github.io/mapa-da
 
 ## Documentação
 
-[felipelmc.github.io/mapa-da-ciencia](https://felipelmc.github.io/mapa-da-ciencia/) tem os tutoriais, os guias, a referência e a metodologia ([em uma página](https://felipelmc.github.io/mapa-da-ciencia/explicacoes/metodologia/), com as [limitações e vieses](https://felipelmc.github.io/mapa-da-ciencia/explicacoes/limitacoes/)). Para ler localmente, rode `uv run mkdocs serve` e abra `http://127.0.0.1:8000`.
+[felipelmc.github.io/mapa-da-ciencia](https://felipelmc.github.io/mapa-da-ciencia/) tem os tutoriais, os guias, a referência e a metodologia ([em uma página](https://felipelmc.github.io/mapa-da-ciencia/explicacoes/metodologia/), com as [limitações e vieses](https://felipelmc.github.io/mapa-da-ciencia/explicacoes/limitacoes/)). Para ler localmente, rode `uv run --group docs mkdocs serve` e abra `http://127.0.0.1:8000`.
 
 ## Sobre
 

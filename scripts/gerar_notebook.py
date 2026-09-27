@@ -84,6 +84,7 @@ def celulas(versao: str) -> list[dict]:
         ),
         codigo(
             """
+            !apt-get -qq install -y zstd > /dev/null  # o instalador do Ollama precisa dele
             !curl -fsSL https://ollama.com/install.sh | sh
 
             import subprocess
@@ -109,9 +110,10 @@ def celulas(versao: str) -> list[dict]:
         md("""
             ## 3. Criar o projeto e coletar
 
-            Um projeto é uma pasta com a configuração (`mapa.yaml`), o codebook (`codebook.yaml`) e os dados. O recorte: a *Opinião Pública*, de 2020 a 2024, com o perfil de modelos `padrao`, o que cabe na T4.
+            Um projeto é uma pasta com a configuração (`mapa.yaml`), o codebook (`codebook.yaml`) e os dados. O recorte: a *Opinião Pública*, de 2020 a 2024, com o perfil de modelos `padrao`, o que cabe na T4. Para ver os arquivos, abra o painel de arquivos do Colab (o ícone de pasta, à esquerda) e dê um clique duplo em `oficina/mapa.yaml`.
         """),
         codigo("""
+            %cd /content
             !mapa novo oficina --revista op --anos 2020-2024 --perfil padrao
             %cd oficina
             !mapa coletar

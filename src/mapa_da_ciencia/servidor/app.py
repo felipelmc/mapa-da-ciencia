@@ -38,11 +38,14 @@ padding:0 1rem;line-height:1.5}}code{{background:#111733;padding:.1rem .3rem;bor
 a{{color:#FFB547}}</style></head><body>
 <h1>A interface ainda não foi compilada</h1>
 <p>O servidor está no ar (versão {versao}), mas o pacote não traz a interface web. Isso é normal quando se
-roda a partir do código-fonte. Para compilar:</p>
+roda a partir do código-fonte. Encerre este painel (Ctrl+C no terminal) e compile a interface uma vez, com o
+Node.js 22.18 ou mais recente:</p>
 <pre><code>cd frontend
 npm ci
-npm run build
-npm run empacotar</code></pre>
+npm run empacotar
+cd ..</code></pre>
+<p>Depois, abra o painel de novo. Para não precisar compilar, instale o <em>wheel</em> de uma
+<a href="https://github.com/felipelmc/mapa-da-ciencia/releases">release</a>, que já traz a interface.</p>
 <p>Os dados continuam disponíveis em <a href="dados/manifesto.json">dados/manifesto.json</a>.</p>
 </body></html>"""
 

@@ -49,6 +49,9 @@ def test_comandos_do_caderno(tmp_path, apis_falsas, monkeypatch):
         if "colab" in celula["metadata"].get("tags", []):  # dessas, só os comandos `mapa` rodam aqui
             linhas = [linha for linha in linhas if linha.startswith("!mapa ")]
         for linha in linhas:
+            if linha == "%cd /content":  # a pasta de trabalho do Colab
+                monkeypatch.chdir(tmp_path)
+                continue
             if linha.startswith("%cd "):
                 monkeypatch.chdir(Path.cwd() / linha[4:])
                 continue
