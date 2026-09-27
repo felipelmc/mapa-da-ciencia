@@ -1,7 +1,44 @@
 {
+  "$defs": {
+    "VariavelClassificada": {
+      "additionalProperties": false,
+      "description": "Como uma variável saiu na classificação.",
+      "properties": {
+        "evidencia": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Status → fração das evidências, sem as dispensadas.",
+          "title": "Evidencia",
+          "type": "object"
+        },
+        "n": {
+          "description": "Documentos com resposta nesta variável.",
+          "title": "N",
+          "type": "integer"
+        },
+        "sem_informacao": {
+          "description": "Fração das respostas sem informação (`nao_informado`, `nao_se_aplica` ou falso).",
+          "title": "Sem Informacao",
+          "type": "number"
+        }
+      },
+      "required": [
+        "n",
+        "sem_informacao"
+      ],
+      "title": "VariavelClassificada",
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
   "description": "Resumo da classificação por codebook: modelo, cobertura e contagens por categoria.",
   "properties": {
+    "classificados": {
+      "default": 0,
+      "title": "Classificados",
+      "type": "integer"
+    },
     "cobertura": {
       "description": "Fração dos documentos com classificação válida.",
       "title": "Cobertura",
@@ -14,8 +51,15 @@
         },
         "type": "object"
       },
+      "description": "Variável → valor → documentos. Nas de múltipla escolha, cada categoria conta à parte; as de texto ficam de fora.",
       "title": "Contagens",
       "type": "object"
+    },
+    "documentos": {
+      "default": 0,
+      "description": "Documentos com resumo, que podiam ser classificados.",
+      "title": "Documentos",
+      "type": "integer"
     },
     "evidencia_literal": {
       "description": "Fração das evidências encontradas literalmente no resumo.",
@@ -26,12 +70,42 @@
       "title": "Hash Codebook",
       "type": "string"
     },
+    "json_valido_na_primeira": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Json Valido Na Primeira"
+    },
     "modelo": {
       "title": "Modelo",
       "type": "string"
     },
+    "parcial": {
+      "default": false,
+      "description": "A classificação ainda não cobre todos os documentos com resumo.",
+      "title": "Parcial",
+      "type": "boolean"
+    },
+    "por_variavel": {
+      "additionalProperties": {
+        "$ref": "#/$defs/VariavelClassificada"
+      },
+      "title": "Por Variavel",
+      "type": "object"
+    },
+    "sem_resumo": {
+      "default": 0,
+      "title": "Sem Resumo",
+      "type": "integer"
+    },
     "versao_contrato": {
-      "default": "1.2",
+      "default": "1.3",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",

@@ -25,25 +25,106 @@
       "title": "AmostraInfo",
       "type": "object"
     },
+    "ComparacaoModelos": {
+      "additionalProperties": false,
+      "description": "McNemar exato entre dois modelos, contra a mesma referência, numa variável.",
+      "properties": {
+        "acertos_a": {
+          "title": "Acertos A",
+          "type": "integer"
+        },
+        "acertos_b": {
+          "title": "Acertos B",
+          "type": "integer"
+        },
+        "modelo_a": {
+          "title": "Modelo A",
+          "type": "string"
+        },
+        "modelo_b": {
+          "title": "Modelo B",
+          "type": "string"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "p": {
+          "title": "P",
+          "type": "number"
+        },
+        "referencia": {
+          "title": "Referencia",
+          "type": "string"
+        },
+        "variavel": {
+          "title": "Variavel",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variavel",
+        "referencia",
+        "modelo_a",
+        "modelo_b",
+        "n",
+        "acertos_a",
+        "acertos_b",
+        "p"
+      ],
+      "title": "ComparacaoModelos",
+      "type": "object"
+    },
     "Divergencia": {
       "additionalProperties": false,
-      "description": "Um caso em que humano e modelo discordam, para arbitragem.",
+      "description": "Um caso em que um codificador de referência e o modelo principal discordam, para arbitragem.",
       "properties": {
+        "codificador": {
+          "default": "",
+          "title": "Codificador",
+          "type": "string"
+        },
         "doc": {
           "title": "Doc",
           "type": "string"
         },
         "evidencia": {
+          "description": "Trecho que o modelo citou.",
           "title": "Evidencia",
           "type": "string"
         },
         "humano": {
+          "description": "Valor dado pelo codificador (o nome do campo vem da versão 1.0).",
           "title": "Humano",
           "type": "string"
+        },
+        "incerto": {
+          "default": false,
+          "description": "O codificador marcou a resposta como incerta.",
+          "title": "Incerto",
+          "type": "boolean"
         },
         "modelo": {
           "title": "Modelo",
           "type": "string"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "enum": [
+                "literal",
+                "aproximada",
+                "ausente",
+                "dispensada"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status"
         },
         "variavel": {
           "title": "Variavel",
@@ -62,7 +143,7 @@
     },
     "Matriz": {
       "additionalProperties": false,
-      "description": "Matriz de confusão entre a codificação humana e a do modelo.",
+      "description": "Matriz de confusão entre dois participantes.",
       "properties": {
         "rotulos": {
           "items": {
@@ -72,7 +153,7 @@
           "type": "array"
         },
         "valores": {
-          "description": "Linhas = codificação humana; colunas = modelo.",
+          "description": "Linhas = a referência do par; colunas = o outro participante.",
           "items": {
             "items": {
               "type": "integer"
@@ -90,9 +171,66 @@
       "title": "Matriz",
       "type": "object"
     },
+    "MetricaClasse": {
+      "additionalProperties": false,
+      "description": "Precisão, revocação e F1 de uma categoria, tomando o primeiro do par como referência.",
+      "properties": {
+        "f1": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "F1"
+        },
+        "precisao": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Precisao"
+        },
+        "revocacao": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revocacao"
+        },
+        "rotulo": {
+          "title": "Rotulo",
+          "type": "string"
+        },
+        "suporte": {
+          "description": "Quantas vezes a referência deu esta categoria.",
+          "title": "Suporte",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "rotulo",
+        "suporte",
+        "precisao",
+        "revocacao",
+        "f1"
+      ],
+      "title": "MetricaClasse",
+      "type": "object"
+    },
     "MetricaVariavel": {
       "additionalProperties": false,
-      "description": "Concordância entre humano e modelo (ou entre dois modelos) numa variável.",
+      "description": "Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável.\nNas de múltipla escolha, `variavel` é `id:categoria` (uma variável sim/não por categoria).",
       "properties": {
         "alfa": {
           "anyOf": [
@@ -106,13 +244,25 @@
           "title": "Alfa"
         },
         "comparacao": {
-          "description": "Ex.: `humano × qwen3.5:9b`.",
+          "description": "Ex.: `claude-opus × qwen3.5:9b` (referência primeiro).",
           "title": "Comparacao",
           "type": "string"
         },
+        "comparado": {
+          "default": "",
+          "title": "Comparado",
+          "type": "string"
+        },
         "concordancia": {
-          "title": "Concordancia",
-          "type": "number"
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Concordancia"
         },
         "kappa": {
           "anyOf": [
@@ -164,6 +314,19 @@
           ],
           "title": "Pabak"
         },
+        "por_classe": {
+          "items": {
+            "$ref": "#/$defs/MetricaClasse"
+          },
+          "title": "Por Classe",
+          "type": "array"
+        },
+        "referencia": {
+          "default": "",
+          "description": "Participante tomado como referência (linhas da matriz).",
+          "title": "Referencia",
+          "type": "string"
+        },
         "variavel": {
           "title": "Variavel",
           "type": "string"
@@ -182,13 +345,59 @@
       ],
       "title": "MetricaVariavel",
       "type": "object"
+    },
+    "Participante": {
+      "additionalProperties": false,
+      "description": "Quem respondeu na amostra: um codificador (`humano` ou `referencia`, que não é uma pessoa) ou um modelo.",
+      "properties": {
+        "n": {
+          "description": "Documentos da amostra com resposta.",
+          "title": "N",
+          "type": "integer"
+        },
+        "nome": {
+          "title": "Nome",
+          "type": "string"
+        },
+        "tipo": {
+          "enum": [
+            "humano",
+            "referencia",
+            "modelo"
+          ],
+          "title": "Tipo",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nome",
+        "tipo",
+        "n"
+      ],
+      "title": "Participante",
+      "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "Resultados da validação da classificação contra codificação humana.",
+  "description": "Resultados da validação da classificação: concordância por variável e por par de participantes.",
   "properties": {
     "amostra": {
       "$ref": "#/$defs/AmostraInfo"
+    },
+    "codificadores": {
+      "description": "Participantes, com o tipo.",
+      "items": {
+        "$ref": "#/$defs/Participante"
+      },
+      "title": "Codificadores",
+      "type": "array"
+    },
+    "comparacoes_modelos": {
+      "items": {
+        "$ref": "#/$defs/ComparacaoModelos"
+      },
+      "title": "Comparacoes Modelos",
+      "type": "array"
     },
     "divergencias": {
       "items": {
@@ -197,12 +406,44 @@
       "title": "Divergencias",
       "type": "array"
     },
+    "evidencia_literal": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "Modelo → fração das evidências literais na amostra.",
+      "title": "Evidencia Literal",
+      "type": "object"
+    },
+    "hash_codebook": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Hash Codebook"
+    },
     "metricas": {
       "items": {
         "$ref": "#/$defs/MetricaVariavel"
       },
       "title": "Metricas",
       "type": "array"
+    },
+    "modelo_principal": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Modelo Principal"
     },
     "modelos": {
       "items": {
@@ -212,7 +453,7 @@
       "type": "array"
     },
     "versao_contrato": {
-      "default": "1.2",
+      "default": "1.3",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",

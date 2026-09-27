@@ -94,6 +94,7 @@ nav:
       - "Seu primeiro mapa, parte 1: a coleta": tutoriais/primeiro-mapa.md
       - "Seu primeiro mapa, parte 2: tópicos e mapa": tutoriais/primeiro-mapa-topicos.md
       - "Seu primeiro mapa, parte 3: tempo e geografia": tutoriais/primeiro-mapa-tempo-e-geografia.md
+      - "Seu primeiro mapa, parte 4: classificação e validação": tutoriais/primeiro-mapa-classificacao.md
   - Guias:
       - guias/index.md
       - Instalar e escolher os modelos: guias/instalacao.md
@@ -106,6 +107,10 @@ nav:
       - Gerar a geografia: guias/geografia.md
       - Ler a geografia: guias/ler-a-geografia.md
       - Escrever um codebook: guias/codebook.md
+      - Classificar os resumos: guias/classificar.md
+      - Ler a classificação: guias/ler-a-classificacao.md
+      - Codificar a amostra: guias/codificar-a-amostra.md
+      - Ler kappa e PABAK: guias/ler-kappa-e-pabak.md
       - Usar o painel: guias/painel.md
       - Solução de problemas: guias/problemas.md
   - Referência:
@@ -121,6 +126,8 @@ nav:
       - Fontes de dados: explicacoes/fontes.md
       - Como os tópicos são construídos: explicacoes/topicos.md
       - Geografia da produção: explicacoes/geografia.md
+      - Classificação ancorada em evidência: explicacoes/classificacao.md
+      - Desenho da validação: explicacoes/validacao.md
       - Modelos locais: explicacoes/modelos-locais.md
       - Reprodutibilidade: explicacoes/reprodutibilidade.md
       - Privacidade e licenças: explicacoes/privacidade-e-licencas.md
@@ -136,5 +143,7 @@ nav:
       - "0008 · Geografia das afiliações": decisoes/0008-geografia-casamento-das-afiliacoes.md
       - "0009 · Tendência dos tópicos": decisoes/0009-tendencia-dos-topicos.md
       - "0010 · Gráficos em SVG próprio": decisoes/0010-graficos-em-svg-proprio.md
+      - "0011 · Classificação ancorada em evidência": decisoes/0011-classificacao-ancorada-em-evidencia.md
+      - "0012 · Validação e codificador de referência": decisoes/0012-validacao-e-codificador-de-referencia.md
   - Desenvolvimento:
       - desenvolvimento/index.md

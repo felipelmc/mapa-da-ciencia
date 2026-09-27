@@ -166,7 +166,8 @@ def ler_documentos(caminho: Path) -> list[Documento]:
 
 def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
     """DuckDB em memória com as views do corpus: `documentos`, `textos`, `autores`, `afiliacoes`; se a etapa de
-    tópicos já rodou, `atribuicoes`; se a de geografia já rodou, `vinculos`, `pesos` e `instituicoes`."""
+    tópicos já rodou, `atribuicoes`; se a de geografia já rodou, `vinculos`, `pesos` e `instituicoes`; se a de
+    classificação já rodou, `classificacoes`."""
     con = duckdb.connect()
     con.execute(f"CREATE VIEW documentos AS SELECT * FROM read_parquet('{caminho}')")
     con.execute(
@@ -188,6 +189,13 @@ def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
     atribuicoes = caminho.parent / "topicos" / "atribuicoes.parquet"
     if atribuicoes.exists():  # depois de `mapa topicos`: tópico, coordenadas e vizinhos de cada documento
         con.execute(f"CREATE VIEW atribuicoes AS SELECT * FROM read_parquet('{atribuicoes}')")
+    classificacao = caminho.parent / "classificacao"
+    if any(classificacao.glob("*.parquet")):  # depois de `mapa classificar`: uma execução por modelo e codebook
+        con.execute(
+            "CREATE VIEW classificacoes AS SELECT * EXCLUDE (filename), "
+            "regexp_extract(filename, '([^/]+)[.]parquet$', 1) AS execucao "
+            f"FROM read_parquet('{classificacao}/*.parquet', filename = true)"
+        )
     for nome in ("vinculos", "pesos", "instituicoes"):  # depois de `mapa geografia`
         arquivo = caminho.parent / "geografia" / f"{nome}.parquet"
         if arquivo.exists():

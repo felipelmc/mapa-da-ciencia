@@ -7,6 +7,7 @@ pelo servidor do painel e pela API Python para notebooks.
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime
@@ -210,6 +211,35 @@ def _mostrar_topicos(p: Projeto) -> None:
         )
 
 
+def _mostrar_classificacao_status(p: Projeto) -> None:
+    from mapa_da_ciencia.classificacao.pipeline import classificacao_em_dia
+    from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado
+
+    cfg = p.config.modelos.classificacao
+    r = Resultado.ler(p.dados / PASTA, cfg.modelo, p.codebook.hash())
+    em_dia = classificacao_em_dia(p)
+    if r is None:
+        if em_dia is False:
+            console.print(
+                "[yellow]A classificação é de outro codebook ou de outro modelo.[/] Rode [bold]mapa classificar[/]."
+            )
+        else:
+            console.print("[dim]Classificação: ainda não feita. Rode `mapa classificar --estimar`.[/]")
+        return
+    literal = r.evidencia.get("literal")
+    console.print(
+        f"[bold]Classificação[/]: {num(r.classificados, 0)} de {num(r.documentos, 0)} documentos com resumo "
+        f"({r.modelo.split('@', 1)[0]}, codebook {r.codebook})"
+        + (f"; evidência literal em {num(100 * literal, 0)}%" if literal is not None else "")
+        + "."
+    )
+    if em_dia is False:
+        console.print(
+            "[yellow]A classificação está incompleta ou é de antes da última coleta.[/] Rode "
+            "[bold]mapa classificar[/] para completá-la."
+        )
+
+
 def _mostrar_geografia(p: Projeto) -> None:
     from mapa_da_ciencia.geografia.pipeline import geografia_em_dia
     from mapa_da_ciencia.geografia.resultado import PASTA, Resultado
@@ -254,6 +284,7 @@ def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
         )
     _mostrar_topicos(p)
     _mostrar_geografia(p)
+    _mostrar_classificacao_status(p)
     if not total:
         return
     geral = {
@@ -562,6 +593,251 @@ def topicos(
     for aviso in resumo.avisos:
         console.print(f"[yellow]Aviso:[/] {aviso}")
     console.print("Próximo passo: [bold]mapa painel[/] para ver o mapa.")
+
+
+@app.command()
+def classificar(
+    projeto: OpcaoProjeto = Path("."),
+    estimar: Annotated[
+        bool,
+        typer.Option("--estimar", help="Classifica 5 documentos, mede o tempo e projeta quanto falta. Grava os 5."),
+    ] = False,
+    limite: Annotated[
+        int | None,
+        typer.Option(
+            "--limite", help="Classifica só os primeiros N da fila (a amostra de validação, depois por id).", min=1
+        ),
+    ] = None,
+    modelo: Annotated[
+        str | None,
+        typer.Option("--modelo", help="Outro modelo do Ollama, para comparar (o painel mostra só o principal)."),
+    ] = None,
+    somente_amostra: Annotated[
+        bool,
+        typer.Option("--somente-amostra", help="Classifica só os documentos da amostra de validação."),
+    ] = False,
+) -> None:
+    """Classifica os resumos segundo o codebook do projeto, com evidência textual para cada resposta."""
+    from mapa_da_ciencia.classificacao.pipeline import OpcoesClassificacao
+    from mapa_da_ciencia.classificacao.pipeline import classificar as rodar
+    from mapa_da_ciencia.progresso import ProgressoRich
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        try:
+            resumo = rodar(
+                p,
+                OpcoesClassificacao(estimar=estimar, limite=limite, modelo=modelo, somente_amostra=somente_amostra),
+                ProgressoRich(console),
+            )
+        except KeyboardInterrupt:
+            console.print(
+                "\n[yellow]Etapa interrompida.[/] Os documentos já classificados estão guardados: rode "
+                "[bold]mapa classificar[/] de novo para continuar."
+            )
+            raise typer.Exit(130) from None
+    _mostrar_classificacao(p, resumo, estimar=estimar)
+
+
+def _mostrar_classificacao(p: Projeto, resumo, *, estimar: bool) -> None:
+    from mapa_da_ciencia.classificacao.resultado import PASTA, ler_linhas
+
+    console.print(f"\n[bold green]Classificação pronta[/]: {resumo}")
+    linhas = ler_linhas(p.dados / PASTA, resumo.modelo, p.codebook.hash())
+    tabela = Table("Variável", "Mais frequentes", "Evidência literal")
+    for v in p.codebook.variaveis:
+        valores = Counter(linha["valor"] for linha in linhas if linha["variavel"] == v.id)
+        status = [linha["status"] for linha in linhas if linha["variavel"] == v.id and linha["status"] != "dispensada"]
+        literal = f"{num(100 * status.count('literal') / len(status), 0)}%" if status else "—"
+        rotulos = {c.valor: c.rotulo or c.valor for c in v.categorias} | {"true": "Sim", "false": "Não"}
+        mais = ", ".join(f"{rotulos.get(k, k)} ({num(n, 0)})" for k, n in valores.most_common(3))
+        tabela.add_row(v.rotulo, mais, literal)
+    if linhas:
+        console.print(tabela)
+    if resumo.json_valido_na_primeira is not None:
+        console.print(
+            f"[dim]JSON válido na primeira tentativa: {num(100 * resumo.json_valido_na_primeira, 1)}%; "
+            f"{num(resumo.segundos_por_documento or 0, 1)} s por documento (mediana); "
+            f"{num(resumo.sem_resumo, 0)} documento(s) sem resumo ficam de fora.[/]"
+        )
+    if estimar and resumo.estimativa_restante_s is not None:
+        horas = resumo.estimativa_restante_s / 3600
+        console.print(
+            f"[bold]Estimativa:[/] faltam {num(resumo.pendentes, 0)} documentos, cerca de "
+            f"{num(horas, 1)} h neste computador. Rode [bold]mapa classificar[/] para classificar todos: a "
+            "etapa pode ser interrompida e retomada."
+        )
+    elif resumo.pendentes:
+        console.print(f"Faltam {num(resumo.pendentes, 0)} documento(s): rode [bold]mapa classificar[/] de novo.")
+    for aviso in resumo.avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
+
+
+validar_app = typer.Typer(
+    help="Validação da classificação: a amostra, as codificações e a concordância.",
+    no_args_is_help=True,
+)
+app.add_typer(validar_app, name="validar")
+
+
+@validar_app.command("amostra")
+def validar_amostra(
+    projeto: OpcaoProjeto = Path("."),
+    refazer: Annotated[
+        bool, typer.Option("--refazer", help="Sorteia outra amostra (as codificações já feitas continuam guardadas).")
+    ] = False,
+    n: Annotated[
+        int | None,
+        typer.Option("--n", help="Tamanho da amostra neste sorteio (padrão: validacao.n do mapa.yaml).", min=1),
+    ] = None,
+) -> None:
+    """Sorteia a amostra de validação (uma vez) e exporta os textos para quem vai codificar."""
+    from mapa_da_ciencia.validacao import amostra as va
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        ja = va.ler(p)
+        if ja is not None and n is not None and n != len(ja.docs) and not refazer:
+            raise ErroConfig(
+                f"A amostra já foi sorteada, com {len(ja.docs)} documentos. Use --refazer para sortear outra."
+            )
+        a = va.sortear(p, refazer=refazer, n=n)
+        arquivo = va.exportar(p, a)
+    novo = ja is None or refazer
+    console.print(
+        f"[bold green]Amostra {'sorteada' if novo else 'já sorteada'}[/]: {num(len(a.docs), 0)} documentos, "
+        f"estratificada por {va.ESTRATOS[a.estratificar_por]} ({num(len(a.por_estrato()), 0)} estratos), "
+        f"semente {a.semente}."
+    )
+    tabela = Table("Estrato", "Documentos")
+    nomes = va.nomes_dos_estratos(p, list(a.por_estrato()))
+    for estrato, n in sorted(a.por_estrato().items(), key=lambda e: (-e[1], e[0]))[:12]:
+        tabela.add_row(nomes[estrato], num(n, 0))
+    if len(a.por_estrato()) > 12:
+        tabela.add_row("…", "")
+    console.print(tabela)
+    console.print(
+        f"Textos para codificar em [bold]{arquivo.relative_to(p.raiz)}[/] (só id, título, resumo e idioma). "
+        "Codifique no painel ([bold]mapa painel[/], Validação › Codificar) ou importe um arquivo com "
+        "[bold]mapa validar importar[/]."
+    )
+    for aviso in a.avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
+
+
+@validar_app.command("importar")
+def validar_importar(
+    arquivo: Annotated[Path, typer.Argument(help="JSONL com uma linha por documento.", exists=True, dir_okay=False)],
+    codificador: Annotated[str, typer.Option("--codificador", "-c", help="Nome de quem codificou.")],
+    projeto: OpcaoProjeto = Path("."),
+    tipo: Annotated[
+        str,
+        typer.Option(
+            "--tipo", help="`humano` ou `referencia` (um anotador que não é uma pessoa, como outro modelo de IA)."
+        ),
+    ] = "humano",
+) -> None:
+    """Importa as codificações de um arquivo JSONL (formato no guia "Codificar a amostra")."""
+    from mapa_da_ciencia.contrato.exportar import exportar
+    from mapa_da_ciencia.validacao import amostra as va
+
+    with _erros_amigaveis():
+        if tipo not in ("humano", "referencia"):
+            raise ErroConfig(f"Tipo de codificador inválido: {tipo!r}. Use `humano` ou `referencia`.")
+        p = Projeto.abrir(projeto)
+        r = va.importar(p, arquivo, codificador, tipo=tipo)  # type: ignore[arg-type]
+        n_amostra = len(va.ler(p).docs)  # type: ignore[union-attr]
+        avisos = exportar(p) if r.documentos else []  # o painel passa a mostrar a concordância
+    console.print(
+        f"[bold green]Importado[/]: {num(r.documentos, 0)} de {num(n_amostra, 0)} documentos da amostra "
+        f"codificados por [bold]{r.codificador}[/] ({tipo})."
+    )
+    if r.fora_da_amostra:
+        console.print(
+            f"[yellow]Aviso:[/] {num(len(r.fora_da_amostra), 0)} linha(s) com documentos fora da amostra foram "
+            f"ignoradas (por exemplo {', '.join(r.fora_da_amostra[:3])})."
+        )
+    for aviso in avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
+    for problema in r.invalidas[:10]:
+        console.print(f"[red]Inválida:[/] {problema}")
+    if len(r.invalidas) > 10:
+        console.print(f"[red]… e mais {num(len(r.invalidas) - 10, 0)} linha(s) inválida(s).[/]")
+    if r.invalidas:
+        raise typer.Exit(1)
+
+
+@validar_app.command("metricas")
+def validar_metricas(projeto: OpcaoProjeto = Path(".")) -> None:
+    """Concordância entre codificadores e modelos na amostra: kappa com IC 95%, PABAK e alfa, por variável."""
+    from mapa_da_ciencia.validacao.metricas import calcular
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        r = calcular(p)
+    _mostrar_validacao(r)
+
+
+@validar_app.command("relatorio")
+def validar_relatorio(projeto: OpcaoProjeto = Path(".")) -> None:
+    """Grava o relatório da validação em `validacao/`: Markdown, tabelas LaTeX e JSON."""
+    from mapa_da_ciencia.validacao.relatorio import gerar
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        v, arquivos = gerar(p)
+    _mostrar_validacao(v)
+    console.print(
+        "[bold green]Relatório gravado[/]: "
+        + ", ".join(f"[bold]{a.relative_to(p.raiz)}[/]" for a in arquivos.values())
+        + "."
+    )
+
+
+def _f(valor: float | None, casas: int = 2) -> str:
+    return "—" if valor is None else num(valor, casas)
+
+
+def _mostrar_validacao(r) -> None:
+    from mapa_da_ciencia.validacao.amostra import ESTRATOS
+
+    tipos = {"humano": "pessoa", "referencia": "referência, não humano", "modelo": "modelo"}
+    console.print(
+        f"[bold]Validação[/] na amostra de {num(r.amostra['n'], 0)} documentos (estratificada por "
+        f"{ESTRATOS[r.amostra['estratificar_por']]}, semente {r.amostra['semente']}), codebook {r.codebook}."
+    )
+    console.print(
+        "Participantes: "
+        + "; ".join(f"[bold]{x.nome}[/] ({tipos[x.tipo]}, {num(x.n, 0)} documentos)" for x in r.participantes)
+    )
+    if not r.metricas:
+        console.print(
+            "[yellow]Nada a comparar ainda.[/] É preciso ao menos dois participantes: codifique a amostra "
+            "([bold]mapa validar importar[/] ou o painel) e classifique-a "
+            "([bold]mapa classificar --somente-amostra[/])."
+        )
+        return
+    for par in dict.fromkeys((m.referencia, m.comparado) for m in r.metricas):
+        tabela = Table("Variável", "n", "Concordância", "Kappa (IC 95%)", "PABAK", "Alfa", title=" × ".join(par))
+        for m in (m for m in r.metricas if (m.referencia, m.comparado) == par):
+            ic = f" ({_f(m.kappa_ic95[0])} a {_f(m.kappa_ic95[1])})" if m.kappa_ic95 else ""
+            conc = "—" if m.concordancia is None else f"{num(100 * m.concordancia, 0)}%"
+            tabela.add_row(m.variavel, num(m.n, 0), conc, _f(m.kappa) + ic, _f(m.pabak), _f(m.alfa))
+        console.print(tabela)
+    diferentes = [c for c in r.comparacoes_modelos if c.p < 0.05]
+    for c in diferentes:
+        melhor = c.modelo_a if c.acertos_a > c.acertos_b else c.modelo_b
+        console.print(
+            f"McNemar ({c.variavel}, contra {c.referencia}): {melhor} acerta mais "
+            f"({num(c.acertos_a, 0)} × {num(c.acertos_b, 0)} de {num(c.n, 0)}; p = {num(c.p, 3)})."
+        )
+    if r.comparacoes_modelos and not diferentes:
+        console.print("[dim]McNemar: nenhuma diferença entre os modelos com p < 0,05.[/]")
+    if r.divergencias:
+        console.print(
+            f"{num(len(r.divergencias), 0)} divergência(s) entre os codificadores e o modelo principal: veja o "
+            "relatório ([bold]mapa validar relatorio[/]) ou a vista Concordância do painel."
+        )
 
 
 @app.command()

@@ -31,7 +31,16 @@ def _ler(p, nome, modelo):
 
 def test_contrato_completo_depois_dos_topicos(projeto):
     manifesto = _ler(projeto, "manifesto", m.Manifesto)
-    assert manifesto.arquivos == ["manifesto", "revistas", "documentos", "topicos", "agregados", "detalhes"]
+    assert manifesto.arquivos == [
+        "manifesto",
+        "revistas",
+        "documentos",
+        "topicos",
+        "agregados",
+        "codebook",
+        "detalhes",
+    ]
+    assert manifesto.execucao.hash_codebook == projeto.codebook.hash() and manifesto.contagens.classificados == 0
     assert manifesto.versao_contrato == m.VERSAO_CONTRATO and manifesto.contagens.documentos == 300
     assert manifesto.execucao.modelos["embeddings"].startswith("qwen3-embedding:0.6b@")
     assert manifesto.execucao.modelos["rotulos"].startswith("qwen3.5:4b@") and manifesto.execucao.sementes == {
@@ -135,6 +144,103 @@ def test_topicos_de_outro_corpus_nao_sao_exportados(projeto):
     assert "mapa topicos" in avisos[0]
     pasta = projeto.saida / "dados"
     manifesto = json.loads((pasta / "manifesto.json").read_text(encoding="utf-8"))
-    assert manifesto["arquivos"] == ["manifesto", "revistas"] and manifesto["contagens"]["documentos"] == 301
+    assert (
+        manifesto["arquivos"] == ["manifesto", "revistas", "codebook"] and manifesto["contagens"]["documentos"] == 301
+    )
     assert not (pasta / "documentos.json").exists() and not (pasta / "detalhes").exists()
     assert not (projeto.saida / "dados.novo").exists() and not (projeto.saida / "dados.velho").exists()
+
+
+MULTIPLA = """
+  - id: fontes
+    rotulo: Fontes
+    tipo: multipla
+    pergunta: Quais fontes o estudo usa?
+    categorias:
+      - valor: surveys
+        definicao: Pesquisas de opinião.
+      - valor: documentos
+        definicao: Documentos e textos.
+"""
+
+
+def test_classificacao_e_validacao_no_contrato(projeto, tmp_path):
+    from importlib import resources
+
+    import mapa_da_ciencia.api as mapa
+    from mapa_da_ciencia.validacao import amostra as va
+
+    exemplo = resources.files("mapa_da_ciencia.modelos_projeto").joinpath("codebook-exemplo.yaml").read_text("utf-8")
+    (projeto.raiz / "codebook.yaml").write_text(exemplo + MULTIPLA, encoding="utf-8")
+    cfg = projeto.raiz / "mapa.yaml"
+    cfg.write_text(cfg.read_text(encoding="utf-8").replace("n: 200", "n: 20"), encoding="utf-8")
+    p = Projeto.abrir(projeto.raiz)
+    a = va.sortear(p)
+    mapa.classificar(p, limite=30, progresso=False)
+
+    def codificar(nome, tipo, discordar):
+        linhas = []
+        for d in a.docs:
+            r = {}
+            for v in p.codebook.variaveis:
+                valor = {
+                    "booleana": True,
+                    "texto": "2010–2020",
+                    "multipla": [v.categorias[0].valor] if v.categorias else [],
+                }.get(v.tipo, v.categorias[0].valor if v.categorias else None)
+                if v.id == "abordagem" and d in discordar:
+                    valor = "qualitativa"
+                r[v.id] = {"valor": valor}
+            linhas.append(json.dumps({"doc": d, "respostas": r}))
+        (tmp_path / f"{nome}.jsonl").write_text("\n".join(linhas))
+        va.importar(p, tmp_path / f"{nome}.jsonl", nome, tipo=tipo)
+
+    codificar("claude-opus", "referencia", set(a.docs[:4]))
+    codificar("maria", "humano", set(a.docs[4:6]))
+    exportar(p)
+
+    manifesto = _ler(p, "manifesto", m.Manifesto)
+    assert {"codebook", "classificacoes", "validacao"} <= set(manifesto.arquivos)
+    assert manifesto.contagens.classificados == 30 and manifesto.contagens.validados == 20
+    assert manifesto.execucao.modelos["classificacao"].startswith("qwen3.5:4b@")
+    assert "classificacao" in manifesto.execucao.duracao_s
+
+    codebook = _ler(p, "codebook", m.CodebookContrato)
+    assert codebook.hash == p.codebook.hash() and codebook.variaveis[-1].tipo == "multipla"
+    cls = _ler(p, "classificacoes", m.Classificacoes)
+    assert cls.classificados == 30 and cls.parcial and cls.cobertura == pytest.approx(30 / 300)
+    assert cls.contagens["abordagem"] == {"quantitativa": 30} and cls.contagens["fontes"] == {"surveys": 30}
+    assert "periodo_analisado" not in cls.contagens and cls.por_variavel["abordagem"].n == 30
+    assert cls.por_variavel["abordagem"].evidencia == {"literal": 1.0}
+
+    docs = _ler(p, "documentos", m.Documentos)
+    assert set(docs.colunas.cls) == {v.id for v in p.codebook.variaveis if v.tipo != "texto"}
+    assert docs.dicionarios.cls["brasil_como_caso"] == ["false", "true"]
+    assert docs.dicionarios.cls["fontes"] == ['["surveys"]']
+    classificados = {d for d, i in zip(docs.colunas.id, docs.colunas.cls["abordagem"], strict=True) if i >= 0}
+    assert classificados >= set(a.docs) and len(classificados) == 30
+
+    detalhes = {}
+    for arq in (p.saida / "dados" / "detalhes").glob("*.json"):
+        detalhes.update(m.Fragmento.model_validate_json(arq.read_text(encoding="utf-8")).documentos)
+    com = [detalhes[d] for d in classificados]
+    assert all(set(x.evidencias) == {v.id for v in p.codebook.variaveis} for x in com)
+    for x in com:  # o trecho está no resumo exibido, nas posições indicadas
+        e = x.evidencias["abordagem"]
+        assert e.status == "literal" and e.campo == "resumo" and x.resumo[e.inicio : e.fim] == e.evidencia
+    assert x.evidencias["fontes"].valor == ["surveys"] and x.evidencias["brasil_como_caso"].valor is True
+    assert not any(detalhes[d].evidencias for d in set(detalhes) - classificados)
+
+    val = _ler(p, "validacao", m.Validacao)
+    assert [(c.nome, c.tipo) for c in val.codificadores] == [
+        ("maria", "humano"),
+        ("claude-opus", "referencia"),
+        ("qwen3.5:4b", "modelo"),
+    ]
+    assert val.modelo_principal == "qwen3.5:4b" and val.hash_codebook == p.codebook.hash()
+    m_ref = next(x for x in val.metricas if x.comparacao == "claude-opus × qwen3.5:4b" and x.variavel == "abordagem")
+    assert m_ref.concordancia == 0.8 and m_ref.referencia == "claude-opus" and m_ref.por_classe
+    assert {x.variavel for x in val.metricas} >= {"fontes:surveys", "fontes:documentos"}
+    # as divergências de pessoas não saem no contrato; as da referência, sim
+    assert {d.codificador for d in val.divergencias} == {"claude-opus"} and len(val.divergencias) == 4
+    assert not any(EMAIL.search(a.read_text(encoding="utf-8")) for a in (p.saida / "dados").rglob("*.json"))

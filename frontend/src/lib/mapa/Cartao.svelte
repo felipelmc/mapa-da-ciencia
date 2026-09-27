@@ -2,10 +2,12 @@
 	/**
 	 * O cartão de um documento: o que ele é, de onde veio, em que tópico está (e por quê) e os 5 vizinhos.
 	 * O resumo vem do fragmento de detalhes, carregado na hora; sem licença que permita publicar, fica o aviso.
+	 * Com a classificação, o resumo traz as evidências marcadas e a lista das respostas do modelo.
 	 */
 	import type { Topicos } from '$lib/contrato/tipos';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { vizinhosDe, type TabelaDocumentos } from '$lib/dados/documentos';
+	import ResumoComEvidencias from '$lib/classificacao/ResumoComEvidencias.svelte';
 
 	let {
 		tabela,
@@ -22,6 +24,8 @@
 	} = $props();
 
 	const { fonte, revistas } = usarProjeto();
+	// o codebook só serve para os nomes das variáveis e categorias; sem ele, a lista usa os ids
+	const codebook = fonte.codebook().catch(() => null);
 	const IDIOMAS: Record<string, string> = { pt: 'português', en: 'inglês', es: 'espanhol', fr: 'francês' };
 
 	const id = $derived(tabela.ids[indice]);
@@ -61,7 +65,11 @@
 		{:else if d?.fonte_analise === 'so_titulo'}
 			<p class="nota" data-testid="nota-analise">Sem resumo: o tópico veio só do título.</p>
 		{/if}
-		{#if d?.resumo}
+		{#if d?.resumo && Object.keys(d.evidencias ?? {}).length}
+			{#await codebook then cb}
+				<ResumoComEvidencias resumo={d.resumo} idioma={d.idioma} evidencias={d.evidencias ?? {}} codebook={cb} />
+			{/await}
+		{:else if d?.resumo}
 			<p class="resumo" lang={d.idioma ?? undefined}>{d.resumo}</p>
 		{:else if d && d.fonte_analise !== 'so_titulo'}
 			<p class="nota">A licença deste resumo ({d.licenca}) não permite mostrá-lo aqui. Ele está na página do artigo.</p>

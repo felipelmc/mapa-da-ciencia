@@ -15,7 +15,7 @@ def projeto(tmp_path):
 
 def test_projeto_vazio_serve_manifesto_minimo_com_api(projeto, tmp_path):
     app = criar_app(pasta_dados=projeto.saida / "dados", projeto=projeto, estatico=tmp_path / "sem-build")
-    c = TestClient(app)
+    c = TestClient(app, base_url="http://127.0.0.1")
     m = c.get("/dados/manifesto.json").json()
     assert m["api"] is True
     assert m["arquivos"] == ["manifesto"]
@@ -28,7 +28,10 @@ def test_projeto_vazio_serve_manifesto_minimo_com_api(projeto, tmp_path):
 
 
 def test_sem_build_explica_como_compilar(projeto, tmp_path):
-    c = TestClient(criar_app(pasta_dados=tmp_path / "d", projeto=projeto, estatico=tmp_path / "sem-build"))
+    c = TestClient(
+        criar_app(pasta_dados=tmp_path / "d", projeto=projeto, estatico=tmp_path / "sem-build"),
+        base_url="http://127.0.0.1",
+    )
     r = c.get("/")
     assert r.status_code == 200
     assert "npm run empacotar" in r.text
@@ -40,7 +43,7 @@ def test_exemplo_estatico_sem_api(tmp_path):
     estatico = tmp_path / "estatico"
     estatico.mkdir()
     (estatico / "index.html").write_text("<!doctype html><title>app</title>")
-    c = TestClient(criar_app(pasta_dados=dados, api=False, estatico=estatico))
+    c = TestClient(criar_app(pasta_dados=dados, api=False, estatico=estatico), base_url="http://127.0.0.1")
     assert c.get("/dados/manifesto.json").json()["api"] is False
     assert c.get("/dados/documentos.json").json()["n"] == 80
     assert c.get("/dados/detalhes/00.json").status_code in (200, 404)

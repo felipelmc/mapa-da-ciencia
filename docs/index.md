@@ -9,7 +9,7 @@ O **mapa-da-ciencia** é um observatório da literatura científica. Ele coleta 
 Tudo aparece num painel interativo, que pode ser publicado como site estático para acompanhar um artigo ou uma apresentação.
 
 !!! warning "Em desenvolvimento"
-    O projeto concluiu o **marco M4** (versão 0.4.0): a coleta de artigos do SciELO e do OpenAlex, os tópicos com rótulos em português escritos por um modelo local, o mapa navegável dos documentos, a evolução dos tópicos no tempo e a geografia da produção, com contagem fracionária. A classificação por codebook chega no M5. Veja o [plano de marcos](desenvolvimento/index.md#marcos).
+    O projeto concluiu o **marco M5** (versão 0.5.0): a coleta de artigos do SciELO e do OpenAlex, os tópicos com rótulos em português escritos por um modelo local, o mapa navegável dos documentos, a evolução dos tópicos no tempo, a geografia da produção, com contagem fracionária, e a classificação dos resumos por um codebook, com a evidência de cada resposta e a validação numa amostra. Rodar as etapas pela interface chega no M6. Veja o [plano de marcos](desenvolvimento/index.md#marcos).
 
 ## Por onde começar
 

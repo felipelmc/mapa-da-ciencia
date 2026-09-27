@@ -63,6 +63,8 @@ Clique num ponto para abrir o cartão, com a revista, o ano, os autores, o resum
 
 Quando a licença do resumo não permite mostrá-lo, o cartão avisa e aponta para a página do artigo.
 
+Depois da classificação (`mapa classificar`), o resumo do cartão traz marcados os trechos que o modelo citou como evidência, e abaixo dele vem a lista das respostas do modelo a cada variável do codebook. Passe o mouse numa resposta (ou clique nela, para fixar) e só o trecho dela fica aceso no resumo. Uma resposta cujo trecho não foi encontrado no resumo, ou que não precisava de trecho ("não informado"), diz isso na lista (veja [Ler a classificação](ler-a-classificacao.md)).
+
 ## Compartilhar exatamente o que está na tela
 
 Tudo o que você faz no mapa fica no endereço da página: filtros, busca, laço, documento aberto e até a posição da câmera. Copie o link para mostrar a mesma coisa a outra pessoa, ou para voltar a ela depois. Se os tópicos forem gerados de novo, um laço de um link antigo continua abrindo, com um aviso de que a seleção pode não corresponder mais.

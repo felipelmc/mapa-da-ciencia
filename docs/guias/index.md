@@ -14,7 +14,11 @@ Guias resolvem uma tarefa específica, do jeito mais direto. Para aprender o con
 | [Gerar a geografia](geografia.md) | Ligar as afiliações a instituições com `mapa geografia`, revisar o que não casou e escrever o `instituicoes.yaml` |
 | [Ler a geografia](ler-a-geografia.md) | O peso fracionário, os mapas das UFs e do mundo, o ranking, a cobertura por ano e o filtro por lugar |
 | [Escrever um codebook](codebook.md) | Definir as variáveis que o modelo vai preencher para cada resumo |
+| [Classificar os resumos](classificar.md) | Rodar `mapa classificar`: estimar o tempo, retomar, comparar modelos, consultar o resultado |
+| [Ler a classificação](ler-a-classificacao.md) | A vista Classificação: as variáveis, os selos de kappa, as barras por ano, os cruzamentos e as evidências |
+| [Codificar a amostra](codificar-a-amostra.md) | Sortear a amostra de validação e importar codificações feitas fora do painel |
+| [Ler kappa e PABAK](ler-kappa-e-pabak.md) | Entender as métricas de concordância e decidir o que fazer com uma variável fraca |
 | [Usar o painel](painel.md) | Abrir a interface local, com um projeto ou com o exemplo |
 | [Solução de problemas](problemas.md) | Ollama que não responde, falta de memória ou disco, certificados, porta ocupada |
 
-Guias que chegam com os próximos marcos: codificar a amostra de validação e ler kappa e PABAK (M5), exportar figuras e publicar no GitHub Pages (M7).
+Guias que chegam com os próximos marcos: exportar figuras e publicar no GitHub Pages (M7).

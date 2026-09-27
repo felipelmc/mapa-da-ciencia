@@ -101,7 +101,12 @@ test('projeto sem tópicos: o mapa explica o que fazer e não pede arquivos ause
 
 // ---- cartão do documento
 
-type Detalhe = { resumo: string | null; fonte_analise?: string; licenca: string };
+type Detalhe = {
+	resumo: string | null;
+	fonte_analise?: string;
+	licenca: string;
+	evidencias?: Record<string, { status: string }>;
+};
 const detalhes: Record<string, Detalhe> = {};
 const pastaDetalhes = join(RAIZ, '..', 'contrato', 'exemplo', 'dados', 'detalhes');
 for (const arquivo of readdirSync(pastaDetalhes)) Object.assign(detalhes, ler(`detalhes/${arquivo}`).documentos);
@@ -126,6 +131,26 @@ test('o link com doc= abre o cartão, e os vizinhos navegam', async ({ page }) =
 	await page.keyboard.press('Escape');
 	await expect(cartao).toHaveCount(0);
 	await expect(page).not.toHaveURL(/doc=/);
+	expect(problemas).toEqual([]);
+});
+
+test('o cartão marca no resumo as evidências da classificação', async ({ page }) => {
+	const problemas = vigiar(page);
+	const id = ids.find((i) => detalhes[i].resumo && Object.keys(detalhes[i].evidencias ?? {}).length)!;
+	const evidencias = detalhes[id].evidencias!;
+	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(id)}`);
+	await esperarMapa(page);
+	const cartao = page.getByTestId('cartao-documento');
+	await expect(cartao.getByTestId('resposta')).toHaveCount(Object.keys(evidencias).length);
+	const marcadas = cartao.getByTestId('resumo-marcado').locator('mark');
+	await expect(marcadas.first()).toBeVisible();
+	// o resumo continua inteiro, com os trechos marcados dentro dele
+	await expect(cartao.getByTestId('resumo-marcado')).toHaveText(detalhes[id].resumo!);
+	// passar o mouse numa resposta acende o trecho dela
+	const [variavel] = Object.entries(evidencias).find(([, e]) => e.status === 'literal')!;
+	const indice = Object.keys(evidencias).indexOf(variavel);
+	await cartao.getByTestId('resposta').nth(indice).hover();
+	await expect(cartao.locator(`mark.acesa[data-variaveis~="${variavel}"]`).first()).toBeVisible();
 	expect(problemas).toEqual([]);
 });
 

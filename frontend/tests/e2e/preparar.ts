@@ -5,12 +5,14 @@
 //   raiz        build + exemplo sintético, servido em /
 //   subcaminho  o mesmo, servido em /mapa-da-ciencia/demo/ (como no GitHub Pages)
 //   vazio       build + só um manifesto de projeto recém-criado (`mapa novo`), com api: true
+//   painel      build + exemplo sintético com api: true e a API de codificação falsa (`api-falsa.ts`)
 // As URLs vão para variáveis de ambiente, que os workers herdam. A função devolvida
 // derruba os servidores e apaga a pasta temporária.
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { criarApiFalsa } from './api-falsa.ts';
 import { servir, type Servidor } from './servidor.ts';
 
 const RAIZ = fileURLToPath(new URL('../..', import.meta.url));
@@ -63,13 +65,23 @@ export default async function preparar() {
 			writeFileSync(join(pasta, 'manifesto.json'), JSON.stringify(vazio));
 		});
 
-		const [raiz, sub, vazio] = await Promise.all(
-			[join(tmp, 'raiz'), join(tmp, 'sub'), join(tmp, 'vazio')].map(servir)
-		);
-		servidores.push(raiz, sub, vazio);
+		montarSite(join(tmp, 'painel'), (pasta) => {
+			copiarExemplo(pasta);
+			const manifesto = JSON.parse(readFileSync(join(pasta, 'manifesto.json'), 'utf8'));
+			writeFileSync(join(pasta, 'manifesto.json'), JSON.stringify({ ...manifesto, api: true }));
+		});
+
+		const [raiz, sub, vazio, painel] = await Promise.all([
+			servir(join(tmp, 'raiz')),
+			servir(join(tmp, 'sub')),
+			servir(join(tmp, 'vazio')),
+			servir(join(tmp, 'painel'), criarApiFalsa(EXEMPLO))
+		]);
+		servidores.push(raiz, sub, vazio, painel);
 		process.env.E2E_URL_RAIZ = `${raiz.origem}/`;
 		process.env.E2E_URL_SUBCAMINHO = `${sub.origem}${SUBCAMINHO}`;
 		process.env.E2E_URL_VAZIO = `${vazio.origem}/`;
+		process.env.E2E_URL_PAINEL = `${painel.origem}/`;
 	} catch (e) {
 		await Promise.all(servidores.map((s) => s.fechar()));
 		rmSync(tmp, { recursive: true, force: true });

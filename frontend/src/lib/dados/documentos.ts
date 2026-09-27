@@ -9,6 +9,7 @@
  *   Quando a extensão total passa de `ESTICAMENTO_MAXIMO` vezes a dos quantis de 0,5% a 99,5%, a escala usa a
  *   destes, com folga; os pontos de fora ficam além de [-1, 1] e aparecem ao afastar o zoom.
  * - Os vizinhos ficam num só array, 5 por documento (−1 onde faltar).
+ * - As colunas da classificação (`cls`) viram `Int16Array`, uma por variável, com os valores em `clsValores`.
  */
 import type { Documentos } from '$lib/contrato/tipos';
 
@@ -44,6 +45,9 @@ export interface TabelaDocumentos {
 	vizinhos: Int32Array;
 	revistas: string[];
 	idiomas: string[];
+	/** Classificação: variável → índice em `clsValores[variavel]` por documento (−1 = não classificado). */
+	cls: Record<string, Int16Array>;
+	clsValores: Record<string, string[]>;
 	indice: Map<string, number>;
 	escala: Escala;
 	anos: [number, number];
@@ -109,6 +113,8 @@ export function decodificar(d: Documentos): TabelaDocumentos {
 		vizinhos,
 		revistas: d.dicionarios.revista,
 		idiomas: d.dicionarios.idioma,
+		cls: Object.fromEntries(Object.entries(c.cls ?? {}).map(([v, col]) => [v, Int16Array.from(col)])),
+		clsValores: d.dicionarios.cls ?? {},
 		indice,
 		escala,
 		anos: n ? [anoMin, anoMax] : [0, 0]

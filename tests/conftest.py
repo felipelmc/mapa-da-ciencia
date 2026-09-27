@@ -22,8 +22,33 @@ DIM_FALSA = 64
 GB = 1024**3
 
 
+def resposta_classificacao_falsa(corpo: dict) -> str:
+    """Classificação falsa e determinística: em cada variável, a primeira categoria (ou verdadeiro, ou um período) e,
+    como evidência, as oito primeiras palavras do resumo do documento."""
+    documento = next(m["content"] for m in corpo["messages"] if m["role"] == "user")
+    resumo = documento.split("Resumo:", 1)[-1].split()
+    evidencia = " ".join(resumo[:8])
+    saida = {}
+    for var, prop in corpo["format"]["properties"].items():
+        valor = prop["properties"]["valor"]
+        if valor["type"] == "boolean":
+            v: object = True
+        elif valor["type"] == "array":
+            v = [valor["items"]["enum"][0]]
+        elif "enum" in valor:
+            v = valor["enum"][0]
+        else:
+            v = "2010–2020"
+        saida[var] = {"evidencia": evidencia, "valor": v}
+    return json.dumps(saida, ensure_ascii=False)
+
+
 def resposta_chat_padrao(corpo: dict) -> str:
-    """Resposta determinística do chat falso: um rótulo com as duas primeiras palavras-chave do pedido."""
+    """Resposta determinística do chat falso: uma classificação, se o esquema pedir uma (`evidencia` e `valor` por
+    variável); senão, um rótulo com as duas primeiras palavras-chave do pedido."""
+    props = (corpo.get("format") or {}).get("properties") or {}
+    if props and all("evidencia" in (p.get("properties") or {}) for p in props.values()):
+        return resposta_classificacao_falsa(corpo)
     pedido = corpo["messages"][-1]["content"]
     achado = re.search(r"Palavras-chave: ([^\n]+)", pedido)
     termos = [t.strip() for t in achado.group(1).split(",")] if achado else ["assunto", "geral"]

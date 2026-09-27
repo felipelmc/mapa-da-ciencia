@@ -111,6 +111,22 @@ mapa topicos [OPÇÕES]
 | `--semente` | Semente principal do UMAP (padrão: a primeira de topicos.sementes). |  |
 | `--refazer-macrotemas` | Agrupa os tópicos em macrotemas de novo, em vez de manter os da execução anterior (as cores mudam). |  |
 
+## `mapa classificar`
+
+Classifica os resumos segundo o codebook do projeto, com evidência textual para cada resposta.
+
+```
+mapa classificar [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--estimar` | Classifica 5 documentos, mede o tempo e projeta quanto falta. Grava os 5. |  |
+| `--limite` | Classifica só os primeiros N da fila (a amostra de validação, depois por id). |  |
+| `--modelo` | Outro modelo do Ollama, para comparar (o painel mostra só o principal). |  |
+| `--somente-amostra` | Classifica só os documentos da amostra de validação. |  |
+
 ## `mapa geografia`
 
 Liga cada afiliação a uma instituição, com UF e país, e faz a contagem fracionária da produção.
@@ -139,3 +155,11 @@ mapa importar [OPÇÕES] arquivos
 | `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
 | `--nao-coletar` | Só copia os arquivos para importados/, sem rodar a coleta. |  |
 | `--sem-openalex` | Não usa o OpenAlex na coleta. |  |
+
+## `mapa validar`
+
+Validação da classificação: a amostra, as codificações e a concordância.
+
+```
+mapa validar [OPÇÕES]
+```

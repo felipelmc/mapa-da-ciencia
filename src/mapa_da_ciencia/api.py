@@ -35,24 +35,34 @@ from mapa_da_ciencia.progresso import ProgressoNulo, ProgressoRich
 from mapa_da_ciencia.projeto import Projeto
 
 if TYPE_CHECKING:
+    from mapa_da_ciencia.classificacao.pipeline import ResumoClassificacao
     from mapa_da_ciencia.embeddings import Embeddings
     from mapa_da_ciencia.geografia.pipeline import ResumoGeografia
     from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
+    from mapa_da_ciencia.validacao.amostra import Amostra, ResumoImportacao
+    from mapa_da_ciencia.validacao.metricas import Validacao
 
 __all__ = [
     "Projeto",
     "abrir",
+    "amostra_de_validacao",
+    "classificar",
     "cobertura",
+    "codificacoes",
     "coletar",
     "conectar",
     "consultar",
     "documentos",
     "embeddings",
     "etapas",
+    "geografia",
     "importar",
+    "importar_codificacoes",
     "novo",
+    "relatorio_de_validacao",
     "revistas",
     "topicos",
+    "validacao",
 ]
 
 Anos = int | str | tuple[int, int]
@@ -166,7 +176,8 @@ def documentos(projeto: Projeto | str | Path = ".") -> list[Documento]:
 
 def conectar(projeto: Projeto | str | Path = ".") -> duckdb.DuckDBPyConnection:
     """Conexão DuckDB com as views `documentos`, `textos`, `autores`, `afiliacoes`; depois de `topicos()`,
-    `atribuicoes`; depois de `geografia()`, `vinculos`, `pesos` e `instituicoes`.
+    `atribuicoes`; depois de `geografia()`, `vinculos`, `pesos` e `instituicoes`; depois de `classificar()`,
+    `classificacoes`.
 
     Use com `with` para fechar ao fim:
 
@@ -276,3 +287,88 @@ def geografia(projeto: Projeto | str | Path = ".", *, progresso: bool = True) ->
     from rich.console import Console
 
     return gerar_geografia(p, ProgressoRich(Console()))
+
+
+def classificar(
+    projeto: Projeto | str | Path = ".",
+    *,
+    estimar: bool = False,
+    limite: int | None = None,
+    modelo: str | None = None,
+    somente_amostra: bool = False,
+    progresso: bool = True,
+) -> ResumoClassificacao:
+    """Classifica os resumos pelo codebook, como `mapa classificar`, e devolve o resumo.
+
+    O resultado fica em `dados/classificacao/` e pode ser consultado pela view `classificacoes` (uma linha por
+    documento × variável, com o valor, a evidência e o status da conferência; a coluna `execucao` diz o modelo e o
+    codebook), por exemplo: `consultar(p, "SELECT valor, count(*) FROM classificacoes WHERE variavel = 'abordagem'
+    GROUP BY valor")`.
+    """
+    from mapa_da_ciencia.classificacao.pipeline import OpcoesClassificacao
+    from mapa_da_ciencia.classificacao.pipeline import classificar as rodar
+
+    p = _projeto(projeto)
+    opcoes = OpcoesClassificacao(estimar=estimar, limite=limite, modelo=modelo, somente_amostra=somente_amostra)
+    if not progresso:
+        return rodar(p, opcoes, ProgressoNulo())
+    from rich.console import Console
+
+    return rodar(p, opcoes, ProgressoRich(Console()))
+
+
+def amostra_de_validacao(
+    projeto: Projeto | str | Path = ".", *, refazer: bool = False, n: int | None = None
+) -> Amostra:
+    """A amostra de validação, como `mapa validar amostra`: sorteada na primeira vez (ou com `refazer=True`) e
+    exportada em `validacao/amostra.jsonl`. `amostra.docs` traz os ids na ordem da fila de codificação; `n` troca o
+    tamanho de `validacao.n` só neste sorteio."""
+    from mapa_da_ciencia.validacao import amostra as va
+
+    p = _projeto(projeto)
+    a = va.sortear(p, refazer=refazer, n=n)
+    va.exportar(p, a)
+    return a
+
+
+def importar_codificacoes(
+    projeto: Projeto | str | Path,
+    arquivo: str | Path,
+    codificador: str,
+    *,
+    tipo: Literal["humano", "referencia"] = "humano",
+) -> ResumoImportacao:
+    """Importa um JSONL de codificações da amostra, como `mapa validar importar`. Linhas inválidas não são
+    gravadas e aparecem em `resumo.invalidas`."""
+    from mapa_da_ciencia.contrato.exportar import exportar
+    from mapa_da_ciencia.validacao import amostra as va
+
+    p = _projeto(projeto)
+    resumo = va.importar(p, Path(arquivo), codificador, tipo=tipo)
+    if resumo.documentos:
+        exportar(p)  # o painel passa a mostrar a concordância
+    return resumo
+
+
+def codificacoes(projeto: Projeto | str | Path = ".", codificador: str | None = None) -> list[dict[str, Any]]:
+    """As codificações guardadas (de um codificador, ou de todos), uma por codificador × documento × variável."""
+    from mapa_da_ciencia.validacao import amostra as va
+
+    return va.codificacoes(_projeto(projeto), codificador)
+
+
+def validacao(projeto: Projeto | str | Path = ".") -> Validacao:
+    """As métricas de concordância na amostra, como `mapa validar metricas`: por variável e por par de
+    participantes (codificadores e modelos), com kappa e IC 95%, PABAK, alfa, matriz de confusão e P/R/F1 por
+    classe; McNemar entre modelos e as divergências com o modelo principal."""
+    from mapa_da_ciencia.validacao.metricas import calcular
+
+    return calcular(_projeto(projeto))
+
+
+def relatorio_de_validacao(projeto: Projeto | str | Path = ".") -> dict[str, Path]:
+    """Grava o relatório da validação, como `mapa validar relatorio`, e devolve os caminhos: `markdown`
+    (`validacao/relatorio.md`), `latex` (`validacao/tabelas.tex`) e `json` (`validacao/metricas.json`)."""
+    from mapa_da_ciencia.validacao.relatorio import gerar
+
+    return gerar(_projeto(projeto))[1]

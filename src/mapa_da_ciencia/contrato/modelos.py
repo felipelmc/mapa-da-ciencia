@@ -8,7 +8,8 @@ Convenções:
   filtro cruzado no navegador). `-1` significa "sem valor".
 - Resumos e evidências ficam fora de `documentos.json`, em fragmentos
   `detalhes/{00..3f}.json`, carregados sob demanda (ver `fragmento_de`).
-- Nenhum arquivo do contrato pode conter e-mails ou codificações humanas individuais.
+- Nenhum arquivo do contrato pode conter e-mails ou codificações humanas individuais (as divergências de
+  `validacao.json` vêm só de codificadores de referência; as de pessoas ficam na API local do painel).
 """
 
 from __future__ import annotations
@@ -18,9 +19,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSAO_CONTRATO = "1.2"
+VERSAO_CONTRATO = "1.3"
 # 1.1: marcas do texto de análise, fonte do rótulo, núcleo dos tópicos, ruído por ano
 # 1.2: tendências (com o método), séries dos macrotemas, sem tópico por ano, geografia completa
+# 1.3: classificação por variável, evidência dispensada e campo da evidência, participantes da validação com o
+#      tipo, métricas por classe, comparação entre modelos
 N_FRAGMENTOS = 64
 SIGLAS_UF = (
     "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA",
@@ -28,7 +31,8 @@ SIGLAS_UF = (
 )  # fmt: skip
 NAO_IDENTIFICADA = "nao-identificada"
 
-StatusEvidencia = Literal["literal", "aproximada", "ausente"]
+StatusEvidencia = Literal["literal", "aproximada", "ausente", "dispensada"]
+TipoParticipante = Literal["humano", "referencia", "modelo"]
 Atribuicao = Literal["cluster", "vizinho"]
 FonteAnalise = Literal["resumo", "reserva", "so_titulo"]
 FonteRotulo = Literal["llm", "palavras", "manual"]
@@ -234,9 +238,19 @@ class Evidencia(_Base):
 
     valor: str | bool | list[str] | None
     evidencia: str
-    status: StatusEvidencia
-    inicio: int | None = Field(None, description="Posição do trecho no resumo exibido (caracteres), se localizado.")
+    status: StatusEvidencia = Field(
+        description="`literal`: o trecho está no texto; `aproximada`: quase (90% dos caracteres); `ausente`: não "
+        "está; `dispensada`: vazia numa resposta sem informação."
+    )
+    inicio: int | None = Field(
+        None,
+        description="Posição do trecho no resumo exibido, se localizado, em pontos de código Unicode (como o Python "
+        "conta; em JavaScript, converta para UTF-16).",
+    )
     fim: int | None = None
+    campo: Literal["titulo", "resumo"] | None = Field(
+        None, description="Onde o trecho foi localizado; `inicio` e `fim` são posições nesse texto."
+    )
 
 
 class Detalhe(_Base):
@@ -394,6 +408,18 @@ class CodebookContrato(_Arquivo):
 
 
 # ---------------------------------------------------------------- classificacoes.json
+class VariavelClassificada(_Base):
+    """Como uma variável saiu na classificação."""
+
+    n: int = Field(description="Documentos com resposta nesta variável.")
+    sem_informacao: float = Field(
+        description="Fração das respostas sem informação (`nao_informado`, `nao_se_aplica` ou falso)."
+    )
+    evidencia: dict[str, float] = Field(
+        default_factory=dict, description="Status → fração das evidências, sem as dispensadas."
+    )
+
+
 class Classificacoes(_Arquivo):
     """Resumo da classificação por codebook: modelo, cobertura e contagens por categoria."""
 
@@ -401,39 +427,65 @@ class Classificacoes(_Arquivo):
     hash_codebook: str
     cobertura: float = Field(description="Fração dos documentos com classificação válida.")
     evidencia_literal: float = Field(description="Fração das evidências encontradas literalmente no resumo.")
-    contagens: dict[str, dict[str, int]]
+    contagens: dict[str, dict[str, int]] = Field(
+        description="Variável → valor → documentos. Nas de múltipla escolha, cada categoria conta à parte; as de "
+        "texto ficam de fora."
+    )
+    classificados: int = 0
+    documentos: int = Field(0, description="Documentos com resumo, que podiam ser classificados.")
+    sem_resumo: int = 0
+    parcial: bool = Field(False, description="A classificação ainda não cobre todos os documentos com resumo.")
+    json_valido_na_primeira: float | None = None
+    por_variavel: dict[str, VariavelClassificada] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------- validacao.json
 class Matriz(_Base):
-    """Matriz de confusão entre a codificação humana e a do modelo."""
+    """Matriz de confusão entre dois participantes."""
 
     rotulos: list[str]
-    valores: list[list[int]] = Field(description="Linhas = codificação humana; colunas = modelo.")
+    valores: list[list[int]] = Field(description="Linhas = a referência do par; colunas = o outro participante.")
+
+
+class MetricaClasse(_Base):
+    """Precisão, revocação e F1 de uma categoria, tomando o primeiro do par como referência."""
+
+    rotulo: str
+    suporte: int = Field(description="Quantas vezes a referência deu esta categoria.")
+    precisao: float | None
+    revocacao: float | None
+    f1: float | None
 
 
 class MetricaVariavel(_Base):
-    """Concordância entre humano e modelo (ou entre dois modelos) numa variável."""
+    """Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável.
+    Nas de múltipla escolha, `variavel` é `id:categoria` (uma variável sim/não por categoria)."""
 
     variavel: str
-    comparacao: str = Field(description="Ex.: `humano × qwen3.5:9b`.")
+    comparacao: str = Field(description="Ex.: `claude-opus × qwen3.5:9b` (referência primeiro).")
     n: int
-    concordancia: float
+    concordancia: float | None
     kappa: float | None
     kappa_ic95: tuple[float, float] | None
     pabak: float | None
     alfa: float | None
     matriz: Matriz
+    referencia: str = Field("", description="Participante tomado como referência (linhas da matriz).")
+    comparado: str = ""
+    por_classe: list[MetricaClasse] = Field(default_factory=list)
 
 
 class Divergencia(_Base):
-    """Um caso em que humano e modelo discordam, para arbitragem."""
+    """Um caso em que um codificador de referência e o modelo principal discordam, para arbitragem."""
 
     doc: str
     variavel: str
-    humano: str
+    humano: str = Field(description="Valor dado pelo codificador (o nome do campo vem da versão 1.0).")
     modelo: str
-    evidencia: str
+    evidencia: str = Field(description="Trecho que o modelo citou.")
+    codificador: str = ""
+    status: StatusEvidencia | None = None
+    incerto: bool = Field(False, description="O codificador marcou a resposta como incerta.")
 
 
 class AmostraInfo(_Base):
@@ -444,13 +496,41 @@ class AmostraInfo(_Base):
     semente: int
 
 
+class Participante(_Base):
+    """Quem respondeu na amostra: um codificador (`humano` ou `referencia`, que não é uma pessoa) ou um modelo."""
+
+    nome: str
+    tipo: TipoParticipante
+    n: int = Field(description="Documentos da amostra com resposta.")
+
+
+class ComparacaoModelos(_Base):
+    """McNemar exato entre dois modelos, contra a mesma referência, numa variável."""
+
+    variavel: str
+    referencia: str
+    modelo_a: str
+    modelo_b: str
+    n: int
+    acertos_a: int
+    acertos_b: int
+    p: float
+
+
 class Validacao(_Arquivo):
-    """Resultados da validação da classificação contra codificação humana."""
+    """Resultados da validação da classificação: concordância por variável e por par de participantes."""
 
     amostra: AmostraInfo
     metricas: list[MetricaVariavel]
     modelos: list[str]
     divergencias: list[Divergencia]
+    codificadores: list[Participante] = Field(default_factory=list, description="Participantes, com o tipo.")
+    modelo_principal: str | None = None
+    hash_codebook: str | None = None
+    comparacoes_modelos: list[ComparacaoModelos] = Field(default_factory=list)
+    evidencia_literal: dict[str, float] = Field(
+        default_factory=dict, description="Modelo → fração das evidências literais na amostra."
+    )
 
 
 # ---------------------------------------------------------------- agregados.json
