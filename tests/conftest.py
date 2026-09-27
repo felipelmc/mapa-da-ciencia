@@ -15,6 +15,9 @@ import pytest
 import respx
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+# As cópias do iCloud Drive ("test_cli 2.py") são versões antigas dos testes: ficam fora da coleta.
+collect_ignore_glob = ["* [0-9].py", "* [0-9][0-9].py"]
 AM = "https://articlemeta.scielo.org/api/v1"
 OA = "https://api.openalex.org"
 OLLAMA_FALSO = "http://ollama.teste:11434"
