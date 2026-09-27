@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Mudado
+
+- o pacote fica pronto para o PyPI: endereços do site, da documentação, da demo e das mudanças nos metadados, classificadores de uma versão estável, imagens e links do README com endereço completo (o PyPI não resolve caminhos relativos) e um *sdist* só com o código do pacote (antes levava os spikes e o frontend); o CI e o workflow Release conferem os metadados com `twine check`.
+
 ## [1.0.0] - 2026-09-27
 
 A versão 1.0.0 fecha o plano do projeto. A abertura do site, "Céu que se forma", mostra os 4.275 artigos do piloto acendendo ano a ano e se juntando nas constelações dos seus assuntos, com as histórias que os dados contam: a polarização em alta, as redes sociais depois de 2018, SP, RJ e DF com 61% da produção brasileira, as revistas de relações internacionais só em inglês desde 2016, os ensaios teóricos caindo de 49% para 26% dos artigos. E a exportação passa a funcionar em pastas sincronizadas pelo iCloud Drive.

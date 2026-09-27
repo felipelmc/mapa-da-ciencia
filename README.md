@@ -12,7 +12,7 @@ Os modelos rodam no seu computador, via [Ollama](https://ollama.com): nenhum tex
 
 > **Status:** versão 1.0.0: a coleta, os tópicos no mapa e no tempo, a geografia, a classificação por codebook com validação, tudo também pela interface, a publicação como site estático, as figuras para artigo e a oficina no Colab. Ainda não há versão no PyPI.
 
-![O painel do piloto: o mapa de 4.275 artigos de dez revistas de ciência política no SciELO Brasil acendendo ano a ano, de 2010 a 2025, e depois as vistas Tópicos, Geografia e Classificação](docs/imagens/painel.gif)
+![O painel do piloto: o mapa de 4.275 artigos de dez revistas de ciência política no SciELO Brasil acendendo ano a ano, de 2010 a 2025, e depois as vistas Tópicos, Geografia e Classificação](https://raw.githubusercontent.com/felipelmc/mapa-da-ciencia/main/docs/imagens/painel.gif)
 
 ## Veja
 
@@ -20,7 +20,7 @@ Os modelos rodam no seu computador, via [Ollama](https://ollama.com): nenhum tex
 - **[Oficina no Colab](https://colab.research.google.com/github/felipelmc/mapa-da-ciencia/blob/main/notebooks/oficina_colab.ipynb)**: um mapa da *Opinião Pública* do zero, numa GPU gratuita do Google, em uns 30 minutos.
 - **[O site do projeto](https://felipelamarca.com/mapa-da-ciencia/)**: os artigos do piloto como um céu que se forma, ano a ano, e as histórias que eles contam.
 
-[![A abertura do site: "Sobre o que escreve a ciência política brasileira?", ao lado do céu de estrelas dos artigos do piloto, ligadas nas constelações dos macrotemas](docs/imagens/abertura.png)](https://felipelamarca.com/mapa-da-ciencia/)
+[![A abertura do site: "Sobre o que escreve a ciência política brasileira?", ao lado do céu de estrelas dos artigos do piloto, ligadas nas constelações dos macrotemas](https://raw.githubusercontent.com/felipelmc/mapa-da-ciencia/main/docs/imagens/abertura.png)](https://felipelamarca.com/mapa-da-ciencia/)
 
 ## Experimente
 
@@ -52,7 +52,7 @@ O passo a passo está em [Seu primeiro mapa](https://felipelmc.github.io/mapa-da
 
 ## Sobre
 
-Sucessor do [SciELO-Summarizer](https://github.com/felipelmc/SciELO-Summarizer), criado no SICSS Brasil 2024. Código sob licença [MIT](LICENSE). Para citar, veja [`CITATION.cff`](CITATION.cff) (o GitHub mostra a citação em *Cite this repository*). Para contribuir, veja [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Sucessor do [SciELO-Summarizer](https://github.com/felipelmc/SciELO-Summarizer), criado no SICSS Brasil 2024. Código sob licença [MIT](https://github.com/felipelmc/mapa-da-ciencia/blob/main/LICENSE). Para citar, veja [`CITATION.cff`](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CITATION.cff) (o GitHub mostra a citação em *Cite this repository*). Para contribuir, veja [`CONTRIBUTING.md`](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CONTRIBUTING.md).
 
 É um projeto independente e **não oficial**: não tem vínculo com o SciELO, o OpenAlex ou o IBGE, cujos dados públicos ele usa.
 
