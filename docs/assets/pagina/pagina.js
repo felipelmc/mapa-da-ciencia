@@ -95,6 +95,16 @@
     });
   }
 
+  /** Um ano (ou outro valor curto) dos dados, escapado e sem separador de milhar. */
+  function ano(v) {
+    return esc(String(v));
+  }
+
+  /** Um número, ou um traço quando o dado não existe. */
+  function numOuTraco(v, casas) {
+    return v === null || v === undefined ? '—' : num(v, casas);
+  }
+
   function demo(rota) {
     return DEMO + '#' + rota;
   }
@@ -348,12 +358,13 @@
     estado.fase = 'formado';
     caixa.classList.add('ceu--formado');
     replay.hidden = REDUZIDO;
+    replay.disabled = false;
   }
 
   function comecar() {
     cancelAnimationFrame(quadro);
     caixa.classList.remove('ceu--formado');
-    replay.hidden = true;
+    replay.disabled = true; // o botão fica no lugar (e com o foco, se estava), só desabilitado
     if (REDUZIDO) {
       desenhar(fim);
       formado();
@@ -465,8 +476,12 @@
     if (estado.fase === 'formado') redesenhar();
   });
 
-  canvas.addEventListener('click', function () {
-    if (sobre) window.location.href = demo('/topicos?topico=' + sobre.id);
+  canvas.addEventListener('click', function (ev) {
+    if (estado.fase !== 'formado') return;
+    // no toque não há "pointermove": o clique procura a estrela no próprio ponto
+    var r = canvas.getBoundingClientRect();
+    var tp = topicoPerto(ev.clientX - r.left, ev.clientY - r.top);
+    if (tp) window.location.href = demo('/topicos?topico=' + encodeURIComponent(tp.id));
   });
 
   replay.addEventListener('click', comecar);
@@ -487,12 +502,14 @@
     ];
     var lista = document.getElementById('numeros');
     lista.innerHTML = itens
+      .filter(function (it) { return it[0] !== null && it[0] !== undefined; })
       .map(function (it) {
-        return '<div><dt>' + esc(it[2]) + '</dt><dd data-alvo="' + it[0] + '" data-casas="' + it[1] + '">' + num(it[0], it[1]) + '</dd></div>';
+        // o número final fica para os leitores de tela; a contagem animada é só visual
+        return '<div><dt>' + esc(it[2]) + '</dt><dd><span class="visualmente-oculto">' + num(it[0], it[1]) + '</span><span aria-hidden="true" data-alvo="' + Number(it[0]) + '" data-casas="' + it[1] + '">' + num(it[0], it[1]) + '</span></dd></div>';
       })
       .join('');
     if (animar && !REDUZIDO && !numerosAnimados && 'IntersectionObserver' in window) {
-      lista.querySelectorAll('dd').forEach(function (dd) {
+      lista.querySelectorAll('[data-alvo]').forEach(function (dd) {
         dd.textContent = num(0, +dd.dataset.casas);
       });
       var obs = new IntersectionObserver(function (entradas) {
@@ -507,7 +524,7 @@
 
   function contar(lista) {
     var t0 = 0;
-    var dds = lista.querySelectorAll('dd');
+    var dds = lista.querySelectorAll('[data-alvo]');
     function passo(agora) {
       if (!t0) t0 = agora;
       var f = Math.min(1, (agora - t0) / 1300);
@@ -548,8 +565,8 @@
         '<path class="grafico-linha" d="' + caminho + '"/>' +
         '<circle cx="' + x(valores.length - 1) + '" cy="' + y(ultimo) + '" r="3.5" fill="var(--ceu-acento)"/>' +
         '<text class="grafico-texto grafico-texto--forte" x="' + (x(valores.length - 1) + 7) + '" y="' + (y(ultimo) + 4) + '">' + num(ultimo, 1) + unidade + '</text>' +
-        '<text class="grafico-texto" x="' + m.e + '" y="' + (A - 3) + '">' + anos[0] + '</text>' +
-        '<text class="grafico-texto" x="' + (L - m.d) + '" y="' + (A - 3) + '" text-anchor="end">' + anos[anos.length - 1] + '</text>',
+        '<text class="grafico-texto" x="' + m.e + '" y="' + (A - 3) + '">' + ano(anos[0]) + '</text>' +
+        '<text class="grafico-texto" x="' + (L - m.d) + '" y="' + (A - 3) + '" text-anchor="end">' + ano(anos[anos.length - 1]) + '</text>',
       rotulo
     );
   }
@@ -569,9 +586,9 @@
       L, A,
       corpo +
         '<line class="grafico-limiar" x1="' + xm + '" x2="' + xm + '" y1="' + (m.c - 4) + '" y2="' + (A - m.b + 3) + '"/>' +
-        '<text class="grafico-texto" x="' + m.e + '" y="' + (A - 3) + '">' + anos[0] + '</text>' +
-        '<text class="grafico-texto grafico-texto--forte" x="' + (xm + 3) + '" y="' + (A - 3) + '">' + marco + '</text>' +
-        '<text class="grafico-texto" x="' + (L - m.d) + '" y="' + (A - 3) + '" text-anchor="end">' + anos[anos.length - 1] + '</text>',
+        '<text class="grafico-texto" x="' + m.e + '" y="' + (A - 3) + '">' + ano(anos[0]) + '</text>' +
+        '<text class="grafico-texto grafico-texto--forte" x="' + (xm + 3) + '" y="' + (A - 3) + '">' + ano(marco) + '</text>' +
+        '<text class="grafico-texto" x="' + (L - m.d) + '" y="' + (A - 3) + '" text-anchor="end">' + ano(anos[anos.length - 1]) + '</text>',
       rotulo
     );
   }
@@ -615,8 +632,8 @@
         '<path class="grafico-linha" d="' + linha(a, x, y) + '"/>' +
         '<text class="grafico-texto grafico-texto--forte" x="' + (L - m.d + 6) + '" y="' + (y(a[a.length - 1]) + 4) + '">' + nomes[0] + '</text>' +
         '<text class="grafico-texto" x="' + (L - m.d + 6) + '" y="' + (y(b[b.length - 1]) + 4) + '">' + nomes[1] + '</text>' +
-        '<text class="grafico-texto" x="' + m.e + '" y="' + (A - 3) + '">' + anos[0] + '</text>' +
-        '<text class="grafico-texto" x="' + (L - m.d) + '" y="' + (A - 3) + '" text-anchor="end">' + anos[anos.length - 1] + '</text>',
+        '<text class="grafico-texto" x="' + m.e + '" y="' + (A - 3) + '">' + ano(anos[0]) + '</text>' +
+        '<text class="grafico-texto" x="' + (L - m.d) + '" y="' + (A - 3) + '" text-anchor="end">' + ano(anos[anos.length - 1]) + '</text>',
       rotulo
     );
   }
@@ -636,7 +653,7 @@
             return r;
           })
           .join('');
-        return '<text class="grafico-texto" x="0" y="' + (i * passo + 12) + '">' + ab.periodos[i] + '</text>' + barras;
+        return '<text class="grafico-texto" x="0" y="' + (i * passo + 12) + '">' + esc(ab.periodos[i]) + '</text>' + barras;
       })
       .join('');
     return svg(L, ab.partes.length * passo - (passo - alturaBarra), corpo, rotulo);
@@ -678,7 +695,7 @@
       '<h3>' + esc(h.titulo) + '</h3>' +
       '<p class="historia__texto">' + h.texto + '</p>' +
       '<div class="historia__grafico">' + h.grafico + '</div>' +
-      '<a class="historia__link" href="' + h.link + '">' + esc(h.chamada) + ' <span aria-hidden="true">→</span></a>' +
+      '<a class="historia__link" href="' + esc(h.link) + '">' + esc(h.chamada) + ' <span aria-hidden="true">→</span></a>' +
       '</article>';
   }
 
@@ -692,11 +709,11 @@
       numero: '+' + num(alta.pp_periodo, 1) + ' <small>p.p.</small>',
       titulo: alta.rotulo,
       texto: t(
-        'O tópico que mais cresceu entre os ' + alta.topicos + ': a participação dele no corpus subiu ' + num(alta.pp_periodo, 1) + ' pontos percentuais de ' + anos[0] + ' a ' + anos[anos.length - 1] + ' (' + num(alta.pp_por_ano, 2) + ' por ano). Outros ' + (alta.em_alta - 1) + ' estão em alta, e ' + alta.em_queda + ' em queda.',
-        'The fastest-growing of the ' + alta.topicos + ' topics: its share of the corpus rose ' + num(alta.pp_periodo, 1) + ' percentage points from ' + anos[0] + ' to ' + anos[anos.length - 1] + ' (' + num(alta.pp_por_ano, 2) + ' a year). ' + (alta.em_alta - 1) + ' others are rising, and ' + alta.em_queda + ' falling.'
+        'O tópico que mais cresceu entre os ' + num(alta.topicos) + ': a participação dele no corpus subiu ' + num(alta.pp_periodo, 1) + ' pontos percentuais de ' + ano(anos[0]) + ' a ' + ano(anos[anos.length - 1]) + ' (' + num(alta.pp_por_ano, 2) + ' por ano). Outros ' + num(alta.em_alta - 1) + ' estão em alta, e ' + num(alta.em_queda) + ' em queda.',
+        'The fastest-growing of the ' + num(alta.topicos) + ' topics: its share of the corpus rose ' + num(alta.pp_periodo, 1) + ' percentage points from ' + ano(anos[0]) + ' to ' + ano(anos[anos.length - 1]) + ' (' + num(alta.pp_por_ano, 2) + ' a year). ' + num(alta.em_alta - 1) + ' others are rising, and ' + num(alta.em_queda) + ' falling.'
       ),
       grafico: sparkline(alta.serie, anos, '%', t('Participação anual do tópico no corpus', 'Yearly share of the topic in the corpus')),
-      link: demo('/topicos?topico=' + alta.topico),
+      link: demo('/topicos?topico=' + encodeURIComponent(alta.topico)),
       chamada: t('Ver nos Tópicos', 'See it in Topics')
     });
     var rec = h.recente;
@@ -705,11 +722,11 @@
       numero: num(Math.round((100 * rec.depois) / rec.total)) + '<small>%</small>',
       titulo: rec.rotulo,
       texto: t(
-        rec.depois + ' dos ' + rec.total + ' artigos deste tópico saíram de ' + rec.desde + ' em diante: é o assunto mais novo do corpus, entre os tópicos com ao menos 40 artigos.',
-        rec.depois + ' of the ' + rec.total + ' articles in this topic came out in ' + rec.desde + ' or later: the newest subject in the corpus, among topics with at least 40 articles.'
+        num(rec.depois) + ' dos ' + num(rec.total) + ' artigos deste tópico saíram de ' + ano(rec.desde) + ' em diante: é o assunto mais novo do corpus, entre os tópicos com ao menos 40 artigos.',
+        num(rec.depois) + ' of the ' + num(rec.total) + ' articles in this topic came out in ' + ano(rec.desde) + ' or later: the newest subject in the corpus, among topics with at least 40 articles.'
       ),
       grafico: colunas(rec.serie, anos, rec.desde, t('Artigos do tópico por ano', 'Articles in the topic per year')),
-      link: demo('/topicos?topico=' + rec.topico),
+      link: demo('/topicos?topico=' + encodeURIComponent(rec.topico)),
       chamada: t('Ver nos Tópicos', 'See it in Topics')
     });
     var geo = h.geografia;
@@ -731,8 +748,8 @@
       numero: '100<small>%</small>',
       titulo: t('Relações internacionais em inglês', 'International relations in English'),
       texto: t(
-        'Desde ' + en.desde + ', a <em>Contexto Internacional</em> e a <em>RBPI</em> publicam todos os artigos em inglês; antes, eram ' + num(en.pct_antes) + '%. Nas outras oito revistas, o inglês chegou a ' + num(en.outras[en.outras.length - 1]) + '% em ' + anos[anos.length - 1] + '.',
-        'Since ' + en.desde + ', <em>Contexto Internacional</em> and <em>RBPI</em> have published every article in English, up from ' + num(en.pct_antes) + '% before. In the other eight journals, English reached ' + num(en.outras[en.outras.length - 1]) + '% in ' + anos[anos.length - 1] + '.'
+        'Desde ' + ano(en.desde) + ', a <em>Contexto Internacional</em> e a <em>RBPI</em> publicam todos os artigos em inglês; antes, eram ' + num(en.pct_antes) + '%. Nas outras oito revistas, o inglês chegou a ' + num(en.outras[en.outras.length - 1]) + '% em ' + ano(anos[anos.length - 1]) + '.',
+        'Since ' + ano(en.desde) + ', <em>Contexto Internacional</em> and <em>RBPI</em> have published every article in English, up from ' + num(en.pct_antes) + '% before. In the other eight journals, English reached ' + num(en.outras[en.outras.length - 1]) + '% in ' + ano(anos[anos.length - 1]) + '.'
       ),
       grafico: duasLinhas(en.ri, en.outras, anos, t('Artigos em inglês por ano, em porcentagem', 'Articles in English per year, in percent'), [t('RI', 'IR'), t('outras', 'others')]),
       link: demo('/topicos?revistas=cint,rbpi'),
@@ -742,14 +759,16 @@
       var ab = h.abordagem;
       var d = ab.destaque;
       var nomeD = t(d.rotulo, CATEGORIAS_EN[d.valor] || d.rotulo);
+      var nomeMinusculo = esc(nomeD.toLowerCase());
+      var primeiro = esc(ab.periodos[0]), ultimo = esc(ab.periodos[ab.periodos.length - 1]);
       var soma = ab.n.reduce(function (a, b) { return a + b; }, 0);
       cartoes.push({
         tema: t('Como se pesquisa', 'How research is done'),
         numero: num(d.de) + '% → ' + num(d.para) + '<small>%</small>',
         titulo: nomeD,
         texto: t(
-          'A abordagem que mais mudou: ' + nomeD.toLowerCase() + ', de ' + num(d.de) + '% dos artigos em ' + ab.periodos[0] + ' para ' + num(d.para) + '% em ' + ab.periodos[ab.periodos.length - 1] + ', segundo o modelo local que leu ' + num(soma) + ' resumos.',
-          'The approach that changed the most: ' + nomeD.toLowerCase() + ', from ' + num(d.de) + '% of articles in ' + ab.periodos[0] + ' to ' + num(d.para) + '% in ' + ab.periodos[ab.periodos.length - 1] + ', according to the local model that read ' + num(soma) + ' abstracts.'
+          'A abordagem que mais mudou: ' + nomeMinusculo + ', de ' + num(d.de) + '% dos artigos em ' + primeiro + ' para ' + num(d.para) + '% em ' + ultimo + ', segundo o modelo local que leu ' + num(soma) + ' resumos.',
+          'The approach that changed the most: ' + nomeMinusculo + ', from ' + num(d.de) + '% of articles in ' + primeiro + ' to ' + num(d.para) + '% in ' + ultimo + ', according to the local model that read ' + num(soma) + ' abstracts.'
         ),
         grafico: empilhadas(ab, t('Abordagem dos artigos por período', 'Approach of the articles by period')) + legendaCategorias(ab),
         link: demo('/classificacao?variavel=abordagem'),
@@ -765,8 +784,8 @@
         numero: '<small>κ</small> ' + num(val.mediana, 2),
         titulo: t('O modelo contra uma leitura de referência', 'The model against a reference reading'),
         texto: t(
-          'Em ' + val.n + ' artigos codificados às cegas por um codificador de referência (' + esc(val.referencia) + '), o kappa vai de ' + num(menor.kappa, 2) + ' em “' + esc(menor.rotulo) + '” a ' + num(maior.kappa, 2) + ' em “' + esc(maior.rotulo) + '”. Com hachura, abaixo de 0,6: a variável pede cuidado.',
-          'On ' + val.n + ' articles coded blind by a reference coder (' + esc(val.referencia) + '), kappa ranges from ' + num(menor.kappa, 2) + ' for “' + esc(VARIAVEIS_EN[menor.variavel] || menor.rotulo) + '” to ' + num(maior.kappa, 2) + ' for “' + esc(VARIAVEIS_EN[maior.variavel] || maior.rotulo) + '”. Hatched, below 0.6: handle with care.'
+          'Em ' + num(val.n) + ' artigos codificados às cegas por um codificador de referência (' + esc(val.referencia) + '), o kappa vai de ' + num(menor.kappa, 2) + ' em “' + esc(menor.rotulo) + '” a ' + num(maior.kappa, 2) + ' em “' + esc(maior.rotulo) + '”. Com hachura, abaixo de 0,6: a variável pede cuidado.',
+          'On ' + num(val.n) + ' articles coded blind by a reference coder (' + esc(val.referencia) + '), kappa ranges from ' + num(menor.kappa, 2) + ' for “' + esc(VARIAVEIS_EN[menor.variavel] || menor.rotulo) + '” to ' + num(maior.kappa, 2) + ' for “' + esc(VARIAVEIS_EN[maior.variavel] || maior.rotulo) + '”. Hatched, below 0.6: handle with care.'
         ),
         grafico: barrasKappa(val.kappas, t('Kappa de Cohen por variável', "Cohen's kappa by variable")),
         link: demo('/validacao'),
@@ -786,13 +805,13 @@
         t('Listados na ArticleMeta do SciELO e casados com o OpenAlex pelo DOI; os e-mails dos autores ficam de fora.', "Listed in SciELO's ArticleMeta and matched with OpenAlex by DOI; author e-mails are left out."), 'explicacoes/fontes/'],
       [t('Embeddings', 'Embeddings'), num(1024), t('números por resumo', 'numbers per abstract'),
         t('Título e resumo viram um vetor no qwen3-embedding, rodando no Ollama: artigos parecidos ficam perto.', 'Title and abstract become a vector in qwen3-embedding, running on Ollama: similar articles end up close.'), 'explicacoes/topicos/#2-embeddings'],
-      [t('Tópicos', 'Topics'), num(n.topicos), t('tópicos, ARI ' + num(n.ari, 2), 'topics, ARI ' + num(n.ari, 2)),
+      [t('Tópicos', 'Topics'), num(n.topicos), n.ari === null || n.ari === undefined ? t('tópicos', 'topics') : t('tópicos, ARI ' + num(n.ari, 2), 'topics, ARI ' + num(n.ari, 2)),
         t('UMAP e HDBSCAN agrupam os vizinhos; os grupos se mantêm entre sementes diferentes.', 'UMAP and HDBSCAN group the neighbours; the groups hold across different seeds.'), 'explicacoes/topicos/'],
       [t('Rótulos', 'Labels'), num(n.macrotemas), t('macrotemas', 'macro-themes'),
         t('Um modelo local lê as palavras-chave e os títulos de cada tópico e escreve rótulo e descrição em português.', 'A local model reads the keywords and titles of each topic and writes a label and description in Portuguese.'), 'explicacoes/topicos/#11-rotulos'],
-      [t('Classificação', 'Classification'), num(n.evidencia_literal, 1) + '%', t('das evidências, literais', 'of the evidence, verbatim'),
+      [t('Classificação', 'Classification'), numOuTraco(n.evidencia_literal, 1) + (n.evidencia_literal === null || n.evidencia_literal === undefined ? '' : '%'), t('das evidências, literais', 'of the evidence, verbatim'),
         t('Cada resumo responde ao codebook, e cada resposta cita o trecho que a justifica, conferido no texto.', 'Each abstract answers the codebook, and each answer quotes the passage that supports it, checked against the text.'), 'explicacoes/classificacao/'],
-      [t('Validação', 'Validation'), 'κ ' + num(n.kappa_mediano, 2), t('mediano', 'median'),
+      [t('Validação', 'Validation'), 'κ ' + numOuTraco(n.kappa_mediano, 2), t('mediano', 'median'),
         t('Uma amostra codificada às cegas mede a concordância, variável por variável.', 'A sample coded blind measures agreement, variable by variable.'), 'explicacoes/validacao/']
     ];
     document.getElementById('metodo').innerHTML = passos
@@ -818,6 +837,7 @@
   }
 
   function buscar() {
+    if (!dados) return;
     var q = campo.value.trim();
     var termo = dobrar(q);
     if (!termo) {
@@ -890,5 +910,9 @@
       estado.fase = 'erro';
       estado.erro = String(e);
       aplicarLingua();
+      document.getElementById('historias').textContent = t(
+        'Não foi possível carregar os dados desta página. A demo e a documentação continuam nos links acima.',
+        'The data for this page could not be loaded. The demo and the documentation are still at the links above.'
+      );
     });
 })();

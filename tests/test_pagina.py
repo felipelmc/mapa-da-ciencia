@@ -74,3 +74,14 @@ def test_historia_do_ingles(pagina, tmp_path):
     ).write_parquet(str(parquet))
     en = pagina._ingles(parquet, list(range(2010, 2026)))
     assert en["desde"] == 2016 and en["pct_antes"] == 0 and en["ri"][-1] == 100 and en["outras"][-1] == 0
+
+
+def test_sem_classificacao_validacao_nem_geografia(pagina, projeto):
+    """Um projeto só com os tópicos: as histórias que dependem do resto somem, sem erro."""
+    for arquivo in ("validacao.json", "classificacoes.json", "codebook.json", "agregados.json"):
+        (projeto / "saida" / "dados" / arquivo).unlink()
+    dados = pagina.gerar(projeto)
+    h = dados["historias"]
+    assert h["validacao"] is None and h["geografia"] is None  # a classificação continua nas colunas de documentos
+    assert dados["numeros"]["kappa_mediano"] is None and dados["numeros"]["instituicoes"] is None
+    assert dados["ceu"]["n"] > 0

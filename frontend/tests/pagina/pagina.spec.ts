@@ -46,7 +46,7 @@ test('com movimento reduzido, o céu já aparece formado', async ({ page }) => {
 	await page.goto(url());
 	await expect.poll(() => fase(page), { timeout: 3_000 }).toBe('formado');
 	await expect(page.getByRole('button', { name: 'Ver de novo' })).toBeHidden();
-	await expect(page.locator('#numeros dd').first()).toHaveText(new Intl.NumberFormat('pt-BR').format(dados.numeros.artigos));
+	await expect(page.locator('#numeros [data-alvo]').first()).toHaveText(new Intl.NumberFormat('pt-BR').format(dados.numeros.artigos));
 });
 
 test('o idioma e o tema ficam guardados', async ({ page }) => {
@@ -55,7 +55,7 @@ test('o idioma e o tema ficam guardados', async ({ page }) => {
 	await page.getByRole('button', { name: 'EN', exact: true }).click();
 	await expect(page.locator('#abertura-titulo')).toContainText('What does');
 	await expect(page.locator('#ceu-pagina')).toHaveAttribute('lang', 'en');
-	await expect(page.locator('#numeros dd').first()).toHaveText(new Intl.NumberFormat('en-US').format(dados.numeros.artigos));
+	await expect(page.locator('#numeros [data-alvo]').first()).toHaveText(new Intl.NumberFormat('en-US').format(dados.numeros.artigos));
 	const antes = await page.evaluate(() => document.body.getAttribute('data-md-color-scheme'));
 	await page.locator('form[data-md-component="palette"] label:visible').first().click();
 	await expect.poll(() => page.evaluate(() => document.body.getAttribute('data-md-color-scheme'))).not.toBe(antes);
@@ -81,6 +81,17 @@ test('num celular: sem rolagem horizontal, e os rótulos cabem no céu', async (
 		expect(r.x).toBeGreaterThanOrEqual(caixa.x - 1);
 		expect(r.x + r.width).toBeLessThanOrEqual(caixa.x + caixa.width + 1);
 	}
+});
+
+test('no celular, a gaveta do menu mostra a navegação; o link de pular tem alvo', async ({ page }) => {
+	await page.setViewportSize({ width: 375, height: 812 });
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await page.goto(url());
+	await page.locator('label.md-header__button[for="__drawer"]').click();
+	await expect(page.locator('.md-nav--primary').getByRole('link', { name: 'Tutoriais' }).first()).toBeVisible();
+	const alvo = await page.locator('a.md-skip').getAttribute('href');
+	expect(alvo).toBe('#abertura');
+	await expect(page.locator('#abertura')).toHaveCount(1);
 });
 
 test('os links da abertura levam a páginas do site ou às vistas da demo', async ({ page, request }) => {

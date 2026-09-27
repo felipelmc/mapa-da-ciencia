@@ -26,7 +26,10 @@ PERIODOS = ((2010, 2014), (2015, 2020), (2021, 2025))
 QUANTOS = 65535
 
 
-def _ler(pasta: Path, arquivo: str) -> dict:
+def _ler(pasta: Path, arquivo: str, *, opcional: bool = False) -> dict:
+    """Um arquivo do contrato; os opcionais (classificação, validação, geografia) viram `{}` quando faltam."""
+    if opcional and not (pasta / arquivo).exists():
+        return {}
     return json.loads((pasta / arquivo).read_text(encoding="utf-8"))
 
 
@@ -116,10 +119,13 @@ def ceu(docs: dict, topicos: dict) -> dict:
 
 
 def _kappas(validacao: dict) -> list[dict]:
-    principal = validacao["modelo_principal"].split("@", 1)[0]
-    referencia = next((c["nome"] for c in validacao["codificadores"] if c["tipo"] == "referencia"), None)
+    """O kappa de cada variável entre o codificador de referência e o modelo principal (vazio se faltar um dos dois)."""
+    principal = (validacao.get("modelo_principal") or "").split("@", 1)[0]
+    referencia = next((c["nome"] for c in validacao.get("codificadores", []) if c["tipo"] == "referencia"), None)
+    if not principal or not referencia:
+        return []
     saida = []
-    for m in validacao["metricas"]:
+    for m in validacao.get("metricas", []):
         if m.get("kappa") is None or m.get("referencia") != referencia or m.get("comparado") != principal:
             continue
         saida.append({"variavel": m["variavel"], "kappa": round(m["kappa"], 2), "ic95": m["kappa_ic95"]})
@@ -141,7 +147,9 @@ def _ingles(parquet: Path, anos: list[int]) -> dict | None:
     por = {(a, ri): en for a, ri, en in linhas}
     ri = [round(100 * por.get((a, True), 0)) for a in anos]
     outras = [round(100 * por.get((a, False), 0)) for a in anos]
-    desde = next((a for k, a in enumerate(anos) if ri[k] == 100 and all(x == 100 for x in ri[k:])), None)
+    # "todos em inglês" de verdade: a fração exata é 1 em cada ano desde então (99,5% arredondaria para 100)
+    exatos = [por.get((a, True)) == 1 for a in anos]
+    desde = next((a for k, a in enumerate(anos) if all(exatos[k:])), None)
     if desde is None:
         return None
     antes = con.execute(
@@ -193,12 +201,16 @@ def historias(pasta: Path, docs: dict, topicos: dict, agregados: dict, validacao
     uf = agregados.get("uf") or {}
     total_br = sum(uf.values())
     tres = sorted(uf, key=lambda k: -uf[k])[:3]
-    saida["geografia"] = total_br and {
-        "tres": tres,
-        "pct_tres": _pct(sum(uf[k] for k in tres), total_br),
-        "uf": {k: round(v / total_br, 4) for k, v in sorted(uf.items())},
-        "pct_brasil": _pct(agregados["pais"].get("BR", 0), sum(agregados["pais"].values())),
-    }
+    saida["geografia"] = (
+        None
+        if not total_br
+        else {
+            "tres": tres,
+            "pct_tres": _pct(sum(uf[k] for k in tres), total_br),
+            "uf": {k: round(v / total_br, 4) for k, v in sorted(uf.items())},
+            "pct_brasil": _pct((agregados.get("pais") or {}).get("BR", 0), sum((agregados.get("pais") or {}).values())),
+        }
+    )
 
     # 4. o inglês nas revistas de relações internacionais (idioma original, do corpus)
     saida["ingles"] = _ingles(pasta / "dados" / "documentos.parquet", anos)
@@ -211,8 +223,9 @@ def historias(pasta: Path, docs: dict, topicos: dict, agregados: dict, validacao
         for ano, i in zip(c["ano"], c["cls"]["abordagem"], strict=True):
             if i < 0 or cats[i] == "nao_informado":
                 continue
-            p = next(k for k, (a, b) in enumerate(PERIODOS) if a <= ano <= b)
-            cont[p][cats[i]] += 1
+            p = next((k for k, (a, b) in enumerate(PERIODOS) if a <= ano <= b), None)
+            if p is not None:  # um ano fora dos períodos da história fica de fora
+                cont[p][cats[i]] += 1
         principais = [k for k in cats if k not in ("nao_informado", "revisao")]
         partes = [{k: _pct(cc[k], sum(cc.values())) for k in principais} for cc in cont]
         mudou = max(principais, key=lambda k: abs(partes[-1][k] - partes[0][k]))
@@ -233,13 +246,17 @@ def historias(pasta: Path, docs: dict, topicos: dict, agregados: dict, validacao
     kappas = _kappas(validacao)
     for k in kappas:
         k["rotulo"] = rotulo_var.get(k["variavel"], k["variavel"])
-    saida["validacao"] = {
-        "n": validacao["amostra"]["n"],
-        "kappas": kappas,
-        "mediana": round(statistics.median(k["kappa"] for k in kappas), 2) if kappas else None,
-        "referencia": next((c["nome"] for c in validacao["codificadores"] if c["tipo"] == "referencia"), None),
-        "modelo": validacao["modelo_principal"].split("@", 1)[0],
-    }
+    saida["validacao"] = (
+        None
+        if not kappas
+        else {
+            "n": validacao["amostra"]["n"],
+            "kappas": kappas,
+            "mediana": round(statistics.median(k["kappa"] for k in kappas), 2) if kappas else None,
+            "referencia": next((c["nome"] for c in validacao["codificadores"] if c["tipo"] == "referencia"), None),
+            "modelo": (validacao.get("modelo_principal") or "").split("@", 1)[0],
+        }
+    )
     return saida
 
 
@@ -253,13 +270,14 @@ def numeros(manifesto: dict, revistas: dict, topicos: dict, agregados: dict, cla
         "periodo": anos,
         "topicos": len(topicos["topicos"]),
         "macrotemas": len(topicos["macrotemas"]),
-        "instituicoes": sum(1 for k, v in agregados["instituicao"].items() if k not in especiais and v > 0),
+        "instituicoes": sum(1 for k, v in (agregados.get("instituicao") or {}).items() if k not in especiais and v > 0)
+        or None,
         "classificados": classificacoes.get("classificados"),
         "com_resumo": classificacoes.get("documentos"),
         "evidencia_literal": (
             round(100 * classificacoes["evidencia_literal"], 1) if classificacoes.get("evidencia_literal") else None
         ),
-        "kappa_mediano": hist["validacao"]["mediana"],
+        "kappa_mediano": (hist["validacao"] or {}).get("mediana"),
         "ari": round(topicos["estabilidade_ari"], 2) if topicos.get("estabilidade_ari") is not None else None,
     }
 
@@ -267,9 +285,10 @@ def numeros(manifesto: dict, revistas: dict, topicos: dict, agregados: dict, cla
 def gerar(projeto: Path) -> dict:
     pasta = projeto / "saida" / "dados"
     docs, topicos = _ler(pasta, "documentos.json"), _ler(pasta, "topicos.json")
-    agregados, validacao = _ler(pasta, "agregados.json"), _ler(pasta, "validacao.json")
+    agregados, validacao = _ler(pasta, "agregados.json", opcional=True), _ler(pasta, "validacao.json", opcional=True)
     manifesto, revistas = _ler(pasta, "manifesto.json"), _ler(pasta, "revistas.json")
-    classificacoes, codebook = _ler(pasta, "classificacoes.json"), _ler(pasta, "codebook.json")
+    classificacoes = _ler(pasta, "classificacoes.json", opcional=True)
+    codebook = _ler(pasta, "codebook.json", opcional=True) or {"variaveis": []}
     hist = historias(projeto, docs, topicos, agregados, validacao, codebook)
     return {
         "gerado_de": manifesto["projeto"]["titulo"],

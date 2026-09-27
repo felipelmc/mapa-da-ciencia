@@ -49,8 +49,9 @@
   --cat-4: #8ccb7b;
 }
 
-/* A abertura ocupa a página: o conteúdo do Markdown (index.md) fica só para a busca da documentação. */
-.md-main {
+/* A abertura ocupa a página: o conteúdo do Markdown (index.md) fica só para a busca da documentação. O resto de
+   <main> fica: no celular, a gaveta do menu (☰) é a barra lateral que mora lá. */
+.md-content {
   display: none;
 }
 
@@ -237,9 +238,13 @@
   text-shadow:
     0 0 6px var(--ceu-fundo),
     0 0 2px var(--ceu-fundo);
+  /* invisíveis e fora do Tab até o céu se formar */
+  visibility: hidden;
   opacity: 0;
-  pointer-events: auto;
-  transition: opacity 0.9s ease;
+  pointer-events: none;
+  transition:
+    opacity 0.9s ease,
+    visibility 0s linear 0.9s;
 }
 
 .ceu__rotulo::before {
@@ -252,7 +257,12 @@
 }
 
 .ceu--formado .ceu__rotulo {
+  visibility: visible;
   opacity: 1;
+  pointer-events: auto;
+  transition:
+    opacity 0.9s ease,
+    visibility 0s;
 }
 
 .ceu-pagina .ceu__rotulo:hover {
@@ -300,6 +310,11 @@
   font-size: 1.6rem;
   color: var(--ceu-texto);
   font-variant-numeric: tabular-nums;
+}
+
+.ceu__replay:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .ceu__replay {
@@ -697,7 +712,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ceu__rotulo,
+  .ceu-pagina .ceu__rotulo,
+  .ceu--formado .ceu__rotulo,
   .ceu-pagina .botao {
     transition: none;
   }
