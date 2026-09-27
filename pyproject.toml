@@ -1,6 +1,6 @@
 [project]
 name = "mapa-da-ciencia"
-version = "0.7.0.dev0"
+version = "0.7.0"
 description = "Observatório da literatura científica: tópicos no tempo, classificação por codebook com validação humana e geografia da produção, com modelos de linguagem locais."
 readme = "README.md"
 license = "MIT"

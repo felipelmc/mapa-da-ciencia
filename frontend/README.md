@@ -43,6 +43,7 @@ npx playwright install chromium
 | `npm run tipos:checar` | Falha se `tipos.ts` estiver desatualizado em relação aos schemas. Roda no CI. |
 | `npm run empacotar` | Faz o build e copia `build/` para `../src/mapa_da_ciencia/web/estatico/` (apaga o destino antes), de onde o `mapa painel` serve a interface. |
 | `node scripts/baixar-malhas.ts` | Regrava as malhas da vista Geografia em `src/lib/geografia/malhas/`: as UFs do IBGE (1 requisição à API de malhas) e os países do Natural Earth (pacote `world-atlas`, sem rede). Com `--so-mundo`, só a do mundo. As malhas são versionadas; o painel não baixa nada. |
+| `node scripts/gif-readme.ts ../projetos/cp-scielo` | Gera o GIF do README (`../docs/imagens/painel.gif`): o Mapa ano a ano, os Tópicos, a Geografia e a Classificação, codificados em GIF pelo `gifenc` dentro do navegador. Roda só localmente, depois do `npm run build`. |
 | `node scripts/capturas.ts ../projetos/cp-scielo` | Gera as capturas do mapa da documentação (`../docs/imagens/`) a partir dos dados de um projeto, com o Playwright. Roda só localmente, depois do `npm run build`: o piloto não está no repositório. O cartão mostra sempre um artigo com licença CC BY. |
 
 A ordem do CI (`.github/workflows/ci.yml`) é: `npm ci`, `tipos:checar`, `check`, `test`, `build`, `e2e`.
