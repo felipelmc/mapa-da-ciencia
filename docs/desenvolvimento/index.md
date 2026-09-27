@@ -55,6 +55,12 @@ uv run ruff format            # formatação
 uv run mkdocs serve           # documentação em http://127.0.0.1:8000 (o aviso do Material sobre o MkDocs 2.0 é deles)
 ```
 
+A abertura do site ("Céu que se forma") é um modelo próprio do Material, `overrides/home.html`, com `docs/assets/pagina/{pagina.css,pagina.js,dados.json}`; o conteúdo antigo da página inicial está em `docs/documentacao.md`. Os testes dela rodam sobre o site montado:
+
+```bash
+uv run mkdocs build && (cd frontend && npm run e2e:pagina)
+```
+
 A interface precisa de Node.js 22.18 ou mais recente só para desenvolvê-la:
 
 ```bash
@@ -72,6 +78,7 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | `contrato/schema/*.json`, `contrato/exemplo/dados/` e `contrato/exemplo-publicado/dados/` | `uv run python scripts/gerar_contrato.py` | Ao mudar `contrato/modelos.py`, o gerador de exemplo ou as regras do `mapa publicar` |
 | `frontend/src/lib/contrato/tipos.ts` | `npm run tipos` (em `frontend/`) | Depois de regenerar os schemas |
 | `docs/referencia/{cli,configuracao,codebook,contrato,api-http}.md` | `uv run python scripts/gerar_referencias.py` | Ao mudar comandos, `config.py`, o contrato ou as rotas do painel |
+| `docs/assets/pagina/dados.json` | `uv run python scripts/gerar_pagina.py projetos/cp-scielo` (localmente: o piloto não está no repositório) | Quando o piloto mudar: as estrelas, os números e as histórias da abertura do site |
 | `notebooks/oficina_colab.ipynb` | `uv run python scripts/gerar_notebook.py` (conferido em `tests/test_notebook.py`) | Ao mudar a versão do pacote ou o roteiro da oficina |
 | `src/mapa_da_ciencia/fontes/scielo-revistas.json` | `uv run python scripts/gerar_revistas.py` (1 requisição à ArticleMeta) | Para atualizar a lista de revistas do SciELO Brasil |
 | `src/mapa_da_ciencia/geografia/dados/paises.csv` | `node scripts/gerar_paises.ts` (nomes do CLDR que vem no Node, sem rede) | Ao atualizar o Node; o teste confere quando a versão do CLDR é a mesma do cabeçalho do arquivo. As variantes (`variantes_paises.csv`) e as UFs (`ufs.csv`) são editadas à mão |

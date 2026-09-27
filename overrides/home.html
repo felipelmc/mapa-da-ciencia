@@ -1,0 +1,108 @@
+{#- A abertura do site: "Céu que se forma". Os artigos do piloto acendem como estrelas, ano a ano, e se juntam em
+    constelações (os macrotemas). Os dados vêm de assets/pagina/dados.json (scripts/gerar_pagina.py); o texto em
+    inglês, de assets/pagina/pagina.js. A documentação continua nas outras páginas. -#}
+{% extends "main.html" %}
+
+{% block extrahead %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ 'assets/pagina/pagina.css' | url }}">
+{% endblock %}
+
+{% block tabs %}
+  {{ super() }}
+  <div class="ceu-pagina" id="ceu-pagina" lang="pt-BR"
+       data-dados="{{ 'assets/pagina/dados.json' | url }}"
+       data-demo="{{ 'demo/' | url }}"
+       data-docs="{{ '' | url }}">
+
+    <section class="abertura" aria-labelledby="abertura-titulo">
+      <div class="abertura__texto">
+        <p class="sobretitulo" data-t="sobretitulo">Ciência política no SciELO Brasil, 2010–2025</p>
+        <h1 id="abertura-titulo" data-t="titulo">Sobre o que escreve a ciência política <em>brasileira</em>?</h1>
+        <p class="lide" data-t="lide">Quatro mil artigos de dez revistas, lidos por modelos de linguagem que rodam num notebook: os assuntos, como eles mudam no tempo, como se pesquisa e onde se produz. Cada ponto do céu é um artigo.</p>
+        <div class="chamadas">
+          <a class="botao botao--principal" href="{{ 'demo/' | url }}" data-t="chamada_demo">Explorar o piloto <span aria-hidden="true">→</span></a>
+          <a class="botao" href="{{ 'documentacao/' | url }}" data-t="chamada_docs">Ler a documentação</a>
+        </div>
+        <div class="lingua" role="group" aria-label="Idioma / Language">
+          <button type="button" data-lingua="pt" aria-pressed="true">PT</button>
+          <button type="button" data-lingua="en" aria-pressed="false">EN</button>
+        </div>
+      </div>
+
+      <figure class="abertura__ceu" id="ceu-figura">
+        <div class="ceu" id="ceu">
+          <canvas id="ceu-canvas" role="img" aria-label="Os artigos do piloto como estrelas, que acendem ano a ano de 2010 a 2025 e formam as constelações dos macrotemas." data-t-aria="ceu_aria"></canvas>
+          <div class="ceu__rotulos" id="ceu-rotulos"></div>
+          <div class="ceu__dica" id="ceu-dica" role="tooltip" hidden></div>
+        </div>
+        <figcaption class="ceu__legenda">
+          <span class="ceu__ano" id="ceu-ano" aria-live="off">2010</span>
+          <span class="ceu__contagem"><span id="ceu-contagem">0</span> <span data-t="artigos">artigos</span></span>
+          <button type="button" class="ceu__replay" id="ceu-replay" data-t="de_novo" hidden>Ver de novo</button>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="faixa numeros" aria-labelledby="numeros-titulo">
+      <h2 id="numeros-titulo" class="visualmente-oculto" data-t="numeros_titulo">O piloto em números</h2>
+      <dl class="numeros__lista" id="numeros"></dl>
+    </section>
+
+    <section class="faixa historias" aria-labelledby="historias-titulo">
+      <div class="faixa__cabeca">
+        <h2 id="historias-titulo" data-t="historias_titulo">Histórias do piloto</h2>
+        <p data-t="historias_lide">Seis coisas que o mapa mostra sobre a ciência política publicada no SciELO Brasil. Cada uma leva à vista da demo que a sustenta.</p>
+      </div>
+      <div class="historias__grade" id="historias"></div>
+    </section>
+
+    <section class="faixa metodo" aria-labelledby="metodo-titulo">
+      <div class="faixa__cabeca">
+        <h2 id="metodo-titulo" data-t="metodo_titulo">Como foi feito</h2>
+        <p data-t="metodo_lide">Seis passos, todos com modelos abertos rodando localmente. O método inteiro, com os parâmetros, está em <a href="{{ 'explicacoes/metodologia/' | url }}">Metodologia em uma página</a>.</p>
+      </div>
+      <ol class="metodo__passos" id="metodo"></ol>
+    </section>
+
+    <section class="faixa busca" aria-labelledby="busca-titulo">
+      <div class="faixa__cabeca">
+        <h2 id="busca-titulo" data-t="busca_titulo">Procure um tema</h2>
+        <p data-t="busca_lide">Nos rótulos e nas palavras-chave dos tópicos. A demo procura também nos títulos dos artigos.</p>
+      </div>
+      <div class="busca__caixa">
+        <label for="busca-campo" class="visualmente-oculto" data-t="busca_rotulo">Tema</label>
+        <input id="busca-campo" type="search" autocomplete="off" spellcheck="false" placeholder="eleições, saúde, China, gênero…" data-t-placeholder="busca_placeholder">
+        <ul class="busca__resultados" id="busca-resultados" aria-live="polite"></ul>
+      </div>
+    </section>
+
+    <section class="faixa creditos" aria-labelledby="creditos-titulo">
+      <h2 id="creditos-titulo" class="visualmente-oculto" data-t="creditos_titulo">Créditos</h2>
+      <div class="creditos__grade">
+        <div>
+          <h3 data-t="creditos_dados">Dados</h3>
+          <p data-t="creditos_dados_texto"><a href="https://scielo.org">SciELO</a> (ArticleMeta), <a href="https://openalex.org">OpenAlex</a> (CC0), <a href="https://www.ibge.gov.br">IBGE</a> e <a href="https://www.naturalearthdata.com">Natural Earth</a>. Os resumos só aparecem na demo quando a licença do artigo é Creative Commons.</p>
+        </div>
+        <div>
+          <h3 data-t="creditos_modelos">Modelos</h3>
+          <p data-t="creditos_modelos_texto"><code>qwen3-embedding:0.6b</code> e <code>qwen3.5:9b</code>, abertos, rodando no <a href="https://ollama.com">Ollama</a>. A validação usou um codificador de referência (Claude), não uma pessoa.</p>
+        </div>
+        <div>
+          <h3 data-t="creditos_projeto">Projeto</h3>
+          <p data-t="creditos_projeto_texto">Feito por Felipe Lamarca, sucessor do <a href="https://github.com/felipelmc/SciELO-Summarizer">SciELO-Summarizer</a> (SICSS Brasil 2024). Código aberto, licença MIT, em <a href="https://github.com/felipelmc/mapa-da-ciencia">github.com/felipelmc/mapa-da-ciencia</a>. Independente, sem vínculo oficial com SciELO, OpenAlex ou IBGE.</p>
+          <p class="creditos__versao"><span data-t="versao">Versão</span> {{ config.extra.versao or "" }}</p>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block site_nav %}{% endblock %}
+
+{% block content %}{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ 'assets/pagina/pagina.js' | url }}" defer></script>
+{% endblock %}

@@ -8,6 +8,7 @@ copyright: Código sob licença MIT · Projeto independente, sem vínculo oficia
 
 theme:
   name: material
+  custom_dir: overrides
   language: pt-BR
   font:
     text: Instrument Sans
@@ -44,6 +45,10 @@ theme:
 
 extra_css:
   - css/tema.css
+
+# a versão do pacote no rodapé da abertura (overrides/hooks.py)
+hooks:
+  - overrides/hooks.py
 
 plugins:
   - search:
@@ -88,6 +93,7 @@ validation:
 
 nav:
   - Início: index.md
+  - Documentação: documentacao.md
   - Tutoriais:
       - tutoriais/index.md
       - Explorar o exemplo em 5 minutos: tutoriais/explorar-exemplo.md

@@ -92,6 +92,7 @@ frontend/
     ├── projeto.spec.ts               a vista Projeto (linha de metrô, jobs ao vivo, assistente) e a Metodologia
     ├── exportar.spec.ts              exportar figuras e o modo apresentação
     └── publicado.spec.ts             o site gerado pelo `mapa publicar`
+tests/pagina/                         a abertura do site da documentação, sobre ../site (`npm run e2e:pagina`)
 ```
 
 Os testes unitários ficam ao lado do código (`*.test.ts`).

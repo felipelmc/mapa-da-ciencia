@@ -40,4 +40,4 @@ Um roteiro para uma oficina de duas horas, com gente que nunca instalou Python. 
 
 ## Depois da oficina
 
-O caderno termina com os caminhos para continuar: trocar o recorte, escrever o próprio codebook e levar o projeto para o computador. A [documentação](../index.md) tem os guias de cada etapa.
+O caderno termina com os caminhos para continuar: trocar o recorte, escrever o próprio codebook e levar o projeto para o computador. A [documentação](../documentacao.md) tem os guias de cada etapa.

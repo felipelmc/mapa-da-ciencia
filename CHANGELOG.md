@@ -6,6 +6,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Adicionado
 
+- **Abertura do site, "Céu que se forma"**: a página inicial da documentação vira uma abertura própria (`overrides/home.html`). Os 4.275 artigos do piloto acendem como estrelas, ano a ano, e se juntam nas constelações dos macrotemas (a árvore geradora mínima entre os tópicos de cada um), com os rótulos levando à demo; os números do piloto, seis histórias com mini-gráficos tirados dos dados (o tópico em alta, o mais recente, a concentração em SP, RJ e DF, o inglês nas revistas de RI, a abordagem das pesquisas e o kappa por variável), os seis passos do método e uma busca nos tópicos. Em português e inglês, nos temas Observatório e Prancha, com movimento reduzido e no celular. Os dados vêm de `scripts/gerar_pagina.py`; os testes, do Playwright sobre o site montado (no CI) e do pytest. A página inicial antiga vira "Documentação";
 - **Marco M7 (publicação, figuras e oficina)**:
   - **Exportar figuras** (`lib/exportar/`): cada gráfico do painel baixa em SVG (com título, recorte, fonte, n e data, as cores do tema resolvidas e as fontes embutidas), PNG (rasterizado na resolução do tamanho) ou CSV (os dados da tabela); tamanhos Artigo (85 ou 174 mm, 300 ou 600 dpi, tema Prancha), Slide (1.920 px) e Telão (3.840 px, Observatório); guia "Exportar figuras";
   - **modo apresentação** (tecla ++p++, em todas as vistas menos a codificação): esconde o trilho e as barras e aumenta a letra, para projetar; ++esc++ sai; atalho na Ajuda;
