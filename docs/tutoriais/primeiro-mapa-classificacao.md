@@ -92,7 +92,21 @@ Com a sua codificação, os números serão outros. Com 40 documentos, os interv
 uv run mapa classificar
 ```
 
-A etapa continua de onde parou: os 45 documentos já classificados vêm do cache, e o modelo classifica os outros 350, uma hora neste computador. Pode interromper (++ctrl+c++) e rodar de novo quando quiser: nada se perde.
+A etapa continua de onde parou: os 40 documentos da amostra (os 5 da estimativa estavam entre eles) vêm do cache, e o modelo classifica os outros 355. Neste computador, levou 67 minutos:
+
+```text
+Classificação pronta: 395 de 395 documentos com resumo classificados por qwen3.5:9b; evidência literal em 95%;
+355 novos e 40 do cache, em 3.992 s.
+│ Abordagem metodológica      │ Quantitativa (167), Qualitativa (139), Mista (58)                     │ 95% │
+│ Técnica ou fonte de dados   │ Dados observacionais agregados (106), Survey (105), Textos e docum…   │ 96% │
+│ Recorte geográfico          │ Brasil (nacional) (193), Brasil (subnacional) (104), Outro país ou …  │ 94% │
+│ Brasil como caso            │ Sim (312), Não (83)                                                   │ 96% │
+│ Subárea                     │ Eleições e partidos (122), Comportamento e opinião (101), Políticas…  │ 94% │
+│ Período analisado           │ não se aplica (124), 2010 (16), 2014 (12)                             │ 93% │
+JSON válido na primeira tentativa: 100,0%; 10,0 s por documento (mediana); 1 documento(s) sem resumo ficam de fora.
+```
+
+A tabela mostra as três respostas mais frequentes de cada variável e a fração de evidências copiadas literalmente do resumo. Pode interromper a etapa (++ctrl+c++) e rodar de novo quando quiser: nada se perde.
 
 ## 8. Veja no painel
 
