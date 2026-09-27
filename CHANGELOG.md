@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [1.0.1] - 2026-09-27
+
+A versão 1.0.1 é a primeira com DOI: o repositório passa a ser arquivado no Zenodo a cada *release*. E o pacote fica pronto para o PyPI.
+
 ### Adicionado
 
 - arquivamento no Zenodo: cada *release* ganha um DOI, com o ORCID e a afiliação do autor no `.zenodo.json` e no `CITATION.cff` (a licença usa o identificador do vocabulário do Zenodo, `mit`).
@@ -187,7 +191,8 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.0...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.7.0...v1.0.0
 [0.7.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.5.0...v0.6.0
