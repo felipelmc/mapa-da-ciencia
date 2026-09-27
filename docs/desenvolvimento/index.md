@@ -71,7 +71,8 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 |---|---|---|
 | `contrato/schema/*.json`, `contrato/exemplo/dados/` e `contrato/exemplo-publicado/dados/` | `uv run python scripts/gerar_contrato.py` | Ao mudar `contrato/modelos.py`, o gerador de exemplo ou as regras do `mapa publicar` |
 | `frontend/src/lib/contrato/tipos.ts` | `npm run tipos` (em `frontend/`) | Depois de regenerar os schemas |
-| `docs/referencia/{cli,configuracao,codebook,contrato}.md` | `uv run python scripts/gerar_referencias.py` | Ao mudar comandos, `config.py` ou o contrato |
+| `docs/referencia/{cli,configuracao,codebook,contrato,api-http}.md` | `uv run python scripts/gerar_referencias.py` | Ao mudar comandos, `config.py`, o contrato ou as rotas do painel |
+| `notebooks/oficina_colab.ipynb` | `uv run python scripts/gerar_notebook.py` (conferido em `tests/test_notebook.py`) | Ao mudar a versão do pacote ou o roteiro da oficina |
 | `src/mapa_da_ciencia/fontes/scielo-revistas.json` | `uv run python scripts/gerar_revistas.py` (1 requisição à ArticleMeta) | Para atualizar a lista de revistas do SciELO Brasil |
 | `src/mapa_da_ciencia/geografia/dados/paises.csv` | `node scripts/gerar_paises.ts` (nomes do CLDR que vem no Node, sem rede) | Ao atualizar o Node; o teste confere quando a versão do CLDR é a mesma do cabeçalho do arquivo. As variantes (`variantes_paises.csv`) e as UFs (`ufs.csv`) são editadas à mão |
 | `src/mapa_da_ciencia/geografia/dados/municipios.csv` | `uv run python scripts/gerar_municipios.py` (1 requisição ao IBGE) | Quando o IBGE criar municípios |
@@ -84,6 +85,14 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 - **Commits pequenos**, um por tarefa modular, no formato [Conventional Commits](https://www.conventionalcommits.org/pt-br/) com escopo: `feat(coleta): …`, `docs(guias): …`. Cada commit leva o código, os testes e a documentação da tarefa, e passa no lint e nos testes.
 - **Branches por marco** (`m1-esqueleto`, `m2-coleta`…), com merge em `main` e tag ao fim de cada marco.
 - **Decisões técnicas relevantes viram ADR** em `docs/decisoes/`, com evidência e o script que a reproduz.
+
+## Fazer uma release
+
+1. Na branch do marco, o commit `chore(versao): X.Y.Z` muda a versão no `pyproject.toml`, no `CITATION.cff` (com a data), no `frontend/package.json` e no README (o endereço do *wheel*), regenera o caderno da oficina (`scripts/gerar_notebook.py`) e fecha a seção do `CHANGELOG.md`. Com o CI verde, merge `--no-ff` na `main`, tag `vX.Y.Z` e push das duas.
+2. Publique a *release* no GitHub a partir da tag, com a seção do CHANGELOG como notas (`gh release create vX.Y.Z --notes-file …`). Para atualizar a demo, anexe o site do piloto como `piloto-publicado.zip` (o conteúdo da pasta gerada por `mapa publicar`, com o `index.html` na raiz do zip).
+3. O workflow **Release** (`.github/workflows/release.yml`) roda sozinho: confere que a tag bate com a versão, constrói o *wheel* com a interface, testa-o sem Node, anexa-o à *release* e roda de novo o workflow **Documentação** na `main`, que publica a demo em `/demo/` a partir da *release* mais recente.
+4. **PyPI**, depois de configurado uma vez: crie o projeto `mapa-da-ciencia` no PyPI com este repositório e o workflow `release.yml` como *trusted publisher* (ambiente `pypi`), crie o ambiente `pypi` no GitHub (*Settings › Environments*) e a variável de repositório `PUBLICAR_NO_PYPI` = `true`. A partir daí, cada *release* também vai para o PyPI.
+5. **Zenodo**: com a integração GitHub–Zenodo ligada (*zenodo.org › GitHub*, uma vez), cada *release* ganha um DOI, com os metadados de `.zenodo.json`. Depois do primeiro DOI, ponha o DOI de conceito no `CITATION.cff` (`doi:`) e no README.
 
 ## Marcos
 

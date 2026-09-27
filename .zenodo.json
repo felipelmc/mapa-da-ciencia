@@ -1,0 +1,33 @@
+{
+  "title": "mapa-da-ciencia: observatório da literatura científica com modelos de linguagem locais",
+  "upload_type": "software",
+  "description": "<p>Ferramenta de código aberto que coleta artigos científicos (inicialmente do SciELO, com o OpenAlex), mapeia os tópicos ao longo do tempo com embeddings, classifica os resumos segundo um codebook definido pelo pesquisador, com a evidência textual de cada resposta e a validação contra uma codificação cega, e mostra a geografia da produção por UF, país e instituição, com contagem fracionária. Os modelos de linguagem rodam localmente, via Ollama. Linha de comando, API Python, painel web local e publicação como site estático.</p><p>A literature observatory built on local language models: topic maps over time, codebook-based classification of abstracts with textual evidence and blind validation, and the geography of research production.</p>",
+  "creators": [
+    {
+      "name": "Lamarca, Felipe"
+    }
+  ],
+  "license": "MIT",
+  "language": "por",
+  "keywords": [
+    "bibliometria",
+    "revisão de literatura",
+    "SciELO",
+    "OpenAlex",
+    "modelos de linguagem",
+    "análise de conteúdo",
+    "modelagem de tópicos",
+    "ciências sociais computacionais"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://felipelamarca.com/mapa-da-ciencia/",
+      "relation": "isDocumentedBy",
+      "resource_type": "publication-softwaredocumentation"
+    },
+    {
+      "identifier": "https://github.com/felipelmc/mapa-da-ciencia",
+      "relation": "isSupplementTo"
+    }
+  ]
+}
