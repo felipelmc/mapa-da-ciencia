@@ -10,9 +10,9 @@ Os modelos rodam no seu computador, via [Ollama](https://ollama.com): nenhum tex
 
 *In English: [see below](#in-english).*
 
-> **Status:** versão 0.6.0, com a coleta de artigos, os tópicos num mapa navegável e no tempo, a geografia da produção e a classificação por codebook com validação (marcos M2 a M5), tudo também pela interface, com o progresso ao vivo (M6). A publicação do site e as figuras chegam no M7. Ainda não há versão no PyPI.
+> **Status:** versão 0.7.0: a coleta, os tópicos no mapa e no tempo, a geografia, a classificação por codebook com validação, tudo também pela interface, e agora a publicação como site estático, as figuras para artigo e a oficina no Colab (marcos M2 a M7). Ainda não há versão no PyPI.
 
-![O mapa de 4.275 artigos de dez revistas de ciência política no SciELO Brasil, de 2010 a 2025, com os tópicos contornados e os rótulos dos macrotemas](docs/imagens/mapa.png)
+![O painel do piloto: o mapa de 4.275 artigos de dez revistas de ciência política no SciELO Brasil acendendo ano a ano, de 2010 a 2025, e depois as vistas Tópicos, Geografia e Classificação](docs/imagens/painel.gif)
 
 ## Veja
 
@@ -24,7 +24,7 @@ Os modelos rodam no seu computador, via [Ollama](https://ollama.com): nenhum tex
 Com o [uv](https://docs.astral.sh/uv/) instalado, o *wheel* da última [*release*](https://github.com/felipelmc/mapa-da-ciencia/releases) traz a interface pronta:
 
 ```bash
-uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v0.6.0/mapa_da_ciencia-0.6.0-py3-none-any.whl"
+uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v0.7.0/mapa_da_ciencia-0.7.0-py3-none-any.whl"
 mapa painel --exemplo
 ```
 
