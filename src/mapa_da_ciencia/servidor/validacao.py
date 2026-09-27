@@ -5,12 +5,13 @@
   nunca as respostas de um modelo (a codificação é cega).
 - `PUT /api/validacao/codificacoes/{doc}`: grava as respostas de um documento. Com `completa: false` (o
   salvamento automático), as variáveis ainda não respondidas não são erro.
+- `POST /api/validacao/amostra`: sorteia a amostra (como `mapa validar amostra`);
 - `GET /api/validacao/metricas`: a concordância calculada agora, no formato de `validacao.json`, com as
   divergências de todos os codificadores (no contrato publicado, só as de codificadores de referência).
 
 Toda a API só responde a um `Host` local (`servidor/app.py`); as rotas de escrita conferem também o `Origin`,
-quando existe. Assim uma página aberta em outro site não consegue ler as codificações nem gravar no projeto pelo
-navegador.
+quando existe (`origem.py`). Assim uma página aberta em outro site não consegue ler as codificações nem gravar no
+projeto pelo navegador.
 """
 
 from __future__ import annotations
@@ -18,22 +19,13 @@ from __future__ import annotations
 import hashlib
 import random
 from typing import Any
-from urllib.parse import urlsplit
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.projeto import Projeto
-
-HOSTS_LOCAIS = {"127.0.0.1", "localhost", "::1", "[::1]"}
-
-
-def conferir_origem(request: Request) -> None:
-    host = request.url.hostname
-    origem = request.headers.get("origin")
-    if host not in HOSTS_LOCAIS or (origem is not None and urlsplit(origem).hostname not in HOSTS_LOCAIS):
-        raise HTTPException(403, "Gravação recusada: o painel só aceita escrita a partir desta máquina.")
+from mapa_da_ciencia.servidor.origem import conferir_origem
 
 
 class RespostaVariavel(BaseModel):
@@ -41,6 +33,11 @@ class RespostaVariavel(BaseModel):
     evidencia: str = ""
     incerto: bool = False
     nota: str = Field("", max_length=2000)
+
+
+class PedidoAmostra(BaseModel):
+    n: int | None = Field(None, ge=1, description="Tamanho da amostra (padrão: `validacao.n` do `mapa.yaml`).")
+    refazer: bool = False
 
 
 class Codificacao(BaseModel):
@@ -121,6 +118,25 @@ def rotas_validacao(projeto: Projeto) -> APIRouter:
             raise HTTPException(422, {"problemas": problemas})
         ja = {c["variavel"] for c in va.codificacoes(projeto, nome) if c["doc"] == doc}
         return {"ok": True, "completa": ja >= {v.id for v in projeto.codebook.variaveis}}
+
+    @rotas.post("/amostra", dependencies=[Depends(conferir_origem)])
+    def sortear(corpo: PedidoAmostra) -> dict[str, Any]:
+        """Sorteia a amostra de validação (como `mapa validar amostra`) e exporta os textos para codificar. Com uma
+        amostra já sorteada, só `refazer` sorteia outra."""
+        if va.ler(projeto) is not None and not corpo.refazer:
+            raise HTTPException(409, "A amostra já foi sorteada. Mande `refazer: true` para sortear outra.")
+        try:
+            a = va.sortear(projeto, refazer=corpo.refazer, n=corpo.n)
+            va.exportar(projeto, a)
+        except ErroConfig as e:
+            raise HTTPException(422, str(e)) from e
+        return {
+            "n": len(a.docs),
+            "estratificar_por": a.estratificar_por,
+            "estratos": len(a.por_estrato()),
+            "semente": a.semente,
+            "avisos": a.avisos,
+        }
 
     @rotas.get("/metricas")
     def metricas() -> dict[str, Any]:

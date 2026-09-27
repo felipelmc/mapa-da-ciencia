@@ -4,6 +4,21 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [0.6.0] - 2026-09-26
+
+O painel completo: quem não usa o terminal cria e configura o projeto e roda o pipeline pela interface, com o progresso ao vivo. As etapas rodam no servidor local, uma por vez, e o acompanhamento sobrevive a um reload ou a uma queda de conexão. Pela interface, o projeto do tutorial (396 artigos da *Opinião Pública*) teve a coleta refeita do cache, 13 tópicos em 5 minutos, 94,4% dos vínculos de autoria ligados a uma instituição e uma amostra de 20 resumos classificada.
+
+### Adicionado
+
+- **Marco M6 (painel completo)**:
+  - jobs do painel (`servidor/jobs.py`): as etapas rodam em segundo plano, uma por vez, guardadas no `estado.sqlite` com o progresso como eventos numerados; `POST /api/etapas/{etapa}` (coleta, tópicos, geografia, classificação, com as opções validadas), `GET /api/jobs`, `GET /api/jobs/{id}`, `DELETE /api/jobs/{id}` (cancela na próxima atualização de progresso) e `GET /api/jobs/{id}/eventos`, em Server-Sent Events com retomada pelo `Last-Event-ID`; um job que ficou rodando numa sessão anterior aparece como interrompido; as rotas de escrita conferem `Host` e `Origin` (`servidor/origem.py`);
+  - rotas do projeto no painel (`servidor/rotas_projeto.py`): `GET /api/projeto/etapas` (cada etapa pendente, em dia ou desatualizada, com a última execução), `GET /api/modelos` (memória, perfis, modelos instalados e os do projeto), `POST /api/modelos/baixar` (`ollama pull` como job, com o progresso por camada; `Ollama.baixar`), `GET /api/estimativa/classificacao`, `GET`/`PATCH /api/configuracao` e `GET`/`PUT /api/codebook`, gravados sem perder os comentários do YAML (`edicao.py`, com `ruamel.yaml`), validados antes de ir para o disco e recusados enquanto uma etapa roda;
+  - a `FonteApi` do painel fala com a API: estado das etapas, rodar e cancelar uma etapa, acompanhá-la ao vivo (`EventSource`, que reconecta sozinho pedindo só o que perdeu; o estado ignora eventos repetidos), modelos, download, estimativa, configuração e codebook;
+  - a vista **Projeto** no painel local: as etapas numa linha de metrô (pendente, em dia, incompleta, desatualizada ou rodando, com a última execução; a linha deita ou fica de pé conforme o espaço da vista), rodar cada uma (com piloto de 20 documentos, estimativa ou só a amostra, onde cabe), o job ao vivo com cancelar, que retoma o acompanhamento depois de um reload, a estimativa da classificação, os modelos do projeto com o download do que falta e as últimas execuções; e2e contra uma API falsa cuja primeira conexão SSE cai de propósito;
+  - o **assistente do projeto** no painel, em 5 passos (fontes com a busca nas revistas do SciELO, recorte, modelos com o perfil sugerido pela memória e o que falta baixar, codebook num formulário e revisão com o que muda e o que isso refaz); salvar grava o `mapa.yaml` e o `codebook.yaml` sem perder os comentários, e "Salvar e rodar um piloto" coleta 20 documentos; `GET /api/revistas`;
+  - documentação do painel: referência da API HTTP gerada do OpenAPI (`docs/referencia/api-http.md`, conferida no CI com as outras referências), tutorial "Seu primeiro mapa pela interface", guia do painel (rodar as etapas e configurar o projeto) e ADR 0013 (jobs, progresso por SSE e edição do projeto);
+  - sortear a amostra de validação pelo painel: `POST /api/validacao/amostra` e, na estação Validação da linha de metrô, o tamanho e o botão "Sortear a amostra";
+
 ## [0.5.0] - 2026-09-26
 
 A classificação por codebook e a validação: um modelo local lê o resumo de cada artigo e responde às perguntas do codebook, com o trecho do resumo que justifica cada resposta, e a concordância com uma leitura cuidadosa de uma amostra é medida por variável. Na amostra de 200 artigos do piloto, o `qwen3.5:9b` deu JSON válido em 100% das respostas, copiou literalmente 94,8% das evidências, levou 10,8 s por resumo, e o kappa contra um codificador de referência (Claude, às cegas) vai de 0,37 na técnica a 0,93 em "Brasil como caso".
@@ -133,7 +148,8 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.5.0...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.2.0...v0.3.0

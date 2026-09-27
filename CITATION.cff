@@ -8,7 +8,7 @@ authors:
 repository-code: "https://github.com/felipelmc/mapa-da-ciencia"
 url: "https://felipelmc.github.io/mapa-da-ciencia/"
 license: MIT
-version: 0.5.0
+version: 0.6.0
 date-released: 2026-09-26
 abstract: >-
   Ferramenta de código aberto que coleta artigos científicos (inicialmente do SciELO),

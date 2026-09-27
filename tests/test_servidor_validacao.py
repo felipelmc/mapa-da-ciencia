@@ -116,3 +116,13 @@ def test_metricas_ao_vivo_com_divergencias_de_pessoas(projeto, tmp_path):
 def test_site_sem_api_nao_tem_rotas_de_validacao(projeto, tmp_path):
     app = criar_app(pasta_dados=projeto.saida / "dados", projeto=projeto, api=False, estatico=tmp_path / "x")
     assert TestClient(app, base_url=LOCAL).get("/api/validacao/fila?codificador=a").status_code == 404
+
+
+def test_sortear_a_amostra_pelo_painel(projeto, tmp_path):
+    c = _cliente(projeto, tmp_path)
+    r = c.post("/api/validacao/amostra", json={"n": 6})
+    assert r.status_code == 200 and r.json()["n"] == 6 and r.json()["estratificar_por"] == "revista"
+    assert (projeto.raiz / "validacao" / "amostra.jsonl").exists()
+    assert c.post("/api/validacao/amostra", json={"n": 8}).status_code == 409
+    assert c.post("/api/validacao/amostra", json={"n": 8, "refazer": True}).json()["n"] == 8
+    assert c.post("/api/validacao/amostra", json={}, headers={"Origin": "https://malicioso.example"}).status_code == 403

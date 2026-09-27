@@ -13,8 +13,10 @@ from collections.abc import Callable, Iterator
 import httpx
 
 from mapa_da_ciencia.llm.base import ErroProvedor, ModeloCarregado, ModeloInstalado
+from mapa_da_ciencia.progresso import Progresso, ProgressoNulo
 
 GB = 1024**3
+MB = 1000**2
 ENDERECO_PADRAO = "http://localhost:11434"
 TIMEOUT_GERACAO = 600.0  # carregar um modelo do disco e processar um lote pode levar minutos
 
@@ -86,6 +88,35 @@ class Ollama:
 
     def instalado(self, modelo: str) -> ModeloInstalado | None:
         return next((m for m in self.listar_modelos() if _mesmo_modelo(m.nome, modelo)), None)
+
+    def baixar(self, modelo: str, progresso: Progresso | None = None) -> None:
+        """Baixa um modelo (`ollama pull`), com o progresso em MB de cada camada."""
+        progresso = progresso or ProgressoNulo()
+        camada, feito = None, 0
+        try:
+            with self._http.stream("POST", "/api/pull", json={"model": modelo, "stream": True}, timeout=None) as r:
+                if r.status_code >= 400:
+                    r.read()
+                    raise ErroProvedor(f"O Ollama não conseguiu baixar {modelo}: {r.text[:200]}")
+                for linha in r.iter_lines():
+                    if not linha.strip():
+                        continue
+                    evento = json.loads(linha)
+                    if erro := evento.get("error"):
+                        raise ErroProvedor(f"O Ollama não conseguiu baixar {modelo}: {erro}")
+                    total, completo = evento.get("total"), evento.get("completed")
+                    if total and evento.get("digest") != camada:
+                        camada, feito = evento.get("digest"), 0
+                        progresso.etapa(f"Baixando {modelo} ({evento['digest'][7:19]})", total // MB)
+                    if total and completo is not None:
+                        progresso.avancar(max(0, completo // MB - feito))
+                        feito = max(feito, completo // MB)
+                    elif evento.get("status") and not total:
+                        progresso.mensagem(evento["status"])
+        except httpx.ConnectError as e:
+            raise self._sem_resposta() from e
+        finally:
+            progresso.fim()
 
     def embutir_lotes(
         self,

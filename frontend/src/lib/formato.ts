@@ -40,3 +40,13 @@ export function formatarPp(v: number, casas = 2): string {
 	const texto = formatarDecimal(Math.abs(v), casas);
 	return `${v > 0 ? '+' : v < 0 ? '\u2212' : ''}${texto} p.p.`;
 }
+
+/** Duração em segundos → `45 s`, `3 min`, `2 h 10 min`. */
+export function formatarDuracao(segundos: number): string {
+	if (segundos < 90) return `${Math.round(segundos)} s`;
+	const minutos = Math.round(segundos / 60);
+	if (minutos < 90) return `${minutos} min`;
+	const h = Math.floor(minutos / 60);
+	const m = minutos % 60;
+	return m ? `${h} h ${m} min` : `${h} h`;
+}

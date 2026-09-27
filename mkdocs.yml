@@ -95,6 +95,7 @@ nav:
       - "Seu primeiro mapa, parte 2: tópicos e mapa": tutoriais/primeiro-mapa-topicos.md
       - "Seu primeiro mapa, parte 3: tempo e geografia": tutoriais/primeiro-mapa-tempo-e-geografia.md
       - "Seu primeiro mapa, parte 4: classificação e validação": tutoriais/primeiro-mapa-classificacao.md
+      - "Seu primeiro mapa pela interface": tutoriais/primeiro-mapa-pela-interface.md
   - Guias:
       - guias/index.md
       - Instalar e escolher os modelos: guias/instalacao.md
@@ -119,6 +120,7 @@ nav:
       - Configuração (mapa.yaml): referencia/configuracao.md
       - Codebook (codebook.yaml): referencia/codebook.md
       - Contrato de dados: referencia/contrato.md
+      - API HTTP do painel: referencia/api-http.md
       - API Python: referencia/api-python.md
       - Glossário: referencia/glossario.md
   - Explicações:
@@ -145,5 +147,6 @@ nav:
       - "0010 · Gráficos em SVG próprio": decisoes/0010-graficos-em-svg-proprio.md
       - "0011 · Classificação ancorada em evidência": decisoes/0011-classificacao-ancorada-em-evidencia.md
       - "0012 · Validação e codificador de referência": decisoes/0012-validacao-e-codificador-de-referencia.md
+      - "0013 · Painel: jobs, progresso ao vivo e edição": decisoes/0013-painel-jobs-sse-e-edicao.md
   - Desenvolvimento:
       - desenvolvimento/index.md

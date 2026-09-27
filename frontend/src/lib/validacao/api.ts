@@ -13,6 +13,7 @@
  * Os caminhos são relativos à página (`./api/...`), como os dados: funcionam na raiz e num subcaminho.
  */
 import type { CodebookContrato, Validacao } from '$lib/contrato/tipos';
+import { ErroDaApi, pedirApi } from '$lib/dados/pedir';
 
 export type Valor = string | boolean | string[] | null;
 
@@ -42,34 +43,9 @@ export interface Fila {
 
 export const NOME_VALIDO = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,39}$/;
 
-export class ErroDaApi extends Error {
-	readonly status: number;
-	readonly problemas: string[];
+export { ErroDaApi } from '$lib/dados/pedir';
 
-	constructor(mensagem: string, status: number, problemas: string[] = []) {
-		super(mensagem);
-		this.name = 'ErroDaApi';
-		this.status = status;
-		this.problemas = problemas;
-	}
-}
-
-const url = (caminho: string) => new URL(caminho, document.baseURI).toString();
-
-async function pedir<T>(caminho: string, init?: RequestInit): Promise<T> {
-	const r = await fetch(url(caminho), { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
-	if (!r.ok) {
-		const corpo = await r.json().catch(() => null);
-		const detalhe = corpo?.detail;
-		const problemas: string[] = Array.isArray(detalhe?.problemas) ? detalhe.problemas : [];
-		throw new ErroDaApi(
-			typeof detalhe === 'string' ? detalhe : problemas.join('; ') || r.statusText,
-			r.status,
-			problemas
-		);
-	}
-	return r.json();
-}
+const pedir = pedirApi;
 
 export function lerFila(codificador: string): Promise<Fila> {
 	return pedir(`api/validacao/fila?codificador=${encodeURIComponent(codificador)}`);

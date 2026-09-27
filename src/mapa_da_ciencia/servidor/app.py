@@ -3,8 +3,8 @@
 Rotas:
 - `/`             interface compilada (`web/estatico/`); sem build, uma página explica como gerá-lo
 - `/dados/…`      arquivos do contrato (de `saida/dados/` do projeto, ou do exemplo sintético)
-- `/api/…`        API do painel (cresce a cada marco: etapas, codificação, modelos); a codificação da amostra
-                  de validação está em `servidor/validacao.py`
+- `/api/…`        API do painel: as etapas como jobs com progresso ao vivo (`rotas_jobs.py`, `jobs.py`) e a
+                  codificação da amostra de validação (`validacao.py`); só com projeto aberto
 
 O `manifesto.json` é servido dinamicamente para marcar `api: true` no painel. No site
 publicado (`mapa publicar`) ele vai com `api: false` e a interface fica só de leitura.
@@ -17,6 +17,7 @@ as rotas de escrita conferem também o `Origin` (`servidor/validacao.py`).
 from __future__ import annotations
 
 import json
+from contextlib import asynccontextmanager
 from importlib import resources
 from pathlib import Path
 
@@ -28,7 +29,7 @@ from mapa_da_ciencia import __version__
 from mapa_da_ciencia.contrato.exportar import manifesto_do_projeto
 from mapa_da_ciencia.manifesto import status_das_etapas
 from mapa_da_ciencia.projeto import Projeto
-from mapa_da_ciencia.servidor.validacao import HOSTS_LOCAIS
+from mapa_da_ciencia.servidor.origem import HOSTS_LOCAIS
 
 _SEM_BUILD = """<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><title>mapa-da-ciencia</title>
@@ -56,8 +57,25 @@ def criar_app(
     projeto: Projeto | None = None,
     api: bool = True,
     estatico: Path | None = None,
+    etapas: dict | None = None,
 ) -> FastAPI:
-    app = FastAPI(title="mapa-da-ciencia", version=__version__, docs_url="/api/docs", redoc_url=None)
+    """A aplicação do painel. `etapas` troca o registro das etapas que rodam como jobs (os testes usam etapas
+    falsas)."""
+    jobs = None
+    if projeto is not None and api:
+        from mapa_da_ciencia.servidor.etapas import ETAPAS_DO_PAINEL
+        from mapa_da_ciencia.servidor.jobs import Jobs
+
+        jobs = Jobs(projeto, etapas if etapas is not None else ETAPAS_DO_PAINEL)
+
+    @asynccontextmanager
+    async def ciclo(_: FastAPI):
+        yield
+        if jobs is not None:
+            jobs.fechar()
+
+    app = FastAPI(title="mapa-da-ciencia", version=__version__, docs_url="/api/docs", redoc_url=None, lifespan=ciclo)
+    app.state.jobs = jobs
     estatico = estatico if estatico is not None else pasta_estatico()
 
     @app.middleware("http")
@@ -68,10 +86,12 @@ def criar_app(
 
     @app.get("/api/saude")
     def saude() -> dict:
+        """Confere se o painel está no ar: a versão do pacote e o nome do projeto aberto (ou `null`, no exemplo)."""
         return {"ok": True, "versao": __version__, "projeto": projeto.config.nome if projeto else None}
 
     @app.get("/api/projeto")
     def info_projeto() -> dict:
+        """O projeto aberto: nome, título, pasta e a última execução de cada etapa."""
         if projeto is None:
             raise HTTPException(404, "O painel está mostrando o exemplo, sem projeto aberto.")
         etapas = {
@@ -85,13 +105,20 @@ def criar_app(
             "etapas": etapas,
         }
 
-    if projeto is not None and api:
+    if projeto is not None and jobs is not None:
+        from mapa_da_ciencia.servidor.etapas import OPCOES
+        from mapa_da_ciencia.servidor.rotas_jobs import rotas_jobs
+        from mapa_da_ciencia.servidor.rotas_projeto import rotas_projeto
         from mapa_da_ciencia.servidor.validacao import rotas_validacao
 
         app.include_router(rotas_validacao(projeto))
+        app.include_router(rotas_jobs(jobs, OPCOES if etapas is None else {}))
+        app.include_router(rotas_projeto(projeto, jobs))
 
     @app.get("/dados/manifesto.json")
     def manifesto() -> JSONResponse:
+        """O manifesto do contrato, com `api: true` no painel (a interface usa isso para mostrar o que só funciona
+        localmente); sem exportação ainda, um manifesto mínimo do projeto."""
         arq = pasta_dados / "manifesto.json"
         if arq.exists():
             dados = json.loads(arq.read_text(encoding="utf-8"))
@@ -109,7 +136,7 @@ def criar_app(
         app.mount("/", StaticFiles(directory=estatico, html=True), name="estatico")
     else:
 
-        @app.get("/", response_class=HTMLResponse)
+        @app.get("/", response_class=HTMLResponse, include_in_schema=False)
         def sem_build() -> str:
             return _SEM_BUILD.format(versao=__version__)
 
