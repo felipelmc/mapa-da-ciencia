@@ -15,6 +15,17 @@ uv run mapa --versao
 
 É necessário o Python 3.11, 3.12, 3.13 ou 3.14; o `uv` baixa um sozinho, se preciso. O pacote e suas dependências ocupam cerca de 400 MB, a maior parte das bibliotecas numéricas usadas nos tópicos (UMAP, HDBSCAN). Nos exemplos a seguir, `mapa` significa `uv run mapa` quando você estiver dentro da pasta do código.
 
+### Sem compilar a interface: o *wheel* da *release*
+
+O código do repositório não traz a interface do painel compilada (ela precisa do Node.js). Cada [*release*](https://github.com/felipelmc/mapa-da-ciencia/releases) tem um *wheel* com ela pronta, que instala sem clonar nada. Por exemplo, com o `uv`:
+
+```bash
+uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v0.6.0/mapa_da_ciencia-0.6.0-py3-none-any.whl"
+mapa --versao
+```
+
+Troque `0.6.0` pela versão da *release* mais recente. Com o `pip`, num ambiente virtual, é o mesmo endereço em `pip install`.
+
 ## 2. Ollama
 
 Baixe e instale o Ollama em [ollama.com/download](https://ollama.com/download) (macOS, Windows e Linux). No macOS e no Windows ele fica rodando como aplicativo. No Linux, o servidor sobe com `ollama serve`.

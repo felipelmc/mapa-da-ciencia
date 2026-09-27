@@ -43,9 +43,12 @@ def test_comandos_do_caderno(tmp_path, apis_falsas, monkeypatch):
     nb = json.loads(_gerador().CADERNO.read_text(encoding="utf-8"))
     saidas: dict[str, list[str]] = {}
     for celula in nb["cells"]:
-        if celula["cell_type"] != "code" or "colab" in celula["metadata"].get("tags", []):
+        if celula["cell_type"] != "code":
             continue
-        for linha in "".join(celula["source"]).splitlines():
+        linhas = "".join(celula["source"]).splitlines()
+        if "colab" in celula["metadata"].get("tags", []):  # dessas, só os comandos `mapa` rodam aqui
+            linhas = [linha for linha in linhas if linha.startswith("!mapa ")]
+        for linha in linhas:
             if linha.startswith("%cd "):
                 monkeypatch.chdir(Path.cwd() / linha[4:])
                 continue
@@ -58,6 +61,7 @@ def test_comandos_do_caderno(tmp_path, apis_falsas, monkeypatch):
             assert r.exit_code == 0, f"{linha}\n{r.output}"
             saidas.setdefault(args[0], []).append(r.output)
 
+    assert saidas["--versao"][0].startswith("mapa-da-ciencia ")
     assert "qwen3.5:9b" in (tmp_path / "oficina" / "mapa.yaml").read_text(encoding="utf-8")  # o perfil padrão
     assert "Amostra sorteada: 30 documentos" in saidas["validar"][0]
     assert "30 de" in " ".join(saidas["classificar"][0].split())

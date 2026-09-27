@@ -128,6 +128,7 @@ nav:
       - Glossário: referencia/glossario.md
   - Explicações:
       - explicacoes/index.md
+      - Metodologia em uma página: explicacoes/metodologia.md
       - Fontes de dados: explicacoes/fontes.md
       - Como os tópicos são construídos: explicacoes/topicos.md
       - Geografia da produção: explicacoes/geografia.md
@@ -136,6 +137,7 @@ nav:
       - Modelos locais: explicacoes/modelos-locais.md
       - Reprodutibilidade: explicacoes/reprodutibilidade.md
       - Privacidade e licenças: explicacoes/privacidade-e-licencas.md
+      - Limitações e vieses: explicacoes/limitacoes.md
   - Decisões:
       - decisoes/README.md
       - "0001 · Certificados do sistema": decisoes/0001-certificados-do-sistema-com-truststore.md

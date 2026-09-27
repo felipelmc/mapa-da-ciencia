@@ -78,7 +78,7 @@ def celulas(versao: str) -> list[dict]:
 
             !nvidia-smi -L || echo "Sem GPU: escolha a T4 em Ambiente de execução › Alterar o tipo de ambiente de execução."
             !pip install -q "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v{{VERSAO}}/mapa_da_ciencia-{{VERSAO}}-py3-none-any.whl"
-            !mapa --version
+            !mapa --versao
             """,
             "colab",
         ),

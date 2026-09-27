@@ -64,7 +64,7 @@ Para encerrar, volte ao terminal e aperte ++ctrl+c++.
     cd ..
     ```
 
-    Na versão publicada no PyPI (a partir do M7), a interface já vem compilada.
+    O *wheel* anexado a cada [*release*](https://github.com/felipelmc/mapa-da-ciencia/releases) já traz a interface compilada (veja [Instalar](../guias/instalacao.md#sem-compilar-a-interface-o-wheel-da-release)).
 
 ## O que aconteceu
 
