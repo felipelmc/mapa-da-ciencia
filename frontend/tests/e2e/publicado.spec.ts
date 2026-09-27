@@ -47,7 +47,7 @@ test('a Metodologia diz quando e o que foi publicado, e o site não chama API ne
 	await expect(pub).toContainText('Nenhum e-mail');
 	for (const rota of ['#/', '#/mapa', '#/classificacao', '#/validacao']) {
 		await page.goto(`${url('PUBLICADO')}${rota}`);
-		await expect(h1(page)).toHaveCount(1);
+		await expect(h1(page)).toHaveCount(1, { timeout: 15_000 }); // no CI, o Mapa (WebGL por software) demora
 	}
 	expect(api).toEqual([]);
 	expect(problemas).toEqual([]);

@@ -8,7 +8,7 @@
 uv run mapa publicar
 ```
 
-O site fica em `saida/site/` (ou onde `--destino` indicar). A saída diz quantos documentos entraram e quantos resumos foram publicados ou retirados. Antes de publicar, confira no navegador:
+O site fica em `saida/site/` (ou onde `--destino` indicar: uma pasta vazia, uma que ainda não existe ou um site publicado antes; a publicação troca todo o conteúdo do destino e, por isso, recusa uma pasta com outros arquivos ou a própria pasta do projeto). A saída diz quantos documentos entraram e quantos resumos foram publicados ou retirados. Antes de publicar, confira no navegador:
 
 ```bash
 python -m http.server -d saida/site

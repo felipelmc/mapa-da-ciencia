@@ -1,7 +1,7 @@
 {
   "name": "mapa-da-ciencia-frontend",
   "private": true,
-  "version": "0.7.0",
+  "version": "1.0.0",
   "description": "Interface do mapa-da-ciencia: visualiza os arquivos do contrato de dados gerados pelo pipeline em Python.",
   "type": "module",
   "engines": {
@@ -17,7 +17,8 @@
     "e2e": "playwright test",
     "tipos": "node scripts/gerar-tipos.ts",
     "tipos:checar": "node scripts/gerar-tipos.ts --checar",
-    "prepare": "svelte-kit sync || echo ''"
+    "prepare": "svelte-kit sync || echo ''",
+    "e2e:pagina": "playwright test -c playwright.pagina.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

@@ -10,7 +10,7 @@ Os modelos rodam no seu computador, via [Ollama](https://ollama.com): nenhum tex
 
 *In English: [see below](#in-english).*
 
-> **Status:** versão 0.7.0: a coleta, os tópicos no mapa e no tempo, a geografia, a classificação por codebook com validação, tudo também pela interface, e agora a publicação como site estático, as figuras para artigo e a oficina no Colab (marcos M2 a M7). Ainda não há versão no PyPI.
+> **Status:** versão 1.0.0: a coleta, os tópicos no mapa e no tempo, a geografia, a classificação por codebook com validação, tudo também pela interface, a publicação como site estático, as figuras para artigo e a oficina no Colab. Ainda não há versão no PyPI.
 
 ![O painel do piloto: o mapa de 4.275 artigos de dez revistas de ciência política no SciELO Brasil acendendo ano a ano, de 2010 a 2025, e depois as vistas Tópicos, Geografia e Classificação](docs/imagens/painel.gif)
 
@@ -18,13 +18,16 @@ Os modelos rodam no seu computador, via [Ollama](https://ollama.com): nenhum tex
 
 - **[Demo](https://felipelamarca.com/mapa-da-ciencia/demo/)**: o piloto, com os 4.275 artigos de ciência política do SciELO Brasil de 2010 a 2025, publicado com `mapa publicar`.
 - **[Oficina no Colab](https://colab.research.google.com/github/felipelmc/mapa-da-ciencia/blob/main/notebooks/oficina_colab.ipynb)**: um mapa da *Opinião Pública* do zero, numa GPU gratuita do Google, em uns 30 minutos.
+- **[O site do projeto](https://felipelamarca.com/mapa-da-ciencia/)**: os artigos do piloto como um céu que se forma, ano a ano, e as histórias que eles contam.
+
+[![A abertura do site: "Sobre o que escreve a ciência política brasileira?", ao lado do céu de estrelas dos artigos do piloto, ligadas nas constelações dos macrotemas](docs/imagens/abertura.png)](https://felipelamarca.com/mapa-da-ciencia/)
 
 ## Experimente
 
 Com o [uv](https://docs.astral.sh/uv/) instalado, o *wheel* da última [*release*](https://github.com/felipelmc/mapa-da-ciencia/releases) traz a interface pronta:
 
 ```bash
-uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v0.7.0/mapa_da_ciencia-0.7.0-py3-none-any.whl"
+uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v1.0.0/mapa_da_ciencia-1.0.0-py3-none-any.whl"
 mapa painel --exemplo
 ```
 
@@ -63,6 +66,6 @@ Sucessor do [SciELO-Summarizer](https://github.com/felipelmc/SciELO-Summarizer),
 
 All models run on your computer through [Ollama](https://ollama.com) (by default `qwen3-embedding:0.6b` and `qwen3.5:9b`, which fit in a 16 GB laptop), so no text leaves your machine and no API key is needed. Everything runs from the command line, from Python (`mapa_da_ciencia.api`) or from a local web panel, and a project can be published as a static site, with abstracts only under Creative Commons licenses.
 
-The pilot maps 4,275 political science articles from ten Brazilian journals, 2010–2025 ([live demo](https://felipelamarca.com/mapa-da-ciencia/demo/)). The interface and the [documentation](https://felipelmc.github.io/mapa-da-ciencia/) are in Portuguese; the [methodology page](https://felipelmc.github.io/mapa-da-ciencia/explicacoes/metodologia/) summarizes the whole method with its parameters. To try it, install the wheel above and run `mapa painel --exemplo`, or open the [Colab workshop notebook](https://colab.research.google.com/github/felipelmc/mapa-da-ciencia/blob/main/notebooks/oficina_colab.ipynb).
+The pilot maps 4,275 political science articles from ten Brazilian journals, 2010–2025 ([live demo](https://felipelamarca.com/mapa-da-ciencia/demo/); the [project site](https://felipelamarca.com/mapa-da-ciencia/) tells its stories, in English too). The interface and the [documentation](https://felipelmc.github.io/mapa-da-ciencia/) are in Portuguese; the [methodology page](https://felipelmc.github.io/mapa-da-ciencia/explicacoes/metodologia/) summarizes the whole method with its parameters. To try it, install the wheel above and run `mapa painel --exemplo`, or open the [Colab workshop notebook](https://colab.research.google.com/github/felipelmc/mapa-da-ciencia/blob/main/notebooks/oficina_colab.ipynb).
 
 MIT licensed. An independent project, not affiliated with SciELO, OpenAlex or IBGE.

@@ -40,6 +40,7 @@ from mapa_da_ciencia.contrato.modelos import (
     Topicos,
     fragmento_de,
 )
+from mapa_da_ciencia.pastas import substituir_conteudo
 from mapa_da_ciencia.projeto import Projeto
 
 if TYPE_CHECKING:
@@ -436,8 +437,9 @@ def exportar(projeto: Projeto) -> list[str]:
     `detalhes/`; com a geografia também em dia, `afiliacoes.json` e os campos geográficos de `agregados.json`.
     Com a classificação do modelo principal e do codebook atual, `classificacoes.json`, as colunas `cls` e as
     evidências dos detalhes; com a amostra de validação respondida, `validacao.json`. Tudo é escrito
-    numa pasta nova, que substitui a antiga de uma vez: o painel nunca vê uma exportação pela metade, e
-    arquivos de uma etapa desatualizada não sobram.
+    numa pasta nova e posto no lugar arquivo por arquivo, com o manifesto por último
+    (`pastas.substituir_conteudo`, que mantém a pasta por causa do iCloud Drive); arquivos de uma etapa
+    desatualizada não sobram.
     """
     import shutil
 
@@ -503,14 +505,8 @@ def exportar(projeto: Projeto) -> list[str]:
     )
     manifesto = manifesto.model_copy(update={"licencas": cob["licencas"], "execucao": execucao})
 
-    destino = projeto.saida / "dados"
     novo = projeto.saida / "dados.novo"
-    velho = projeto.saida / "dados.velho"
     shutil.rmtree(novo, ignore_errors=True)
-    shutil.rmtree(velho, ignore_errors=True)
     escrever_dados(novo, {"manifesto": manifesto, **arquivos}, fragmentos)
-    if destino.exists():
-        destino.rename(velho)
-    novo.rename(destino)
-    shutil.rmtree(velho, ignore_errors=True)
+    substituir_conteudo(novo, projeto.saida / "dados")
     return avisos

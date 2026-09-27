@@ -9,7 +9,9 @@ O site é a interface compilada lendo o contrato de `saida/dados/`, com três di
 - uma varredura final garante que nenhum arquivo tem e-mail.
 
 Codificações de pessoas nunca estão no contrato (ver `contrato/classificacao.py`). O site é montado numa pasta nova
-e trocado de uma vez, como a exportação.
+e posto no lugar arquivo por arquivo, como a exportação (`pastas.substituir_conteudo`). Como a publicação apaga do
+destino o que não é do site, ela só escreve numa pasta vazia ou num site publicado antes (com o arquivo
+`.mapa-site`), e nunca na pasta do projeto ou numa que a contenha.
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ from .config import ErroConfig
 from .contrato import modelos as m
 from .contrato.exportar import exportar
 from .documento import pode_publicar_resumo
+from .pastas import substituir_conteudo
 from .projeto import Projeto
 from .texto import EMAIL
 
@@ -92,6 +95,24 @@ def filtrar_dados(pasta: Path, *, sem_resumos: bool = False, em: datetime | None
     return publicados, retirados, evid_retiradas
 
 
+MARCA = ".mapa-site"
+
+
+def _conferir_destino(destino: Path, projeto: Projeto) -> None:
+    """A publicação apaga do destino o que não é do site: ela só aceita uma pasta vazia, uma que ainda não existe ou
+    um site publicado antes (com a marca), e nunca a pasta do projeto ou uma que a contenha."""
+    raiz = projeto.raiz.resolve()
+    if destino == raiz or destino in raiz.parents:
+        raise ErroConfig(
+            f"{destino} contém o projeto: escolha uma pasta só para o site, como {raiz / 'saida' / 'site'}."
+        )
+    if destino.is_dir() and any(destino.iterdir()) and not (destino / MARCA).exists():
+        raise ErroConfig(
+            f"{destino} já tem arquivos que não são de um site publicado pelo `mapa publicar`. Como a publicação troca "
+            "todo o conteúdo do destino, escolha uma pasta vazia (ou apague o que está nela, se não for preciso)."
+        )
+
+
 def publicar(
     projeto: Projeto, destino: Path | None = None, *, sem_resumos: bool = False, estatico: Path | None = None
 ) -> ResumoPublicacao:
@@ -108,10 +129,14 @@ def publicar(
     if not (dados / "manifesto.json").exists():
         raise ErroConfig("O projeto ainda não tem dados. Rode `mapa coletar` e `mapa topicos` antes de publicar.")
     destino = (destino or projeto.saida / "site").resolve()
+    _conferir_destino(destino, projeto)
     novo = destino.with_name(destino.name + ".novo")
     shutil.rmtree(novo, ignore_errors=True)
     shutil.copytree(estatico, novo)
     shutil.copytree(dados, novo / "dados")
+    (novo / MARCA).write_text(
+        "Site gerado pelo `mapa publicar`: a próxima publicação troca todo o conteúdo desta pasta.\n"
+    )
 
     publicados, retirados, evid_retiradas = filtrar_dados(novo / "dados", sem_resumos=sem_resumos)
 
@@ -122,12 +147,7 @@ def publicar(
             shutil.rmtree(novo, ignore_errors=True)
             raise ErroConfig(f"Um e-mail apareceu em {arq.name}; a publicação foi interrompida. Avise o projeto.")
 
-    velho = destino.with_name(destino.name + ".velho")
-    shutil.rmtree(velho, ignore_errors=True)
-    if destino.exists():
-        destino.rename(velho)
-    novo.rename(destino)
-    shutil.rmtree(velho, ignore_errors=True)
+    substituir_conteudo(novo, destino)
     tamanho = sum(a.stat().st_size for a in destino.rglob("*") if a.is_file()) / 1e6
     return ResumoPublicacao(
         destino=destino,

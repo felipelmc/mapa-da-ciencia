@@ -4,6 +4,19 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [1.0.0] - 2026-09-27
+
+A versão 1.0.0 fecha o plano do projeto. A abertura do site, "Céu que se forma", mostra os 4.275 artigos do piloto acendendo ano a ano e se juntando nas constelações dos seus assuntos, com as histórias que os dados contam: a polarização em alta, as redes sociais depois de 2018, SP, RJ e DF com 61% da produção brasileira, as revistas de relações internacionais só em inglês desde 2016, os ensaios teóricos caindo de 49% para 26% dos artigos. E a exportação passa a funcionar em pastas sincronizadas pelo iCloud Drive.
+
+### Corrigido
+
+- o `mapa publicar --destino` só escreve numa pasta vazia, numa que ainda não existe ou num site publicado antes (marcado com `.mapa-site`), e nunca na pasta do projeto ou numa que a contenha: como a publicação troca todo o conteúdo do destino, `--destino .` apagava o projeto;
+- a exportação (`saida/dados`) e o `mapa publicar` trocam o conteúdo da pasta arquivo por arquivo, e não a pasta inteira: numa pasta sincronizada pelo iCloud Drive (a Mesa ou os Documentos do macOS), trocar a pasta de nome fazia o serviço guardar a nova como "dados 2" e deixava o projeto sem `saida/dados` (`pastas.substituir_conteudo`; guia de problemas);
+
+### Adicionado
+
+- **Abertura do site, "Céu que se forma"**: a página inicial da documentação vira uma abertura própria (`overrides/home.html`). Os 4.275 artigos do piloto acendem como estrelas, ano a ano, e se juntam nas constelações dos macrotemas (a árvore geradora mínima entre os tópicos de cada um), com os rótulos levando à demo; os números do piloto, seis histórias com mini-gráficos tirados dos dados (o tópico em alta, o mais recente, a concentração em SP, RJ e DF, o inglês nas revistas de RI, a abordagem das pesquisas e o kappa por variável), os seis passos do método e uma busca nos tópicos. Em português e inglês, nos temas Observatório e Prancha, com movimento reduzido e no celular. Os dados vêm de `scripts/gerar_pagina.py`; os testes, do Playwright sobre o site montado (no CI) e do pytest. A página inicial antiga vira "Documentação";
+
 ## [0.7.0] - 2026-09-27
 
 A publicação, as figuras e a oficina: o projeto vira um site estático, com os resumos só de licença Creative Commons e nenhum e-mail; cada gráfico do painel sai em SVG, PNG ou CSV no tamanho de um artigo ou de um slide; e um caderno do Colab monta um mapa do zero numa GPU gratuita. O piloto inteiro está publicado na [demo](https://felipelamarca.com/mapa-da-ciencia/demo/): os 4.247 resumos classificados pelo `qwen3.5:9b` num notebook, em cerca de 10 horas (9,6 s por resumo), com 100% de JSON válido na primeira tentativa e 93,4% das evidências copiadas literalmente do resumo.
@@ -166,7 +179,8 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.7.0...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.7.0...v1.0.0
 [0.7.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.4.0...v0.5.0
