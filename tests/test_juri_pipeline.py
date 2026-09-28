@@ -298,3 +298,60 @@ def test_concordancia_por_estagio_nao_inclui_o_supervisor(projeto):
     assert s["acertos"] == s["n"] == len(linhas) and s["circular"]
     secao4 = destino.read_text(encoding="utf-8").split("## 4.")[1].split("## 5.")[0]
     assert "circular" in secao4
+
+
+def test_deliberacao_interrompida_fica_pendente_e_o_status_ve_votacao_nova(projeto, apis_falsas):
+    from mapa_da_ciencia.armazenamento import gravar_tabela, ler_tabela
+    from mapa_da_ciencia.config import ErroConfig
+    from mapa_da_ciencia.juri.consolidar import consolidar
+    from mapa_da_ciencia.juri.deliberacao import ARQUIVO, COLUNAS
+    from mapa_da_ciencia.juri.estado import pasta_dados
+
+    votar(projeto)
+    deliberar_juri(projeto)
+    n = len(va.ler(projeto).docs)
+    # a deliberação parou no meio: o último membro não deliberou
+    arquivo = pasta_dados(projeto, projeto.codebook.hash()) / ARQUIVO
+    linhas = [x for x in ler_tabela(arquivo) if x["membro"] != MEMBROS[-1]]
+    gravar_tabela(linhas, COLUNAS, arquivo, ordem="doc")
+    resumo = consolidar(projeto)
+    assert resumo.nao_deliberados == 2 * n and resumo.etapas["subarea"]["deliberacao"] == 0
+    assert estado(projeto).proximo == "mapa juri deliberar"
+    with pytest.raises(ErroConfig, match="deliberar"):
+        exportar_pedidos(projeto)
+    _, resumo = deliberar_juri(projeto)  # retoma do cache
+    assert resumo.nao_deliberados == 0
+
+    # uma votação nova muda os votos: o status recalcula, e não lê o resumo.json da consolidação anterior
+    def responder2(corpo):
+        saida = json.loads(responder(corpo))
+        if corpo["model"] == "gemma4:12b-it-qat" and "subarea" in saida:
+            saida["subarea"]["valor"] = "relacoes_internacionais"
+        return json.dumps(saida, ensure_ascii=False)
+
+    apis_falsas.responder_chat = responder2
+    apis_falsas.digests["gemma4:12b-it-qat"] = "ffffffff00000000"
+    votar(projeto)
+    assert estado(projeto).proximo == "mapa juri deliberar"
+    _, numeros = gerar(projeto)
+    assert numeros.nao_deliberados > 0
+    assert "**Atenção:**" in (projeto.raiz / "validacao" / "juri.md").read_text(encoding="utf-8")
+
+
+def test_limite_abaixo_do_pior_caso_de_uma_chamada_para_antes_de_perguntar(projeto, monkeypatch):
+    from mapa_da_ciencia.config import ErroConfig
+    from mapa_da_ciencia.juri.supervisor import supervisionar
+    from mapa_da_ciencia.llm import anthropic
+
+    monkeypatch.setattr(anthropic, "MAX_TOKENS", 200_000)  # um teto alto: a estimativa cabe, o pior caso não
+
+    votar(projeto)
+    deliberar_juri(projeto)
+    arquivo = projeto.raiz / "mapa.yaml"
+    cfg = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
+    cfg["juri"]["supervisor"] = {"modo": "api", "enviar_textos": True}
+    arquivo.write_text(yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8")
+    p = Projeto.abrir(projeto.raiz)
+    estimativa = supervisionar(p, cliente=ClienteFalso()).estimativa_usd
+    with pytest.raises(ErroConfig, match="pior caso"):
+        supervisionar(p, limite_gasto=estimativa * 1.01, cliente=ClienteFalso())

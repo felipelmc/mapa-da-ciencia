@@ -63,8 +63,9 @@ três sessões novas do Claude Opus 5.5 pelo protocolo por arquivos, cada uma s�
   não basta.
 - **Deliberação:** muda a decisão em 80 das 322 decisões deliberadas. Os votos revistos vão mais para a referência
   do que contra ela no `qwen3.5:9b` (71 × 20) e no `qwen3.5:4b` (38 × 9), mas não no `gemma4:12b` (39 × 43): o membro
-  mais forte às vezes cede à maioria dos outros dois, que são da mesma família (Qwen). Em 32 decisões de técnica, os
-  dois Qwen venceram o Gemma, e em 26 delas o Gemma concordava com a referência.
+  mais forte às vezes cede à maioria dos outros dois, que são da mesma família (Qwen). Na técnica, os dois Qwen
+  votaram juntos contra o Gemma em 39 decisões da rodada 1, e o Gemma concordava com a referência em 29 delas;
+  depois da deliberação, ainda são 12 (8 com o Gemma de acordo com a referência).
 - **A unanimidade é um sinal de confiança:** concorda com a referência em 92% das 720 decisões unânimes, contra 81%
   nas maiorias sem deliberação (só a variável de texto livre), 56% nas decididas na deliberação e 56% nas sem
   maioria.

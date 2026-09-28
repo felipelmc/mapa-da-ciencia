@@ -967,6 +967,11 @@ def juri_relatorio(projeto: OpcaoProjeto = Path(".")) -> None:
         destino, n = gerar(p)
         avisos = exportar(p)
     console.print(f"[bold green]Relatório do júri[/]: [bold]{destino.relative_to(p.raiz)}[/].")
+    if n.nao_deliberados:
+        console.print(
+            f"[yellow]Aviso:[/] {num(n.nao_deliberados, 0)} decisão(ões) em disputa ainda sem deliberação: rode "
+            "[bold]mapa juri deliberar[/]."
+        )
     if n.referencia is None:
         console.print("[yellow]Aviso:[/] sem codificador de referência, o relatório só tem os estágios.")
     for aviso in avisos:

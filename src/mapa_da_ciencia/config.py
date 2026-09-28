@@ -233,7 +233,7 @@ class SupervisorJuri(_Base):
 
 
 class ConfigJuri(_Base):
-    """Júri de modelos locais: cada membro classifica a amostra (ou o corpus), os que discordam deliberam vendo as
+    """Júri de modelos locais: cada membro classifica a amostra de validação, os que discordam deliberam vendo as
     respostas anônimas dos outros, e o que continuar sem maioria vai para o supervisor. Ver "Júri e supervisor"."""
 
     membros: list[str] = Field(

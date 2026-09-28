@@ -19,7 +19,7 @@ Conteúdo do `mapa.yaml`.
 | `modelos` | [Modelos](#modelos) | valores padrão da seção | Modelos locais de cada papel. `mapa novo` preenche conforme a memória da máquina. |
 | `topicos` | [ConfigTopicos](#configtopicos) | valores padrão da seção | Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007); para outro |
 | `validacao` | [Validacao](#validacao) | valores padrão da seção | Amostra de resumos codificados por pessoas para medir a qualidade da classificação. |
-| `juri` | [ConfigJuri](#configjuri) | valores padrão da seção | Júri de modelos locais: cada membro classifica a amostra (ou o corpus), os que discordam deliberam vendo as |
+| `juri` | [ConfigJuri](#configjuri) | valores padrão da seção | Júri de modelos locais: cada membro classifica a amostra de validação, os que discordam deliberam vendo as |
 
 ### Fontes
 
@@ -126,7 +126,7 @@ Amostra de resumos codificados por pessoas para medir a qualidade da classifica�
 
 ### ConfigJuri
 
-Júri de modelos locais: cada membro classifica a amostra (ou o corpus), os que discordam deliberam vendo as
+Júri de modelos locais: cada membro classifica a amostra de validação, os que discordam deliberam vendo as
 respostas anônimas dos outros, e o que continuar sem maioria vai para o supervisor. Ver "Júri e supervisor".
 
 | Campo | Tipo | Padrão | Descrição |

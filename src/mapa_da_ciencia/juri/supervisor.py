@@ -458,7 +458,7 @@ def supervisionar(
     """O supervisor pela API da Anthropic. Sem `confirmar`, só estima (nada sai da máquina); com ele, envia os
     pedidos, para antes de passar do limite de gasto e importa as respostas pelo mesmo caminho do protocolo por
     arquivos (a mesma conferência de candidatos e evidências)."""
-    from ..llm.anthropic import Anthropic, ErroOrcamento, estimar_custo
+    from ..llm.anthropic import Anthropic, ErroOrcamento, estimar_custo, pior_caso
     from ..llm.base import ErroProvedor
     from ..rede import variavel as variavel_do_ambiente
 
@@ -483,6 +483,12 @@ def supervisionar(
         raise ErroConfig(
             f"O custo estimado (US$ {estimativa:.2f}) passa do limite de gasto (US$ {limite:.2f}). Aumente "
             "`--limite-gasto` ou `juri.supervisor.limite_gasto_usd`."
+        )
+    if lista and (maximo := max(pior_caso(cfg.modelo, INSTRUCOES_SUPERVISOR, x) for x in textos)) > limite:
+        raise ErroConfig(
+            f"O limite de gasto (US$ {limite:.2f}) não cobre o pior caso de uma chamada (US$ {maximo:.2f}): o "
+            "supervisor pararia antes de enviar o primeiro pedido. Aumente `--limite-gasto` ou "
+            "`juri.supervisor.limite_gasto_usd`."
         )
     if not confirmar or not lista:
         return resumo

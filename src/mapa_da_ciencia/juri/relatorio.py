@@ -63,6 +63,7 @@ class NumerosJuri:
     deliberacao: dict[str, dict[str, int]] = field(default_factory=dict)  # membro → {mudou, para_referencia, …}
     auditoria: Auditoria | None = None
     minutos: dict[str, float] = field(default_factory=dict)
+    nao_deliberados: int = 0  # em disputa, ainda sem deliberação (o relatório avisa)
 
 
 def _respostas_da_referencia(projeto: Projeto, referencia: str) -> dict[tuple[str, str], str]:
@@ -83,6 +84,7 @@ def numeros(projeto: Projeto, resumo: ResumoJuri, v: Validacao) -> NumerosJuri:
         etapas=resumo.etapas,
         virou=resumo.virou,
         auditoria=auditoria(projeto),
+        nao_deliberados=resumo.nao_deliberados,
     )
     pasta = pasta_dados(projeto, codebook.hash())
     decisoes = ler_tabela(pasta / "decisoes.parquet") if (pasta / "decisoes.parquet").exists() else []
@@ -159,6 +161,16 @@ def gerar(projeto: Projeto) -> tuple[Path, NumerosJuri]:
     linhas = [
         "# Júri de modelos locais",
         "",
+        *(
+            [
+                f"**Atenção:** {resumo.nao_deliberados} decisão(ões) em disputa ainda não passaram pela deliberação "
+                "(ela foi interrompida, ou houve uma votação nova). Rode `mapa juri deliberar` e gere o relatório de "
+                "novo.",
+                "",
+            ]
+            if resumo.nao_deliberados
+            else []
+        ),
         f"Membros: {', '.join(f'`{m}`' for m in nums.membros)}. Documentos: {nums.documentos} (a amostra de "
         f"validação). Supervisor: {nums.supervisor or 'ainda sem respostas'}"
         + (
@@ -176,9 +188,11 @@ def gerar(projeto: Projeto) -> tuple[Path, NumerosJuri]:
         linhas += [
             f"## 1. Resultado principal: kappa contra `{ref}`",
             "",
-            "Nenhum destes participantes é da família do supervisor: a comparação não depende dele.",
+            "Nenhum destes participantes passa pelo supervisor: a comparação não depende dele.",
             "",
-            "| Variável | " + " | ".join(f"`{p}`" for p in participantes) + " | McNemar `juri` × principal |",
+            "| Variável | "
+            + " | ".join(f"`{p}`" for p in participantes)
+            + " | McNemar `juri` × principal (só o júri acerta × só o principal acerta) |",
             "|---|" + "---|" * (len(participantes) + 1),
         ]
         for var in medidas:
@@ -190,8 +204,12 @@ def gerar(projeto: Projeto) -> tuple[Path, NumerosJuri]:
                 ),
                 None,
             )
-            p_txt = "p < 0,001" if mc is not None and mc.p < 0.001 else f"p = {num(mc.p, 3)}" if mc else ""
-            mc_txt = "—" if mc is None else f"{p_txt} ({mc.so_a} × {mc.so_b})"
+            if mc is None:
+                mc_txt = "—"
+            else:
+                so_juri, so_principal = (mc.so_a, mc.so_b) if mc.modelo_a == "juri" else (mc.so_b, mc.so_a)
+                p_txt = "p < 0,001" if mc.p < 0.001 else f"p = {num(mc.p, 3)}"
+                mc_txt = f"{p_txt} ({so_juri} × {so_principal})"
             linhas.append(f"| `{var}` | " + " | ".join(_k(v, ref, p, var) for p in participantes) + f" | {mc_txt} |")
         linhas.append("")
         if any(p.nome == "juri-supervisor" for p in v.participantes):
