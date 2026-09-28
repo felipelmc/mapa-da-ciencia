@@ -2,7 +2,8 @@
 	/**
 	 * O fluxo de citações entre macrotemas: a linha é o macrotema de quem cita, a coluna o de quem é citado, e cada
 	 * célula traz a contagem. A cor segue as classes logarítmicas dos mapas (`geografia/escala.ts`), e o número usa a
-	 * cor de texto própria de cada tom (`--sobre-seq-*`, com contraste AA conferido nos dois temas).
+	 * cor de texto própria de cada tom (`--sobre-seq-*`, com contraste AA conferido nos dois temas). Passar o mouse numa
+	 * célula acende a linha e a coluna dela. Os rótulos das linhas usam a largura que sobra das células.
 	 */
 	import { formatarInteiro } from '$lib/formato';
 	import { classe, corDaClasse, quebras, textoSobreClasse } from '$lib/geografia/escala';
@@ -20,9 +21,13 @@
 
 	let largura = $state(640);
 	const n = $derived(rotulos.length);
-	const ROTULO = $derived(Math.min(220, Math.max(110, largura * 0.38)));
 	const TOPO = 26;
-	const lado = $derived(Math.max(22, Math.min(56, Math.floor((largura - ROTULO - 4) / Math.max(1, n)))));
+	// as células ficam entre 22 e 56 px; o rótulo leva o resto (no mínimo 110 px, no máximo 420)
+	const lado = $derived(Math.max(22, Math.min(56, Math.floor((largura - 110 - 4) / Math.max(1, n)))));
+	const ROTULO = $derived(Math.max(110, Math.min(420, largura - n * lado - 4)));
+	const fonteDoValor = $derived(lado < 30 ? '0.56rem' : lado < 40 ? '0.62rem' : '0.7rem');
+	let sobre = $state<[number, number] | null>(null);
+	const acesa = (i: number, j: number) => !sobre || sobre[0] === i || sobre[1] === j;
 	const altura = $derived(TOPO + n * lado + 4);
 	const limites = $derived(quebras(matriz.flat()));
 	const cor = (v: number) => corDaClasse(classe(v, limites), limites.length + 1);
@@ -39,18 +44,27 @@
 		{#each rotulos as r, j (j)}
 			<g transform="translate({ROTULO + j * lado + lado / 2}, {TOPO - 8})">
 				<circle cx="-7" cy="-4" r="4" style:fill={cores[j]} />
-				<text class="coluna" x="0" y="0">{j + 1}</text>
+				<text class="coluna" class:forte={sobre?.[1] === j} x="0" y="0">{j + 1}</text>
 				<title>{j + 1}. {r}</title>
 			</g>
 		{/each}
 		{#each matriz as linha, i (i)}
 			{@const y = TOPO + i * lado}
 			<circle cx="6" cy={y + lado / 2} r="4" style:fill={cores[i]} />
-			<text class="linha" x="16" y={y + lado / 2 + 4} data-testid="linha-fluxo" data-rotulo={rotulos[i]}>{i + 1}. {cortar(rotulos[i])}<title>{rotulos[i]}</title></text>
+			<text class="linha" class:forte={sobre?.[0] === i} x="16" y={y + lado / 2 + 4} data-testid="linha-fluxo" data-rotulo={rotulos[i]}>{i + 1}. {cortar(rotulos[i])}<title>{rotulos[i]}</title></text>
 			{#each linha as v, j (j)}
-				<g data-testid="celula-fluxo" data-de={i} data-para={j} data-n={v}>
+				<g
+					data-testid="celula-fluxo"
+					data-de={i}
+					data-para={j}
+					data-n={v}
+					class:apagada={!acesa(i, j)}
+					role="presentation"
+					onpointerenter={() => (sobre = [i, j])}
+					onpointerleave={() => (sobre = null)}
+				>
 					<rect x={ROTULO + j * lado + 1} y={y + 1} width={lado - 2} height={lado - 2} rx="2" style:fill={cor(v)} class:diagonal={i === j} />
-					<text class="valor" style:fill={corDoTexto(v)} x={ROTULO + j * lado + lado / 2} y={y + lado / 2 + 4}>{formatarInteiro(v)}</text>
+					<text class="valor" style:fill={corDoTexto(v)} style:font-size={fonteDoValor} x={ROTULO + j * lado + lado / 2} y={y + lado / 2 + 4}>{formatarInteiro(v)}</text>
 					<title>{rotulos[i]} → {rotulos[j]}: {formatarInteiro(v)} citações</title>
 				</g>
 			{/each}
@@ -91,5 +105,14 @@
 
 	.valor {
 		font-weight: 600;
+	}
+
+	.forte {
+		font-weight: 700;
+		fill: var(--texto);
+	}
+
+	.apagada {
+		opacity: 0.35;
 	}
 </style>

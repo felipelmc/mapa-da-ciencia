@@ -200,4 +200,20 @@
 		margin: 0;
 		color: var(--acento);
 	}
+
+	/* no celular, o painel vira uma folha presa embaixo, acima da barra de navegação (que cobria o "Baixar" da última
+	   figura), e não passa da borda da tela */
+	@media (max-width: 640px) {
+		.painel {
+			position: fixed;
+			z-index: 60;
+			left: 0.75rem;
+			right: 0.75rem;
+			top: auto;
+			bottom: calc(var(--altura-trilho, 4.5rem) + 0.75rem);
+			min-width: 0;
+			max-height: calc(100dvh - var(--altura-trilho, 4.5rem) - 1.5rem);
+			overflow-y: auto;
+		}
+	}
 </style>

@@ -186,7 +186,9 @@ code {
 	}
 
 	.surgir {
-		animation: surgir 320ms var(--curva) both;
+		/* `backwards`, e não `both`: terminada a animação, a vista não guarda um transform, que criaria um contexto de
+		   empilhamento (o painel de exportação ficava embaixo da barra do celular) e prenderia o position: fixed */
+		animation: surgir 320ms var(--curva) backwards;
 	}
 }
 
@@ -205,5 +207,22 @@ code {
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
 		scroll-behavior: auto !important;
+	}
+}
+
+/* O texto corrido das vistas na medida de leitura (64ch, de 70 a 90 caracteres por linha). O `:where` deixa só o `p`
+   na especificidade (0,0,1): a regra de uma classe, em qualquer componente que precise de outra largura, ganha. */
+:where(main.conteudo) p {
+	max-width: var(--medida);
+}
+
+/* um link para uma seção (#…) não a deixa embaixo das barras que grudam no alto (no celular, só a do recorte gruda) */
+:where([id]) {
+	scroll-margin-top: calc(var(--altura-barra, 4rem) + var(--altura-recorte, 0px) + 1rem);
+}
+
+@media (max-width: 820px) {
+	:where([id]) {
+		scroll-margin-top: calc(var(--altura-recorte, 0px) + 1rem);
 	}
 }

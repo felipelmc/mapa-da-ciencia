@@ -44,7 +44,7 @@
 					class="botao"
 					aria-pressed={modo === m.id}
 					data-testid="rede-{m.id}"
-					onclick={() => mudarFiltros({ rede: m.id, no: null }, { em })}
+					onclick={() => mudarFiltros({ rede: m.id, no: null, comunidade: null }, { em })}
 				>
 					{m.rotulo}
 				</button>
@@ -90,7 +90,6 @@
 		/* sem isso, um SVG largo (antes de medir a tela) alarga a coluna e a página rola para o lado */
 		grid-template-columns: minmax(0, 1fr);
 		gap: 1.25rem;
-		max-width: 84rem;
 	}
 
 	.cabecalho {
@@ -124,7 +123,7 @@
 	}
 
 	.aviso {
-		max-width: 60rem;
+		max-width: var(--medida);
 		color: var(--texto-suave);
 	}
 </style>

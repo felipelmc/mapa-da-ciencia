@@ -163,8 +163,9 @@
 	.gaveta {
 		position: fixed;
 		/* abaixo da barra do topo e da barra do recorte */
-		top: calc(var(--barra-altura) + 4.5rem);
-		right: 0.75rem;
+		/* abaixo das barras do topo e do recorte (as alturas medidas) */
+		top: calc(var(--altura-barra, var(--barra-altura)) + var(--altura-recorte, 3.5rem) + 0.75rem);
+		right: max(0.75rem, calc((100vw - var(--trilho-largura) - var(--conteudo-largura)) / 2 + 0.75rem));
 		bottom: 0.75rem;
 		z-index: 40;
 		width: min(28rem, calc(100vw - 1.5rem));

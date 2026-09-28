@@ -132,3 +132,105 @@ test('sem maioria e sem supervisor, o cartão diz o que valeu; a mudança na del
 	await expect(juri.locator('q.trecho').first()).toBeVisible();
 	expect(problemas).toEqual([]);
 });
+
+for (const site of ['RAIZ', 'PUBLICADO'] as const) {
+	test(`a comparação entre modelos lista cada par significativo, mais de um por variável (${site === 'RAIZ' ? 'raiz' : 'publicado'})`, async ({ page }) => {
+		// no piloto, com o júri, são 6 modelos e 15 pares por variável: dois pares com p < 0,05 na mesma variável
+		// repetiam a chave da lista, e o Svelte parava a página em "Carregando a validação…"
+		const dados = site === 'RAIZ' ? validacao : ler('validacao.json', 'publicado');
+		const significativos = dados.comparacoes_modelos.filter((c: { p: number }) => c.p < 0.05);
+		const porVariavel = new Map<string, number>();
+		for (const c of significativos) porVariavel.set(c.variavel, (porVariavel.get(c.variavel) ?? 0) + 1);
+		expect(Math.max(...porVariavel.values())).toBeGreaterThan(1); // o exemplo cobre o caso
+		const problemas = vigiar(page);
+		await page.goto(`${url(site)}#/validacao`);
+		await expect(h1(page)).toHaveText('Validação');
+		await expect(page.getByTestId('lista-mcnemar').locator('li')).toHaveCount(significativos.length);
+		expect(problemas).toEqual([]);
+	});
+}
+
+test('um erro ao desenhar a vista vira um aviso com "Tentar de novo", e a outra rota abre normalmente', async ({ page }) => {
+	// uma métrica sem a matriz faz a vista falhar ao desenhar; sem a proteção da casca, a página ficava parada
+	await page.route('**/dados/validacao.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const dados = await resposta.json();
+		dados.metricas[0].matriz = null;
+		await rota.fulfill({ response: resposta, json: dados });
+	});
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	await expect(page.getByTestId('falha-ao-abrir')).toContainText('Não foi possível abrir a vista Validação');
+	await expect(page.getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(h1(page)).toHaveText('Tópicos');
+	await expect(page.getByTestId('falha-ao-abrir')).toHaveCount(0);
+});
+
+test('no painel, um erro da API de métricas aparece, em vez das métricas antigas do arquivo', async ({ page }) => {
+	await page.route('**/api/validacao/metricas', (rota) => rota.fulfill({ status: 500, json: { detail: 'falhou ao calcular' } }));
+	await page.goto(`${url('PAINEL')}#/validacao`);
+	await expect(page.getByTestId('falha-ao-abrir')).toContainText('falhou ao calcular');
+	await expect(page.getByTestId('tabela-metricas')).toHaveCount(0);
+});
+
+test('a comparação entre modelos diz quem acerta mais que quem, e o p pequeno como "< 0,001"', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	const itens = page.getByTestId('lista-mcnemar').locator('li');
+	await expect(itens.first()).toContainText('acerta mais que');
+	await expect(page.getByTestId('lista-mcnemar')).not.toContainText('p = 0,000');
+});
+
+test('numa tela larga, a tabela do par acompanha a rolagem ao lado do detalhe', async ({ page }) => {
+	await page.setViewportSize({ width: 1920, height: 1080 });
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	await expect(page.getByTestId('figura-concordancia')).toHaveCSS('position', 'sticky');
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await expect(page.getByTestId('figura-concordancia')).toHaveCSS('position', 'static');
+});
+
+test('numa tela larga, escolher outra variável com a página rolada traz o detalhe dela de volta à vista', async ({ page }) => {
+	await page.setViewportSize({ width: 1920, height: 700 });
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	await expect(page.getByTestId('detalhe-variavel')).toBeVisible();
+	await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+	const titulo = page.locator('#titulo-detalhe');
+	expect((await titulo.boundingBox())!.y).toBeLessThan(0); // o título do detalhe ficou lá em cima
+	await page.getByTestId('linha-variavel').nth(1).click();
+	await expect
+		.poll(async () => {
+			const caixa = (await titulo.boundingBox())!;
+			return caixa.y >= 0 && caixa.y < 700;
+		})
+		.toBe(true);
+});
+
+test('numa tela larga, com muitas variáveis, a tabela grudada rola por dentro e cabe na janela', async ({ page }) => {
+	// o exemplo tem poucas variáveis; o piloto tem 6 por par, e um codebook maior passa de 20
+	await page.route('**/dados/validacao.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const v = await resposta.json();
+		const extra = [];
+		for (let k = 1; k < 5; k += 1) for (const m of v.metricas) extra.push({ ...m, variavel: `${m.variavel}_${k}` });
+		v.metricas.push(...extra);
+		await rota.fulfill({ response: resposta, json: v });
+	});
+	await page.setViewportSize({ width: 1600, height: 800 });
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	const tabela = page.locator('.tabela-do-par');
+	await expect(tabela).toBeVisible();
+	expect(await tabela.evaluate((el) => el.scrollHeight > el.clientHeight + 1)).toBe(true);
+	// rolada a página até a figura grudar, ela fica inteira na janela, e a última linha da tabela recebe o clique
+	const figura = page.getByTestId('figura-concordancia');
+	await figura.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top));
+	const caixa = (await figura.boundingBox())!;
+	expect(caixa.y).toBeGreaterThan(0);
+	expect(caixa.y + caixa.height).toBeLessThanOrEqual(800);
+	await tabela.evaluate((el) => (el.scrollTop = el.scrollHeight));
+	const ultima = page.getByTestId('linha-variavel').last();
+	const livre = await ultima.evaluate((el) => {
+		const c = el.getBoundingClientRect();
+		const topo = document.elementFromPoint(c.left + c.width / 2, c.top + c.height / 2);
+		return c.bottom <= innerHeight && !!topo && el.contains(topo);
+	});
+	expect(livre).toBe(true);
+});

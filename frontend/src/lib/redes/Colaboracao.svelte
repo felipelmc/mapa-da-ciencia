@@ -4,9 +4,9 @@
 
 <script lang="ts">
 	/**
-	 * A colaboração por ano, ao lado das redes: pequenas séries recalculadas no recorte (`colaboracaoPorAno`). Elas
-	 * ignoram o próprio filtro de anos, como o fluxo dos tópicos: mostram o período inteiro, com o intervalo do recorte
-	 * em destaque.
+	 * A colaboração por ano, ao lado das redes (embaixo delas, com o cartão de um nó aberto): pequenas séries
+	 * recalculadas no recorte (`colaboracaoPorAno`). Elas ignoram o próprio filtro de anos, como o fluxo dos tópicos:
+	 * mostram o período inteiro, com o intervalo do recorte em destaque.
 	 */
 	import type { TabelaAfiliacoes } from '$lib/dados/afiliacoes';
 	import type { Aberto } from '$lib/dados/corpus';

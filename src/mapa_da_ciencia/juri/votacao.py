@@ -2,8 +2,10 @@
 
 Votar é classificar com cada membro, um depois do outro, pelo mesmo caminho de `mapa classificar --modelo`: o
 mesmo prompt, os mesmos parâmetros e o mesmo cache. Um membro que já classificou os documentos não é chamado de
-novo. Antes de carregar um membro, os outros membros que estiverem na memória são descarregados (nunca outros
-modelos): no Mac do piloto, dois modelos de 7 GB ao mesmo tempo apertam a memória.
+novo; se falta só o resultado gravado com o codebook atual (depois de mudar um rótulo de categoria, que o modelo
+não lê), a classificação o monta do cache, sem chamar o modelo. Antes de carregar um membro, os outros membros
+que estiverem na memória são descarregados (nunca outros modelos): no Mac do piloto, dois modelos de 7 GB ao
+mesmo tempo apertam a memória.
 """
 
 from __future__ import annotations
@@ -13,7 +15,7 @@ from dataclasses import dataclass
 from ..classificacao.executor import Classificador, Texto
 from ..classificacao.pipeline import OpcoesClassificacao, ResumoClassificacao, classificar
 from ..classificacao.resultado import PASTA as PASTA_CLASSIFICACAO
-from ..classificacao.resultado import ler_linhas, valor_do_texto
+from ..classificacao.resultado import documentos_classificados, ler_linhas, valor_do_texto
 from ..config import ErroConfig
 from ..llm.ollama import Ollama
 from ..progresso import Progresso
@@ -62,6 +64,12 @@ def _descarregar_outros(ollama: Ollama, membros: list[str], membro: str) -> None
             ollama.descarregar(outro)
 
 
+def gravado(projeto: Projeto, membro: str, textos: list[Texto]) -> bool:
+    """O resultado do membro com o codebook atual cobre a amostra (é dele que os votos são lidos)."""
+    docs = documentos_classificados(projeto.dados / PASTA_CLASSIFICACAO, membro, projeto.codebook.hash())
+    return docs is not None and {t.doc for t in textos} <= docs
+
+
 def votar(projeto: Projeto, *, progresso: Progresso | None = None) -> ResumoVotacao:
     """Classifica com cada membro o que ainda falta da amostra de validação."""
     membros = membros_do_juri(projeto)
@@ -71,7 +79,9 @@ def votar(projeto: Projeto, *, progresso: Progresso | None = None) -> ResumoVota
     base = projeto.config.modelos.classificacao
     for membro in membros:
         cfg = base.model_copy(update={"modelo": membro})
-        if not Classificador(cfg, projeto.codebook, projeto.estado, ollama=ollama).pendentes(textos):
+        if not Classificador(cfg, projeto.codebook, projeto.estado, ollama=ollama).pendentes(textos) and gravado(
+            projeto, membro, textos
+        ):
             resumo.ja_prontos.append(membro)
             continue
         _descarregar_outros(ollama, membros, membro)

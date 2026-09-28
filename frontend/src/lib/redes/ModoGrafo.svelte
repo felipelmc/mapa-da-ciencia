@@ -161,10 +161,13 @@
 	const grauRecorte = $derived(grauDe(recorte, nos.n));
 	const forcaRecorte = $derived(forcaDe(recorte, nos.n));
 
-	// ---- aparência: raio pela raiz dos documentos do corpus (não muda com o recorte), cor pelo macrotema da comunidade
+	// ---- aparência: raio pela raiz dos documentos do corpus (não muda com o recorte), de 1 documento (o mínimo) ao
+	// maior (o máximo), como `raios_na_vista` no Python, que desenha sem sobreposição com estes raios; cor pelo macrotema
+	// da comunidade
 	const raio = $derived.by(() => {
 		const maximo = Math.sqrt(Math.max(1, ...nos.docsCorpus));
-		return Float32Array.from(nos.docsCorpus, (n) => RAIO.min + ((RAIO.max - RAIO.min) * Math.sqrt(n)) / maximo);
+		const escala = maximo > 1 ? (RAIO.max - RAIO.min) / (maximo - 1) : 0;
+		return Float32Array.from(nos.docsCorpus, (n) => RAIO.min + escala * Math.max(0, Math.sqrt(n) - 1));
 	});
 	const corDoMacro = $derived(new Map(aberto.topicos.macrotemas.map((m) => [m.id, m.cor])));
 	const corDaComunidade = (c: number) => {
@@ -175,7 +178,7 @@
 	const desenhados = $derived(Array.from(nos.x).filter(Number.isFinite).length);
 	const desenhadosNoRecorte = $derived.by(() => {
 		let n = 0;
-		for (let i = 0; i < nos.n; i += 1) if (ativo[i] && Number.isFinite(nos.x[i])) n += 1;
+		for (let i = 0; i < nos.n; i += 1) if (ativo[i] && Number.isFinite(xVisivel[i])) n += 1;
 		return n;
 	});
 	/** O rótulo da comunidade no desenho: o tópico mais frequente, curto (o rótulo inteiro fica na lista e no cartão). */
@@ -184,14 +187,15 @@
 		return primeiro.length > 34 ? `${primeiro.slice(0, 33).trimEnd()}…` : primeiro;
 	};
 
-	// rótulos das maiores comunidades, no centro dos seus nós
+	// rótulos das maiores comunidades, logo acima dos seus nós (no vão entre as comunidades, e não em cima dos nós, que
+	// continuam clicáveis)
 	const rotulos = $derived.by((): RotuloGrafo[] => {
 		const soma = new Map<number, [number, number, number]>();
 		for (let i = 0; i < nos.n; i += 1) {
 			const c = nos.comunidade[i];
 			if (c < 0 || !Number.isFinite(xVisivel[i])) continue;
-			const [sx, sy, n] = soma.get(c) ?? [0, 0, 0];
-			soma.set(c, [sx + nos.x[i], sy + nos.y[i], n + 1]);
+			const [sx, topo, n] = soma.get(c) ?? [0, -Infinity, 0];
+			soma.set(c, [sx + nos.x[i], Math.max(topo, nos.y[i]), n + 1]);
 		}
 		const escolhidas = [...nos.comunidades.values()]
 			.filter((c) => (soma.get(c.id)?.[2] ?? 0) >= 3)
@@ -200,16 +204,49 @@
 		// duas comunidades com o mesmo primeiro tópico levam o segundo, para os rótulos não se repetirem
 		const primeiros = escolhidas.map((c) => rotuloCurto(c.rotulo));
 		return escolhidas.map((c, k) => {
-			const [sx, sy, n] = soma.get(c.id)!;
+			const [sx, topo, n] = soma.get(c.id)!;
 			const repetido = primeiros.filter((t) => t === primeiros[k]).length > 1;
 			const texto = repetido ? rotuloCurto(c.rotulo.split(' · ').slice(1).join(' · ') || c.rotulo) : primeiros[k];
-			return { id: String(c.id), texto, x: sx / n, y: sy / n };
+			return { id: String(c.id), texto, x: sx / n, y: topo, comunidade: c.id };
+		}).map((r, k, todos) => {
+			// se ainda assim dois rótulos saírem iguais (o segundo tópico também repetido), o tamanho os distingue
+			const iguais = todos.filter((o) => o.texto === r.texto).length > 1;
+			return iguais ? { ...r, texto: `${r.texto} (${formatarInteiro(escolhidas[k].n)})` } : r;
 		});
 	});
 
-	// ---- o nó aberto (pela URL)
+	// ---- o nó aberto e a comunidade em destaque (pela URL)
 	const selecionado = $derived(filtros.no !== null ? (nos.indice.get(filtros.no) ?? null) : null);
-	const abrir = (i: number | null) => mudarFiltros({ no: i === null ? null : nos.ids[i] }, { em });
+	const comunidadeEscolhida = $derived(
+		filtros.comunidade !== null && nos.comunidades.has(filtros.comunidade) ? filtros.comunidade : null
+	);
+	const escolherComunidade = (c: number | null) => mudarFiltros({ comunidade: c }, { em });
+	/** Pela legenda, embaixo do grafo: escolhe e traz o grafo à vista (senão ele mudaria fora da tela). */
+	function escolherPelaLegenda(c: number | null) {
+		escolherComunidade(c);
+		const area = document.querySelector<HTMLElement>('[data-grafo]');
+		const caixa = area?.getBoundingClientRect();
+		if (area && caixa && (caixa.top < 0 || caixa.bottom > window.innerHeight)) area.scrollIntoView({ block: 'center' });
+	}
+	/** As comunidades do seletor na barra do grafo, das maiores às menores. */
+	const opcoesComunidade = $derived(
+		[...nos.comunidades.values()].sort((a, b) => b.n - a.n || a.id - b.id).map((c) => ({ id: c.id, rotulo: `${c.rotulo} (${formatarInteiro(c.n)})` }))
+	);
+	// Esc solta a comunidade em destaque (com o cartão aberto, o Esc é dele, e num campo de texto, do campo)
+	function tecla(e: KeyboardEvent) {
+		const alvo = e.target as HTMLElement | null;
+		if (e.key !== 'Escape' || e.defaultPrevented || selecionado !== null || comunidadeEscolhida === null) return;
+		if (alvo?.closest('input, textarea, select')) return;
+		if (document.documentElement.dataset.apresentacao === 'sim' || document.querySelector('details[open]')) return;
+		escolherComunidade(null);
+	}
+	let grafoELado = $state<HTMLElement | null>(null);
+	// um nó aberto por um clique no grafo não puxa o foco para o cartão, nem rola a página até ele, venha o foco de onde vier
+	let peloPonteiro = $state(false);
+	const abrir = (i: number | null, pelo: 'ponteiro' | 'teclado' | null = null) => {
+		peloPonteiro = pelo === 'ponteiro';
+		mudarFiltros({ no: i === null ? null : nos.ids[i] }, { em });
+	};
 	const documentosDo = (i: number): number[] => {
 		if (pessoas) {
 			const saida: number[] = [];
@@ -350,6 +387,8 @@
 		debug.arestas = corpus.n;
 		debug.arestasNoRecorte = recorte.n;
 		debug.selecionado = selecionado !== null ? nos.ids[selecionado] : null;
+		debug.comunidade = comunidadeEscolhida;
+		debug.estadoDoGrafo = () => grafo?.estado();
 		debug.posicaoNaTela = (id) => {
 			const i = nos.indice.get(id);
 			return i === undefined ? undefined : grafo?.posicaoNaTela(i);
@@ -360,7 +399,7 @@
 <p class="lide" data-testid="lide-redes">
 	{#if pessoas}
 		{contar(noRecorte, 'documento')} no recorte, com {contar(ativos, 'pessoa')}, {formatarInteiro(desenhadosNoRecorte)}
-		delas desenhadas (as que têm coautor no corpus), e {formatarInteiro(recorte.n)}
+		delas desenhadas agora (as que têm coautor no corpus{#if !mostrarPequenos && escondidos}, fora as duplas e os trios isolados{/if}), e {formatarInteiro(recorte.n)}
 		{recorte.n === 1 ? 'par de coautores' : 'pares de coautores'}. Duas pessoas ficam ligadas quando assinam juntas um
 		documento; num artigo de n autores, cada par ganha 1/(n−1) de peso, e assim cada pessoa distribui no máximo 1 por
 		artigo.
@@ -370,7 +409,7 @@
 		ficam ligadas quando aparecem juntas nas afiliações de um documento (mesmo quando é um autor só, com duas
 		afiliações), com o mesmo peso fracionário da coautoria.
 	{/if}
-	O maior grupo ligado fica em cima; embaixo, os grupos menores{#if !mostrarPequenos && escondidos}, sem as duplas e os
+	O maior grupo ligado fica à esquerda, com cada comunidade num espaço próprio; à direita e embaixo, os grupos menores{#if !mostrarPequenos && escondidos}, sem as duplas e os
 		trios isolados{/if}.
 </p>
 
@@ -378,10 +417,12 @@
 	itens={itensBusca}
 	rotulo={pessoas ? 'Buscar uma pessoa' : 'Buscar uma instituição'}
 	dica={pessoas ? 'Nome da pessoa' : 'Nome ou sigla'}
-	aoEscolher={(id) => mudarFiltros({ no: id }, { em })}
+	aoEscolher={(id) => ((peloPonteiro = false), mudarFiltros({ no: id }, { em }))}
 />
 
-<div class="grafo-e-lado" class:com-cartao={cartao !== null}>
+<svelte:window onkeydown={tecla} />
+
+<div class="grafo-e-lado" class:com-cartao={cartao !== null} bind:this={grafoELado}>
 	<Figura n={noRecorte} id="grafo" titulo={pessoas ? 'Quem escreve com quem' : 'Que instituições publicam juntas'} {resumo} {colunas} {linhas} {dados}>
 		<Grafo
 			bind:this={grafo}
@@ -392,14 +433,30 @@
 			{ativo}
 			arestas={corpus}
 			{faixas}
+			comunidade={nos.comunidade}
 			{selecionado}
+			{comunidadeEscolhida}
 			{rotulos}
 			nomeDo={(i) => nos.nomes[i]}
 			{dica}
 			aoEscolher={abrir}
+			aoEscolherComunidade={escolherComunidade}
+			{opcoesComunidade}
+			alvoTelaCheia={grafoELado}
 			rotulo={rotuloGrafo}
 			aoDesenhar={(ms) => ((debug.desenhado = true), (debug.msAtePrimeiroDesenho = ms))}
 		/>
+		{#if cartao}
+			<!-- no celular, o cartão fica embaixo do grafo: um atalho até ele -->
+			<button
+				type="button"
+				class="ir-ao-cartao"
+				onclick={() => document.querySelector('[data-testid="cartao-no"]')?.scrollIntoView({ block: 'start' })}
+				data-testid="ir-ao-cartao"
+			>
+				Ver o cartão de {cartao.titulo} ↓
+			</button>
+		{/if}
 		{#if escondidos}
 			<label class="pequenos">
 				<input
@@ -438,11 +495,24 @@
 			</ul>
 			{#if maioresComunidades.length}
 				<ol class="comunidades" aria-label="As maiores comunidades" data-legenda data-testid="lista-comunidades">
-					<li class="titulo-legenda">As maiores comunidades (rótulo: os dois tópicos mais frequentes):</li>
+					<li class="titulo-legenda">
+						As maiores comunidades (rótulo: os dois tópicos mais frequentes; clique numa para destacá-la):
+						{#if comunidadeEscolhida !== null}
+							<button type="button" class="todas" onclick={() => escolherPelaLegenda(null)} data-testid="todas-comunidades">Todas</button>
+						{/if}
+					</li>
 					{#each maioresComunidades as c (c.id)}
 						<li>
-							<span class="bolinha" style:background={corDaComunidade(c.id) ?? 'var(--texto-fraco)'}></span>
-							{c.rotulo} <span class="suave">({contar(c.n, nome.no, nome.nos)})</span>
+							<button
+								type="button"
+								class="comunidade"
+								aria-pressed={comunidadeEscolhida === c.id}
+								onclick={() => escolherPelaLegenda(comunidadeEscolhida === c.id ? null : c.id)}
+								data-testid="comunidade"
+							>
+								<span class="bolinha" style:background={corDaComunidade(c.id) ?? 'var(--texto-fraco)'}></span>
+								{c.rotulo} <span class="suave">({contar(c.n, nome.no, nome.nos)})</span>
+							</button>
 						</li>
 					{/each}
 				</ol>
@@ -462,8 +532,8 @@
 		{/if}
 	</Figura>
 
-	<aside class="lado">
-		{#if cartao}
+	{#if cartao}
+		<aside class="lado">
 			<CartaoNo
 				titulo={cartao.titulo}
 				sobretitulo={cartao.sobretitulo}
@@ -478,8 +548,14 @@
 				aoAbrir={(j) => abrir(j)}
 				aoFechar={() => abrir(null)}
 				filtro={pessoas ? null : { ativo: filtros.inst.includes(nos.ids[cartao.i]), alternar: () => alternarInstituicao(nos.ids[cartao.i]) }}
+				{peloPonteiro}
 			/>
-		{/if}
+		</aside>
+	{/if}
+
+	<!-- sem cartão, a colaboração fica ao lado do grafo; com ele, desce para baixo (o cartão acompanha a rolagem e a
+	     cobriria). Só muda de lugar na grade, sem ser recriada: a tabela e a exportação dela continuam abertas -->
+	<div class="colaboracao">
 		<Colaboracao
 			quais={pessoas ? ['coautoria', 'autores'] : ['instituicoes', 'exterior']}
 			{aberto}
@@ -489,27 +565,79 @@
 			{falhas}
 			n={noRecorte}
 		/>
-	</aside>
+	</div>
 </div>
 
 <style>
 	.lide {
-		max-width: 60rem;
+		max-width: var(--medida);
 		margin: 0;
 		color: var(--texto-suave);
 	}
 
 	.grafo-e-lado {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+		grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
 		gap: 1.5rem;
 		align-items: start;
 	}
 
+	.grafo-e-lado > :global(.figura) {
+		grid-column: 1;
+		grid-row: 1;
+	}
+
 	.lado {
 		display: grid;
-		gap: 1rem;
+		grid-column: 2;
+		grid-row: 1;
+		align-content: start;
 		min-width: 0;
+		/* a coluna vai até o fim do grafo, para o cartão acompanhar a rolagem ao longo dele */
+		align-self: stretch;
+	}
+
+	.colaboracao {
+		grid-column: 2;
+		grid-row: 1;
+		min-width: 0;
+	}
+
+	.com-cartao > .colaboracao {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		max-width: 60rem;
+	}
+
+	/* o cartão acompanha a rolagem da página: com o grafo à vista, ele também está (e não com o nome acima da tela) */
+	.lado > :global(.cartao) {
+		position: sticky;
+		z-index: 2;
+		top: calc(var(--altura-barra, 4rem) + var(--altura-recorte, 3rem) + 0.75rem);
+		max-height: calc(100dvh - var(--altura-barra, 4rem) - var(--altura-recorte, 3rem) - 1.5rem);
+		overflow-y: auto;
+		/* "Ver o cartão" o põe abaixo das barras que grudam no alto (as duas; até 820 px, só a do recorte) */
+		scroll-margin-top: calc(var(--altura-barra, 4rem) + var(--altura-recorte, 3rem) + 1rem);
+	}
+
+	/* em tela cheia, o grafo e a coluna do cartão juntos */
+	.grafo-e-lado:fullscreen {
+		padding: 1rem;
+		overflow: auto;
+		background: var(--fundo);
+	}
+
+	.grafo-e-lado:fullscreen .lado > :global(.cartao) {
+		top: 0;
+		max-height: calc(100dvh - 2rem);
+		scroll-margin-top: 1rem;
+	}
+
+	/* em tela cheia, o título e o resumo da figura do grafo saem, e o grafo cabe na altura da tela (os da colaboração,
+	   na coluna ao lado, ficam) */
+	.grafo-e-lado:fullscreen > :global(.figura > header),
+	.grafo-e-lado:fullscreen > :global(.figura > .resumo) {
+		display: none;
 	}
 
 	.legenda {
@@ -590,13 +718,66 @@
 		gap: 0.35rem;
 	}
 
+	.comunidades button.comunidade {
+		display: flex;
+		align-items: baseline;
+		gap: 0.35rem;
+		padding: 0.1rem 0.3rem;
+		border: 1px solid transparent;
+		border-radius: var(--raio-pequeno);
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.comunidades button.comunidade:hover {
+		border-color: var(--linha);
+	}
+
+	.comunidades button.comunidade[aria-pressed='true'] {
+		border-color: var(--acento);
+		color: var(--texto);
+	}
+
+	.todas {
+		margin-left: 0.4rem;
+		padding: 0 0.4rem;
+		border: 1px solid var(--linha-forte);
+		border-radius: 999px;
+		background: none;
+		color: var(--acento);
+		font: inherit;
+		cursor: pointer;
+	}
+
+	/* o atalho até o cartão só aparece quando ele fica embaixo do grafo */
+	.ir-ao-cartao {
+		display: none;
+		/* numa linha só, mesmo com o nome longo de uma instituição (a tela cheia reserva a altura de uma linha) */
+		max-width: 100%;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		margin-top: 0.5rem;
+		padding: 0.3rem 0.7rem;
+		border: 1px solid var(--acento);
+		border-radius: var(--raio);
+		background: none;
+		color: var(--acento);
+		font: inherit;
+		font-size: 0.85rem;
+		cursor: pointer;
+	}
+
 	.comunidades .suave {
 		color: var(--texto-suave);
 	}
 
 	.nota {
 		margin: 0.6rem 0 0;
-		max-width: 60rem;
+		max-width: var(--medida);
 		font-size: 0.82rem;
 		color: var(--texto-suave);
 	}
@@ -604,6 +785,37 @@
 	@media (max-width: 1100px) {
 		.grafo-e-lado {
 			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.lado,
+		.colaboracao {
+			grid-column: 1;
+			grid-row: 2;
+		}
+
+		.com-cartao > .colaboracao {
+			grid-row: 3;
+		}
+
+		/* em tela cheia com um cartão aberto, o grafo deixa à vista, embaixo dele, o botão que leva ao cartão */
+		.grafo-e-lado.com-cartao:fullscreen :global(.grafo.tela-cheia) {
+			height: calc(100dvh - 5.5rem);
+		}
+
+		.lado > :global(.cartao) {
+			position: static;
+			max-height: none;
+			overflow: visible;
+		}
+
+		.ir-ao-cartao {
+			display: inline-block;
+		}
+	}
+
+	@media (max-width: 820px) {
+		.lado > :global(.cartao) {
+			scroll-margin-top: calc(var(--altura-recorte, 0px) + 1rem);
 		}
 	}
 </style>

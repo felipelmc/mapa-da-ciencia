@@ -1,5 +1,7 @@
 """API local da codificação: fila cega por codificador, gravação com conferência de origem e métricas ao vivo."""
 
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -90,7 +92,10 @@ def test_escrita_so_desta_maquina(projeto, tmp_path):
     url = f"/api/validacao/codificacoes/{doc}"
     c = _cliente(projeto, tmp_path)
     assert c.put(url, json=corpo, headers={"Origin": "https://malicioso.example"}).status_code == 403
-    assert c.put(url, json=corpo, headers={"Origin": "http://localhost:5173"}).status_code == 200
+    # outra porta local é outro servidor (outra aplicação aberta no navegador): também recusada
+    assert c.put(url, json=corpo, headers={"Origin": "http://localhost:5173"}).status_code == 403
+    assert c.put(url, json=corpo, headers={"Origin": "http://127.0.0.1:8766"}).status_code == 403
+    assert c.put(url, json=corpo, headers={"Origin": LOCAL}).status_code == 200
     fora = _cliente(projeto, tmp_path, base="http://painel.example")  # DNS apontado para cá
     assert fora.put(url, json=corpo).status_code == 403
     assert va.codificacoes(projeto, "maria")[0]["valor"] == "mista"
@@ -156,3 +161,43 @@ def test_versao_nova_a_parte_fica_no_painel_local_e_fora_do_contrato(projeto, tm
         validacao = json.loads((pasta / "validacao.json").read_text(encoding="utf-8"))
         assert validacao["modelos"] == ["qwen3.5:4b"], pasta
         assert "(versão nova)" not in json.dumps(validacao, ensure_ascii=False), pasta
+
+
+def test_apagar_uma_resposta_e_nomes_recusados(projeto, tmp_path):
+    va.sortear(projeto)
+    doc = va.ler(projeto).docs[0]
+    c = _cliente(projeto, tmp_path)
+    url = f"/api/validacao/codificacoes/{doc}"
+    texto = next(v.id for v in projeto.codebook.variaveis if v.tipo == "texto")
+    assert c.put(url, json={"codificador": "maria", "respostas": _respostas(projeto)}).status_code == 200
+    # a pessoa apaga o texto: a resposta sai do banco, em vez de voltar no reload
+    r = c.put(url, json={"codificador": "maria", "respostas": {texto: {"valor": None}}})
+    assert r.status_code == 200 and r.json()["completa"] is False
+    assert texto not in {x["variavel"] for x in va.codificacoes(projeto, "maria") if x["doc"] == doc}
+    # uma marca antes de qualquer valor não registra um codificador fantasma
+    assert (
+        c.put(url, json={"codificador": "joana", "respostas": {texto: {"valor": None, "incerto": True}}}).status_code
+        == 200
+    )
+    assert "joana" not in va.codificadores(projeto)
+    # os nomes do júri são reservados (esconderiam as fontes do júri nas métricas)
+    for nome in ("juri", "juri-r1", "Juri-Supervisor"):
+        assert c.put(url, json={"codificador": nome, "respostas": {}}).status_code == 400, nome
+    assert c.put(url, json={"codificador": "juri-da-maria", "respostas": {}}).status_code == 200  # só esses três
+    # um codificador de referência não abre no painel: nem a fila (as respostas dele) nem a gravação
+    arquivo = tmp_path / "ref.jsonl"
+    arquivo.write_text(json.dumps({"doc": doc, "respostas": _respostas(projeto)}) + "\n", encoding="utf-8")
+    va.importar(projeto, arquivo, "claude-opus", tipo="referencia")
+    assert c.get("/api/validacao/fila?codificador=claude-opus").status_code == 409
+    assert c.put(url, json={"codificador": "claude-opus", "respostas": _respostas(projeto)}).status_code == 409
+    assert va.codificadores(projeto)["claude-opus"] == "referencia"
+
+
+def test_pedido_invalido_em_portugues(projeto, tmp_path):
+    c = _cliente(projeto, tmp_path)
+    r = c.post("/api/validacao/amostra", json={"n": 0})
+    assert r.status_code == 422
+    detalhe = r.json()["detail"]
+    assert detalhe["problemas"] == ["n: precisa ser pelo menos 1"] and detalhe["mensagem"].startswith("Pedido inválido")
+    ruim = c.post("/api/validacao/amostra", content=b'{"n": ', headers={"Content-Type": "application/json"})
+    assert ruim.json()["detail"]["problemas"] == ["o corpo do pedido: não é um JSON válido"]

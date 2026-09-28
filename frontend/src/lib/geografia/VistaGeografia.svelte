@@ -230,49 +230,51 @@
 		</Figura>
 	</div>
 
-	<Figura
-		n={total}
-		id="mundo"
-		titulo="No mundo"
-		resumo={resumoMundo}
-		colunas={['País', 'Peso fracionário', 'Documentos']}
-		linhas={tabela(paises, docsPais, nomePais)}
-		dados={tabelaCsv(['País', 'Peso fracionário', 'Documentos'], paises, docsPais, nomePais)}
-		pronto={!!malhaPaises}
-	>
-		{#if malhaPaises}
-			<MapaRegioes
-				id="pais"
-				regioes={malhaPaises}
-				chave={(r) => r.properties.iso}
-				projetar={projecaoMundo}
-				valores={paises}
-				documentos={docsPais}
-				selecionados={selPais}
-				fora={new Set(noBrasil ? ['BR'] : [])}
-				nome={nomePais}
-				aoEscolher={(k) => alternar('pais', k)}
-				proporcao={0.48}
-				rotulo="Mapa-múndi; cada país com documentos é um botão que filtra o recorte"
-			/>
-		{/if}
-	</Figura>
+	<div class="mundo-e-cobertura">
+		<Figura
+			n={total}
+			id="mundo"
+			titulo="No mundo"
+			resumo={resumoMundo}
+			colunas={['País', 'Peso fracionário', 'Documentos']}
+			linhas={tabela(paises, docsPais, nomePais)}
+			dados={tabelaCsv(['País', 'Peso fracionário', 'Documentos'], paises, docsPais, nomePais)}
+			pronto={!!malhaPaises}
+		>
+			{#if malhaPaises}
+				<MapaRegioes
+					id="pais"
+					regioes={malhaPaises}
+					chave={(r) => r.properties.iso}
+					projetar={projecaoMundo}
+					valores={paises}
+					documentos={docsPais}
+					selecionados={selPais}
+					fora={new Set(noBrasil ? ['BR'] : [])}
+					nome={nomePais}
+					aoEscolher={(k) => alternar('pais', k)}
+					proporcao={0.48}
+					rotulo="Mapa-múndi; cada país com documentos é um botão que filtra o recorte"
+				/>
+			{/if}
+		</Figura>
 
-	<Figura
-		n={total}
-		id="cobertura"
-		titulo="Cobertura por ano"
-		resumo={resumoCobertura}
-		colunas={colunasCobertura}
-		linhas={linhasCobertura}
-		dados={dadosCobertura}
-	>
-		<CoberturaAnos anos={cobertura} />
-		<p class="nota">
-			Nos artigos mais antigos, as fontes trazem menos afiliações, e as que trazem vêm como texto livre. Os
-			mapas acima contam só o peso com lugar conhecido; o "sem afiliação" não entra em nenhuma UF nem país.
-		</p>
-	</Figura>
+		<Figura
+			n={total}
+			id="cobertura"
+			titulo="Cobertura por ano"
+			resumo={resumoCobertura}
+			colunas={colunasCobertura}
+			linhas={linhasCobertura}
+			dados={dadosCobertura}
+		>
+			<CoberturaAnos anos={cobertura} />
+			<p class="nota">
+				Nos artigos mais antigos, as fontes trazem menos afiliações, e as que trazem vêm como texto livre. Os
+				mapas acima contam só o peso com lugar conhecido; o "sem afiliação" não entra em nenhuma UF nem país.
+			</p>
+		</Figura>
+	</div>
 
 	<p class="creditos">
 		Malhas: UFs do <a href="https://www.ibge.gov.br/geociencias/organizacao-do-territorio/malhas-territoriais.html">IBGE</a>,
@@ -285,7 +287,6 @@
 	.vista {
 		display: grid;
 		gap: 1.5rem;
-		max-width: 76rem;
 	}
 
 	.cabecalho {
@@ -300,7 +301,7 @@
 	}
 
 	.lide {
-		max-width: 60rem;
+		max-width: var(--medida);
 		margin: 0;
 		color: var(--texto-suave);
 	}
@@ -335,6 +336,20 @@
 	@media (max-width: 980px) {
 		.lado-a-lado {
 			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+
+	/* numa tela larga, o mundo e a cobertura lado a lado */
+	.mundo-e-cobertura {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	@media (min-width: 1600px) {
+		.mundo-e-cobertura {
+			grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+			column-gap: 2.5rem;
+			align-items: start;
 		}
 	}
 </style>

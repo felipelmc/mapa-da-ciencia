@@ -37,7 +37,7 @@ from ..topicos.resultado import PASTA as PASTA_TOPICOS
 from ..topicos.resultado import Resultado as ResultadoTopicos
 from ..topicos.resultado import assinatura_corpus, ler_atribuicoes
 from . import citacoes as cit
-from .desenho import desenhar
+from .desenho import desenhar, raios_na_vista
 from .grafos import (
     EXTERIOR,
     colaboracao_por_ano,
@@ -51,7 +51,8 @@ from .grafos import (
 from .pessoas import ARQUIVO_PESSOAS, identificar, ler_correcoes
 
 PASTA = "redes"
-VERSAO = 2  # 2: identidade revista, cânone conferido nas referências, pesos exatos, ids do contrato nas instituições
+VERSAO = 3  # 2: identidade revista, cânone conferido nas referências, pesos exatos, ids do contrato nas instituições;
+# 3: o desenho por comunidades, sem nós sobrepostos, com os componentes menores à direita do maior
 ARQUIVO_RESULTADO = "resultado.json"
 _CARIMBOS = ("gerado_em", "duracao_s")
 
@@ -286,7 +287,9 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     g = grafo(arestas_p)
     com_p, particao_p = comunidades(g, "coautoria")
     met_p = metricas(g, particao_p)
-    pos_p = desenhar(g)
+    docs_p = Counter(p for lista in autores_do_doc.values() for p in set(lista))
+    # o teto do raio vem de todas as pessoas, como na vista (ModoGrafo), e não só das que têm coautor
+    pos_p = desenhar(g, particao_p, raios_na_vista(dict(docs_p), "coautoria"))
     progresso.avancar()
 
     # 2. instituições e estados, pela geografia
@@ -316,7 +319,8 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
         gi = grafo(arestas_i)
         com_i, particao_i = comunidades(gi, "instituicoes")
         met_i = metricas(gi, particao_i)
-        pos_i = desenhar(gi)
+        docs_i = Counter(i for lista in inst_do_doc.values() for i in set(lista))
+        pos_i = desenhar(gi, particao_i, raios_na_vista({k: docs_i[k] for k in gi.nodes}, "instituicoes"))
     else:
         avisos.append("Sem a geografia em dia, as redes de instituições e de estados ficam de fora: rode "
                       "`mapa geografia`.")  # fmt: skip
@@ -395,7 +399,7 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     pasta.mkdir(parents=True, exist_ok=True)
     grau = Counter(x for par in arestas_p for x in par)
     forca = forcas(autores_do_doc)
-    n_docs = Counter(p for lista in autores_do_doc.values() for p in set(lista))
+    n_docs = docs_p
     linhas_p = [
         {
             "id": p.publicado,

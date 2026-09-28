@@ -355,3 +355,39 @@ def test_limite_abaixo_do_pior_caso_de_uma_chamada_para_antes_de_perguntar(proje
     estimativa = supervisionar(p, cliente=ClienteFalso()).estimativa_usd
     with pytest.raises(ErroConfig, match="pior caso"):
         supervisionar(p, limite_gasto=estimativa * 1.01, cliente=ClienteFalso())
+
+
+def test_mudar_um_rotulo_de_categoria_pede_votar_e_os_votos_vem_do_cache(projeto, apis_falsas):
+    votar(projeto)
+    deliberar_juri(projeto)
+    n = len(va.ler(projeto).docs)
+    antes = estado(projeto)
+    assert antes.classificados == dict.fromkeys(MEMBROS, n) and antes.proximo != "mapa juri votar"
+    # o rótulo de uma categoria, que o modelo não lê: o hash do codebook muda, o cache continua valendo
+    arquivo = projeto.raiz / "codebook.yaml"
+    cb = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
+    cb["variaveis"][0]["categorias"][0]["rotulo"] = "Outro rótulo"
+    arquivo.write_text(yaml.safe_dump(cb, allow_unicode=True), encoding="utf-8")
+    projeto = Projeto.abrir(projeto.raiz)
+    depois = estado(projeto)
+    # sem o resultado do codebook novo, nenhum voto conta, e o status pede votar (e não o relatório de um resumo vazio)
+    assert depois.classificados == dict.fromkeys(MEMBROS, 0) and depois.proximo == "mapa juri votar"
+    assert depois.resumo is None
+    chamadas = apis_falsas.chamadas["ollama_chat"]
+    r = votar(projeto)
+    assert set(r.classificados) == set(MEMBROS)  # regravados…
+    assert apis_falsas.chamadas["ollama_chat"] == chamadas  # …do cache, sem chamar o modelo
+    assert estado(projeto).classificados == dict.fromkeys(MEMBROS, n)
+
+
+def test_o_painel_mostra_o_juri_na_validacao(projeto, tmp_path):
+    from fastapi.testclient import TestClient
+
+    from mapa_da_ciencia.servidor.app import criar_app
+
+    votar(projeto)
+    deliberar_juri(projeto)
+    app = criar_app(pasta_dados=projeto.saida / "dados", projeto=projeto, estatico=tmp_path / "x")
+    v = TestClient(app, base_url="http://127.0.0.1:8765").get("/api/validacao/metricas").json()
+    # como no validacao.json exportado: sem o júri, a vista do painel perdia a seção dele
+    assert v["juri"] is not None and v["juri"]["membros"] == MEMBROS

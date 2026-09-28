@@ -123,6 +123,7 @@
 		display: grid;
 		gap: 1.8rem;
 		max-width: 60rem;
+		margin-inline: auto;
 	}
 
 	h1 {

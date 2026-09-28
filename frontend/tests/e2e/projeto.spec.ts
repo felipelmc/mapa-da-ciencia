@@ -109,10 +109,10 @@ test('o assistente em 5 passos salva o projeto e roda um piloto', async ({ page 
 	await page.getByTestId('configurar').click();
 	const assistente = page.getByTestId('assistente');
 	await expect(assistente.getByTestId('revistas-escolhidas')).toContainText('Opinião Pública');
-	// 1. fontes: tirar a única revista não deixa avançar; procurar e incluir outra
+	// 1. fontes: sem revistas, o assistente avisa que o corpus vem dos arquivos importados (um projeto só de
+	// importação configura sem revista nenhuma); procurar e incluir outra
 	await assistente.getByRole('button', { name: 'Tirar Opinião Pública' }).click();
-	await assistente.getByTestId('avancar').click();
-	await expect(assistente.getByRole('alert')).toHaveText('Escolha pelo menos uma revista.');
+	await expect(assistente.getByTestId('sem-revistas')).toBeVisible();
 	await assistente.getByTestId('busca-revista').fill('ciencia politica');
 	await assistente.getByTestId('incluir-revista').first().click();
 	await expect(assistente.getByTestId('revistas-escolhidas')).toContainText('Revista Brasileira de Ciência Política');
@@ -135,7 +135,8 @@ test('o assistente em 5 passos salva o projeto e roda um piloto', async ({ page 
 	await expect(mudancas).toContainText('Revistas retiradas: Opinião Pública');
 	await expect(mudancas).toContainText('Período: 2010–2025 → 2015–2025');
 	await expect(mudancas).toContainText('Classificação: qwen3.5:9b → qwen3.5:4b');
-	await expect(mudancas).toContainText('O codebook mudou.');
+	await expect(mudancas).toContainText('O codebook mudou no que o modelo lê.');
+	await expect(mudancas).toContainText('a classificação inteira');
 	await assistente.getByTestId('salvar-piloto').click();
 	await expect(page.getByTestId('projeto-salvo')).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'Etapa: Coleta' })).toBeVisible();
@@ -155,4 +156,17 @@ test('rodar as redes pela estação: a vista Redes não depende da CLI', async (
 	await expect(page.getByTestId('estado-job')).toHaveText('Concluído', { timeout: 15_000 });
 	await expect(page.getByTestId('estado-redes')).toHaveText('Em dia');
 	await expect(page.getByTestId('mudou-redes')).toHaveCount(0);
+});
+
+test('no celular, as etapas ficam uma embaixo da outra', async ({ browser }) => {
+	const contexto = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+	const page = await contexto.newPage();
+	await page.goto(`${url('PAINEL')}#/projeto`);
+	const estacoes = page.getByTestId('linha-metro').locator(':scope > li');
+	await expect(estacoes.first()).toBeVisible();
+	const caixas = await estacoes.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((c) => [c.left, c.top, c.width]));
+	expect(new Set(caixas.map(([x]) => Math.round(x))).size).toBe(1); // a mesma coluna
+	expect(caixas.every(([, , w]) => w > 250)).toBe(true);
+	for (let i = 1; i < caixas.length; i += 1) expect(caixas[i][1]).toBeGreaterThan(caixas[i - 1][1]);
+	await contexto.close();
 });

@@ -9,6 +9,15 @@
 
 	const manifesto = $derived(projeto.manifesto);
 
+	// a barra do recorte gruda logo abaixo desta (e não em cima dela) ao rolar a página: a altura real vai para a
+	// variável `--altura-barra` (muda com a letra e, no celular, com a quebra do título)
+	let altura = $state(0);
+	$effect(() => {
+		const estilo = document.documentElement.style;
+		if (altura) estilo.setProperty('--altura-barra', `${altura}px`);
+		return () => estilo.removeProperty('--altura-barra');
+	});
+
 	// Resumo do recorte: só entra o que o projeto já tem.
 	const recorte = $derived.by(() => {
 		const partes = [formatarPeriodo(manifesto.recorte.anos)];
@@ -20,7 +29,7 @@
 	});
 </script>
 
-<header class="barra transicao-tema">
+<header class="barra transicao-tema" bind:offsetHeight={altura}>
 	<div class="identidade">
 		<p class="titulo">
 			<span class="titulo-texto">{manifesto.projeto.titulo}</span>
@@ -55,7 +64,7 @@
 		justify-content: space-between;
 		gap: 1.5rem;
 		min-height: var(--barra-altura);
-		padding: 0.5rem clamp(1.25rem, 4vw, 3.5rem);
+		padding: 0.5rem calc(var(--sobra-lateral, 0px) + clamp(1.25rem, 4vw, 3.5rem));
 		border-bottom: 1px solid var(--linha);
 		background: color-mix(in srgb, var(--fundo) 94%, transparent);
 	}
@@ -136,6 +145,8 @@
 
 	@media (max-width: 820px) {
 		.barra {
+			/* no celular, só a barra do recorte gruda (as duas juntas tomariam um sétimo da tela) */
+			position: static;
 			padding: 0.6rem 1rem;
 			gap: 0.75rem;
 		}

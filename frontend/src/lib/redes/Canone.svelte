@@ -12,9 +12,11 @@
 <script lang="ts">
 	/**
 	 * O cânone em barras horizontais: cada obra, com o número de documentos do recorte que a citam, empilhado pelo
-	 * macrotema de quem cita. Numa tela larga, o rótulo fica à esquerda da barra; numa estreita, em cima dela.
+	 * macrotema de quem cita. Numa tela larga, o rótulo fica à esquerda da barra; numa estreita, em cima dela. Passar o
+	 * mouse numa obra mostra a referência inteira e os citantes por macrotema.
 	 */
 	import { formatarInteiro } from '$lib/formato';
+	import Dica from '$lib/graficos/Dica.svelte';
 
 	let {
 		obras,
@@ -48,6 +50,22 @@
 			})
 			.filter((s) => s.v > 0);
 	};
+	let sobre = $state<{ i: number; x: number; y: number } | null>(null);
+	const linhasDica = $derived.by(() => {
+		if (!sobre) return [];
+		const o = obras[sobre.i];
+		const partes = o.fatias
+			.map((v, k) => [nomes[k], v] as const)
+			.filter(([, v]) => v > 0)
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 3)
+			.map(([nome, v]) => `${nome}: ${formatarInteiro(v)}`);
+		return [o.rotulo, `Citada por ${formatarInteiro(o.n)} ${o.n === 1 ? 'documento' : 'documentos'} do recorte`, ...partes];
+	});
+	function mover(e: PointerEvent, i: number) {
+		const caixa = (e.currentTarget as SVGElement).ownerSVGElement!.getBoundingClientRect();
+		sobre = { i, x: e.clientX - caixa.left, y: e.clientY - caixa.top };
+	}
 	const descricao = $derived(
 		`Barras horizontais: as ${formatarInteiro(obras.length)} obras mais citadas no recorte, cada uma com os documentos que a citam, divididos pelo macrotema de quem cita. A tabela tem os mesmos números.`
 	);
@@ -58,8 +76,15 @@
 		{#each obras as o, i (o.id)}
 			{@const y = i * LINHA}
 			{@const yBarra = larga ? y + 5 : y + 20}
-			<g data-testid="obra" data-n={o.n}>
-				<title>{o.rotulo}: {formatarInteiro(o.n)} documentos</title>
+			<g
+				data-testid="obra"
+				data-n={o.n}
+				class:apagada={sobre !== null && sobre.i !== i}
+				role="presentation"
+				onpointermove={(e) => mover(e, i)}
+				onpointerleave={() => (sobre = null)}
+			>
+				<rect class="alvo" x="0" y={y} width={largura} height={LINHA} />
 				<text class="rotulo" x="0" y={larga ? y + 16 : y + 13}>{cortar(o.rotulo)}</text>
 				{#each segmentos(o) as s (s.k)}
 					<rect x={rotuloL + (larga ? 12 : 0) + s.x} y={yBarra} width={Math.max(0.5, s.w - 0.5)} height="14" style:fill={cores[s.k]}>
@@ -70,11 +95,23 @@
 			</g>
 		{/each}
 	</svg>
+	{#if sobre && linhasDica.length}
+		<Dica x={sobre.x} y={sobre.y} linhas={linhasDica} limites={{ largura, altura }} />
+	{/if}
 </div>
 
 <style>
 	.canone {
+		position: relative;
 		width: 100%;
+	}
+
+	.alvo {
+		fill: transparent;
+	}
+
+	.apagada {
+		opacity: 0.45;
 	}
 
 	svg {

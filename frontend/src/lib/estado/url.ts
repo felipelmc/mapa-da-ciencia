@@ -131,6 +131,8 @@ export interface Filtros {
 	no: string | null;
 	/** Na vista Redes, mostrar as duplas e os trios isolados (que reenquadram o desenho). */
 	duplas: boolean;
+	/** Na vista Redes, a comunidade em destaque (o id dela na rede mostrada), enquadrada no desenho. */
+	comunidade: number | null;
 }
 
 export const FILTROS_PADRAO: Readonly<Filtros> = Object.freeze({
@@ -152,7 +154,8 @@ export const FILTROS_PADRAO: Readonly<Filtros> = Object.freeze({
 	cruzar: 'macrotema',
 	rede: 'coautoria',
 	no: null,
-	duplas: false
+	duplas: false,
+	comunidade: null
 });
 
 /** Ordem fixa dos parâmetros na URL (as chaves novas entram sem mudar a posição das antigas). */
@@ -175,6 +178,7 @@ const ORDEM: (keyof Filtros)[] = [
 	'rede',
 	'no',
 	'duplas',
+	'comunidade',
 	'doc'
 ];
 
@@ -272,7 +276,8 @@ export function normalizarFiltros(parcial: Partial<Filtros> = {}): Filtros {
 		cruzar: (CRUZAR as readonly string[]).includes(f.cruzar) ? f.cruzar : FILTROS_PADRAO.cruzar,
 		rede: (REDES as readonly string[]).includes(f.rede) ? f.rede : FILTROS_PADRAO.rede,
 		no: f.no && /^[\w:.-]{1,64}$/.test(f.no) ? f.no : null,
-		duplas: f.duplas === true
+		duplas: f.duplas === true,
+		comunidade: inteiroOuNulo(f.comunidade)
 	};
 }
 
@@ -300,7 +305,8 @@ export function lerFiltros(params: URLSearchParams): Filtros {
 		cruzar: (params.get('cruzar') ?? FILTROS_PADRAO.cruzar) as Cruzar,
 		rede: (params.get('rede') ?? FILTROS_PADRAO.rede) as Rede,
 		no: params.get('no'),
-		duplas: params.get('duplas') === '1'
+		duplas: params.get('duplas') === '1',
+		comunidade: lerInteiro(params.get('comunidade'))
 	});
 }
 
@@ -326,7 +332,8 @@ export function escreverFiltros(parcial: Partial<Filtros>): URLSearchParams {
 		cruzar: f.cruzar === FILTROS_PADRAO.cruzar ? null : f.cruzar,
 		rede: f.rede === FILTROS_PADRAO.rede ? null : f.rede,
 		no: f.no,
-		duplas: f.duplas ? '1' : null
+		duplas: f.duplas ? '1' : null,
+		comunidade: f.comunidade === null ? null : String(f.comunidade)
 	};
 	const busca = new URLSearchParams();
 	for (const chave of ORDEM) {

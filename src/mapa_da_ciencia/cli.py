@@ -20,7 +20,7 @@ from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
-from mapa_da_ciencia import __version__
+from mapa_da_ciencia import __version__, formatar
 from mapa_da_ciencia.armazenamento import ARQUIVO as ARQUIVO_DOCUMENTOS
 from mapa_da_ciencia.armazenamento import cobertura
 from mapa_da_ciencia.cli_portugues import GrupoEmPortugues
@@ -160,11 +160,11 @@ def status(projeto: OpcaoProjeto = Path(".")) -> None:
         quando = datetime.fromisoformat(manifesto["fim"]).astimezone().strftime("%d/%m/%Y %H:%M")
         # a primeira contagem é a principal da etapa; as demais aparecem nos detalhes de cada uma
         principal = next(iter(manifesto["contagens"].items()), None)
-        resultado = f"{num(principal[1], 0)} {principal[0]}" if principal else ""
+        resultado = formatar.contagem(*principal) if principal else ""
         rotulo = rotulos[estado]
         if mudou := estados.get(etapa, {}).get("mudou"):
             rotulo += f" [dim](mudou {escape(' e '.join(mudou))})[/]"
-        tabela.add_row(etapa, rotulo, quando, f"{num(manifesto['duracao_s'], 0)} s", resultado)
+        tabela.add_row(etapa, rotulo, quando, formatar.duracao(manifesto["duracao_s"]), resultado)
     console.print(tabela)
     _mostrar_corpus(p, etapas.get("coleta"))
 
@@ -492,13 +492,14 @@ def painel(
     from mapa_da_ciencia.contrato.exemplo import gerar_exemplo
     from mapa_da_ciencia.contrato.exportar import escrever_dados
     from mapa_da_ciencia.servidor.app import criar_app
+    from mapa_da_ciencia.servidor.trava import travar
 
     if problema := _problema_da_porta(porta):
         sugerida = _porta_sugerida(porta)
         dica = f"por exemplo --porta {sugerida}" if sugerida else "com --porta"
         console.print(f"[bold red]Erro:[/] {problema}. Use outra, {dica}.")
         raise typer.Exit(1)
-    temporario = None
+    temporario = trava = None
     with _erros_amigaveis():
         if exemplo:
             temporario = tempfile.TemporaryDirectory(prefix="mapa-exemplo-")
@@ -508,6 +509,7 @@ def painel(
             descricao = "exemplo sintético (dados fictícios)"
         else:
             p = Projeto.abrir(projeto)
+            trava = travar(p, porta)  # um painel por projeto; fica aberta enquanto o painel roda
             aplicacao = criar_app(pasta_dados=p.saida / "dados", projeto=p, api=True)
             descricao = f"projeto {p.config.nome}"
 
@@ -520,6 +522,8 @@ def painel(
     finally:
         if temporario is not None:
             temporario.cleanup()
+        if trava is not None:
+            trava.close()
 
 
 @app.command()

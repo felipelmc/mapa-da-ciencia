@@ -52,7 +52,7 @@ def semente_do_codificador(nome: str) -> int:
 
 def rotas_validacao(projeto: Projeto) -> APIRouter:
     from mapa_da_ciencia.classificacao.resultado import valor_do_texto
-    from mapa_da_ciencia.contrato.classificacao import codebook_contrato, validacao_contrato
+    from mapa_da_ciencia.contrato.classificacao import codebook_contrato, juri_contrato, validacao_contrato
     from mapa_da_ciencia.validacao import amostra as va
 
     rotas = APIRouter(prefix="/api/validacao", tags=["validação"])
@@ -65,9 +65,18 @@ def rotas_validacao(projeto: Projeto) -> APIRouter:
 
     def _nome(codificador: str) -> str:
         try:
-            return va.nome_valido(codificador)
+            nome = va.nome_valido(codificador)
         except ErroConfig as e:
             raise HTTPException(400, str(e)) from e
+        # a codificação no painel é cega e só de pessoas: um codificador de referência (importado) não abre aqui,
+        # nem para ver as respostas dele, nem para sobrescrevê-las
+        if va.codificadores(projeto).get(nome) not in (None, "humano"):
+            raise HTTPException(
+                409,
+                f"«{nome}» é um codificador de referência, importado com `mapa validar importar`. A codificação no "
+                "painel é só de pessoas, às cegas: escolha outro nome.",
+            )
+        return nome
 
     @rotas.get("/fila")
     def fila(codificador: str) -> dict[str, Any]:
@@ -113,9 +122,14 @@ def rotas_validacao(projeto: Projeto) -> APIRouter:
         if doc not in _amostra().docs:
             raise HTTPException(404, f"O documento {doc} não está na amostra de validação.")
         respostas = {v: r.model_dump() for v, r in corpo.respostas.items()}
+        # uma resposta apagada (o texto esvaziado) vem com valor nulo: sai do banco, em vez de voltar no reload
+        apagadas = [v for v, r in respostas.items() if r["valor"] is None or r["valor"] == ""]
+        respostas = {v: r for v, r in respostas.items() if v not in apagadas}
         problemas = va.salvar(projeto, nome, doc, respostas, completa=corpo.completa)
         if problemas:
             raise HTTPException(422, {"problemas": problemas})
+        if apagadas:
+            va.apagar_respostas(projeto, nome, doc, apagadas)
         ja = {c["variavel"] for c in va.codificacoes(projeto, nome) if c["doc"] == doc}
         return {"ok": True, "completa": ja >= {v.id for v in projeto.codebook.variaveis}}
 
@@ -144,6 +158,10 @@ def rotas_validacao(projeto: Projeto) -> APIRouter:
         from mapa_da_ciencia.validacao.metricas import calcular
 
         _amostra()
-        return validacao_contrato(calcular(projeto), so_referencia=False).model_dump(mode="json")
+        v = calcular(projeto)
+        validacao = validacao_contrato(v, so_referencia=False)
+        # o júri, como no `validacao.json` exportado (sem ele, a vista do painel perdia a seção "Júri")
+        validacao.juri, _ = juri_contrato(projeto, v)
+        return validacao.model_dump(mode="json")
 
     return rotas

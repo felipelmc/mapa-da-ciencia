@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ErroAoAbrir from '$lib/componentes/ErroAoAbrir.svelte';
 	import PaginaDeSecao from '$lib/componentes/PaginaDeSecao.svelte';
+	import Protegida from '$lib/componentes/Protegida.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { abrirCubo, reabrirCubo } from '$lib/dados/corpus';
 	import { secao } from '$lib/secoes';
@@ -19,13 +20,15 @@
 {#await dados}
 	<p class="aviso" role="status">Carregando os tópicos…</p>
 {:then d}
-	{#if d}
-		<VistaTopicos topicos={d.topicos} cubo={d.cubo} />
-	{:else}
-		<PaginaDeSecao comTitulo={false} secao={secao('topicos')} vazio={{ titulo: 'Este projeto ainda não tem tópicos.', sobretitulo: 'Sem tópicos' }}>
-			<p>Rode <code>mapa coletar</code> e depois <code>mapa topicos</code>. Em seguida, recarregue esta página.</p>
-		</PaginaDeSecao>
-	{/if}
+	<Protegida oque="a vista Tópicos">
+		{#if d}
+			<VistaTopicos topicos={d.topicos} cubo={d.cubo} />
+		{:else}
+			<PaginaDeSecao comTitulo={false} secao={secao('topicos')} vazio={{ titulo: 'Este projeto ainda não tem tópicos.', sobretitulo: 'Sem tópicos' }}>
+				<p>Rode <code>mapa coletar</code> e depois <code>mapa topicos</code>. Em seguida, recarregue esta página.</p>
+			</PaginaDeSecao>
+		{/if}
+	</Protegida>
 {:catch erro}
 	<ErroAoAbrir oque="os tópicos" {erro} tentar={() => (dados = reabrirCubo(fonte))} />
 {/await}

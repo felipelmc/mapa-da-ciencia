@@ -57,6 +57,13 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Testes de ponta a ponta (raiz e subcaminho)
         run: npm run e2e
+      - name: O trace dos testes que falharam
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-falhas
+          path: frontend/test-results/
+          retention-days: 7
       - uses: actions/upload-artifact@v7
         with:
           name: interface

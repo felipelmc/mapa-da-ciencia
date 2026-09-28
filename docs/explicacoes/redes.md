@@ -65,10 +65,13 @@ instituições, bem menos (as instituições grandes publicam de tudo). E a maio
 piloto) está em grupos menores do que o mínimo, fora das comunidades numeradas.
 
 O desenho posiciona cada componente conectado à parte (`spring_layout`, semente 7), com tamanho proporcional à raiz
-do número de nós. O maior componente fica em cima, e os outros numa faixa embaixo, menores, do maior para o menor.
-**A distância no desenho não é uma medida**: nós perto costumam estar no mesmo grupo, mas muitas vezes não estão
-ligados (na primeira versão do desenho do piloto, só um terço das pessoas tinha como coautor o vizinho mais próximo),
-e dois nós longe podem estar a um passo um do outro.
+do número de nós. No maior componente, cada comunidade ganha um espaço próprio, e as comunidades mais ligadas entre si
+tendem a ficar mais perto (só em parte: o arranjo também precisa acomodar os tamanhos); os componentes menores vêm à
+direita e embaixo, do maior para o menor. No piloto, numa tela de 1920 × 1080, nenhum nó encosta noutro; numa tela
+menor, o botão "Tela cheia" e o zoom os separam (adendo do ADR 0014). **A distância no desenho não é uma medida**: nós
+perto costumam estar no mesmo grupo, mas nem sempre estão ligados (no piloto, 75% das pessoas desenhadas têm como
+coautor o vizinho mais próximo), o vão entre duas comunidades vem em parte do próprio desenho, e dois nós longe podem
+estar a um passo um do outro.
 
 ## Citações e cânone
 

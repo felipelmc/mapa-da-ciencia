@@ -366,8 +366,10 @@ def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS, versao_nova: boo
     tipos: dict[str, TipoParticipante] = {}
     extras: dict[str, dict[tuple[str, str], dict[str, Any]]] = {}  # evidência, status, incerto
     for nome, tipo in va.codificadores(projeto).items():
-        tipos[nome] = tipo
         linhas = [c for c in va.codificacoes(projeto, nome) if c["doc"] in na_amostra]
+        if not linhas:  # registrado sem nenhuma resposta na amostra: não é participante (nem entra com n = 0)
+            continue
+        tipos[nome] = tipo
         respostas[nome] = {(c["doc"], c["variavel"]): c["valor"] for c in linhas}
         extras[nome] = {(c["doc"], c["variavel"]): c for c in linhas}
     pasta = projeto.dados / PASTA_CLASSIFICACAO

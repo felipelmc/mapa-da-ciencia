@@ -49,6 +49,8 @@
 	} = $props();
 
 	let largura = $state(800);
+	// numa tela larga, o fluxo cresce um pouco em altura, para não achatar (os pequenos múltiplos ficam com a altura dada)
+	const alto = $derived(compacto ? altura : Math.round(Math.min(560, Math.max(altura, largura * 0.3))));
 	const margem = $derived(
 		compacto ? { esq: 2, dir: 2, topo: 2, base: 18 } : { esq: modo === 'fluxo' ? 12 : 52, dir: 12, topo: 10, base: 28 }
 	);
@@ -84,7 +86,7 @@
 	const x = $derived((j: number) => margem.esq + (j * (largura - margem.esq - margem.dir)) / Math.max(1, nAnos - 1));
 	const y = $derived((v: number) => {
 		const [a, b] = dominio;
-		return altura - margem.base - ((v - a) / (b - a || 1)) * (altura - margem.topo - margem.base);
+		return alto - margem.base - ((v - a) / (b - a || 1)) * (alto - margem.topo - margem.base);
 	});
 
 	// ---- rótulos dentro das faixas (medidos no canvas)
@@ -127,7 +129,7 @@
 </script>
 
 <div class="fluxo" bind:clientWidth={largura}>
-	<svg width={largura} height={altura} role="group" aria-label="Fluxo no tempo">
+	<svg width={largura} height={alto} role="group" aria-label="Fluxo no tempo">
 		{#each series as s (s.id)}
 			<path
 				d={caminho(s, x, y)}
@@ -153,10 +155,10 @@
 		{/each}
 		{#if janela}
 			{#if janela[0] > 0}
-				<rect class="veu" x={margem.esq - 1} y={margem.topo} width={Math.max(0, x(janela[0] - 0.5) - margem.esq + 1)} height={altura - margem.topo - margem.base} />
+				<rect class="veu" x={margem.esq - 1} y={margem.topo} width={Math.max(0, x(janela[0] - 0.5) - margem.esq + 1)} height={alto - margem.topo - margem.base} />
 			{/if}
 			{#if janela[1] < nAnos - 1}
-				<rect class="veu" x={x(janela[1] + 0.5)} y={margem.topo} width={Math.max(0, largura - margem.dir - x(janela[1] + 0.5) + 1)} height={altura - margem.topo - margem.base} />
+				<rect class="veu" x={x(janela[1] + 0.5)} y={margem.topo} width={Math.max(0, largura - margem.dir - x(janela[1] + 0.5) + 1)} height={alto - margem.topo - margem.base} />
 			{/if}
 		{/if}
 		{#each rotulosFaixas as r (r.id)}
@@ -165,7 +167,7 @@
 		<Eixo
 			orientacao="x"
 			anos={compacto ? [anos[0], anos[anos.length - 1]] : anos}
-			posicao={altura - margem.base}
+			posicao={alto - margem.base}
 			escala={compacto ? (j) => x(j === 0 ? 0 : nAnos - 1) : x}
 			comprimento={compacto ? 60 : largura}
 			pontas={compacto}
@@ -176,7 +178,7 @@
 				posicao={margem.esq - 4}
 				escala={y}
 				dominio={dominio}
-				comprimento={altura - margem.topo - margem.base}
+				comprimento={alto - margem.topo - margem.base}
 				porcentagem={modo === 'proporcao'}
 			/>
 		{/if}

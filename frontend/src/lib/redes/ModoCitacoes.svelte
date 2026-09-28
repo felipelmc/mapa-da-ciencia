@@ -114,62 +114,64 @@
 	referências identificadas no OpenAlex.
 </p>
 
-<Figura
-	n={noRecorte}
-	id="canone"
-	titulo="O cânone: as obras mais citadas"
-	resumo={resumoCanone}
-	colunas={['Obra', 'Tipo', 'Registro do OpenAlex', 'DOI', 'Documentos que citam', ...nomes]}
-	linhas={linhasCanone}
-	dados={{
-		colunas: ['Id', 'Autores', 'Ano', 'Título', 'Tipo', 'Resenha', 'Registro do OpenAlex', 'DOI', 'Documentos que citam', ...nomes],
-		linhas: top.map((o) => {
-			const obra = c.canone[o.obra];
-			return [obra.id, obra.autores.join('; '), obra.ano, obra.titulo, obra.tipo, obra.resenha ? 1 : 0, obra.registro_openalex ?? null, obra.doi, o.n, ...o.porMacro];
-		})
-	}}
->
-	<ul class="legenda" aria-label="Macrotema de quem cita" data-legenda>
-		{#each nomes as nome, k (k)}
-			{#if usados[k]}<li><span class="caixa" style:background={cores[k]}></span>{nome}</li>{/if}
-		{/each}
-	</ul>
-	<Canone {obras} {cores} {nomes} />
-	<p class="nota" data-testid="nota-cobertura">
-		O cânone só enxerga as referências que o OpenAlex identificou: {formatarInteiro(cob.com_referencias ?? 0)} dos
-		{formatarInteiro(cob.documentos ?? t.n)} documentos do corpus têm referências lá, somando
-		{formatarInteiro(cob.referencias ?? 0)}.{#if cob.referencias_listadas}{' '}Nesses documentos, o OpenAlex resolveu {formatarInteiro(cob.referencias_resolvidas ?? 0)} das
-			{formatarInteiro(cob.referencias_listadas)} referências que a ArticleMeta lista
-			({formatarPorcentagem((cob.referencias_resolvidas ?? 0) / cob.referencias_listadas)}; a mediana por documento é
-			{formatarInteiro(cob.resolvidas_mediana_pct ?? 0)}%).{/if}
-		Obras sem DOI ou fora do OpenAlex (muitos livros, capítulos e textos antigos) ficam de fora, então a lista favorece o
-		que tem DOI.{#if cob.resenhas_no_canone}{' '}Muitos livros chegam pelo registro de uma resenha, com o resenhista como autor: aqui, autor e ano vêm das
-			referências dos próprios artigos ({formatarInteiro(cob.resenhas_no_canone)} das
-			{formatarInteiro(c.canone.length)} obras; a tabela mostra o registro original).{/if}
-		Entram só as {formatarInteiro(c.canone.length)} obras mais citadas no corpus inteiro, e aqui aparecem as
-		{formatarInteiro(top.length)} mais citadas no recorte (até {formatarInteiro(MAIS_CITADAS)}).
-	</p>
-</Figura>
+<div class="canone-e-fluxo">
+	<Figura
+		n={noRecorte}
+		id="canone"
+		titulo="O cânone: as obras mais citadas"
+		resumo={resumoCanone}
+		colunas={['Obra', 'Tipo', 'Registro do OpenAlex', 'DOI', 'Documentos que citam', ...nomes]}
+		linhas={linhasCanone}
+		dados={{
+			colunas: ['Id', 'Autores', 'Ano', 'Título', 'Tipo', 'Resenha', 'Registro do OpenAlex', 'DOI', 'Documentos que citam', ...nomes],
+			linhas: top.map((o) => {
+				const obra = c.canone[o.obra];
+				return [obra.id, obra.autores.join('; '), obra.ano, obra.titulo, obra.tipo, obra.resenha ? 1 : 0, obra.registro_openalex ?? null, obra.doi, o.n, ...o.porMacro];
+			})
+		}}
+	>
+		<ul class="legenda" aria-label="Macrotema de quem cita" data-legenda>
+			{#each nomes as nome, k (k)}
+				{#if usados[k]}<li><span class="caixa" style:background={cores[k]}></span>{nome}</li>{/if}
+			{/each}
+		</ul>
+		<Canone {obras} {cores} {nomes} />
+		<p class="nota" data-testid="nota-cobertura">
+			O cânone só enxerga as referências que o OpenAlex identificou: {formatarInteiro(cob.com_referencias ?? 0)} dos
+			{formatarInteiro(cob.documentos ?? t.n)} documentos do corpus têm referências lá, somando
+			{formatarInteiro(cob.referencias ?? 0)}.{#if cob.referencias_listadas}{' '}Nesses documentos, o OpenAlex resolveu {formatarInteiro(cob.referencias_resolvidas ?? 0)} das
+				{formatarInteiro(cob.referencias_listadas)} referências que a ArticleMeta lista
+				({formatarPorcentagem((cob.referencias_resolvidas ?? 0) / cob.referencias_listadas)}; a mediana por documento é
+				{formatarInteiro(cob.resolvidas_mediana_pct ?? 0)}%).{/if}
+			Obras sem DOI ou fora do OpenAlex (muitos livros, capítulos e textos antigos) ficam de fora, então a lista favorece o
+			que tem DOI.{#if cob.resenhas_no_canone}{' '}Muitos livros chegam pelo registro de uma resenha, com o resenhista como autor: aqui, autor e ano vêm das
+				referências dos próprios artigos ({formatarInteiro(cob.resenhas_no_canone)} das
+				{formatarInteiro(c.canone.length)} obras; a tabela mostra o registro original).{/if}
+			Entram só as {formatarInteiro(c.canone.length)} obras mais citadas no corpus inteiro, e aqui aparecem as
+			{formatarInteiro(top.length)} mais citadas no recorte (até {formatarInteiro(MAIS_CITADAS)}).
+		</p>
+	</Figura>
 
-<Figura
-	n={noRecorte}
-	id="fluxo-citacoes"
-	titulo="Quem cita quem, entre os macrotemas"
-	resumo={resumoFluxo}
-	colunas={['Quem cita ↓ / quem é citado →', ...nomes.slice(0, nMacros)]}
-	linhas={internas.matriz.map((linha, i) => [nomes[i], ...linha.map((v) => formatarInteiro(v))])}
-	dados={{ colunas: ['Quem cita / quem é citado', ...nomes.slice(0, nMacros)], linhas: internas.matriz.map((linha, i) => [nomes[i], ...linha]) }}
->
-	<MatrizFluxo rotulos={nomes.slice(0, nMacros)} cores={cores.slice(0, nMacros)} matriz={internas.matriz} />
-	<p class="nota">
-		Cada linha é o macrotema de quem cita; cada coluna, o de quem é citado. Só contam as citações com as duas pontas
-		no recorte e com tópico: com um período, a citação de um artigo de dentro a um de antes do período sai da conta.
-	</p>
-</Figura>
+	<Figura
+		n={noRecorte}
+		id="fluxo-citacoes"
+		titulo="Quem cita quem, entre os macrotemas"
+		resumo={resumoFluxo}
+		colunas={['Quem cita ↓ / quem é citado →', ...nomes.slice(0, nMacros)]}
+		linhas={internas.matriz.map((linha, i) => [nomes[i], ...linha.map((v) => formatarInteiro(v))])}
+		dados={{ colunas: ['Quem cita / quem é citado', ...nomes.slice(0, nMacros)], linhas: internas.matriz.map((linha, i) => [nomes[i], ...linha]) }}
+	>
+		<MatrizFluxo rotulos={nomes.slice(0, nMacros)} cores={cores.slice(0, nMacros)} matriz={internas.matriz} />
+		<p class="nota">
+			Cada linha é o macrotema de quem cita; cada coluna, o de quem é citado. Só contam as citações com as duas pontas
+			no recorte e com tópico: com um período, a citação de um artigo de dentro a um de antes do período sai da conta.
+		</p>
+	</Figura>
+</div>
 
 <style>
 	.lide {
-		max-width: 60rem;
+		max-width: var(--medida);
 		margin: 0;
 		color: var(--texto-suave);
 	}
@@ -199,8 +201,22 @@
 
 	.nota {
 		margin: 0.7rem 0 0;
-		max-width: 60rem;
+		max-width: var(--medida);
 		font-size: 0.82rem;
 		color: var(--texto-suave);
+	}
+
+	/* numa tela larga, o cânone e a matriz lado a lado */
+	.canone-e-fluxo {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	@media (min-width: 1600px) {
+		.canone-e-fluxo {
+			grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+			column-gap: 2.5rem;
+			align-items: start;
+		}
 	}
 </style>

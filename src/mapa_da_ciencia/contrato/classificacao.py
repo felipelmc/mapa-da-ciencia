@@ -241,6 +241,10 @@ def juri_contrato(projeto: Projeto, v: Validacao) -> tuple[m.ResumoJuri | None, 
                 revisou=bool(linha["revisou"]),
             )
         )
+    # na ordem do júri (o primeiro membro, cujo voto vale sem maioria até o supervisor decidir, vem primeiro)
+    ordem = {membro: i for i, membro in enumerate(projeto.config.juri.membros)}
+    for lista in votos.values():
+        lista.sort(key=lambda x: (x.rodada, ordem.get(x.membro, len(ordem)), x.membro))
     # um supervisor que é uma pessoa é um codificador humano: as escolhas dele não saem documento a documento
     # (como as codificações humanas da validação), só nos números agregados
     modelo = projeto.config.juri.supervisor.e_modelo

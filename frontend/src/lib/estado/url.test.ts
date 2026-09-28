@@ -212,6 +212,13 @@ describe('recorte e parâmetros das vistas do M4', () => {
 		expect(escreverFiltros(duplas).toString()).toBe('no=p0001&duplas=1');
 		expect(lerFiltros(new URLSearchParams('duplas=sim')).duplas).toBe(false);
 		expect(escreverFiltros(recorteDe(duplas)).toString()).toBe('');
+		// a comunidade em destaque também (um inteiro; o resto vira o padrão), e não faz parte do recorte
+		const comunidade = lerFiltros(new URLSearchParams('rede=instituicoes&comunidade=3&duplas=1'));
+		expect(comunidade.comunidade).toBe(3);
+		expect(escreverFiltros(comunidade).toString()).toBe('rede=instituicoes&duplas=1&comunidade=3');
+		expect(lerFiltros(new URLSearchParams('comunidade=-1')).comunidade).toBeNull();
+		expect(lerFiltros(new URLSearchParams('comunidade=x')).comunidade).toBeNull();
+		expect(escreverFiltros(recorteDe(comunidade)).toString()).toBe('');
 	});
 
 	it('o recorte leva só as chaves compartilhadas', () => {

@@ -103,6 +103,77 @@ mudanças na entrada. Para a 2.0.0, os tópicos do piloto continuam os da 1.0.1,
 (os mesmos embeddings do cache), com os rótulos corrigidos à mão. O corpus publicado já é o novo, sem os e-mails. Um
 recálculo dos tópicos fica para quando o piloto for coletado de novo.
 
+## Segunda rodada: a interface (2.1.0)
+
+Depois da 2.0.0, o autor apontou três problemas ao usar o site: os grafos das redes, apertados e pouco interativos; o
+conteúdo encostado à esquerda numa tela larga; e a vista Validação, que não carregava. Antes de corrigir, quatro
+agentes independentes percorreram a demo do piloto e o painel local com o Playwright, cada um com um foco: erros em
+tempo de execução (todas as rotas e modos, dois temas, de 375 a 2560 px, e uma varredura das chaves das listas
+contra os dados do piloto), telas largas (medidas de 1440 a 3440 px), a vista Redes e o painel local (API, CLI e as
+telas que só existem nele).
+
+- **A Validação** parava em "Carregando…" porque uma lista repetia a chave com os seis modelos do júri, e o Svelte
+  lança esse erro também em produção. O exemplo sintético tinha um modelo só: de novo, **os dados reais acharam o
+  que o exemplo escondia**. Agora o exemplo tem vários pares por variável, e uma proteção em cada vista mostra
+  "Tentar de novo" em vez de deixar a página parada.
+- **A largura:** a casca tinha 76rem e ficava encostada no trilho (em 1920 px, sobravam 536 px à direita). Ela passa
+  a ser centrada, com até 112rem, e as vistas põem painéis lado a lado a partir de 1600 px.
+- **As redes:** o desenho novo (adendo do ADR 0014) foi escolhido entre seis candidatos por métricas e por um
+  avaliador que não sabia qual era qual; as interações novas (destaque dos vizinhos, comunidades clicáveis, nomes
+  pelo zoom, arrasto, teclado, tela cheia) vieram da lista do revisor da vista.
+
+Os achados de severidade média ou maior do painel e dos erros de execução passaram por verificadores novos, que
+tentaram reproduzi-los e refutá-los: dos 25 verificados, 22 se confirmaram e 3 só em parte, e dois verificadores
+corrigiram a causa ou a correção proposta (a animação de entrada das vistas, que prendia os painéis de exportação
+embaixo da barra do celular; e a limpeza do endereço com um `%` solto, que precisava testar cada sequência). Os
+mais sérios do painel: um segundo `mapa painel` no mesmo projeto marcava como falha a etapa que o primeiro rodava;
+a tela dizia que mudar um rótulo do codebook não refazia nada, quando o rótulo de uma variável refaz a classificação
+inteira; e a codificação aceitava o nome do codificador de referência, mostrando as respostas dele.
+
+Antes do merge, três agentes novos revisaram o resultado: o código (aprovado com ressalvas: 5 achados médios, todos
+corrigidos, como o enquadramento do nó que deixava de funcionar depois de um clique no nó já aberto), o desenho das
+redes (aprovado com ressalvas: o auditor recalculou as métricas do zero, confirmou que só as coordenadas mudaram e
+mostrou que a frase "as comunidades muito ligadas ficam vizinhas" não valia, o que levou a um ajuste do arranjo e a
+números em vez da frase) e o uso, em 200 cargas de 375 a 2560 px, nos dois temas (aprovado com ressalvas: os três
+pedidos atendidos no computador, e 17 achados, entre eles dois altos que as mudanças criaram no celular, como os
+rótulos das comunidades, que tomavam o toque dos nós embaixo deles; os altos e os médios foram corrigidos).
+
+Uma re-revisão conferiu essas correções e reprovou a primeira tentativa: das 14 ressalvas, 6 estavam resolvidas, 6
+só em parte e 2 não, e as próprias correções criaram dois problemas. No celular, a barra do grafo passou a ficar
+acima dele, e o seletor das comunidades, com um rótulo de corpus real ("Federalismo, capacidades estatais…"),
+alargava a página para 732 px. E o cartão, que agora acompanha a rolagem, cobria "A colaboração por ano" (com o
+cartão de uma pessoa com muitos documentos, 96% da figura). O exemplo do contrato, com rótulos curtos ("Comunidade
+1") e cartões pequenos, não pegava nenhum dos dois. Corrigidos com testes (o da largura com rótulos longos, como os do
+piloto, por `page.route`; o do cartão, conferindo que nada cobre a figura), a re-revisão foi repetida e aprovou com
+ressalvas baixas. As de conserto direto entraram antes do merge:
+
+- na Validação, a tabela grudada rola por dentro com muitas variáveis, e o detalhe volta à vista ao trocar de
+  variável;
+- nas Redes:
+    - a colaboração muda de lugar sem ser recriada;
+    - a tela cheia estreita mostra o botão que leva ao cartão;
+    - abrir um parceiro pelo teclado põe o foco no cartão novo;
+- no notebook, o `parar()` do painel não espera mais de 1 s pelas conexões abertas nem joga na célula o *traceback* do
+  cancelamento;
+- os textos.
+
+Uma última verificação, só desse diff, também aprovou com ressalvas baixas. A docstring do `parar()` e um teste que
+não protegia nada foram corrigidos. O CI achou mais um: o roteador decodificava `%25`, `%26` e `%2B` no endereço, e
+um link com `busca=voto%26partido` perdia o "partido" numa recarga.
+
+Ficaram para depois, registrados: a cor dos nós por comunidade (hoje é a do macrotema, e várias comunidades dividem
+a mesma cor); o cartão do documento, que cobre parte do mapa numa tela de 1440 px; o kappa de uma pessoa, que conta
+fichas ainda não confirmadas; o editor do codebook, que acrescenta listas vazias ao YAML; o histórico das etapas, que
+mostra "na fila" durante a execução; o júri, que ainda não aparece na linha das etapas nem no `mapa status`; e, nas
+redes:
+
+- um link com `comunidade=` e `no=` juntos, que enquadra a comunidade (o nó pode ficar fora da tela);
+- o Esc que fecha um cartão aberto pelo link, que leva o foco para a busca (o Esc seguinte não solta a comunidade);
+- o painel de exportar ao lado do grafo, que passa uns pixels da borda;
+- fechar o cartão lendo a colaboração, embaixo do grafo, que a tira da tela (ela volta para o lado do grafo).
+
+Na Validação, com "Ver como tabela" aberto, a figura grudada volta a passar da altura da janela.
+
 ## Como repetir
 
 Os prompts dos revisores e verificadores, a rubrica e os formatos de saída estão no plano da revisão; os pareceres, com

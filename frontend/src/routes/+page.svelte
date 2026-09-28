@@ -3,6 +3,7 @@
 	import CartaDoCorpus from '$lib/componentes/CartaDoCorpus.svelte';
 	import EstadoVazio from '$lib/componentes/EstadoVazio.svelte';
 	import Macrotemas from '$lib/componentes/Macrotemas.svelte';
+	import Protegida from '$lib/componentes/Protegida.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { rota } from '$lib/estado/url';
 	import { contar, formatarData, formatarInteiro, formatarPeriodo, formatarPorcentagem, nomeDaFonte } from '$lib/formato';
@@ -151,13 +152,15 @@
 		{#await topicos}
 			<p class="carregando" role="status">Carregando os macrotemas…</p>
 		{:then t}
-			{#if t}
-				<Macrotemas topicos={t} totalDocumentos={contagens.documentos} />
-			{:else}
-				<p class="carregando" data-testid="proximo-passo">
-					Documentos coletados. Próximo passo: <code>mapa topicos</code> monta o mapa e os macrotemas.
-				</p>
-			{/if}
+			<Protegida oque="a vista Início">
+				{#if t}
+					<Macrotemas topicos={t} totalDocumentos={contagens.documentos} />
+				{:else}
+					<p class="carregando" data-testid="proximo-passo">
+						Documentos coletados. Próximo passo: <code>mapa topicos</code> monta o mapa e os macrotemas.
+					</p>
+				{/if}
+			</Protegida>
 		{:catch erro}
 			<p class="falha" role="alert">Não foi possível carregar os tópicos: {erro.message}</p>
 		{/await}
@@ -259,7 +262,8 @@
 	}
 
 	.numero-item {
-		flex: 1 1 auto;
+		flex: 1 1 0;
+		min-width: 11rem;
 		display: grid;
 		align-content: start;
 		gap: 0.5rem;

@@ -22,6 +22,7 @@ from importlib import resources
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -54,6 +55,30 @@ def pasta_estatico() -> Path:
     return Path(str(resources.files("mapa_da_ciencia.web").joinpath("estatico")))
 
 
+def problema_do_pedido(erro: dict) -> str:
+    """Um erro de validação do pedido (do Pydantic), em português: o campo e o que há de errado com ele."""
+    if erro.get("type") == "json_invalid":  # a posição do caractere não é um campo
+        return "o corpo do pedido: não é um JSON válido"
+    campo = ".".join(str(x) for x in erro.get("loc", ()) if x not in ("body", "query", "path")) or "o pedido"
+    ctx = erro.get("ctx") or {}
+    frases = {
+        "missing": "faltou",
+        "greater_than_equal": f"precisa ser pelo menos {ctx.get('ge')}",
+        "greater_than": f"precisa ser maior que {ctx.get('gt')}",
+        "less_than_equal": f"precisa ser no máximo {ctx.get('le')}",
+        "less_than": f"precisa ser menor que {ctx.get('lt')}",
+        "int_parsing": "precisa ser um número inteiro",
+        "int_type": "precisa ser um número inteiro",
+        "float_parsing": "precisa ser um número",
+        "bool_parsing": "precisa ser verdadeiro ou falso",
+        "string_type": "precisa ser um texto",
+        "string_too_long": f"é longo demais (até {ctx.get('max_length')} caracteres)",
+        "json_invalid": "não é um JSON válido",
+        "extra_forbidden": "não é uma opção conhecida",
+    }
+    return f"{campo}: {frases.get(erro.get('type', ''), 'valor inválido')}"
+
+
 def criar_app(
     *,
     pasta_dados: Path,
@@ -82,6 +107,15 @@ def criar_app(
     app.state.jobs = jobs
     app.state.so_local = so_local
     estatico = estatico if estatico is not None else pasta_estatico()
+
+    @app.exception_handler(RequestValidationError)
+    async def pedido_invalido(request: Request, erro: RequestValidationError) -> JSONResponse:
+        # o 422 do FastAPI vem em inglês e numa lista que a interface mostrava como "Unprocessable Entity"
+        problemas = [problema_do_pedido(e) for e in erro.errors()]
+        return JSONResponse(
+            {"detail": {"mensagem": "Pedido inválido: " + "; ".join(problemas) + ".", "problemas": problemas}},
+            status_code=422,
+        )
 
     @app.middleware("http")
     async def so_desta_maquina(request: Request, seguir):

@@ -149,7 +149,7 @@
 				só apaga quem não tem documento nele. Clique num nó, ou busque pelo nome, para ver os documentos dele.
 			</p>
 			<p>
-				O maior grupo ligado fica em cima; embaixo, os grupos menores, e as duplas e os trios isolados só aparecem
+				O maior grupo ligado fica à esquerda, com cada comunidade num espaço próprio; à direita e embaixo, os grupos menores, e as duplas e os trios isolados só aparecem
 				se você pedir (o pedido vai para o link, e o desenho se reenquadra para caber todos). Duas ressalvas: <strong>a distância no desenho não é uma medida</strong> (dois nós perto
 				costumam estar no mesmo grupo, mas dois nós longe podem estar a um passo um do outro), e
 				<strong>tamanho não é importância</strong>: um nó grande tem mais documentos no corpus, e mais coautores não
@@ -246,9 +246,13 @@
 				<dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd></dt>
 				<dd>na busca, escolhem a pessoa ou a instituição e abrem o cartão dela</dd>
 				<dt><kbd>Esc</kbd></dt>
-				<dd>fecha o cartão</dd>
-				<dt>roda do mouse, arrastar, pinça</dt>
-				<dd>aproximam e movem o grafo; os botões + e − fazem o mesmo, e “Reiniciar” volta ao começo</dd>
+				<dd>fecha o cartão; sem cartão aberto, solta a comunidade em destaque</dd>
+				<dt><kbd>Ctrl</kbd> (<kbd>⌘</kbd> no Mac) + roda, pinça, clique duplo</dt>
+				<dd>aproximam o grafo (a roda sozinha rola a página; em tela cheia, também aproxima)</dd>
+				<dt>arrastar</dt>
+				<dd>no fundo, move o grafo; num nó, move o nó (só na tela: “Reiniciar” devolve o desenho)</dd>
+				<dt><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt>
+				<dd>com o grafo em foco (clique nele ou chegue com Tab): aproximam, afastam, voltam ao desenho inteiro e movem; <kbd>Enter</kbd> abre o nó no centro</dd>
 			</dl>
 			{/if}
 			<p>
@@ -262,9 +266,21 @@
 <style>
 	.atalhos {
 		display: grid;
-		grid-template-columns: max-content 1fr;
+		/* a coluna das teclas cresce até 15rem e depois quebra a linha (não alarga a página no celular) */
+		grid-template-columns: fit-content(15rem) minmax(0, 1fr);
 		gap: 0.4rem 1rem;
 		margin: 0.5rem 0 1rem;
+	}
+
+	@media (max-width: 640px) {
+		.atalhos {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.15rem;
+		}
+
+		.atalhos dd {
+			margin-bottom: 0.5rem;
+		}
 	}
 
 	.atalhos dd {

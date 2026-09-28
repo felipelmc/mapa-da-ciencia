@@ -29,7 +29,8 @@ as referências já resolvidas (`referenced_works`), a 1 crédito por 100 obras.
 3. **Comunidades por Louvain** (networkx, resolução 1, semente 7), rotuladas pelos dois tópicos mais frequentes dos
    artigos delas, **sem nome de pessoa**. Dependência nova: `networkx` (BSD-3, Python puro, cerca de 2 MB, importado
    só dentro das funções das redes). igraph e graph-tool ficaram de fora pela licença e pelos binários.
-4. **Desenho no Python, fixo:** `spring_layout` por componente, com semente, empacotado em [-1, 1]. O navegador não
+4. **Desenho no Python, fixo** (por comunidades desde a 2.1.0, veja o adendo): `spring_layout` por componente, com
+   semente, empacotado em [-1, 1]. O navegador não
    recalcula o desenho: filtrar o recorte esmaece nós e arestas, e o mapa mental do leitor não muda a cada filtro.
    O exemplo sintético do contrato usa um desenho determinístico mais simples, porque o `spring_layout` varia na
    quarta casa decimal entre plataformas, e o exemplo é conferido byte a byte no CI.
@@ -122,3 +123,55 @@ homônimos que ficaram separados, 7 são a mesma pessoa, e vão para a revisão 
 - `mapa redes` é uma etapa nova (`ETAPAS`), rápida e sem modelo.
 - A coleta faz cerca de 1 requisição a cada 100 artigos a mais, só na primeira vez.
 - O cânone é enviesado para obras indexadas no OpenAlex (ver "Limitações e vieses").
+
+## Adendo (2.1.0): o desenho por comunidades
+
+Na 2.0.0, o maior componente saía de um `spring_layout` só, com os parâmetros padrão. No piloto, isso fazia um núcleo
+denso: na área do grafo de uma tela de 1920 × 1080 (1206 × 838 px, com a interface da 2.1.0), 58% das pessoas
+desenhadas encostavam em outra, e o maior componente ocupava só 27% do desenho, com os grupos menores numa faixa
+embaixo. O autor pediu grafos "mais espaçados".
+
+Comparamos cinco desenhos no piloto, com métricas na vista inicial (os raios da vista, os componentes de 2 e 3 nós
+escondidos, como por padrão): o atual; o `spring_layout` com mais distância e mais iterações; o `forceatlas2_layout`
+do networkx, com e sem o modo linlog; e um desenho por comunidades, em duas versões (com os componentes menores
+embaixo, ou à direita do maior). Um avaliador independente viu os seis candidatos sem saber qual era qual e escolheu
+pelas imagens e pelas métricas o mesmo que elas apontavam, a segunda versão do desenho por comunidades:
+
+- **O maior componente por comunidades.** Cada comunidade do Louvain (a partição inteira) é desenhada à parte, num
+  disco. Os discos são arrumados por um `spring_layout` do grafo das comunidades (o peso entre duas é a soma das
+  arestas entre elas), e esse arranjo é ampliado até nenhum disco encostar noutro e depois contraído aos poucos,
+  desfazendo as sobreposições a cada passo.
+- **Os componentes menores à direita do maior**, na altura dele, e depois embaixo, com a largura que deixa o desenho
+  visível perto de 1,6 : 1, a proporção de uma tela larga. As duplas e os trios ficam embaixo de tudo.
+- **Nenhum nó encostado noutro numa área de 1250 × 840 px** (a tela de referência, perto da área do grafo numa tela de
+  1920 × 1080): um relaxamento dentro de cada componente afasta os nós pelos raios que a vista desenha
+  (`raios_na_vista`). O raio vai de 1 documento (o mínimo) ao nó com mais documentos (o máximo); na 2.0.0, a fórmula
+  levava 0 documento ao mínimo, e o menor nó saía bem maior que ele.
+
+Medido no piloto com uma reconstrução fiel da vista (os raios de cada versão, o enquadramento da vista e os componentes
+de 4 nós ou mais), por um auditor independente e conferido de novo depois do ajuste do arranjo dos discos:
+
+| Piloto, vista inicial | Coautoria, 2.0.0 | Coautoria, 2.1.0 | Instituições, 2.0.0 | Instituições, 2.1.0 |
+|---|---|---|---|---|
+| Nós encostados em outro, tela de 1920 × 1080 (1206 × 838 px) | 58% | 0% | 25% | 0% |
+| Nós encostados em outro, notebook de 1440 × 900 (726 × 547 px) | 84% | 63% | 67% | 18% |
+| Idem, com o grafo em tela cheia (1032 × 868 px; a 2.0.0 não tinha tela cheia) | — | 3% | — | 0% |
+| Distância ao vizinho mais próximo (mediana, 1206 × 838) | 5,8 px | 7,7 px | 10,0 px | 17,4 px |
+| Área do desenho ocupada pelo maior componente | 27% | 61% | 50% | 87% |
+| O vizinho mais próximo é um parceiro (coautor, instituição parceira) | 55% | 75% | 14% | 34% |
+| Dos 5 vizinhos mais próximos, os da mesma comunidade | 62% | 98% | 35% | 98% |
+
+Numa tela pequena, os nós ainda se tocam; em tela cheia, quase nenhum, e o zoom separa o resto. A última linha é alta em boa parte
+por construção (cada comunidade tem um disco próprio), e **o vão entre dois grupos não é uma medida**, como a distância
+em geral (veja "Como ler as redes"). A proximidade entre as comunidades acompanha a ligação entre elas só em parte:
+entre as comunidades de 8 nós ou mais, a correlação de Spearman entre o peso das arestas que as ligam e a distância
+entre elas é de −0,54 na coautoria (−0,28 na 2.0.0) e de −0,19 nas instituições (−0,46 na 2.0.0), e a comunidade mais
+ligada a cada uma está entre as três mais próximas dela em 40% e 78% dos casos (16% e 38% seriam o acaso; 25% e 67% na
+2.0.0). Nas instituições, 45% das arestas do maior componente ligam comunidades diferentes: o desenho as esmaece (as
+arestas entre comunidades ficam mais fracas que as de dentro), e passar o mouse num nó as acende.
+
+O desenho leva cerca de 1 s no piloto e não depende do hash das strings do Python (`PYTHONHASHSEED`): três rodadas de
+`mapa redes`, com sementes diferentes, deram arquivos idênticos byte a byte. Só as
+coordenadas mudaram: pessoas, comunidades, métricas, arestas, citações e o cânone são os mesmos da 2.0.0. O
+relaxamento garante a folga até o tamanho do piloto; numa rede bem maior, os nós voltam a se tocar na tela de
+referência (num corpus sintético, 0,4% com 3 mil nós desenhados, 82% com 8 mil), e o zoom continua sendo o caminho.

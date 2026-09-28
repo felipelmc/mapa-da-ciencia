@@ -66,7 +66,8 @@
 		estado === 'pendente' ? 'Rodar' : estado === 'desatualizada' ? 'Atualizar' : estado === 'incompleta' ? 'Continuar' : 'Rodar de novo';
 	const resumoContagens = (c: Record<string, number>) => {
 		const [chave, n] = Object.entries(c).find(([k]) => ['documentos', 'classificados', 'vinculos', 'topicos', 'pessoas'].includes(k)) ?? [];
-		return chave ? `${formatarInteiro(n!)} ${chave}` : '';
+		const NOME: Record<string, string> = { vinculos: 'vínculos', topicos: 'tópicos' };
+		return chave ? `${formatarInteiro(n!)} ${NOME[chave] ?? chave}` : '';
 	};
 </script>
 
@@ -126,7 +127,9 @@
 
 	.metro {
 		display: grid;
-		grid-template-columns: repeat(5, minmax(0, 1fr));
+		/* tantas colunas quantas etapas (eram 5 fixas, e a sexta caía sozinha numa segunda linha) */
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(0, 1fr);
 		gap: 0;
 		margin: 0;
 		padding: 0;
@@ -271,6 +274,8 @@
 
 	@container (max-width: 820px) {
 		.metro {
+			/* de pé: uma etapa embaixo da outra (o grid-auto-flow da linha deitada as punha numa linha só) */
+			grid-auto-flow: row;
 			grid-template-columns: minmax(0, 1fr);
 			gap: 1.2rem;
 		}

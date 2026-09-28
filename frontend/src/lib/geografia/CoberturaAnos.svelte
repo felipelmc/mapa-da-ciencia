@@ -44,7 +44,8 @@
 	const altura = 170;
 	const margem = { esq: 44, dir: 8, topo: 8, base: 26 };
 	const n = $derived(anos.length);
-	const passo = $derived((largura - margem.esq - margem.dir) / Math.max(1, n));
+	// sem largura medida ainda (0, num instante do celular), nenhuma barra de largura negativa
+	const passo = $derived(Math.max(0, largura - margem.esq - margem.dir) / Math.max(1, n));
 	const x = $derived((j: number) => margem.esq + j * passo + passo / 2);
 	const y = (v: number) => altura - margem.base - v * (altura - margem.topo - margem.base);
 

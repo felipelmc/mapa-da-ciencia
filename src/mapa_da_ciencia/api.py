@@ -14,6 +14,9 @@ Funciona dentro do Jupyter e do Colab: a coleta roda numa thread quando já há 
 
 from __future__ import annotations
 
+import asyncio
+import logging
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -414,13 +417,45 @@ class Painel:
 
     url: str
     _servidor: Any = field(repr=False)
+    _fio: Any = field(default=None, repr=False)
 
     def parar(self) -> None:
-        """Derruba o servidor do painel."""
+        """Derruba o servidor do painel e espera ele sair (a thread solta o projeto para outro painel ao terminar).
+        Uma etapa em andamento é interrompida na próxima atualização de progresso, como com Ctrl+C (o que ela já fez
+        fica guardado, e rodá-la de novo continua dali), e a página que a acompanha é desligada. Se o servidor não sair
+        em 10 s, `parar()` avisa, e o projeto fica travado até ele sair."""
         self._servidor.should_exit = True
+        if self._fio is not None:
+            self._fio.join(timeout=10)
+            if self._fio.is_alive():
+                warnings.warn(
+                    "O painel ainda não saiu depois de 10 s (uma etapa em andamento?): o projeto fica travado até "
+                    "ele sair.",
+                    stacklevel=2,
+                )
 
     def _repr_html_(self) -> str:  # num notebook, o painel aparece como um link
         return f'<a href="{self.url}" target="_blank">Painel do mapa-da-ciencia em {self.url}</a>'
+
+
+class _SemCancelamento(logging.Filter):
+    """No `parar()`, as conexões ainda abertas (a página que acompanha uma etapa) são canceladas depois de 1 s: o
+    cancelamento é o esperado, e o *traceback* dele cairia na célula do notebook como um erro. Só vale enquanto o
+    servidor sai; fora disso, um cancelamento é um erro como outro qualquer."""
+
+    def __init__(self, servidor: Any) -> None:
+        super().__init__()
+        self._servidor = servidor
+
+    def filter(self, registro: logging.LogRecord) -> bool:
+        if not self._servidor.should_exit:
+            return True
+        erro = registro.exc_info[1] if registro.exc_info else None
+        while isinstance(erro, BaseExceptionGroup) and len(erro.exceptions) == 1:
+            erro = erro.exceptions[0]
+        if isinstance(erro, asyncio.CancelledError):
+            return False
+        return "timeout graceful shutdown exceeded" not in registro.getMessage()
 
 
 def _no_colab() -> bool:
@@ -446,6 +481,7 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
     import uvicorn
 
     from mapa_da_ciencia.servidor.app import criar_app
+    from mapa_da_ciencia.servidor.trava import travar
 
     p = _projeto(projeto)
     with socket.socket() as s:
@@ -454,9 +490,31 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
         except OSError:
             raise ErroConfig(f"A porta {porta} já está em uso: tente outra, com `porta=`.") from None
     colab = _no_colab() if colab is None else colab
-    app = criar_app(pasta_dados=p.saida / "dados", projeto=p, api=True, so_local=not colab)
-    servidor = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning"))
-    fio = threading.Thread(target=servidor.run, daemon=True, name=f"mapa-painel-{porta}")
+    trava = travar(p, porta)  # um painel por projeto, como o `mapa painel` (um segundo não abre)
+    try:
+        app = criar_app(pasta_dados=p.saida / "dados", projeto=p, api=True, so_local=not colab)
+        # `parar()` não espera mais que 1 s pelas conexões abertas (a página que acompanha uma etapa mantém uma)
+        servidor = uvicorn.Server(
+            uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning", timeout_graceful_shutdown=1)
+        )
+    except BaseException:
+        if trava is not None:
+            trava.close()
+        raise
+
+    def rodar() -> None:
+        # a trava vive com a thread do servidor: só é solta quando ele sai (e não quando o `Painel` é descartado)
+        registro = logging.getLogger("uvicorn.error")  # depois do Config, que refaz a configuração dos logs
+        filtro = _SemCancelamento(servidor)
+        registro.addFilter(filtro)
+        try:
+            servidor.run()
+        finally:
+            registro.removeFilter(filtro)
+            if trava is not None:
+                trava.close()
+
+    fio = threading.Thread(target=rodar, daemon=True, name=f"mapa-painel-{porta}")
     fio.start()
     for _ in range(200):
         if servidor.started or not fio.is_alive():
@@ -464,8 +522,9 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
         time.sleep(0.05)
     if not servidor.started:
         servidor.should_exit = True
+        fio.join(timeout=10)
         raise ErroConfig(f"O painel não subiu na porta {porta}. Tente outra, com `porta=`.")
-    aberto = Painel(f"http://127.0.0.1:{porta}/", servidor)
+    aberto = Painel(f"http://127.0.0.1:{porta}/", servidor, fio)
     if colab:
         from google.colab import output  # só existe no Colab
 

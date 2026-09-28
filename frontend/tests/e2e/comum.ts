@@ -7,10 +7,12 @@ import type { Page } from '@playwright/test';
 export const RAIZ = fileURLToPath(new URL('../..', import.meta.url));
 export const TELAS = join(RAIZ, 'test-results');
 const EXEMPLO = join(RAIZ, '..', 'contrato', 'exemplo', 'dados');
+const PUBLICADO = join(RAIZ, '..', 'contrato', 'exemplo-publicado', 'dados');
 
-/** Um arquivo do exemplo sintético (o mesmo que os sites de teste servem). */
+/** Um arquivo do exemplo sintético (o mesmo que os sites de teste servem), ou da versão publicada dele. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const ler = (arquivo: string): any => JSON.parse(readFileSync(join(EXEMPLO, arquivo), 'utf8'));
+export const ler = (arquivo: string, qual: 'exemplo' | 'publicado' = 'exemplo'): any =>
+	JSON.parse(readFileSync(join(qual === 'exemplo' ? EXEMPLO : PUBLICADO, arquivo), 'utf8'));
 
 export const inteiro = (n: number) => new Intl.NumberFormat('pt-BR').format(n);
 

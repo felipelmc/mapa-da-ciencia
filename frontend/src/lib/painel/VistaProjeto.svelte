@@ -217,7 +217,6 @@
 	.vista {
 		display: grid;
 		gap: 1.8rem;
-		max-width: 76rem;
 	}
 
 	.cabecalho {
@@ -238,7 +237,7 @@
 	}
 
 	.lide {
-		max-width: 60rem;
+		max-width: var(--medida);
 		margin: 0;
 		color: var(--texto-suave);
 	}

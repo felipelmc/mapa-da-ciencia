@@ -1,7 +1,8 @@
 """A conferência das rotas de escrita do painel: só pedidos feitos desta máquina.
 
-O `Host` precisa ser local (contra DNS apontado para cá) e o `Origin`, quando existe, também (contra uma página
-aberta em outro site tentando gravar no projeto pelo navegador). A leitura também só responde a um `Host` local
+O `Host` precisa ser local (contra DNS apontado para cá) e o `Origin`, quando existe, precisa ser o próprio painel,
+com a mesma porta (contra uma página aberta em outro site, ou em outro servidor local, tentando gravar no projeto
+pelo navegador). A leitura também só responde a um `Host` local
 (o *middleware* de `servidor/app.py`, com a mesma lista `HOSTS_LOCAIS`).
 
 No Colab (`criar_app(so_local=False)`), o painel é aberto pelo *proxy* do Google, que chega com o endereço dele no
@@ -27,5 +28,8 @@ def conferir_origem(request: Request) -> None:
             raise HTTPException(403, "Gravação recusada: o pedido veio de outra página.")
         return
     host = request.url.hostname
-    if host not in HOSTS_LOCAIS or (origem is not None and urlsplit(origem).hostname not in HOSTS_LOCAIS):
+    if host not in HOSTS_LOCAIS:
         raise HTTPException(403, "Gravação recusada: o painel só aceita escrita a partir desta máquina.")
+    # a página que pede tem de ser a do próprio painel: outra porta local é outro servidor (outra aplicação)
+    if origem is not None and urlsplit(origem).netloc.lower() != request.headers.get("host", "").lower():
+        raise HTTPException(403, "Gravação recusada: o pedido veio de outra página, e não do painel.")

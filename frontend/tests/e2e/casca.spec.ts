@@ -447,3 +447,151 @@ test('a capa leva aos macrotemas e à geografia; a Ajuda explica o recorte', asy
 	await expect(page.getByTestId('ajuda-recorte')).toContainText('um documento passa se tiver ao menos uma afiliação');
 	await expect(page.getByRole('heading', { name: 'Como ler a geografia' })).toBeVisible();
 });
+
+test.describe('telas largas', () => {
+	for (const [largura, altura] of [
+		[1920, 1080],
+		[2560, 1440]
+	] as const) {
+		test(`em ${largura} px, o conteúdo fica centrado e as figuras crescem`, async ({ browser }) => {
+			const contexto = await browser.newContext({ viewport: { width: largura, height: altura }, reducedMotion: 'reduce' });
+			const page = await contexto.newPage();
+			const problemas = vigiar(page);
+			await page.goto(`${url('RAIZ')}#/topicos`);
+			await expect(h1(page)).toHaveText('Tópicos');
+			await expect(page.locator('[data-testid^="figura-"]:not([data-pronto])')).toHaveCount(0);
+			const m = await page.evaluate(() => {
+				const principal = document.querySelector('main')!;
+				// a coluna do trilho, no grid da casca
+				const trilho = parseFloat(getComputedStyle(principal.parentElement!).gridTemplateColumns.split(' ')[0]);
+				const main = principal.getBoundingClientRect();
+				const figura = document.querySelector('[data-testid="figura-fluxo"] svg')?.getBoundingClientRect().width ?? 0;
+				return { esquerda: main.left - trilho, direita: innerWidth - main.right, largura: main.width, figura };
+			});
+			// as sobras dos dois lados da coluna do conteúdo são iguais (a da esquerda, a partir do trilho)
+			expect(Math.abs(m.esquerda - m.direita)).toBeLessThanOrEqual(2);
+			// e a figura principal passa da largura antiga (76rem de casca, 1.104 px de figura)
+			expect(m.figura).toBeGreaterThan(1200);
+			expect(problemas).toEqual([]);
+			await contexto.close();
+		});
+	}
+});
+
+test('no celular, a seção aberta fica à vista na barra de baixo', async ({ browser }) => {
+	const contexto = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+	const page = await contexto.newPage();
+	// a última seção da barra (no painel, Projeto), que ficava fora da tela, à direita
+	await page.goto(`${url('PAINEL')}#/projeto`);
+	await expect(h1(page)).toBeVisible();
+	await expect(trilho(page).locator('[aria-current="page"]')).toBeInViewport({ ratio: 0.9 });
+	await contexto.close();
+});
+
+/** `true` se o centro do elemento está na tela e é ele (ou um filho dele) que recebe o clique ali. */
+const clicavel = (loc: import('@playwright/test').Locator) =>
+	loc.evaluate((el) => {
+		const c = el.getBoundingClientRect();
+		const [x, y] = [c.left + c.width / 2, c.top + c.height / 2];
+		if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) return false;
+		const topo = document.elementFromPoint(x, y);
+		return !!topo && (topo === el || el.contains(topo));
+	});
+
+test('rolando a página, a barra do recorte fica abaixo da barra do topo, e a Ajuda continua clicável', async ({ page }) => {
+	await page.setViewportSize({ width: 1440, height: 700 });
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(h1(page)).toHaveText('Tópicos');
+	await page.mouse.wheel(0, 1500);
+	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(300);
+	await expect.poll(() => clicavel(page.getByRole('link', { name: /Ajuda/ }).first())).toBe(true);
+	await expect.poll(() => clicavel(page.getByTestId('linha-do-tempo'))).toBe(true);
+});
+
+test('no celular, o "Baixar" da última figura não fica embaixo da barra de navegação', async ({ browser }) => {
+	const contexto = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+	const page = await contexto.newPage();
+	await page.goto(`${url('RAIZ')}#/geografia`);
+	await expect(h1(page)).toHaveText('Geografia');
+	await expect(page.locator('[data-testid^="figura-"]:not([data-pronto])')).toHaveCount(0);
+	const ultimo = page.getByTestId('abrir-exportar').last();
+	await ultimo.scrollIntoViewIfNeeded();
+	await ultimo.click();
+	const baixar = page.getByTestId('baixar-figura');
+	await expect(baixar).toBeVisible();
+	await expect.poll(() => clicavel(baixar)).toBe(true);
+	const caixa = (await page.locator('[aria-label="Exportar a figura"]').boundingBox())!;
+	expect(caixa.x).toBeGreaterThanOrEqual(0);
+	expect(caixa.x + caixa.width).toBeLessThanOrEqual(375);
+	await contexto.close();
+});
+
+test('um "%" solto no endereço não deixa a página em branco', async ({ page }) => {
+	const problemas = vigiar(page);
+	for (const [rota, titulo] of [
+		['#/mapa?busca=50%', 'Mapa'],
+		['#/topicos?busca=%FF', 'Tópicos'],
+		['#/redes?no=%ZZ', 'Redes'],
+		['#/topicos?busca=S%C3%A3o%', 'Tópicos']
+	] as const) {
+		// trocar só o hash faz o SvelteKit recarregar a página inteira: num computador lento, cada passo é uma carga
+		await page.goto(`${url('RAIZ')}${rota}`);
+		await expect(h1(page), rota).toHaveText(titulo, { timeout: 15000 });
+	}
+	// um link bem formado com %25 (ou %26) abre, sem deixar no endereço um % solto (ou um & que parte a busca), e
+	// recarregar também
+	const decodifica = () =>
+		page.evaluate(() => {
+			try {
+				decodeURIComponent(location.hash);
+				return true;
+			} catch {
+				return false;
+			}
+		});
+	const busca = () => page.evaluate(() => new URLSearchParams(location.hash.split('?')[1] ?? '').get('busca'));
+	await page.goto(`${url('RAIZ')}#/topicos?busca=100%25`);
+	await expect(h1(page)).toHaveText('Tópicos', { timeout: 15000 });
+	expect(await decodifica()).toBe(true);
+	await page.reload();
+	await expect(h1(page)).toHaveText('Tópicos', { timeout: 15000 });
+	await page.goto('about:blank');
+	await page.goto(`${url('RAIZ')}#/topicos?busca=voto%26partido`);
+	await expect(h1(page)).toHaveText('Tópicos', { timeout: 15000 });
+	expect(await busca()).toBe('voto partido');
+	await page.reload();
+	await expect(h1(page)).toHaveText('Tópicos', { timeout: 15000 });
+	expect(await busca()).toBe('voto partido');
+	expect(problemas.filter((p) => p.includes('URI malformed'))).toEqual([]);
+});
+
+test('sem WebGL, o mapa avisa (e aponta as outras vistas), em vez de ficar em branco', async ({ page }) => {
+	await page.addInitScript(() => {
+		const original = HTMLCanvasElement.prototype.getContext;
+		// @ts-expect-error: a assinatura sobrecarregada do getContext
+		HTMLCanvasElement.prototype.getContext = function (tipo: string, ...resto: unknown[]) {
+			return /webgl/.test(tipo) ? null : original.call(this, tipo, ...resto);
+		};
+	});
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await expect(page.getByTestId('mapa-sem-webgl')).toContainText('O mapa não conseguiu desenhar');
+	await expect(page.getByTestId('mapa-sem-webgl').getByRole('link', { name: 'Tópicos' })).toBeVisible();
+});
+
+test('no celular, o painel de exportação da primeira figura abre à vista, e só a barra do recorte gruda', async ({ browser }) => {
+	const contexto = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+	const page = await contexto.newPage();
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(h1(page)).toHaveText('Tópicos');
+	await expect(page.locator('[data-testid^="figura-"]:not([data-pronto])')).toHaveCount(0);
+	const primeiro = page.getByTestId('abrir-exportar').first();
+	await primeiro.scrollIntoViewIfNeeded();
+	await primeiro.click();
+	await expect.poll(() => clicavel(page.getByTestId('baixar-figura'))).toBe(true);
+	await page.keyboard.press('Escape');
+	// rolando, a barra do topo sai da tela e a do recorte fica no alto, sem as duas se sobreporem
+	await page.evaluate(() => scrollTo(0, 1200));
+	const topo = (await page.locator('header.barra').boundingBox())!;
+	expect(topo.y + topo.height).toBeLessThanOrEqual(1);
+	await contexto.close();
+});

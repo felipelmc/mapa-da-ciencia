@@ -373,8 +373,8 @@ test('movimento reduzido: nada anima, nem ao aproximar ou abrir um nó', async (
 		);
 	await expect.poll(animando).toBe(0);
 	await page.getByTestId('zoom-mais').click();
-	await page.getByRole('combobox').fill(redes.pessoas.nome[3]);
-	await page.getByRole('combobox').press('Enter');
+	await page.getByRole('combobox', { name: /^Buscar/ }).fill(redes.pessoas.nome[3]);
+	await page.getByRole('combobox', { name: /^Buscar/ }).press('Enter');
 	await expect(page.getByTestId('cartao-no')).toBeVisible();
 	expect(await animando()).toBe(0);
 });
@@ -444,4 +444,562 @@ test('a Ajuda explica como ler as redes', async ({ page }) => {
 	await expect(secao).toContainText('1/(n−1)');
 	await expect(secao).toContainText('agrupamentos automáticos');
 	await expect(secao).toContainText('favorece o que tem DOI');
+});
+
+// ---- a interação com o grafo (2.1): destaque, comunidade, arrasto, roda, teclado e tela cheia
+
+/** Os vizinhos (no corpus inteiro) de uma pessoa, pelas autorias do exemplo. */
+function vizinhosDe(p: number): Set<number> {
+	const saida = new Set<number>();
+	for (const pessoas of pessoasPorDoc(() => true).values()) if (pessoas.has(p)) for (const q of pessoas) if (q !== p) saida.add(q);
+	return saida;
+}
+const estadoDoGrafo = (page: Page) => page.evaluate(() => window.__redesDebug!.estadoDoGrafo!()!);
+/** `true` se todos os nós estão dentro da área do grafo (depois de enquadrar). */
+async function todosNaTela(page: Page, indices: number[]) {
+	const caixa = (await page.getByTestId('canvas-rede').boundingBox())!;
+	for (const i of indices) {
+		const [x, y] = (await naTela(page, redes.pessoas.id[i]))!;
+		if (x < 0 || x > caixa.width || y < 0 || y > caixa.height) return false;
+	}
+	return true;
+}
+const naTela = (page: Page, id: string) => page.evaluate((i) => window.__redesDebug!.posicaoNaTela!(i), id);
+/** A pessoa desenhada com mais coautores. */
+const central = () => {
+	const desenhadas = redes.pessoas.id.map((_: string, i: number) => i).filter((i: number) => redes.pessoas.x[i] !== null);
+	return desenhadas.sort((a: number, b: number) => redes.pessoas.grau[b] - redes.pessoas.grau[a])[0] as number;
+};
+
+test('passar o mouse num nó acende ele e os vizinhos, e escreve o nome deles', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	expect((await estadoDoGrafo(page)).destacados).toBe(0);
+	const p = central();
+	const [x, y] = (await naTela(page, redes.pessoas.id[p]))!;
+	await page.getByTestId('canvas-rede').hover({ position: { x, y } });
+	await expect.poll(async () => (await estadoDoGrafo(page)).destacados).toBe(1 + vizinhosDe(p).size);
+	const nomes = (await estadoDoGrafo(page)).nomes;
+	expect(nomes.length).toBeGreaterThan(0);
+	// só os nomes da vizinhança (a pessoa sob o mouse e os coautores dela)
+	const daVizinhanca = [p, ...vizinhosDe(p)].map((q) => redes.pessoas.nome[q]);
+	expect(nomes.filter((n: string) => !daVizinhanca.includes(n))).toEqual([]);
+	// fora do nó, o destaque some
+	await page.getByTestId('canvas-rede').hover({ position: { x: 2, y: 2 } });
+	await expect.poll(async () => (await estadoDoGrafo(page)).destacados).toBe(0);
+	expect(problemas).toEqual([]);
+});
+
+test('uma comunidade escolhida na legenda fica acesa, enquadrada e no link; "Todas" solta', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const botao = page.getByTestId('comunidade').first();
+	await botao.click();
+	await expect(page).toHaveURL(/comunidade=\d+/);
+	await expect(botao).toHaveAttribute('aria-pressed', 'true');
+	const c = Number(new URL(page.url().replace('#/', '')).searchParams.get('comunidade'));
+	const membros = redes.pessoas.id.map((_: string, i: number) => i).filter((i: number) => redes.pessoas.comunidade[i] === c && redes.pessoas.x[i] !== null);
+	await expect.poll(async () => (await estadoDoGrafo(page)).destacados).toBe(membros.length);
+	// enquadrada: o zoom mudou, e a comunidade inteira está na tela
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).not.toBe(1);
+	expect(await todosNaTela(page, membros)).toBe(true);
+	await expect(page.getByTestId('zoom-enquadrar')).toHaveText('Enquadrar a comunidade');
+	// o link reproduz a tela
+	await page.reload();
+	await esperarRedes(page, 'coautoria');
+	await expect.poll(async () => (await estadoDoGrafo(page)).destacados).toBe(membros.length);
+	await page.getByTestId('todas-comunidades').click();
+	await expect(page).not.toHaveURL(/comunidade=/);
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).toBe(1);
+	// trocar de rede solta a comunidade
+	await page.getByTestId('comunidade').first().click();
+	await page.getByTestId('rede-instituicoes').click();
+	await expect(page).not.toHaveURL(/comunidade=/);
+	expect(problemas).toEqual([]);
+});
+
+test('arrastar um nó o move sem abrir o cartão; "Reiniciar" devolve o desenho; o clique abre sem rolar a página', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const id = redes.pessoas.id[central()];
+	const canvas = page.getByTestId('canvas-rede');
+	await canvas.scrollIntoViewIfNeeded();
+	const caixa = (await canvas.boundingBox())!;
+	const [x, y] = (await naTela(page, id))!;
+	await page.mouse.move(caixa.x + x, caixa.y + y);
+	await page.mouse.down();
+	await page.mouse.move(caixa.x + x + 60, caixa.y + y + 30, { steps: 6 });
+	await page.mouse.up();
+	const [x2, y2] = (await naTela(page, id))!;
+	expect(Math.round(x2 - x)).toBe(60);
+	expect(Math.round(y2 - y)).toBe(30);
+	expect((await estadoDoGrafo(page)).movidos).toBe(1);
+	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+	await page.getByTestId('zoom-reiniciar').click();
+	await expect.poll(async () => (await estadoDoGrafo(page)).movidos).toBe(0);
+	expect(await naTela(page, id)).toEqual([x, y]);
+	// o clique abre o cartão, e a página não rola até ele
+	const rolagem = await page.evaluate(() => scrollY);
+	await canvas.click({ position: { x, y } });
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	expect(await page.evaluate(() => scrollY)).toBe(rolagem);
+	await expect(page.getByTestId('zoom-enquadrar')).toHaveText('Enquadrar o nó');
+	await page.getByTestId('zoom-enquadrar').click();
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).not.toBe(1);
+	expect(await todosNaTela(page, [central(), ...vizinhosDe(central())])).toBe(true);
+	expect(problemas).toEqual([]);
+});
+
+test('a roda sozinha rola a página (com um aviso); Ctrl + roda e o teclado aproximam', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.setViewportSize({ width: 1440, height: 700 });
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const canvas = page.getByTestId('canvas-rede');
+	await canvas.scrollIntoViewIfNeeded();
+	const caixa = (await canvas.boundingBox())!;
+	await page.mouse.move(caixa.x + caixa.width / 2, caixa.y + 40);
+	const antes = await page.evaluate(() => scrollY);
+	await page.mouse.wheel(0, 200);
+	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(antes);
+	await expect(page.getByTestId('aviso-roda')).toBeVisible();
+	expect((await estadoDoGrafo(page)).vista.k).toBe(1);
+	// um ponto do grafo à vista, abaixo das barras do topo (que grudam no alto ao rolar)
+	const caixa2 = (await canvas.boundingBox())!;
+	const barras = await page.evaluate(() => Math.max(...[...document.querySelectorAll('header.barra, .recorte')].map((e) => e.getBoundingClientRect().bottom)));
+	await page.mouse.move(caixa2.x + caixa2.width / 2, Math.max(caixa2.y, barras) + 40);
+	await page.keyboard.down('Control');
+	await page.mouse.wheel(0, -300);
+	await page.keyboard.up('Control');
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).toBeGreaterThan(1);
+	// o teclado, com a área do grafo em foco: 0 volta, + aproxima
+	await page.locator('[data-grafo]').focus();
+	await page.keyboard.press('0');
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).toBe(1);
+	await page.keyboard.press('+');
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).toBeGreaterThan(1);
+	expect(problemas).toEqual([]);
+});
+
+test('tela cheia: o grafo ocupa a tela e volta', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const botao = page.getByTestId('tela-cheia');
+	test.skip((await botao.count()) === 0, 'navegador sem a API de tela cheia');
+	await botao.click();
+	await expect(botao).toHaveAttribute('aria-pressed', 'true');
+	await expect.poll(async () => (await estadoDoGrafo(page)).telaCheia).toBe(true);
+	await botao.click();
+	await expect(botao).toHaveAttribute('aria-pressed', 'false');
+	expect(problemas).toEqual([]);
+});
+
+test('estados: passar o mouse numa UF acende só os arcos dela, sem filtrar', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes?rede=estados`);
+	await esperarRedes(page, 'estados');
+	const uf = page.getByTestId('uf-rede').first();
+	const sigla = (await uf.getAttribute('data-chave'))!;
+	await uf.hover();
+	const arcos = page.getByTestId('arco');
+	const total = await arcos.count();
+	const dela = await page.locator(`[data-testid="arco"][data-par^="${sigla}|"], [data-testid="arco"][data-par$="|${sigla}"]`).count();
+	await expect(page.locator('[data-testid="arco"].aceso')).toHaveCount(dela);
+	await expect(page.locator('[data-testid="arco"].apagado')).toHaveCount(total - dela);
+	await expect(page).not.toHaveURL(/uf=/);
+	expect(problemas).toEqual([]);
+});
+
+test('citações: passar o mouse numa célula acende a linha e a coluna; no cânone, a dica traz a obra', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes?rede=citacoes`);
+	await esperarRedes(page, 'citacoes');
+	const celulas = page.getByTestId('celula-fluxo');
+	const n = Math.round(Math.sqrt(await celulas.count()));
+	await page.locator('[data-testid="celula-fluxo"][data-de="1"][data-para="2"]').hover();
+	// acesas: a linha 1 e a coluna 2 (2n − 1 células); as outras, apagadas
+	await expect(page.locator('[data-testid="celula-fluxo"].apagada')).toHaveCount(n * n - (2 * n - 1));
+	const obra = page.getByTestId('obra').first();
+	await obra.hover();
+	await expect(page.getByRole('status').filter({ hasText: 'Citada por' })).toBeVisible();
+	expect(problemas).toEqual([]);
+});
+
+test('a busca enquadra o nó mesmo depois de um clique no nó já aberto, e redimensionar não desfaz o zoom', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const canvas = page.getByTestId('canvas-rede');
+	const p = central();
+	const [x, y] = (await naTela(page, redes.pessoas.id[p]))!;
+	await canvas.click({ position: { x, y } });
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	await canvas.click({ position: { x, y } }); // o mesmo nó, de novo: não muda nada
+	const antes = (await estadoDoGrafo(page)).vista;
+	// a busca abre outro nó: enquadra (antes, a marca do clique ficava presa e o zoom não vinha)
+	const outro = [...vizinhosDe(p)][0];
+	await page.getByRole('combobox', { name: /^Buscar/ }).fill(redes.pessoas.nome[outro]);
+	await page.getByRole('combobox', { name: /^Buscar/ }).press('Enter');
+	await expect(page).toHaveURL(new RegExp(`no=${redes.pessoas.id[outro]}`));
+	await expect.poll(async () => JSON.stringify((await estadoDoGrafo(page)).vista)).not.toBe(JSON.stringify(antes));
+	const enquadrada = (await estadoDoGrafo(page)).vista;
+	// redimensionar a janela não refaz o enquadramento nem descarta o zoom
+	await page.setViewportSize({ width: 1300, height: 820 });
+	await page.waitForTimeout(300);
+	expect((await estadoDoGrafo(page)).vista.k).toBeCloseTo(enquadrada.k, 5);
+	expect(problemas).toEqual([]);
+});
+
+test('depois de uma pinça, o dedo que fica move o grafo sem pular', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const saltos = await page.evaluate(async () => {
+		const c = document.querySelector<HTMLCanvasElement>('[data-testid="canvas-rede"]')!;
+		const caixa = c.getBoundingClientRect();
+		const ev = (tipo: string, id: number, x: number, y: number) =>
+			c.dispatchEvent(new PointerEvent(tipo, { pointerId: id, pointerType: 'touch', clientX: caixa.left + x, clientY: caixa.top + y, bubbles: true, isPrimary: id === 1 }));
+		const vista = () => window.__redesDebug!.estadoDoGrafo!()!.vista;
+		const espera = () => new Promise((r) => requestAnimationFrame(() => r(null)));
+		ev('pointerdown', 1, 200, 200);
+		ev('pointerdown', 2, 300, 200);
+		ev('pointermove', 2, 380, 200); // abre a pinça
+		await espera();
+		ev('pointerup', 2, 380, 200); // solta um dedo
+		const antes = vista();
+		ev('pointermove', 1, 204, 202); // o que ficou anda 4 px
+		await espera();
+		const depois = vista();
+		ev('pointerup', 1, 204, 202);
+		return [Math.abs(depois.dx - antes.dx), Math.abs(depois.dy - antes.dy)];
+	});
+	expect(saltos[0]).toBeLessThanOrEqual(5);
+	expect(saltos[1]).toBeLessThanOrEqual(5);
+});
+
+test('pelo teclado, Enter abre o nó que estiver no centro do grafo', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const id = redes.pessoas.id[central()];
+	const area = page.locator('[data-grafo]');
+	await area.focus();
+	// as setas trazem o nó para o centro (60 px por toque)
+	const caixa = (await area.boundingBox())!;
+	const [x, y] = (await naTela(page, id))!;
+	const [dx, dy] = [caixa.width / 2 - x, caixa.height / 2 - y];
+	for (let k = 0; k < Math.round(Math.abs(dx) / 60); k += 1) await page.keyboard.press(dx > 0 ? 'ArrowLeft' : 'ArrowRight');
+	for (let k = 0; k < Math.round(Math.abs(dy) / 60); k += 1) await page.keyboard.press(dy > 0 ? 'ArrowUp' : 'ArrowDown');
+	await page.keyboard.press('Enter');
+	await expect(page).toHaveURL(/no=/);
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+});
+
+test('os rótulos das comunidades não tomam o clique dos nós; a comunidade se escolhe no seletor do grafo', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	await expect(page.getByTestId('rotulo-comunidade').first()).toHaveCSS('pointer-events', 'none');
+	const seletor = page.getByTestId('escolher-comunidade');
+	const opcao = await seletor.locator('option').nth(1).getAttribute('value');
+	await seletor.selectOption(opcao!);
+	await expect(page).toHaveURL(new RegExp(`comunidade=${opcao}`));
+	await seletor.selectOption('');
+	await expect(page).not.toHaveURL(/comunidade=/);
+	// Esc, sem cartão aberto e fora do grafo, também solta a comunidade
+	await seletor.selectOption(opcao!);
+	await page.locator('h1').click();
+	await page.keyboard.press('Escape');
+	await expect(page).not.toHaveURL(/comunidade=/);
+	expect(problemas).toEqual([]);
+});
+
+test('a busca de alguém numa dupla escondida mostra as duplas e enquadra o nó', async ({ page }) => {
+	// o exemplo não tem duplas desenhadas: um documento de autor único passa a ser de duas pessoas novas, que só
+	// assinam ele (uma dupla, que a vista esconde por padrão); o autor original tem outros documentos com coautores
+	const porDoc = new Map<number, number[]>();
+	redes.autorias.doc.forEach((d: number, k: number) => porDoc.set(d, [...(porDoc.get(d) ?? []), k]));
+	const [doc, [k]] = [...porDoc.entries()].find(([, ks]) => ks.length === 1)!;
+	const n = redes.pessoas.id.length;
+	await page.route('**/dados/redes.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const r = await resposta.json();
+		r.autorias.pessoa[k] = n;
+		r.autorias.doc.push(doc);
+		r.autorias.pessoa.push(n + 1);
+		const novas = { id: ['pteste0001a', 'pteste0001b'], nome: ['Pessoa de Teste A', 'Pessoa de Teste B'], documentos: [1, 1], grau: [1, 1], comunidade: [-1, -1], x: [0.9, 0.95], y: [-0.95, -0.95] };
+		for (const [coluna, valores] of Object.entries(novas)) r.pessoas[coluna].push(...valores);
+		await rota.fulfill({ response: resposta, json: r });
+	});
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	expect(await naTela(page, 'pteste0001b')).toBeUndefined(); // escondida por padrão
+	await page.getByRole('combobox', { name: /^Buscar/ }).fill('Pessoa de Teste B');
+	await page.getByRole('combobox', { name: /^Buscar/ }).press('Enter');
+	await expect(page).toHaveURL(/duplas=1/);
+	const caixa = (await page.getByTestId('canvas-rede').boundingBox())!;
+	await expect
+		.poll(async () => {
+			const q = await naTela(page, 'pteste0001b');
+			return !!q && q[0] >= 0 && q[0] <= caixa.width && q[1] >= 0 && q[1] <= caixa.height;
+		})
+		.toBe(true);
+	expect((await estadoDoGrafo(page)).vista.k).toBeGreaterThan(1);
+});
+
+test('depois de usar o teclado no grafo, um clique num nó não faz a página pular', async ({ page }) => {
+	await page.setViewportSize({ width: 1440, height: 800 });
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const canvas = page.getByTestId('canvas-rede');
+	await canvas.scrollIntoViewIfNeeded();
+	await page.locator('[data-grafo]').focus();
+	await page.keyboard.press('+');
+	await page.keyboard.press('0');
+	const id = redes.pessoas.id[central()];
+	const [x, y] = (await naTela(page, id))!;
+	const antes = await page.evaluate(() => scrollY);
+	await canvas.click({ position: { x, y } });
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	expect(await page.evaluate(() => scrollY)).toBe(antes);
+});
+
+test('em tela cheia, o cartão do nó aparece junto com o grafo', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const botao = page.getByTestId('tela-cheia');
+	test.skip((await botao.count()) === 0, 'navegador sem a API de tela cheia');
+	await botao.click();
+	await expect.poll(async () => (await estadoDoGrafo(page)).telaCheia).toBe(true);
+	const id = redes.pessoas.id[central()];
+	const [x, y] = (await naTela(page, id))!;
+	await page.getByTestId('canvas-rede').click({ position: { x, y } });
+	await expect.poll(() => page.evaluate(() => !!document.fullscreenElement?.querySelector('[data-testid="cartao-no"]'))).toBe(true);
+	await page.keyboard.press('Escape');
+});
+
+test('com o cartão aberto, a colaboração desce para baixo do grafo, sem nada por cima, e a exportação dela abre', async ({ page }) => {
+	await page.setViewportSize({ width: 1920, height: 1080 });
+	await page.goto(`${url('RAIZ')}#/redes?no=${redes.pessoas.id[central()]}`);
+	await esperarRedes(page, 'coautoria');
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	const figura = page.getByTestId('figura-colaboracao');
+	const canvas = page.getByTestId('canvas-rede');
+	// embaixo do grafo, e não na coluna do cartão
+	const abaixo = async () => (await figura.boundingBox())!.y >= (await canvas.boundingBox())!.y + (await canvas.boundingBox())!.height;
+	expect(await abaixo()).toBe(true);
+	await figura.scrollIntoViewIfNeeded();
+	// o cartão acompanha a rolagem só ao lado do grafo: nos cantos e no meio da figura, o que está na tela é ela
+	const descoberta = () =>
+		figura.evaluate((el) => {
+			const c = el.getBoundingClientRect();
+			const pontos = [
+				[c.left + 8, c.top + 8],
+				[c.right - 8, c.top + 8],
+				[c.left + c.width / 2, c.top + c.height / 2],
+				[c.right - 8, c.bottom - 8]
+			];
+			return pontos.every(([x, y]) => {
+				const topo = document.elementFromPoint(x, y);
+				return !!topo && el.contains(topo);
+			});
+		});
+	expect(await descoberta()).toBe(true);
+	await figura.getByTestId('abrir-exportar').first().click();
+	const baixar = figura.getByTestId('baixar-figura');
+	await expect(baixar).toBeVisible();
+	await baixar.scrollIntoViewIfNeeded();
+	await expect.poll(() => baixar.evaluate((el) => {
+		const c = el.getBoundingClientRect();
+		const topo = document.elementFromPoint(c.left + c.width / 2, c.top + c.height / 2);
+		return !!topo && (topo === el || el.contains(topo));
+	})).toBe(true);
+	// fechado o cartão, a colaboração volta para o lado do grafo
+	await page.getByRole('button', { name: 'Fechar o cartão' }).click();
+	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+	const [f, c] = [(await figura.boundingBox())!, (await canvas.boundingBox())!];
+	expect(f.x).toBeGreaterThanOrEqual(c.x + c.width);
+	expect(await figura.count()).toBe(1);
+});
+
+test('no toque, depois de usar um botão do grafo, tocar num nó não faz a página pular', async ({ browser }) => {
+	const contexto = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
+	const page = await contexto.newPage();
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	await page.getByTestId('canvas-rede').scrollIntoViewIfNeeded();
+	await page.getByTestId('zoom-mais').tap();
+	await page.getByTestId('zoom-menos').tap();
+	const id = redes.pessoas.id[central()];
+	const [x, y] = (await naTela(page, id))!;
+	const antes = await page.evaluate(() => scrollY);
+	await page.getByTestId('canvas-rede').tap({ position: { x, y } });
+	await expect(page).toHaveURL(new RegExp(`no=${id}`));
+	expect(await page.evaluate(() => scrollY)).toBe(antes);
+	await contexto.close();
+});
+
+test('celular: um rótulo de comunidade longo não alarga a página, e os botões do grafo ficam na tela', async ({ page }) => {
+	// no exemplo, os rótulos são curtos ("Comunidade 1"); num corpus de verdade, são dois tópicos inteiros
+	const longo = 'Federalismo, capacidades estatais e implementação de políticas públicas · Judicialização da política no Brasil';
+	await page.route('**/dados/redes.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const r = await resposta.json();
+		for (const c of r.comunidades) c.rotulo = `${longo} ${c.id}`;
+		await rota.fulfill({ response: resposta, json: r });
+	});
+	await page.setViewportSize({ width: 375, height: 812 });
+	for (const [rota, modo] of [
+		['#/redes', 'coautoria'],
+		['#/redes?rede=instituicoes', 'instituicoes']
+	]) {
+		await page.goto(`${url('RAIZ')}${rota}`);
+		await esperarRedes(page, modo);
+		expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+		for (const botao of ['zoom-mais', 'zoom-menos']) {
+			const caixa = (await page.getByTestId(botao).boundingBox())!;
+			expect(caixa.x + caixa.width).toBeLessThanOrEqual(375);
+		}
+		const canvas = (await page.getByTestId('canvas-rede').boundingBox())!;
+		expect(canvas.x + canvas.width).toBeLessThanOrEqual(375);
+	}
+});
+
+test('no toque, depois de usar a legenda, tocar num nó não faz a página pular até o cartão', async ({ browser }) => {
+	const contexto = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
+	const page = await contexto.newPage();
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	// escolhe e solta uma comunidade na legenda: o botão dela fica com o foco, e o desenho volta ao inteiro
+	const legenda = page.getByTestId('comunidade').first();
+	await legenda.tap();
+	await expect(page).toHaveURL(/comunidade=\d+/);
+	await legenda.tap();
+	await expect(page).not.toHaveURL(/comunidade=/);
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).toBe(1);
+	expect(await legenda.evaluate((el) => el === document.activeElement)).toBe(true);
+	await page.getByTestId('canvas-rede').scrollIntoViewIfNeeded();
+	const id = redes.pessoas.id[central()];
+	const [x, y] = (await naTela(page, id))!;
+	const antes = await page.evaluate(() => scrollY);
+	await page.getByTestId('canvas-rede').tap({ position: { x, y } });
+	await expect(page).toHaveURL(new RegExp(`no=${id}`));
+	await expect(page.getByTestId('cartao-no')).toBeAttached();
+	expect(await page.evaluate(() => scrollY)).toBe(antes);
+	await contexto.close();
+});
+
+test('o Esc que fecha o menu das revistas, ou sai do modo apresentação, não solta a comunidade', async ({ page }) => {
+	const c = redes.comunidades.find((x: { rede: string }) => x.rede === 'coautoria').id;
+	await page.goto(`${url('RAIZ')}#/redes?comunidade=${c}`);
+	await esperarRedes(page, 'coautoria');
+	await expect(page).toHaveURL(/comunidade=/);
+	// o modo apresentação (P) sai com o Esc
+	await page.locator('body').press('p');
+	await expect.poll(() => page.evaluate(() => document.documentElement.dataset.apresentacao)).toBe('sim');
+	await page.keyboard.press('Escape');
+	await expect.poll(() => page.evaluate(() => document.documentElement.dataset.apresentacao)).toBe('nao');
+	await expect(page).toHaveURL(/comunidade=/);
+	// o menu das revistas fecha com o Esc
+	const menu = page.locator('details.revistas');
+	await menu.locator('summary').click();
+	await expect(menu).toHaveAttribute('open', '');
+	await page.keyboard.press('Escape');
+	await expect(menu).not.toHaveAttribute('open', '');
+	await expect(page).toHaveURL(/comunidade=/);
+	// sem menu nem apresentação, o Esc solta a comunidade
+	await page.keyboard.press('Escape');
+	await expect(page).not.toHaveURL(/comunidade=/);
+});
+
+test('tablet: "Ver o cartão" põe o cartão abaixo das duas barras que grudam no alto', async ({ page }) => {
+	await page.setViewportSize({ width: 1024, height: 768 });
+	await page.goto(`${url('RAIZ')}#/redes?no=${redes.pessoas.id[central()]}`);
+	await esperarRedes(page, 'coautoria');
+	await page.getByTestId('ir-ao-cartao').click();
+	await expect
+		.poll(async () => {
+			const barra = (await page.getByTestId('barra-recorte').boundingBox())!;
+			const cartao = (await page.getByTestId('cartao-no').boundingBox())!;
+			return cartao.y >= barra.y + barra.height - 1;
+		})
+		.toBe(true);
+});
+
+test('tela cheia numa janela estreita: o grafo cabe na altura da tela, embaixo da barra dele', async ({ page }) => {
+	await page.setViewportSize({ width: 800, height: 900 });
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const botao = page.getByTestId('tela-cheia');
+	test.skip((await botao.count()) === 0, 'navegador sem a API de tela cheia');
+	await botao.click();
+	await expect.poll(async () => (await estadoDoGrafo(page)).telaCheia).toBe(true);
+	await expect
+		.poll(async () => {
+			const canvas = (await page.getByTestId('canvas-rede').boundingBox())!;
+			const barra = (await page.getByRole('toolbar', { name: 'Controles do grafo' }).boundingBox())!;
+			const altura = await page.evaluate(() => innerHeight);
+			return canvas.y >= barra.y + barra.height - 1 && canvas.y + canvas.height <= altura + 1;
+		})
+		.toBe(true);
+	await page.keyboard.press('Escape');
+});
+
+test('a tabela da colaboração continua aberta quando um nó abre ou fecha (a figura só muda de lugar)', async ({ page }) => {
+	await page.setViewportSize({ width: 1920, height: 1080 });
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	await page.getByTestId('figura-colaboracao').getByRole('button', { name: 'Ver como tabela' }).click();
+	await expect(page.getByTestId('tabela-colaboracao')).toBeVisible();
+	const id = redes.pessoas.id[central()];
+	await page.getByTestId('canvas-rede').scrollIntoViewIfNeeded();
+	const [x, y] = (await naTela(page, id))!;
+	await page.getByTestId('canvas-rede').click({ position: { x, y } });
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	await expect(page.getByTestId('tabela-colaboracao')).toBeVisible();
+	await page.getByRole('button', { name: 'Fechar o cartão' }).click();
+	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+	await expect(page.getByTestId('tabela-colaboracao')).toBeVisible();
+});
+
+test('pelo teclado, abrir um parceiro no cartão põe o foco no título do cartão novo', async ({ page }) => {
+	const id = redes.pessoas.id[central()];
+	await page.goto(`${url('RAIZ')}#/redes?no=${id}`);
+	await esperarRedes(page, 'coautoria');
+	const cartao = page.getByTestId('cartao-no');
+	const antes = await cartao.getByRole('heading', { level: 2 }).textContent();
+	const parceiro = cartao.locator('.parceiros button').first();
+	const nome = (await parceiro.textContent())!.trim();
+	await parceiro.focus();
+	await page.keyboard.press('Enter');
+	await expect(cartao.getByRole('heading', { level: 2 })).toHaveText(nome);
+	expect(nome).not.toBe(antes);
+	expect(await page.evaluate(() => document.activeElement?.id)).toBe('titulo-no');
+});
+
+test('tela cheia numa janela estreita, com o cartão aberto: o botão que leva ao cartão fica à vista', async ({ page }) => {
+	await page.setViewportSize({ width: 800, height: 900 });
+	await page.goto(`${url('RAIZ')}#/redes?no=${redes.pessoas.id[central()]}`);
+	await esperarRedes(page, 'coautoria');
+	const botao = page.getByTestId('tela-cheia');
+	test.skip((await botao.count()) === 0, 'navegador sem a API de tela cheia');
+	await botao.click();
+	await expect.poll(async () => (await estadoDoGrafo(page)).telaCheia).toBe(true);
+	const ir = page.getByTestId('ir-ao-cartao');
+	await expect
+		.poll(async () => {
+			const caixa = (await ir.boundingBox())!;
+			return caixa.y + caixa.height <= (await page.evaluate(() => innerHeight));
+		})
+		.toBe(true);
+	await ir.click();
+	await expect
+		.poll(async () => {
+			const caixa = (await page.getByTestId('cartao-no').boundingBox())!;
+			return caixa.y >= 0 && caixa.y < (await page.evaluate(() => innerHeight)) / 2;
+		})
+		.toBe(true);
+	await page.keyboard.press('Escape');
 });

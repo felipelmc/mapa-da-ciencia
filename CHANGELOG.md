@@ -4,6 +4,44 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [2.1.0] - 2026-09-28
+
+A versão 2.1.0 responde a três problemas que o autor encontrou ao usar a 2.0.0: os grafos das redes, apertados e pouco interativos; o conteúdo encostado à esquerda numa tela larga; e a vista Validação, que não carregava no site publicado nem no painel. Antes das correções, quatro agentes independentes percorreram a demo e o painel local atrás de outros problemas, e os achados médios ou maiores passaram por verificadores; depois, três revisores novos (código, desenho das redes e uso) e uma re-revisão aprovaram o resultado. Veja a seção "Segunda rodada" da página [Revisão geral](docs/desenvolvimento/revisao-2026-09.md). No piloto, numa tela de 1920 × 1080, os nós encostados no grafo de coautoria caem de 58% para 0%.
+
+### Adicionado
+
+- **Grafos mais interativos** na coautoria e nas instituições: passar o mouse num nó acende ele, os vizinhos e as ligações entre eles, com os nomes; uma comunidade escolhida no seletor da barra do grafo ou na legenda fica acesa e enquadrada, e vai para o link (`comunidade=`; Esc solta); "Enquadrar" leva o zoom até a vizinhança do nó aberto (e a busca e os links já abrem o nó enquadrado); os nomes aparecem com o zoom, sem se cobrirem; arrastar um nó o move na tela; clique duplo, teclado (+, −, 0, as setas e Enter, que abre o nó no centro) e tela cheia (com o cartão ao lado, numa tela larga). Os botões ficam sobre o grafo (numa janela estreita, logo acima dele), e o cartão acompanha a rolagem ao lado do grafo; com o cartão aberto, "A colaboração por ano" desce para baixo do grafo. As arestas entre comunidades ficam mais fracas que as de dentro delas.
+- Nas redes de estados e de citações: passar o mouse numa UF acende só os arcos dela (sem filtrar), e o Exterior ganha dica; na matriz de citações, passar o mouse numa célula acende a linha e a coluna, e os rótulos usam a largura que sobra; no cânone, a dica traz a referência inteira e os citantes por macrotema.
+
+### Mudado
+
+- **A área de conteúdo fica centrada e mais larga** (até 112rem, 1.792 px): numa tela larga ou em tela cheia, as vistas não ficam mais encostadas à esquerda, e as figuras crescem com a janela; as barras do topo e do recorte se alinham com a coluna do conteúdo, e o texto corrido fica na medida de leitura (~70 caracteres por linha, em vez de mais de 110). A partir de 1.600 px, a Classificação mostra a série por ano e o cruzamento lado a lado, a Geografia o mundo e a cobertura, e as Citações o cânone e a matriz; a gaveta do tópico vira uma coluna, sem cobrir os gráficos. O fluxo dos tópicos cresce em altura com a largura, e o grafo das redes ocupa quase a altura da janela. A linha das etapas cabe numa linha só (a sexta caía sozinha na segunda), e os números da abertura também.
+- Nas redes, a roda do mouse sozinha rola a página (com um aviso de como aproximar), em vez de prender quem lê no grafo; Ctrl/⌘ + roda e a pinça aproximam. No celular, um dedo na vertical rola a página.
+
+- **O desenho das redes de coautoria e de instituições** (`mapa redes`, adendo do ADR 0014): no maior componente, cada comunidade ganha um espaço próprio, e as mais ligadas tendem a ficar perto; os componentes menores vêm à direita e embaixo do maior. No piloto, numa tela de 1920 × 1080, os nós encostados caem de 58% para 0% (num notebook de 1440 × 900, de 84% para 63%; em tela cheia, 3%), e o maior componente passa de 27% para 61% do desenho. As redes de um projeto ficam desatualizadas até a próxima `mapa redes`.
+
+### Corrigido
+
+- Validação: numa tela larga, a tabela do par e o detalhe da variável ficam lado a lado, e a tabela acompanha a rolagem (e rola por dentro, se não couber na janela); a comparação entre modelos diz quem acerta mais que quem, com o p pequeno como "< 0,001" (e não "0,000"). Os parágrafos das vistas ficam na medida de leitura, e um link para uma seção não a deixa embaixo das barras do topo.
+- rolando a página, a barra do recorte gruda logo abaixo da barra do topo, em vez de cobri-la (no celular, só ela gruda). No celular, o painel de exportação abre como uma folha acima da barra de navegação, que cobria o "Baixar" das últimas figuras: a animação de entrada das vistas deixava um `transform` preso, que prendia o painel embaixo da barra.
+- um `%` solto no endereço (um link editado à mão ou cortado, como `#/mapa?busca=50%`) deixava a página inteira em branco; agora ele vira espaço antes de o roteador ler o endereço. Um `%25`, `%26` ou `%2B` no endereço também vira espaço (eles só aparecem numa busca escrita à mão): o roteador os decodificava no endereço, e uma recarga de `busca=voto%26partido` buscava só "voto".
+- sem WebGL (numa máquina virtual ou com a aceleração gráfica desligada), o Mapa avisa e aponta as outras vistas, em vez de ficar em branco.
+- painel: quando a API das métricas da validação falha, a vista mostra o erro (com "Tentar de novo"), em vez de mostrar em silêncio as métricas antigas do `validacao.json`; as cópias que o iCloud cria nos resultados da classificação (`… 2.json`) não são mais lidas como resultados.
+- painel: um pedido inválido à API (por exemplo, sortear uma amostra de 0 documentos) volta com a mensagem em português, e não "Unprocessable Entity".
+- `mapa status` e a linha das etapas do painel: as contagens com acento ("57 tópicos", "7.242 vínculos") e a duração legível ("10 h 5 min", em vez de "36.329 s").
+- painel, assistente do projeto: um projeto só de importação (ou da busca do OpenAlex) configura sem revistas do SciELO; antes o assistente exigia uma revista e, ao salvar, criava uma fonte do SciELO que o projeto não tinha.
+- codebook: o assistente do painel e o guia diziam que os rótulos "só mudam o que o painel mostra". O rótulo de uma variável o modelo lê: mudá-lo refaz a classificação inteira. O de uma categoria ele não lê, mas deixa a classificação desatualizada até a próxima `mapa classificar`, que a monta das respostas guardadas. A revisão do assistente agora diz qual dos dois casos vale.
+- júri: depois de mudar um rótulo de categoria, `mapa juri votar` pulava todos os membros (tudo estava no cache) e não regravava os votos do codebook novo, que são os que o júri lê. Agora os monta do cache, sem chamar os modelos. `mapa juri status` conta os votos por esses resultados, sem depender do Ollama: antes, com o Ollama fora do ar, mostrava "0 de 200" e mandava votar, e com um resumo vazio mandava gerar o relatório. O resumo escreve os estágios por extenso.
+- júri: o cartão do documento lista os votos na ordem do júri, e diz qual é o primeiro membro (o voto dele vale sem maioria até o supervisor decidir); a Validação do painel mostra a seção do júri, como o site publicado.
+- `mapa painel` e `mapa.painel()` (notebook): um segundo painel no mesmo projeto não abre mais (diz o endereço do primeiro); antes, ele marcava como interrompida a etapa que o primeiro ainda rodava, e aceitava outra etapa ao mesmo tempo. A trava (`.painel.lock`) entra no `.gitignore` do projeto; no notebook, ela fica com o servidor, e só é solta quando ele sai (o `parar()` interrompe a etapa em andamento, como o Ctrl+C, também com a página dela aberta, quando antes ela seguia até o fim; e não espera mais que 1 s pelas conexões abertas).
+- painel, codificação: um codificador de referência (importado, como o `claude-opus`) não abre mais na codificação, que mostrava as respostas dele e as sobrescrevia; os nomes `juri`, `juri-r1` e `juri-supervisor` ficam reservados (um codificador com um deles escondia a fonte do júri nas métricas); apagar uma resposta de texto a apaga de fato (ela voltava no reload), e uma marca antes de qualquer valor não registra um codificador sem respostas (que entrava nas métricas com n = 0).
+- painel: a escrita só é aceita de uma página do próprio painel, com a mesma porta; antes, uma página aberta em outro servidor local (outra porta) conseguia disparar uma etapa.
+- nas redes, abrir um nó com um clique não rola mais a página até o cartão (o foco só vai para o cartão quando a escolha vem do teclado), nem depois de usar a legenda; no celular, um botão leva ao cartão, que fica embaixo do grafo. O Esc que fecha o menu das revistas, ou sai do modo apresentação, não fecha também o cartão nem solta a comunidade.
+- nas redes, a dica e o nome do nó aberto não saem mais cortados nas bordas do grafo, e o texto de abertura conta as pessoas desenhadas de fato (sem as duplas e os trios escondidos).
+- o raio dos nós vai de 1 documento (o raio mínimo) ao nó com mais documentos; antes o menor nó saía bem maior que o mínimo, e os nós se sobrepunham mais.
+- a vista Validação voltou a abrir no site publicado e no painel com o júri: com seis modelos, dois pares com diferença significativa (McNemar) na mesma variável repetiam a chave da lista, e a página ficava parada em "Carregando a validação…". O exemplo do contrato agora tem vários pares por variável, como o piloto.
+- um erro ao desenhar uma vista vira um aviso com "Tentar de novo", em vez de deixar a página parada em "Carregando…" ou em branco; a troca de seção recomeça do zero.
+
 ## [2.0.0] - 2026-09-28
 
 A versão 2.0.0 traz duas frentes novas, o **júri de modelos locais com supervisor** e as **redes de coautoria e de citação**, e o resultado de uma revisão geral do projeto por agentes independentes (veja a página [Revisão geral](docs/desenvolvimento/revisao-2026-09.md)). No piloto, o júri leva a `tecnica_principal` de kappa 0,37 a 0,61 (o melhor membro sozinho, o `gemma4:12b`, chega a 0,65), e as redes mostram a colaboração quase dobrando: artigos com mais de um autor eram 29% em 2010–2014 e são 57% em 2021–2025.
@@ -267,7 +305,8 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.0.0...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.7.0...v1.0.0

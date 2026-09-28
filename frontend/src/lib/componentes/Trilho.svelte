@@ -36,6 +36,13 @@
 		maisADireita = nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 1;
 		maisAEsquerda = nav.scrollLeft > 1;
 	}
+	// na barra do celular, a seção aberta fica à vista (ela podia ficar fora da tela, à direita)
+	$effect(() => {
+		void page.route.id;
+		if (!nav || !estreita.current) return;
+		const item = nav.querySelector<HTMLElement>('[aria-current="page"]');
+		item?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'instant' });
+	});
 	$effect(() => {
 		if (!nav) return;
 		const observador = new ResizeObserver(medirRolagem);

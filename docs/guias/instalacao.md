@@ -20,11 +20,11 @@ uv run mapa --versao
 O código do repositório não traz a interface do painel compilada (ela precisa do Node.js). Cada [*release*](https://github.com/felipelmc/mapa-da-ciencia/releases) tem um *wheel* com ela pronta, que instala sem clonar nada. Por exemplo, com o `uv`:
 
 ```bash
-uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v2.0.0/mapa_da_ciencia-2.0.0-py3-none-any.whl"
+uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v2.1.0/mapa_da_ciencia-2.1.0-py3-none-any.whl"
 mapa --versao
 ```
 
-Troque `2.0.0` (nos dois lugares do endereço) pela versão da *release* mais recente. Com o `pip`, num ambiente virtual, é o mesmo endereço em `pip install`. Se o terminal responder `command not found: mapa`, o `uv` pôs o comando numa pasta que o terminal ainda não procura (ele avisa isso no fim da instalação). Rode `uv tool update-shell`, feche o terminal e abra outro.
+Troque `2.1.0` (nos dois lugares do endereço) pela versão da *release* mais recente. Com o `pip`, num ambiente virtual, é o mesmo endereço em `pip install`. Se o terminal responder `command not found: mapa`, o `uv` pôs o comando numa pasta que o terminal ainda não procura (ele avisa isso no fim da instalação). Rode `uv tool update-shell`, feche o terminal e abra outro.
 
 ## 2. Ollama
 

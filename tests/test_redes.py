@@ -3,6 +3,8 @@
 import hashlib
 import itertools
 import json
+import math
+import os
 import random
 import re
 from pathlib import Path
@@ -338,20 +340,153 @@ def test_desenho_reprodutivel():
     assert all(-1 <= x <= 1 and -1 <= y <= 1 for x, y in a.values())
 
 
-def test_desenho_com_o_maior_componente_em_cima_e_em_destaque():
-    # um componente de 40 nós e 60 duplas isoladas (como o piloto: o gigante e centenas de pares)
+def test_desenho_com_o_maior_componente_no_alto_a_esquerda():
+    # um componente de 40 nós, 6 de 5 nós e 60 duplas isoladas (como o piloto: o gigante, grupos médios e centenas de
+    # pares, que a vista esconde por padrão)
     grupos = {f"g{k}": [f"p{k}", f"p{k + 1}", f"p{(k * 7) % 40}"] for k in range(40)}
+    grupos |= {f"m{c}-{k}": [f"m{c}-{k}", f"m{c}-{k + 1}"] for c in range(6) for k in range(4)}
     grupos |= {f"d{k}": [f"a{k}", f"b{k}"] for k in range(60)}
     pos = desenhar(grafo(pares_ponderados(grupos)))
     gigante = [pos[f"p{k}"] for k in range(40)]
-    pares = [pos[x] for k in range(60) for x in (f"a{k}", f"b{k}")]
-    # em cima (o y cresce para cima; a vista inverte para a tela), com a maior parte da altura
-    assert min(y for _, y in gigante) > max(y for _, y in pares)
-    ys = [y for _, y in pos.values()]
-    assert max(y for _, y in gigante) - min(y for _, y in gigante) > 0.5 * (max(ys) - min(ys))
-    # e o desenho mais largo que alto, como a vista
-    xs = [x for x, _ in pos.values()]
+    medios = [pos[f"m{c}-{k}"] for c in range(6) for k in range(5)]
+    duplas = [pos[x] for k in range(60) for x in (f"a{k}", f"b{k}")]
+    # o maior no alto; os grupos médios à direita dele ou embaixo; as duplas embaixo de tudo
+    assert min(y for _, y in gigante) > max(y for _, y in duplas)
+    assert min(y for _, y in medios) > max(y for _, y in duplas)
+    assert all(x > max(gx for gx, _ in gigante) or y < min(gy for _, gy in gigante) for x, y in medios)
+    # o que a vista mostra por padrão (sem as duplas) é mais largo que alto, como a tela
+    xs, ys = [x for x, _ in gigante + medios], [y for _, y in gigante + medios]
     assert 1.2 < (max(xs) - min(xs)) / (max(ys) - min(ys)) < 2.2
+
+
+def _comunidades_plantadas():
+    """Quatro grupos de 12 pessoas muito ligados por dentro, com duas pontes entre grupos vizinhos."""
+    grupos = {
+        f"g{c}-{k}": [f"c{c}-{k}", f"c{c}-{(k + 1) % 12}", f"c{c}-{(k + 5) % 12}"] for c in range(4) for k in range(12)
+    }
+    grupos |= {f"ponte{c}": [f"c{c}-0", f"c{(c + 1) % 4}-6"] for c in range(4)}
+    return grafo(pares_ponderados(grupos))
+
+
+def test_desenho_por_comunidades_separa_os_grupos_sem_sobrepor_os_nos():
+    from mapa_da_ciencia.redes.desenho import MARGEM_TELA, TELA, raios_na_vista
+    from mapa_da_ciencia.redes.grafos import comunidades
+
+    g = _comunidades_plantadas()
+    _, particao = comunidades(g, "coautoria")
+    raios = raios_na_vista(dict.fromkeys(g.nodes, 1) | {"c0-0": 9, "c2-3": 4}, "coautoria")
+    pos = desenhar(g, particao, raios)
+    assert pos == desenhar(g, particao, raios)  # reprodutível
+    # cada comunidade ocupa um disco só dela: os discos (do centro ao nó mais longe) não se sobrepõem
+    discos = []
+    for c in particao:
+        centro = (sum(pos[x][0] for x in c) / len(c), sum(pos[x][1] for x in c) / len(c))
+        discos.append((centro, max(math.dist(pos[x], centro) for x in c)))
+    assert len(discos) == 4
+    for (a, ra), (b, rb) in itertools.combinations(discos, 2):
+        assert math.dist(a, b) > ra + rb
+    # e os vizinhos mais próximos de um nó são quase sempre da comunidade dele
+    de = {x: k for k, c in enumerate(particao) for x in c}
+    fracoes = []
+    for x, (px, py) in pos.items():
+        perto = sorted((y for y in pos if y != x), key=lambda y: (pos[y][0] - px) ** 2 + (pos[y][1] - py) ** 2)[:5]
+        fracoes.append(sum(de[y] == de[x] for y in perto) / 5)
+    assert sum(fracoes) / len(fracoes) >= 0.8
+    # na tela de referência, com os raios da vista, nenhum nó encosta em outro
+    xs, ys = [p[0] for p in pos.values()], [p[1] for p in pos.values()]
+    escala = min((TELA[0] - 2 * MARGEM_TELA) / (max(xs) - min(xs)), (TELA[1] - 2 * MARGEM_TELA) / (max(ys) - min(ys)))
+    for a, b in itertools.combinations(pos, 2):
+        distancia = math.dist(pos[a], pos[b]) * escala
+        assert distancia >= raios[a] + raios[b] - 0.5, (a, b, distancia)
+
+
+def test_discos_sem_sobreposicao_mantem_o_arranjo():
+    """Os discos das comunidades saem sem se sobrepor e com o arranjo que o grafo das comunidades deu: a ordem das
+    distâncias entre os centros muda pouco (relaxar a partir do arranjo apertado a embaralhava)."""
+    import numpy as np
+    from scipy.stats import spearmanr
+
+    from mapa_da_ciencia.redes.desenho import _arranjar_discos
+
+    rng = np.random.default_rng(3)
+    c = rng.normal(size=(25, 2))
+    r = rng.uniform(0.3, 1.2, size=25)
+    novo = _arranjar_discos(c.copy(), r, 0.35)
+    pares = list(itertools.combinations(range(25), 2))
+    for i, j in pares:
+        assert math.dist(novo[i], novo[j]) >= r[i] + r[j] + 0.35 - 1e-6, (i, j)
+    antes = [math.dist(c[i], c[j]) for i, j in pares]
+    depois = [math.dist(novo[i], novo[j]) for i, j in pares]
+    assert spearmanr(antes, depois).correlation > 0.6  # 0,69; o relaxamento antigo dava 0,37
+
+
+def test_as_constantes_do_desenho_batem_com_as_da_vista():
+    """O desenho sem sobreposição usa os raios, a margem e o mínimo visível da vista: um lado muda com o outro."""
+    from mapa_da_ciencia.redes import desenho as d
+
+    raiz = Path(__file__).resolve().parent.parent / "frontend" / "src" / "lib" / "redes"
+    modo = (raiz / "ModoGrafo.svelte").read_text(encoding="utf-8")
+    grafo_ = (raiz / "Grafo.svelte").read_text(encoding="utf-8")
+    raio = re.search(
+        r"RAIO = \$derived\(pessoas \? \{ min: ([\d.]+), max: ([\d.]+) \} : \{ min: ([\d.]+), max: ([\d.]+) \}\)", modo
+    )
+    assert raio, "a fórmula do RAIO mudou em ModoGrafo.svelte"
+    coautoria, instituicoes = tuple(map(float, raio.groups()[:2])), tuple(map(float, raio.groups()[2:]))
+    for rede, (minimo, maximo) in (("coautoria", coautoria), ("instituicoes", instituicoes)):
+        r = d.raios_na_vista({"a": 1, "b": 16}, rede)
+        assert (r["a"], r["b"]) == pytest.approx((minimo, maximo)), rede
+    assert re.search(rf"const MINIMO_VISIVEL = {d.MINIMO_VISIVEL};", modo)
+    assert re.search(rf"const MARGEM = {d.MARGEM_TELA};", grafo_)
+
+
+def test_o_desenho_nao_depende_do_hash_das_strings():
+    """O networkx devolve as arestas numa ordem que depende do hash das strings (PYTHONHASHSEED): o desenho, não."""
+    import subprocess
+    import sys
+
+    codigo = (
+        "import json; from mapa_da_ciencia.redes.desenho import desenhar, raios_na_vista; "
+        "from mapa_da_ciencia.redes.grafos import comunidades, grafo, pares_ponderados; "
+        "grupos = {f'd{k}': [f'p{k}', f'p{(k * 7) % 40}', f'p{(k * 3 + 1) % 40}'] for k in range(60)}; "
+        "g = grafo(pares_ponderados(grupos)); "
+        "_, part = comunidades(g, 'coautoria'); "
+        "print(json.dumps(sorted(desenhar(g, part, raios_na_vista(dict.fromkeys(g.nodes, 1), 'coautoria')).items())))"
+    )
+    saidas = {
+        subprocess.run(
+            [sys.executable, "-c", codigo],
+            capture_output=True,
+            text=True,
+            check=True,
+            env={**os.environ, "PYTHONHASHSEED": s},
+        ).stdout
+        for s in ("1", "2", "3")
+    }
+    assert len(saidas) == 1
+
+
+def test_o_desenho_nao_depende_da_ordem_nem_da_orientacao_das_arestas():
+    """O mesmo grafo, com os nós e as arestas inseridos ao contrário (e cada aresta virada), sai com o mesmo desenho.
+    Com 20 comunidades e pesos que não somam exato em ponto flutuante (1/3, 1/7…), somar os pesos entre comunidades
+    na ordem em que o networkx devolve as arestas mudava o desenho: é o que o hash das strings faz com o piloto."""
+    import networkx as nx
+
+    from mapa_da_ciencia.redes import desenho as d
+
+    rnd = random.Random(0)
+    g = nx.Graph()
+    grupos = [[f"c{c:02d}n{k}" for k in range(4)] for c in range(20)]
+    for grupo in grupos:
+        g.add_edges_from(itertools.combinations(grupo, 2), peso=1.0)
+    for _ in range(300):
+        ca, cb = rnd.sample(range(20), 2)
+        g.add_edge(rnd.choice(grupos[ca]), rnd.choice(grupos[cb]), peso=1 / rnd.choice([3, 5, 7, 9, 11]))
+    virado = nx.Graph()
+    virado.add_nodes_from(reversed(list(g.nodes)))
+    virado.add_edges_from((b, a, dados) for a, b, dados in reversed(list(g.edges(data=True))))
+    particao = [set(grupo) for grupo in grupos]
+    raios = d.raios_na_vista(dict.fromkeys(g.nodes, 1), "coautoria")
+    assert d.desenhar(g, particao, raios) == d.desenhar(virado, particao, raios)
 
 
 def test_citacoes_e_canone():

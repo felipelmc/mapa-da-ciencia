@@ -14,6 +14,7 @@
 	 * um abre o próprio cartão) e os documentos do nó que estão no recorte, com o link para cada um no Mapa. Numa
 	 * instituição, um botão põe (ou tira) a instituição no recorte.
 	 */
+	import { untrack } from 'svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import type { TabelaDocumentos } from '$lib/dados/documentos';
 	import { contar, formatarDecimal } from '$lib/formato';
@@ -31,7 +32,8 @@
 		linkDoc,
 		aoAbrir,
 		aoFechar,
-		filtro = null
+		filtro = null,
+		peloPonteiro = false
 	}: {
 		titulo: string;
 		sobretitulo: string;
@@ -47,6 +49,8 @@
 		aoAbrir: (i: number) => void;
 		aoFechar: () => void;
 		filtro?: { ativo: boolean; alternar: () => void } | null;
+		/** Aberto por um clique (ou toque) no grafo: o foco fica onde está, mesmo que esteja fora do grafo (na legenda…). */
+		peloPonteiro?: boolean;
 	} = $props();
 
 	const INICIAIS = 12;
@@ -67,14 +71,26 @@
 	let titulo_: HTMLElement;
 	// quem tinha o foco quando o cartão abriu (a busca, um parceiro…): ao fechar, o foco volta para lá
 	let voltarPara: HTMLElement | null = null;
+	// um parceiro escolhido no próprio cartão: o botão dele some com a troca, e o foco iria para o <body>
+	let peloParceiro = false;
 
 	// aberto pela busca ou por um parceiro, o foco vai para o título (quem usa o teclado sabe que o cartão mudou);
 	// aberto pelo link ou por um clique no grafo, o foco fica onde está
 	$effect(() => {
 		void titulo;
 		todos = false;
+		if (peloParceiro) {
+			peloParceiro = false;
+			titulo_?.focus({ preventScroll: true });
+			return;
+		}
 		const ativo = document.activeElement;
-		if (!ativo || ativo === document.body || ativo === titulo_) return;
+		if (!ativo || ativo === document.body || ativo === titulo_ || untrack(() => peloPonteiro)) return;
+		// um clique no grafo (ou no fundo da página) põe o foco na área do grafo ou no <main>: não é o teclado, e o
+		// foco não pula (nem a página rola) para o cartão; pelo teclado (Tab até o grafo e Enter), vai. A área do
+		// grafo diz como veio a última interação (`data-origem`), mesmo depois de alguém usar uma tecla e clicar
+		const grafo = ativo.closest<HTMLElement>('[data-grafo-raiz]');
+		if (ativo.id === 'conteudo' || (grafo && grafo.dataset.origem !== 'teclado')) return;
 		if (!ativo.closest('[data-testid="cartao-no"]')) voltarPara = ativo as HTMLElement;
 		titulo_?.focus({ preventScroll: true });
 		// na tela estreita o cartão fica embaixo do grafo: rola até ele
@@ -115,7 +131,7 @@
 		<ul class="parceiros">
 			{#each parceiros as p (p.i)}
 				<li>
-					<button type="button" onclick={() => aoAbrir(p.i)}>{p.nome}</button>
+					<button type="button" onclick={() => ((peloParceiro = true), aoAbrir(p.i))}>{p.nome}</button>
 					<span class="numero" title="Peso da parceria no recorte: soma de 1/(n−1) em cada documento em comum com n autores">
 						peso {formatarDecimal(p.peso)} · {contar(p.documentos, 'doc.', 'docs.')}
 					</span>
