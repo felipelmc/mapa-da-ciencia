@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [2.1.0] - 2026-09-28
+
+A versão 2.1.0 responde a três problemas que o autor encontrou ao usar a 2.0.0: os grafos das redes, apertados e pouco interativos; o conteúdo encostado à esquerda numa tela larga; e a vista Validação, que não carregava no site publicado nem no painel. Antes das correções, quatro agentes independentes percorreram a demo e o painel local atrás de outros problemas, e os achados médios ou maiores passaram por verificadores; depois, três revisores novos (código, desenho das redes e uso) e uma re-revisão aprovaram o resultado. Veja a seção "Segunda rodada" da página [Revisão geral](docs/desenvolvimento/revisao-2026-09.md). No piloto, numa tela de 1920 × 1080, os nós encostados no grafo de coautoria caem de 58% para 0%.
+
 ### Adicionado
 
 - **Grafos mais interativos** na coautoria e nas instituições: passar o mouse num nó acende ele, os vizinhos e as ligações entre eles, com os nomes; uma comunidade escolhida no seletor da barra do grafo ou na legenda fica acesa e enquadrada, e vai para o link (`comunidade=`; Esc solta); "Enquadrar" leva o zoom até a vizinhança do nó aberto (e a busca e os links já abrem o nó enquadrado); os nomes aparecem com o zoom, sem se cobrirem; arrastar um nó o move na tela; clique duplo, teclado (+, −, 0, as setas e Enter, que abre o nó no centro) e tela cheia (com o cartão ao lado). Os botões ficam sobre o grafo, e o cartão acompanha a rolagem da página. As arestas entre comunidades ficam mais fracas que as de dentro delas.
