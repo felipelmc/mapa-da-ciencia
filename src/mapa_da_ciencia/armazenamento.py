@@ -65,6 +65,7 @@ ARQUIVO = "documentos.parquet"
 ARQUIVO_INSTITUICOES = "instituicoes_openalex.parquet"  # registros das instituições do OpenAlex (coleta)
 ARQUIVO_REFERENCIAS = "referencias_openalex.parquet"  # obra do corpus → obra citada (coleta)
 ARQUIVO_CITADAS = "obras_citadas_openalex.parquet"  # as obras de fora do corpus mais citadas (coleta)
+ARQUIVO_REFERENCIAS_AM = "referencias_articlemeta.parquet"  # as referências listadas na ArticleMeta (coleta)
 
 
 def _colunas_sql() -> str:

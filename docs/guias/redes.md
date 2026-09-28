@@ -6,7 +6,10 @@ referências do OpenAlex. Para entender como, veja [Redes de coautoria e citaç�
 ## Antes
 
 - A coleta traz as referências do OpenAlex (`fontes.openalex.referencias`, ligado por padrão): cerca de 1 crédito a
-  cada 100 artigos, mais 5 créditos para as obras mais citadas, só na primeira coleta. Um projeto coletado antes da
+  cada 100 artigos, mais 5 créditos para as obras mais citadas, só na primeira coleta. Ela também guarda as
+  referências que a ArticleMeta lista (autores, título e ano de cada uma), lidas do cache, sem pedido nenhum: servem
+  para medir a cobertura e conferir a autoria do cânone. Se só o lote das obras mais citadas falhar, as citações
+  dentro do corpus valem e o aviso diz que o cânone ficou de fora. Um projeto coletado antes da
   versão 2.0 precisa de uma nova `mapa coletar` (o resto vem do cache).
 - Os tópicos em dia (`mapa topicos`). A geografia é opcional: sem ela, as redes de instituições e de estados ficam de
   fora.
