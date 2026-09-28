@@ -5,7 +5,7 @@
 	import Macrotemas from '$lib/componentes/Macrotemas.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { rota } from '$lib/estado/url';
-	import { contar, formatarData, formatarInteiro, formatarPeriodo, formatarPorcentagem } from '$lib/formato';
+	import { contar, formatarData, formatarInteiro, formatarPeriodo, formatarPorcentagem, nomeDaFonte } from '$lib/formato';
 
 	const { fonte, manifesto, revistas, ehExemplo } = usarProjeto();
 
@@ -50,7 +50,7 @@
 				rotulo: 'Revistas',
 				valor: revistas.revistas.length,
 				texto: formatarInteiro(revistas.revistas.length),
-				nota: `fonte: ${recorte.fontes.join(', ')}`
+				nota: `fonte: ${recorte.fontes.map(nomeDaFonte).join(', ')}`
 			});
 		}
 		numeros.push({
@@ -106,7 +106,7 @@
 				</div>
 				<div>
 					<dt>fontes</dt>
-					<dd>{recorte.fontes.join(', ')}</dd>
+					<dd>{recorte.fontes.map(nomeDaFonte).join(', ')}</dd>
 				</div>
 				<div>
 					<dt>idioma</dt>
@@ -177,6 +177,7 @@
 <style>
 	.pagina {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: clamp(2rem, 4vw, 3rem);
 	}
 

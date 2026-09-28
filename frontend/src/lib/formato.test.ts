@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatarDecimal, formatarDuracao, formatarPorcentagemDecimal, formatarPp } from './formato';
+import { formatarDecimal, formatarDuracao, formatarPorcentagemDecimal, formatarPp, nomeDaFonte } from './formato';
 
 describe('formato', () => {
 	it('decimais, porcentagens e pontos percentuais em pt-BR', () => {
@@ -18,5 +18,10 @@ describe('formatarDuracao', () => {
 		expect(formatarDuracao(600)).toBe('10 min');
 		expect(formatarDuracao(14080)).toBe('3 h 55 min');
 		expect(formatarDuracao(7200)).toBe('2 h');
+	});
+
+	it('nomes legíveis das fontes do recorte, e não os códigos internos', () => {
+		expect(['scielo:scl', 'openalex'].map(nomeDaFonte)).toEqual(['SciELO (coleção scl)', 'OpenAlex']);
+		expect(nomeDaFonte('exemplo')).toBe('exemplo');
 	});
 });

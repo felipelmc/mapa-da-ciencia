@@ -107,7 +107,7 @@
 	.suave {
 		margin: 0.1rem 0 0.35rem;
 		font-size: 0.8rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.mais {

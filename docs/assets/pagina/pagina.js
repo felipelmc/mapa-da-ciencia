@@ -712,10 +712,10 @@
       numero: '+' + num(alta.pp_periodo, 1) + ' <small>p.p.</small>',
       titulo: alta.rotulo,
       texto: t(
-        'O tópico que mais cresceu entre os ' + num(alta.topicos) + ': a participação dele no corpus subiu ' + num(alta.pp_periodo, 1) + ' pontos percentuais de ' + ano(anos[0]) + ' a ' + ano(anos[anos.length - 1]) + ' (' + num(alta.pp_por_ano, 2) + ' por ano). Outros ' + num(alta.em_alta - 1) + ' estão em alta, e ' + num(alta.em_queda) + ' em queda.',
-        'The fastest-growing of the ' + num(alta.topicos) + ' topics: its share of the corpus rose ' + num(alta.pp_periodo, 1) + ' percentage points from ' + ano(anos[0]) + ' to ' + ano(anos[anos.length - 1]) + ' (' + num(alta.pp_por_ano, 2) + ' a year). ' + num(alta.em_alta - 1) + ' others are rising, and ' + num(alta.em_queda) + ' falling.'
+        'O tópico que mais cresceu entre os ' + num(alta.topicos) + ': na tendência ajustada, a participação dele no corpus subiu ' + num(alta.pp_periodo, 1) + ' pontos percentuais de ' + ano(anos[0]) + ' a ' + ano(anos[anos.length - 1]) + ' (' + num(alta.pp_por_ano, 2) + ' por ano); o gráfico mostra a participação observada em cada ano. Outros ' + num(alta.em_alta - 1) + ' estão em alta, e ' + num(alta.em_queda) + ' em queda.',
+        'The fastest-growing of the ' + num(alta.topicos) + ' topics: on the fitted trend, its share of the corpus rose ' + num(alta.pp_periodo, 1) + ' percentage points from ' + ano(anos[0]) + ' to ' + ano(anos[anos.length - 1]) + ' (' + num(alta.pp_por_ano, 2) + ' a year); the chart shows the observed share each year. ' + num(alta.em_alta - 1) + ' others are rising, and ' + num(alta.em_queda) + ' falling.'
       ),
-      grafico: sparkline(alta.serie, anos, '%', t('Participação anual do tópico no corpus', 'Yearly share of the topic in the corpus')),
+      grafico: sparkline(alta.serie, anos, '%', t('Participação observada do tópico no corpus, ano a ano', 'Observed yearly share of the topic in the corpus')),
       link: demo('/topicos?topico=' + encodeURIComponent(alta.topico)),
       chamada: t('Ver nos Tópicos', 'See it in Topics')
     });
@@ -738,21 +738,25 @@
       numero: num(geo.pct_tres) + '<small>%</small>',
       titulo: t(geo.tres.join(', ').replace(/, ([^,]*)$/, ' e $1'), geo.tres.join(', ').replace(/, ([^,]*)$/, ' and $1')),
       texto: t(
-        'Três unidades da federação respondem por ' + num(geo.pct_tres) + '% da produção brasileira do corpus, em contagem fracionária pelas afiliações dos autores. Autores no Brasil somam ' + num(geo.pct_brasil) + '% de toda a produção.',
-        'Three Brazilian states account for ' + num(geo.pct_tres) + '% of the Brazilian output in the corpus, counted fractionally by author affiliation. Authors in Brazil account for ' + num(geo.pct_brasil) + '% of all output.'
+        'Três unidades da federação respondem por ' + num(geo.pct_tres) + '% da produção brasileira do corpus, em contagem fracionária pelas afiliações dos autores. Autores no Brasil somam ' + num(geo.pct_brasil) + '% da produção com país conhecido.',
+        'Three Brazilian states account for ' + num(geo.pct_tres) + '% of the Brazilian output in the corpus, counted fractionally by author affiliation. Authors in Brazil account for ' + num(geo.pct_brasil) + '% of the output with a known country.'
       ),
       grafico: grade(geo.uf, geo.tres, t('Participação de cada UF na produção brasileira, num cartograma em grade', 'Share of each state in Brazilian output, as a tile grid')),
       link: demo('/geografia'),
       chamada: t('Ver na Geografia', 'See it in Geography')
     });
     var en = h.ingles;
+    // nas outras oito, a faixa dos últimos sete anos: o último ano sozinho parece uma alta
+    var recentes = en ? en.outras.slice(-7) : [];
+    var desdeOutras = anos[anos.length - recentes.length];
+    var faixaMin = Math.min.apply(null, recentes), faixaMax = Math.max.apply(null, recentes);
     if (en) cartoes.push({
       tema: t('Idioma', 'Language'),
       numero: '100<small>%</small>',
       titulo: t('Relações internacionais em inglês', 'International relations in English'),
       texto: t(
-        'Desde ' + ano(en.desde) + ', a <em>Contexto Internacional</em> e a <em>RBPI</em> publicam todos os artigos em inglês; antes, eram ' + num(en.pct_antes) + '%. Nas outras oito revistas, o inglês chegou a ' + num(en.outras[en.outras.length - 1]) + '% em ' + ano(anos[anos.length - 1]) + '.',
-        'Since ' + ano(en.desde) + ', <em>Contexto Internacional</em> and <em>RBPI</em> have published every article in English, up from ' + num(en.pct_antes) + '% before. In the other eight journals, English reached ' + num(en.outras[en.outras.length - 1]) + '% in ' + ano(anos[anos.length - 1]) + '.'
+        'Desde ' + ano(en.desde) + ', a <em>Contexto Internacional</em> e a <em>RBPI</em> publicam todos os artigos em inglês; antes, eram ' + num(en.pct_antes) + '%. Nas outras oito revistas, entre elas a <em>BPSR</em>, que publica só em inglês, o inglês ficou entre ' + num(faixaMin) + '% e ' + num(faixaMax) + '% de ' + ano(desdeOutras) + ' a ' + ano(anos[anos.length - 1]) + '.',
+        'Since ' + ano(en.desde) + ', <em>Contexto Internacional</em> and <em>RBPI</em> have published every article in English, up from ' + num(en.pct_antes) + '% before. In the other eight journals, which include the English-only <em>BPSR</em>, English stayed between ' + num(faixaMin) + '% and ' + num(faixaMax) + '% from ' + ano(desdeOutras) + ' to ' + ano(anos[anos.length - 1]) + '.'
       ),
       grafico: duasLinhas(en.ri, en.outras, anos, t('Artigos em inglês por ano, em porcentagem', 'Articles in English per year, in percent'), [t('RI', 'IR'), t('outras', 'others')]),
       link: demo('/topicos?revistas=cint,rbpi'),
@@ -765,13 +769,27 @@
       var nomeMinusculo = esc(nomeD.toLowerCase());
       var primeiro = esc(ab.periodos[0]), ultimo = esc(ab.periodos[ab.periodos.length - 1]);
       var soma = ab.n.reduce(function (a, b) { return a + b; }, 0);
+      // a mudança, mais do que os níveis: o modelo erra os níveis de algumas categorias (veja o viés abaixo)
+      var caiu = d.para < d.de, razao = d.de ? d.para / d.de : 1;
+      // "pela metade" só perto da metade: 47% a 53% do valor inicial; "quase", de 53% a 56% (uma queda de 44% a 47%)
+      var mudanca = !caiu ? t('subiu', 'rose')
+        : razao >= 0.47 && razao <= 0.53 ? t('caiu pela metade', 'halved')
+        : razao > 0.53 && razao <= 0.56 ? t('caiu quase pela metade', 'almost halved')
+        : razao >= 0.4 && razao < 0.47 ? t('caiu mais da metade', 'fell by more than half')
+        : t('caiu', 'fell');
+      // o viés medido na validação do piloto (claude-opus × qwen3.5:9b, amostra de 200): o modelo marca "teórica" em
+      // 40% dos resumos, e a referência em 27%; por período, a queda aparece nas duas leituras
+      var vies = d.valor === 'teorica_ensaistica' && caiu ? t(
+        ' Na amostra de validação, o modelo marca “teórica” em 40% dos resumos, e a referência em 27%; a queda aparece nas duas leituras.',
+        ' In the validation sample, the model labels 40% of the abstracts “theoretical”, and the reference 27%; the fall shows up in both readings.'
+      ) : '';
       cartoes.push({
         tema: t('Como se pesquisa', 'How research is done'),
         numero: num(d.de) + '% → ' + num(d.para) + '<small>%</small>',
         titulo: nomeD,
         texto: t(
-          'A abordagem que mais mudou: ' + nomeMinusculo + ', de ' + num(d.de) + '% dos artigos em ' + primeiro + ' para ' + num(d.para) + '% em ' + ultimo + ', segundo o modelo local que leu ' + num(soma) + ' resumos.',
-          'The approach that changed the most: ' + nomeMinusculo + ', from ' + num(d.de) + '% of articles in ' + primeiro + ' to ' + num(d.para) + '% in ' + ultimo + ', according to the local model that read ' + num(soma) + ' abstracts.'
+          'A abordagem que mais mudou: ' + nomeMinusculo + ', que ' + mudanca + ', de ' + num(d.de) + '% dos artigos em ' + primeiro + ' para ' + num(d.para) + '% em ' + ultimo + ', segundo o modelo local, nos ' + num(soma) + ' resumos com a abordagem informada.' + vies,
+          'The approach that changed the most: ' + nomeMinusculo + ', which ' + mudanca + ', from ' + num(d.de) + '% of articles in ' + primeiro + ' to ' + num(d.para) + '% in ' + ultimo + ', according to the local model, in the ' + num(soma) + ' abstracts with an approach recorded.' + vies
         ),
         grafico: empilhadas(ab, t('Abordagem dos artigos por período', 'Approach of the articles by period')) + legendaCategorias(ab),
         link: demo('/classificacao?variavel=abordagem'),

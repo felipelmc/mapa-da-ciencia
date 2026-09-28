@@ -183,7 +183,7 @@
 	.nota {
 		display: block;
 		font-size: 0.72rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	@media (prefers-reduced-motion: reduce) {

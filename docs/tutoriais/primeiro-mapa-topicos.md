@@ -135,7 +135,7 @@ Experimente:
 - **Clique num ponto.** O cartão ao lado mostra o título, os autores, o resumo e os cinco artigos mais parecidos, que também são clicáveis.
 - **Busque** com ++slash++, por exemplo "polarização". O mapa fica só com os artigos encontrados.
 - **Desenhe um laço** com ++l++ em volta de um grupo de pontos. O mapa fica só com eles, e a barra do recorte, no alto, mostra quantos são.
-- **Aperte Play na linha do tempo** para ver os artigos aparecerem ano a ano.
+- **Aperte Tocar na linha do tempo** para ver os artigos aparecerem ano a ano.
 - **Copie o endereço da página.** Ele guarda a câmera, o laço, os filtros e o artigo aberto. Quem abrir o link vê exatamente a mesma tela.
 
 O guia [Ler o mapa](../guias/ler-o-mapa.md) explica o que a distância entre os pontos significa e o que ela não significa. Para encerrar, aperte ++ctrl+c++ no terminal.
@@ -168,10 +168,12 @@ Os rótulos do modelo são um ponto de partida. Se algum não descreve bem o tó
 
 ```yaml
 topicos:
-  3: {rotulo: Campanhas nas redes sociais}
+  3:
+    rotulo: Campanhas nas redes sociais
+    descricao: Campanhas eleitorais e comunicação política no Twitter e no Facebook.
 ```
 
-Rode `uv run mapa topicos` de novo: o rótulo escrito à mão tem prioridade sobre o do modelo e fica marcado como manual.
+Escreva também a descrição: uma entrada só com o rótulo deixa o tópico sem descrição. Rode `uv run mapa topicos` de novo: o rótulo escrito à mão tem prioridade sobre o do modelo e fica marcado como manual.
 
 ## O que você fez
 

@@ -1,8 +1,9 @@
 <script lang="ts">
 	/**
 	 * Linha do tempo do recorte: o intervalo de anos (dois controles) e um play que passa ano a ano. Cada passo
-	 * troca a entrada do histórico em vez de criar outra (voltar no navegador não refaz o play). Com
-	 * `prefers-reduced-motion`, o play anda mais devagar.
+	 * do play troca a entrada do histórico em vez de criar outra (voltar no navegador não refaz o play), e um gesto
+	 * nos controles (arrastar, ou uma sequência de setas) cria uma entrada só: Voltar desfaz o gesto inteiro, e não
+	 * ano a ano. Com `prefers-reduced-motion`, o play anda mais devagar.
 	 */
 	import { onDestroy } from 'svelte';
 
@@ -13,7 +14,8 @@
 	}: {
 		limites: [number, number];
 		anos: [number, number] | null;
-		aoMudar: (anos: [number, number] | null, passo?: boolean) => void;
+		/** `substituir`: troca a entrada atual do histórico em vez de criar outra. */
+		aoMudar: (anos: [number, number] | null, substituir?: boolean) => void;
 	} = $props();
 
 	const de = $derived(anos?.[0] ?? limites[0]);
@@ -21,9 +23,18 @@
 	let tocando = $state(false);
 	let relogio: ReturnType<typeof setInterval> | undefined;
 
+	// um gesto termina depois de uma pausa sem mexer nos controles
+	const PAUSA_DO_GESTO = 600;
+	let emGesto = false;
+	let fimDoGesto: ReturnType<typeof setTimeout> | undefined;
+
 	function mudar(novoDe: number, novoAte: number) {
 		const [a, b] = novoDe <= novoAte ? [novoDe, novoAte] : [novoAte, novoDe];
-		aoMudar(a === limites[0] && b === limites[1] ? null : [a, b]);
+		const substituir = emGesto; // o primeiro passo do gesto cria a entrada; os seguintes a atualizam
+		emGesto = true;
+		clearTimeout(fimDoGesto);
+		fimDoGesto = setTimeout(() => (emGesto = false), PAUSA_DO_GESTO);
+		aoMudar(a === limites[0] && b === limites[1] ? null : [a, b], substituir);
 	}
 
 	function parar() {
@@ -47,12 +58,15 @@
 		);
 	}
 
-	onDestroy(parar);
+	onDestroy(() => {
+		parar();
+		clearTimeout(fimDoGesto);
+	});
 </script>
 
 <div class="linha" data-testid="linha-do-tempo">
 	<button type="button" class="play" onclick={tocar} aria-pressed={tocando} data-testid="play">
-		{tocando ? 'Pausar' : 'Play'}
+		{tocando ? 'Pausar' : 'Tocar'}
 	</button>
 	<label>
 		<span class="visualmente-oculto">Primeiro ano</span>
@@ -101,5 +115,26 @@
 		border: 0;
 		border-radius: 999px;
 		cursor: pointer;
+	}
+
+	/* no celular, os dois controles dividem a largura e quebram de linha, em vez de passar da tela */
+	@media (max-width: 820px) {
+		.linha {
+			flex-wrap: wrap;
+			border-radius: 1rem;
+		}
+
+		label {
+			flex: 1 1 7rem;
+			min-width: 0;
+		}
+
+		input[type='range'] {
+			width: 100%;
+		}
+
+		.anos {
+			min-width: 0;
+		}
 	}
 </style>

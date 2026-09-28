@@ -543,7 +543,7 @@
 	.suave {
 		margin: 0;
 		font-size: 0.82rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.falta,

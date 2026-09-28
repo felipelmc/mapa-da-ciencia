@@ -19,8 +19,8 @@
 		<h1>Como ler este observatório</h1>
 		<p class="resumo">
 			O mapa da ciência mostra um corpus de artigos científicos: sobre o que falam, como foram
-			classificados e de onde vêm. Tudo o que aparece aqui sai dos arquivos gerados pelo pipeline, no
-			seu computador.
+			classificados e de onde vêm. Tudo o que aparece aqui sai dos arquivos gerados pelo
+			pipeline{manifesto.api ? ', no seu computador' : ' e publicados neste site'}.
 		</p>
 	</header>
 
@@ -36,7 +36,8 @@
 						{:else}
 							<a href={rota(s.caminho)}>{s.rotulo}</a>
 						{/if}
-						<span class="chegada">chega {s.chegada}</span>
+						<!-- só as seções que ainda não existem dizem quando chegam; as outras já estão aqui -->
+						{#if s.selo}<span class="chegada">chega {s.chegada}</span>{/if}
 					</dt>
 					<dd>{s.resumo}</dd>
 				</div>
@@ -51,7 +52,7 @@
 			(Mapa, Tópicos e Geografia) mostram. O contador à direita diz quantos passam em tudo. Entram no recorte:
 		</p>
 		<ul>
-			<li>o <strong>período</strong>, na linha do tempo (o <strong>Play</strong> anima ano a ano);</li>
+			<li>o <strong>período</strong>, na linha do tempo (o botão <strong>Tocar</strong> anima ano a ano);</li>
 			<li>as <strong>revistas</strong>, no botão ao lado;</li>
 			<li>os <strong>tópicos</strong>, a <strong>busca</strong> e o <strong>laço</strong>, escolhidos no Mapa e nos Tópicos;</li>
 			<li>
@@ -79,6 +80,8 @@
 				<strong>Em alta</strong> e <strong>em queda</strong> são os tópicos cuja participação muda de forma
 				distinguível do acaso (regressão logística com intervalo de 95%, corrigida pela dispersão). Com dezenas de
 				tópicos testados, cerca de 1 em 20 aparece por acaso: leia a lista como pistas, não como conclusões.
+				Um pico no primeiro ou no último ano do período escolhido, como um dossiê temático, também pode puxar a
+				tendência, e algumas marcações são marginais: somem quando se tira um só ano da série.
 			</p>
 		</section>
 

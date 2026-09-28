@@ -8,6 +8,12 @@ mapa diagnostico
 
 Cada item com ✗ ou ! vem com uma dica. Os casos mais comuns estão abaixo.
 
+## O terminal não encontra o `mapa`
+
+> zsh: command not found: mapa
+
+Acontece logo depois do `uv tool install`, quando a pasta onde o `uv` põe os comandos (`~/.local/bin`) não está no caminho de busca do terminal. Rode `uv tool update-shell`, feche o terminal e abra outro. Quem instalou pelo código usa `uv run mapa` dentro da pasta `mapa-da-ciencia` e não passa por isso.
+
 ## O Ollama não está respondendo
 
 > O Ollama não está respondendo em http://localhost:11434.

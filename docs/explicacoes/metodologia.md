@@ -8,11 +8,11 @@ Os artigos são listados na ArticleMeta do SciELO, revista a revista, e filtrado
 
 ## 2. Tópicos
 
-- **Texto:** título e resumo em inglês (97% do piloto); na falta dele, no idioma disponível (2,2%) ou só o título (0,4%), com marca.
+- **Texto:** título e resumo em inglês (97,3% do piloto, 4.159); na falta dele, no idioma disponível (2,1%, 88) ou só o título (0,7%, 28), com marca.
 - **Embeddings:** `qwen3-embedding:0.6b`, rodando localmente no Ollama, com vetores normalizados.
-- **Vizinhança:** os 15 vizinhos mais próximos de cada documento, por similaridade de cosseno, calculados de forma exata.
+- **Vizinhança:** os 15 vizinhos mais próximos de cada documento (incluindo o próprio documento, como no UMAP), por similaridade de cosseno, calculados de forma exata.
 - **Redução:** UMAP para 5 dimensões (agrupamento, `min_dist` 0) e para 2 (o mapa), com semente fixa.
-- **Agrupamento:** HDBSCAN com seleção `leaf`, `min_cluster_size` de 1 a cada 200 documentos (mínimo 10) e `min_samples` 5. Os documentos de ruído vão para o tópico com pelo menos 3 dos seus 15 vizinhos no núcleo; os outros ficam sem tópico.
+- **Agrupamento:** HDBSCAN com seleção `leaf`, `min_cluster_size` de 1 a cada 200 documentos (mínimo 10) e `min_samples` 5. Os documentos de ruído vão para o tópico com pelo menos 3 dos seus 14 vizinhos mais próximos no núcleo; os outros ficam sem tópico.
 - **Descrição:** palavras-chave por c-TF-IDF sobre o núcleo de cada tópico; rótulo e descrição em português escritos pelo `qwen3.5:9b` a partir de 15 termos e 5 títulos representativos; macrotemas por aglomeração de Ward dos centros dos tópicos (até 7).
 - **Estabilidade:** índice de Rand ajustado entre três sementes, sobre os documentos que estão no núcleo nas duas execuções.
 
@@ -28,7 +28,7 @@ Cada afiliação de autor (a normalizada da ArticleMeta, `v240`, ou o texto livr
 
 ## 5. Classificação
 
-Um modelo local (`qwen3.5:9b`, temperatura 0, contexto de 8.192 *tokens*) lê o título e o resumo em português de cada artigo e responde às perguntas do codebook num JSON com esquema fixo, citando antes de cada valor o trecho do resumo que o justifica (até 200 caracteres). O `mapa` confere se o trecho está no resumo (literal, aproximado ou ausente) e, quando uma evidência obrigatória não está, pede uma nova resposta uma vez. No piloto: 100% de JSON válido na primeira tentativa, 94,8% das evidências literais, 10,8 s por resumo num notebook. Veja [Classificação ancorada em evidência](classificacao.md) e o [ADR 0011](../decisoes/0011-classificacao-ancorada-em-evidencia.md).
+Um modelo local (`qwen3.5:9b`, temperatura 0, contexto de 8.192 *tokens*) lê o título e o resumo no idioma de exibição (português em 82% do piloto) ou, na falta dele, em inglês (18%, 757 artigos) e responde às perguntas do codebook num JSON com esquema fixo, citando antes de cada valor o trecho do resumo que o justifica (até 200 caracteres). O `mapa` confere se o trecho está no resumo (literal, aproximado ou ausente) e, quando uma evidência obrigatória não está, pede uma nova resposta uma vez. No piloto (4.247 resumos): 100% de JSON válido na primeira tentativa, 93,4% das evidências literais e 9,6 s por resumo (mediana) num notebook. Veja [Classificação ancorada em evidência](classificacao.md) e o [ADR 0011](../decisoes/0011-classificacao-ancorada-em-evidencia.md).
 
 ## 6. Validação
 

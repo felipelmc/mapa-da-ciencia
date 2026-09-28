@@ -19,6 +19,14 @@ mapa.consultar(p, por_idioma)
 # [{'idioma': 'pt', 'n': 25}, {'idioma': 'en', 'n': 25}, ...]
 ```
 
+Para importar `mapa_da_ciencia.api`, o Python precisa enxergar o pacote. Pelo código, use `uv run python` (ou `uv run --with jupyter jupyter lab`, para um notebook) na pasta `mapa-da-ciencia`. Pelo *wheel*, o `uv tool install` deixa o pacote num ambiente só do comando `mapa`; abra um Python com ele assim:
+
+```bash
+uv run --no-project --with "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v1.0.1/mapa_da_ciencia-1.0.1-py3-none-any.whl" python
+```
+
+Para um notebook, acrescente `--with jupyter` e troque `python` por `jupyter lab`; para DataFrames, acrescente `--with pandas`. Num ambiente virtual seu, `pip install` com o mesmo endereço também serve.
+
 Todas as funções que recebem `projeto` aceitam um `Projeto` já aberto ou o caminho da pasta (`mapa.coletar("op-2024")`).
 
 ## No Jupyter e no Colab

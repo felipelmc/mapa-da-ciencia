@@ -162,7 +162,14 @@
 		{#each rotulosFaixas as r (r.id)}
 			<text class="rotulo" class:apagado={apagada(r.id)} x={r.x} y={r.y + 4} text-anchor="middle">{r.texto}</text>
 		{/each}
-		<Eixo orientacao="x" anos={compacto ? [anos[0], anos[anos.length - 1]] : anos} posicao={altura - margem.base} escala={compacto ? (j) => x(j === 0 ? 0 : nAnos - 1) : x} comprimento={compacto ? 60 : largura} />
+		<Eixo
+			orientacao="x"
+			anos={compacto ? [anos[0], anos[anos.length - 1]] : anos}
+			posicao={altura - margem.base}
+			escala={compacto ? (j) => x(j === 0 ? 0 : nAnos - 1) : x}
+			comprimento={compacto ? 60 : largura}
+			pontas={compacto}
+		/>
 		{#if modo !== 'fluxo' && !compacto}
 			<Eixo
 				orientacao="y"
