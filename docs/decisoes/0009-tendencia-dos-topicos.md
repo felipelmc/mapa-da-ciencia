@@ -41,7 +41,7 @@ Alternativas descartadas: regressão linear na participação (ignora que a vari
 - Com 57 tópicos testados a 5%, cerca de 3 marcações podem acontecer por acaso mesmo sem nenhuma tendência real. A interface e o guia avisam.
 - Tópicos pequenos quase nunca são marcados: é o comportamento desejado, porque a série deles é dominada pelo ruído.
 - Com filtros (uma revista, um período curto), menos tópicos passam dos mínimos, e a lista mostra "sem dados suficientes".
-- Com o período filtrado no painel, um dossiê no primeiro ou no último ano da janela ainda pode aparecer como tendência: a inclinação absorve o pico, e a dispersão não cresce o bastante para cobri-lo. Confira a série antes de citar.
+- Um dossiê no primeiro ou no último ano da janela (o período inteiro ou o filtrado no painel) ainda pode aparecer como tendência: a inclinação absorve o pico, e a dispersão não cresce o bastante para cobri-lo. Confira a série antes de citar.
 - Uma tendência descreve o corpus coletado, não a produção da área: revistas que entram ou saem do recorte mudam as participações.
 
 ## Como reproduzir

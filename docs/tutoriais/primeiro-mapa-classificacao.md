@@ -106,7 +106,7 @@ Classificação pronta: 395 de 395 documentos com resumo classificados por qwen3
 JSON válido na primeira tentativa: 100,0%; 10,0 s por documento (mediana); 1 documento(s) sem resumo ficam de fora.
 ```
 
-A tabela mostra as três respostas mais frequentes de cada variável e a fração de evidências copiadas literalmente do resumo. Pode interromper a etapa (++ctrl+c++) e rodar de novo quando quiser: nada se perde.
+A tabela mostra as três respostas mais frequentes de cada variável e a fração de evidências copiadas literalmente do título ou do resumo. Pode interromper a etapa (++ctrl+c++) e rodar de novo quando quiser: nada se perde.
 
 ## 8. Veja no painel
 
