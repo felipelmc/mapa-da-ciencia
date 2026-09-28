@@ -31,7 +31,14 @@ from ..topicos.resultado import assinatura_corpus
 from ..validacao.amostra import ler as ler_amostra
 from .executor import Classificacao, Classificador, textos_para_classificar
 from .prompt import VERSAO_PROMPT
-from .resultado import PASTA, Resultado, documentos_classificados, resultados, valor_como_texto
+from .resultado import (
+    PASTA,
+    Resultado,
+    documentos_classificados,
+    resultados,
+    rotulo_a_parte,
+    valor_como_texto,
+)
 
 AMOSTRA_ESTIMATIVA = 5
 GRAVAR_A_CADA = 50
@@ -310,7 +317,7 @@ def classificar(
     if resultado.a_parte:
         nome = modelo_cfg.modelo
         n_anterior = anterior.classificados if anterior else len(no_principal or ())
-        versao_nova = f'"{nome.removesuffix(":latest")} (versão nova)"'
+        rotulo = f'"{nome.removesuffix(":latest")} ({rotulo_a_parte(resultado, anterior)})"'
         if rodada_completa and len(k.falhas) > limite_falhas:
             motivo = (
                 f"{num(len(k.falhas), 0)} documentos ficaram sem resposta válida nesta rodada, mais que o limite para "
@@ -330,7 +337,7 @@ def classificar(
         resumo.avisos.append(
             f"O resultado anterior ({nome}, {num(n_anterior, 0)} documentos classificados) foi mantido: "
             f"{motivo}. As respostas desta rodada ficam num resultado à parte, que `mapa validar metricas` compara "
-            f"com ele como {versao_nova}. " + conselho
+            f"com ele como {rotulo}. " + conselho
         )
     registrar(resultado)
     if principal and gravou:  # a versão à parte não muda o contrato (ver `validacao.metricas.calcular`)

@@ -478,12 +478,23 @@ def n14_mesma_versao_parciais_depois_da_troca(proj, falsas, monkeypatch):
 
 
 def n15_rotulo_da_parte_mesma_versao(proj, falsas, monkeypatch):
+    """Uma rodada à parte da mesma versão (os textos mudaram com o idioma de exibição) não aparece como versão nova,
+    nem no aviso, nem no status, nem nas métricas."""
+    from typer.testing import CliRunner
+
+    from mapa_da_ciencia.cli import app
+    from mapa_da_ciencia.validacao.metricas import calcular
+
     mapa.amostra_de_validacao(proj, n=5)
     mapa.classificar(proj, progresso=False)
     p = _trocar_idioma(proj)
-    mapa.classificar(p, somente_amostra=True, progresso=False)
+    r = mapa.classificar(p, somente_amostra=True, progresso=False)
     principal, a = _principal(p), _a_parte(p)
     assert a is not None and a.modelo == principal.modelo
+    assert any('"qwen3.5:4b (rodada parcial)"' in x for x in r.avisos)
+    s = " ".join(CliRunner().invoke(app, ["status", "-P", str(p.raiz)], env={"COLUMNS": "250"}).output.split())
+    assert f"Uma rodada parcial da mesma versão ({a.modelo}) está à parte" in s and "Uma versão nova" not in s
+    assert [x.nome for x in calcular(p, reamostras=10).participantes] == ["qwen3.5:4b", "qwen3.5:4b (rodada parcial)"]
 
 
 def n16_conjunto_completa_com_falhas_demais_corpus_cresceu(proj, falsas, monkeypatch):

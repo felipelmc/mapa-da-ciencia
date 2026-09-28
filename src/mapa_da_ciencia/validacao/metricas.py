@@ -32,7 +32,7 @@ from typing import Any, Literal
 import numpy as np
 
 from ..classificacao.resultado import PASTA as PASTA_CLASSIFICACAO
-from ..classificacao.resultado import Resultado, ler_linhas, resultados
+from ..classificacao.resultado import Resultado, ler_linhas, nome_do_arquivo, resultados, rotulo_a_parte
 from ..config import ErroConfig
 from ..projeto import Projeto
 from . import amostra as va
@@ -326,10 +326,10 @@ def _nome_modelo(modelo: str) -> str:
     return modelo.split("@", 1)[0].removesuffix(":latest")
 
 
-def _nome_participante(r: Resultado) -> str:
-    """O nome do modelo nas métricas; o resultado à parte (a versão nova do modelo ou dos parâmetros, que ainda não
-    substituiu o completo) aparece ao lado do completo."""
-    return _nome_modelo(r.modelo) + (" (versão nova)" if r.a_parte else "")
+def _nome_participante(r: Resultado, principal: Resultado | None) -> str:
+    """O nome do modelo nas métricas; o resultado à parte aparece ao lado do principal, como "(versão nova)" ou,
+    quando é da mesma execução dele, "(rodada parcial)"."""
+    return _nome_modelo(r.modelo) + (f" ({rotulo_a_parte(r, principal)})" if r.a_parte else "")
 
 
 def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS, versao_nova: bool = True) -> Validacao:
@@ -357,8 +357,10 @@ def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS, versao_nova: boo
     principal = _nome_modelo(projeto.config.modelos.classificacao.modelo)
     evidencia_literal = {}
     modelos = []
-    for r in resultados(pasta):
-        nome = _nome_participante(r)
+    todos = resultados(pasta)
+    principais = {nome_do_arquivo(r.modelo, r.hash_codebook): r for r in todos if not r.a_parte}
+    for r in todos:
+        nome = _nome_participante(r, principais.get(nome_do_arquivo(r.modelo, r.hash_codebook)))
         if r.hash_codebook != hash_cb or nome in tipos or (r.a_parte and not versao_nova):
             continue
         linhas = [

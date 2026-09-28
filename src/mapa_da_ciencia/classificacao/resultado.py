@@ -114,6 +114,14 @@ def ler_linhas(pasta: Path, modelo: str, hash_codebook: str, *, a_parte: bool = 
     return ler_tabela(arquivo) if arquivo.exists() else []
 
 
+def rotulo_a_parte(a_parte: Resultado, principal: Resultado | None) -> str:
+    """Como o resultado à parte aparece no status e nas métricas: "versão nova" quando é de outro modelo, digest,
+    prompt ou parâmetros que o principal; "rodada parcial" quando é da mesma execução (outros textos, depois de
+    trocar o idioma de exibição, ou documentos que não cabem no principal)."""
+    mesma = principal is not None and bool(a_parte.execucao) and a_parte.execucao == principal.execucao
+    return "rodada parcial" if mesma else "versão nova"
+
+
 def documentos_classificados(pasta: Path, modelo: str, hash_codebook: str) -> set[str] | None:
     """Os documentos com classificação no resultado principal (a coluna `doc` do Parquet), ou `None` se ele não
     existe. Vale também para um Parquet que ficou sem o JSON."""

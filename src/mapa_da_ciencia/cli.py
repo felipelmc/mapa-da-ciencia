@@ -226,7 +226,7 @@ def _mostrar_topicos(p: Projeto) -> None:
 
 def _mostrar_classificacao_status(p: Projeto) -> None:
     from mapa_da_ciencia.classificacao.pipeline import classificacao_em_dia
-    from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado
+    from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado, rotulo_a_parte
 
     cfg = p.config.modelos.classificacao
     r = Resultado.ler(p.dados / PASTA, cfg.modelo, p.codebook.hash())
@@ -260,8 +260,13 @@ def _mostrar_classificacao_status(p: Projeto) -> None:
         )
     a_parte = Resultado.ler(p.dados / PASTA, cfg.modelo, p.codebook.hash(), a_parte=True)
     if a_parte is not None:
+        o_que = (
+            "Uma rodada parcial da mesma versão"
+            if rotulo_a_parte(a_parte, r) == "rodada parcial"
+            else "Uma versão nova"
+        )
         console.print(
-            f"[yellow]Uma versão nova ({a_parte.modelo}) está à parte e não substituiu esta[/]: "
+            f"[yellow]{o_que} ({a_parte.modelo}) está à parte e não entrou nesta[/]: "
             f"{num(a_parte.classificados, 0)} de {num(a_parte.documentos, 0)} documentos, "
             f"{num(len(a_parte.falhas), 0)} sem resposta válida. `mapa validar metricas` compara as duas na amostra."
         )

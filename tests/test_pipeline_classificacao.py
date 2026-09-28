@@ -176,7 +176,7 @@ def test_rodada_completa_com_falhas_demais_nao_troca_o_resultado_completo(projet
     assert exportado["execucao"]["modelos"]["classificacao"] == antes.modelo
     assert exportado["contagens"]["classificados"] == completo.documentos
     s = runner.invoke(app, ["status", "-P", str(projeto.raiz)], env={"COLUMNS": "200"})
-    assert "Uma versão nova (qwen3.5:4b@novo00000000) está à parte e não substituiu esta" in " ".join(s.output.split())
+    assert "Uma versão nova (qwen3.5:4b@novo00000000) está à parte e não entrou nesta" in " ".join(s.output.split())
 
 
 def test_status_explica_o_documento_que_falha_sempre(projeto, apis_falsas):
