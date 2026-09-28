@@ -58,8 +58,13 @@ mapa juri importar-respostas   # confere e guarda todas as respostas da pasta ju
 ```
 
 Cada resposta é conferida: a escolha precisa ser um dos candidatos, a evidência precisa estar no texto e o pedido
-precisa ainda valer (se a votação mudou, os candidatos mudam e a resposta antiga é recusada). O que for recusado
-aparece na tela; rodar `mapa juri exportar-pedidos` de novo pede só o que falta.
+precisa ainda valer. O id de cada pedido muda junto com os candidatos: se a votação mudou depois, a resposta ao pedido
+antigo é reconhecida e ignorada, e o pedido novo aparece na próxima exportação. Importar de novo um arquivo já
+importado não conta nada duas vezes. O que for recusado aparece na tela; rodar `mapa juri exportar-pedidos` de novo
+pede só o que falta.
+
+Só valem as respostas do supervisor de `juri.supervisor.nome`. Trocar o nome (outra pessoa, outro modelo) começa a
+supervisão do zero, sem misturar as respostas dos dois.
 
 ## O supervisor pela API da Anthropic (opcional)
 

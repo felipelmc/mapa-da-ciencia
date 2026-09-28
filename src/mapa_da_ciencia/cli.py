@@ -896,11 +896,8 @@ def juri_importar_respostas(
         typer.Argument(help="Arquivos de respostas; sem nenhum, todos os `juri/*.respostas.jsonl`.", exists=True),
     ] = None,
     projeto: OpcaoProjeto = Path("."),
-    supervisor: Annotated[
-        str | None, typer.Option("--supervisor", help="Nome do supervisor (padrão: juri.supervisor.nome).")
-    ] = None,
 ) -> None:
-    """Confere e guarda as respostas do supervisor, e consolida o júri."""
+    """Confere e guarda as respostas do supervisor (o de `juri.supervisor.nome`), e consolida o júri."""
     from mapa_da_ciencia.juri.pipeline import arquivos_de_respostas
     from mapa_da_ciencia.juri.supervisor import importar_respostas
 
@@ -909,7 +906,7 @@ def juri_importar_respostas(
         lista = arquivos_de_respostas(p, list(arquivos or []))
         if not lista:
             raise ErroConfig("Nenhum arquivo de respostas: passe os arquivos ou ponha-os em `juri/` do projeto.")
-        r = importar_respostas(p, lista, supervisor=supervisor)
+        r = importar_respostas(p, lista)
     console.print(f"[bold green]Respostas do supervisor[/]: {r}")
     for motivo in r.recusadas[:10]:
         console.print(f"[red]Recusada:[/] {motivo}")

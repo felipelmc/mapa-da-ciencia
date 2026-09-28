@@ -135,11 +135,15 @@ class ResumoJuri:
 ESTAGIOS = ("unanime", "maioria", "deliberacao", "sem_maioria")
 
 
-def respostas_do_supervisor(projeto: Projeto, hash_codebook: str, tarefa: str) -> dict[tuple[str, str], dict]:
+def respostas_do_supervisor(
+    projeto: Projeto, hash_codebook: str, tarefa: str, supervisor: str
+) -> dict[tuple[str, str], dict]:
+    """As respostas guardadas de um supervisor (uma por documento × variável). As de outro nome não se misturam:
+    trocar `juri.supervisor.nome` começa a supervisão de novo."""
     with conectar(projeto) as con:
         linhas = con.execute(
-            "SELECT * FROM juri_supervisor WHERE hash_codebook = ? AND tarefa = ? ORDER BY atualizado",
-            (hash_codebook, tarefa),
+            "SELECT * FROM juri_supervisor WHERE hash_codebook = ? AND tarefa = ? AND supervisor = ?",
+            (hash_codebook, tarefa, supervisor),
         ).fetchall()
     return {(r["doc"], r["variavel"]): dict(r) for r in linhas}
 
@@ -152,7 +156,7 @@ def decidir(projeto: Projeto, votos: Votos | None = None) -> list[DecisaoFinal]:
     hash_cb = codebook.hash()
     votos = votos if votos is not None else carregar_votos(projeto, membros)
     r2, _ = votos_da_deliberacao(codebook, votos, ler_deliberacao(projeto, hash_cb)) if cfg.deliberar else ({}, {})
-    arbitragens = respostas_do_supervisor(projeto, hash_cb, "arbitragem")
+    arbitragens = respostas_do_supervisor(projeto, hash_cb, "arbitragem", cfg.supervisor.nome)
     saida = []
     for doc in sorted(votos):
         for v in codebook.variaveis:
