@@ -434,6 +434,18 @@ def projeto(tmp_path_factory):
     return p
 
 
+def test_consultar_as_redes_de_fora_do_projeto(projeto, tmp_path, monkeypatch):
+    import mapa_da_ciencia.api as mapa
+
+    gerar_redes(projeto)
+    monkeypatch.chdir(tmp_path)  # o exemplo do guia, rodado de outra pasta
+    guia = (Path(__file__).resolve().parent.parent / "docs" / "guias" / "redes.md").read_text(encoding="utf-8")
+    sql = re.search(r'mapa\.consultar\(p, "(.*?)"\)', guia).group(1)
+    linhas = mapa.consultar(projeto.raiz, sql)
+    assert linhas and {"titulo", "ano", "autores", "n"} <= set(linhas[0])
+    assert mapa.consultar(projeto.raiz, "SELECT count(*) AS n FROM redes_pessoas")[0]["n"] > 0
+
+
 def test_revisao_com_evidencias_e_bloco_que_funciona(projeto):
     import yaml
     from typer.testing import CliRunner

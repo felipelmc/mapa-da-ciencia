@@ -176,7 +176,9 @@ def ler_documentos(caminho: Path) -> list[Documento]:
 def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
     """DuckDB em memória com as views do corpus: `documentos`, `textos`, `autores`, `afiliacoes`; se a etapa de
     tópicos já rodou, `atribuicoes`; se a de geografia já rodou, `vinculos`, `pesos` e `instituicoes`; se a de
-    classificação já rodou, `classificacoes`."""
+    classificação já rodou, `classificacoes`; se a das redes já rodou, `redes_pessoas`, `redes_autorias`,
+    `redes_arestas`, `redes_instituicoes`, `redes_comunidades`, `redes_citacoes`, `redes_canone`,
+    `redes_candidatos` e `redes_colaboracao`."""
     con = duckdb.connect()
     con.execute(f"CREATE VIEW documentos AS SELECT * FROM read_parquet('{caminho}')")
     con.execute(
@@ -209,6 +211,10 @@ def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
         arquivo = caminho.parent / "geografia" / f"{nome}.parquet"
         if arquivo.exists():
             con.execute(f"CREATE VIEW {nome} AS SELECT * FROM read_parquet('{arquivo}')")
+    # depois de `mapa redes`: redes_pessoas, redes_autorias, redes_arestas, redes_canone… (o caminho vem do projeto, e
+    # não da pasta atual: `read_parquet('dados/redes/…')` só funcionava de dentro do projeto)
+    for arquivo in sorted((caminho.parent / "redes").glob("*.parquet")):
+        con.execute(f"CREATE VIEW redes_{arquivo.stem} AS SELECT * FROM read_parquet('{arquivo}')")
     return con
 
 

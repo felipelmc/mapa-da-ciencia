@@ -60,11 +60,13 @@ aparece num aviso ("falta o prefixo openalex:?"). Depois de editar, rode `mapa r
 
 No painel, a vista **Redes** tem quatro modos (Coautoria, Instituições, Estados e Citações), com o mesmo recorte das
 outras vistas: filtrar os anos ou um tópico esmaece o que ficou de fora, sem mexer no desenho. Para ler cada modo,
-veja [Ler as redes](ler-as-redes.md). Os dados ficam em `dados/redes/` (Parquet), para análises próprias:
+veja [Ler as redes](ler-as-redes.md). Os dados ficam em `dados/redes/` (Parquet), para análises próprias, e viram
+views com o prefixo `redes_` (`redes_pessoas`, `redes_arestas`, `redes_comunidades`, `redes_citacoes`,
+`redes_canone`…) na conexão da API, de qualquer pasta:
 
 ```python
 import mapa_da_ciencia.api as mapa
 
 p = mapa.abrir("meu-projeto")
-mapa.consultar(p, "SELECT titulo, ano, n FROM read_parquet('dados/redes/canone.parquet') ORDER BY n DESC LIMIT 10")
+mapa.consultar(p, "SELECT titulo, ano, autores, n FROM redes_canone ORDER BY n DESC LIMIT 10")
 ```
