@@ -22,6 +22,7 @@ from ..armazenamento import ARQUIVO, ler_documentos
 from ..config import ErroConfig
 from ..contrato.exportar import exportar
 from ..formatar import num
+from ..llm.cache import chave_de
 from ..llm.ollama import Ollama
 from ..manifesto import registrar_execucao
 from ..progresso import Progresso, ProgressoNulo
@@ -138,6 +139,17 @@ def classificar(
 
     variaveis = [v.id for v in codebook.variaveis]
     k = classificador.contadores
+    parametros = (modelo_cfg.num_ctx, modelo_cfg.temperatura, modelo_cfg.semente, modelo_cfg.pensar)
+    execucao = chave_de(classificador.modelo, VERSAO_PROMPT, parametros)[:16]
+    # um resultado completo de outra execução (modelo atualizado, outro prompt ou outros parâmetros) não é trocado
+    # por um parcial desta (um --estimar ou --limite): só a rodada completa o substitui
+    anterior = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
+    protegido = (
+        anterior is not None
+        and not anterior.parcial
+        and (anterior.execucao or anterior.modelo) != (execucao if anterior.execucao else classificador.modelo)
+    )
+    avisos_gravacao: list[str] = []
     principal = not opcoes.modelo or opcoes.modelo == cfg.modelos.classificacao.modelo
     assinatura = assinatura_corpus([d.id for d in docs])
 
@@ -146,6 +158,12 @@ def classificar(
         com uma exportação para o painel (assim a rodada longa aparece enquanto corre)."""
         resultados = resultados + fora_do_alvo
         parcial = parcial or len(resultados) < len(textos)
+        gravar_de_fato = not (protegido and parcial)
+        if not gravar_de_fato and not avisos_gravacao:
+            avisos_gravacao.append(
+                f"O resultado completo anterior ({anterior.modelo.split('@', 1)[0]}, de outra execução) foi mantido: "
+                "esta rodada é parcial. Rode `mapa classificar` sem --limite/--estimar para substituí-lo."
+            )
         linhas = [linha for c in sorted(resultados, key=lambda c: c.doc) for linha in _linhas(c, variaveis)]
         status = Counter(linha["status"] for linha in linhas if linha["status"] != "dispensada")
         total_status = sum(status.values()) or 1
@@ -172,8 +190,10 @@ def classificar(
             evidencia_por_variavel=por_variavel,
             segundos_por_documento=round(statistics.median(segundos), 2) if segundos else None,
             parcial=parcial or bool(k.falhas),
+            execucao=execucao,
         )
-        resultado.gravar(projeto.dados / PASTA, linhas)
+        if gravar_de_fato:
+            resultado.gravar(projeto.dados / PASTA, linhas)
         return resultado
 
     resultados: list[Classificacao] = []
@@ -182,7 +202,7 @@ def classificar(
             resultados.append(c)
             if not c.do_cache and k.novos % GRAVAR_A_CADA == 0:
                 gravar(resultados, parcial=True)
-                if principal:
+                if principal and not protegido:
                     with contextlib.suppress(Exception):  # o painel acompanha; uma falha aqui não para a etapa
                         exportar(projeto)
     except BaseException:
@@ -251,7 +271,8 @@ def classificar(
             "somente_amostra": opcoes.somente_amostra,
         },
     )
-    if principal:
+    resumo.avisos += avisos_gravacao
+    if principal and not (protegido and resultado.parcial):
         resumo.avisos += exportar(projeto)
     return resumo
 

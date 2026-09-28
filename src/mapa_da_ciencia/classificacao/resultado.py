@@ -77,6 +77,7 @@ class Resultado:
     evidencia_por_variavel: dict[str, float] = field(default_factory=dict)  # fração literal
     segundos_por_documento: float | None = None  # mediana das chamadas novas desta execução
     parcial: bool = False  # com --limite, --somente-amostra ou --estimar
+    execucao: str = ""  # hash de modelo@digest, versão do prompt e parâmetros (vazio nos resultados antigos)
 
     def gravar(self, pasta: Path, linhas: list[dict[str, Any]]) -> None:
         pasta.mkdir(parents=True, exist_ok=True)

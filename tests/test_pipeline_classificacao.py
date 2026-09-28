@@ -109,3 +109,18 @@ def test_grava_parcial_durante_a_rodada(projeto, monkeypatch):
         mapa.classificar(projeto, progresso=False)
     r = Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
     assert r.classificados == 7 and r.parcial
+
+
+def test_rodada_parcial_de_outra_execucao_nao_troca_o_resultado_completo(projeto, apis_falsas):
+    """Um --estimar depois de o modelo ser atualizado no Ollama não troca a classificação completa pelos 5 novos."""
+    r = mapa.classificar(projeto, progresso=False)
+    completo = r.documentos
+    apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"  # o modelo foi atualizado
+    r = mapa.classificar(projeto, estimar=True, progresso=False)
+    assert any("resultado completo anterior" in a for a in r.avisos)
+    guardado = Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
+    assert guardado.classificados == completo and not guardado.parcial
+    # a rodada completa com o modelo novo substitui
+    r = mapa.classificar(projeto, progresso=False)
+    guardado = Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
+    assert not guardado.parcial and guardado.modelo.endswith("@novo00000000")

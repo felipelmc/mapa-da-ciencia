@@ -64,6 +64,7 @@ class Projeto:
     raiz: Path
     _config: ConfigProjeto | None = field(default=None, repr=False)
     _codebook: Codebook | None = field(default=None, repr=False)
+    _lidos: dict[str, int | None] = field(default_factory=dict, repr=False)  # arquivo → mtime da última leitura
 
     # ------------------------------------------------------------ localizar e criar
     @classmethod
@@ -122,17 +123,27 @@ class Projeto:
         return projeto
 
     # ------------------------------------------------------------ conteúdo
+    def _mudou(self, nome: str, atual: object) -> bool:
+        """O arquivo mudou no disco desde a última leitura? (O painel fica aberto enquanto a pessoa edita o
+        `mapa.yaml` ou o `codebook.yaml`; sem isso, as etapas rodariam com a versão antiga.)"""
+        arquivo = self.raiz / nome
+        mtime = arquivo.stat().st_mtime_ns if arquivo.exists() else None
+        if atual is not None and self._lidos.get(nome) == mtime:
+            return False
+        self._lidos[nome] = mtime
+        return True
+
     @property
     def config(self) -> ConfigProjeto:
-        if self._config is None:
+        if self._mudou(ARQUIVO_CONFIG, self._config):
             self._config = carregar_config(self.raiz / ARQUIVO_CONFIG)
-        return self._config
+        return self._config  # type: ignore[return-value]
 
     @property
     def codebook(self) -> Codebook:
-        if self._codebook is None:
+        if self._mudou(ARQUIVO_CODEBOOK, self._codebook):
             self._codebook = carregar_codebook(self.raiz / ARQUIVO_CODEBOOK)
-        return self._codebook
+        return self._codebook  # type: ignore[return-value]
 
     # ------------------------------------------------------------ caminhos
     @property
