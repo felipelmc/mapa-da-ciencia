@@ -147,6 +147,18 @@ test('os pequenos múltiplos por revista filtram o recorte', async ({ page }) =>
 	await expect(primeira).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('nos pequenos múltiplos, o último ano de um painel não encosta no primeiro do vizinho', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	const anos = page.getByTestId('figura-por-revista').locator('.multiplo svg .eixo text');
+	await expect(anos.first()).toBeVisible();
+	const caixas = (await anos.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()))) as DOMRect[];
+	caixas.sort((a, b) => a.y - b.y || a.x - b.x);
+	for (let k = 1; k < caixas.length; k += 1) {
+		const [a, b] = [caixas[k - 1], caixas[k]];
+		if (Math.abs(a.y - b.y) < 2) expect(a.x + a.width, 'textos do eixo encostados').toBeLessThanOrEqual(b.x - 4);
+	}
+});
+
 test('projeto vazio: estado vazio, sem pedir arquivos ausentes', async ({ page }) => {
 	const pedidos: string[] = [];
 	page.on('request', (r) => pedidos.push(new URL(r.url()).pathname));

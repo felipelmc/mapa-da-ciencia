@@ -5,7 +5,7 @@
 	 */
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { filtrosDaPagina } from '$lib/estado/filtros';
-	import { formatarPeriodo } from '$lib/formato';
+	import { formatarPeriodo, nomeDaFonte } from '$lib/formato';
 	import {
 		baixar,
 		graficoDe,
@@ -76,9 +76,7 @@
 				return;
 			}
 			const p = PRESETS.find((x) => x.id === preset)!;
-			const fontes = manifesto.recorte.fontes
-				.map((x) => (x.startsWith('scielo') ? 'SciELO/ArticleMeta' : x === 'openalex' ? 'OpenAlex' : x))
-				.join(' e ');
+			const fontes = manifesto.recorte.fontes.map(nomeDaFonte).join(' e ');
 			const svg = await montarSvg(figura!, { titulo, recorte: recorteEmPalavras(), fonte: `Fonte: ${fontes}`, n }, p);
 			if (!svg) throw new Error('esta figura não tem um gráfico em SVG; exporte como CSV');
 			if (formato === 'svg') baixar(svg, `${nome}.svg`, 'image/svg+xml');

@@ -175,6 +175,22 @@ test('um link com um documento que não existe avisa e tira o documento da URL',
 	await expect(page.getByTestId('cartao-documento')).toHaveCount(0);
 });
 
+test('no cartão, o DOI leva ao doi.org, e a página do artigo (em https) é outro link', async ({ page }) => {
+	// como no piloto: a ArticleMeta dá a página do SciELO, em http
+	await page.route('**/dados/detalhes/*.json', async (r) => {
+		const resposta = await r.fetch();
+		const fragmento = await resposta.json();
+		for (const [id, d] of Object.entries(fragmento.documentos)) (d as { url: string }).url = `http://www.scielo.br/scielo.php?pid=${id}`;
+		await r.fulfill({ response: resposta, json: fragmento });
+	});
+	const i = documentos.colunas.doi.findIndex((d: string | null) => d);
+	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(ids[i])}`);
+	await esperarMapa(page);
+	const cartao = page.getByTestId('cartao-documento');
+	await expect(cartao.getByRole('link', { name: /^doi:/ })).toHaveAttribute('href', `https://doi.org/${documentos.colunas.doi[i]}`);
+	await expect(cartao.getByRole('link', { name: /Página do artigo/ })).toHaveAttribute('href', /^https:\/\/www\.scielo\.br\//);
+});
+
 test('o cartão marca no resumo as evidências da classificação', async ({ page }) => {
 	const problemas = vigiar(page);
 	const id = ids.find((i) => detalhes[i].resumo && Object.keys(detalhes[i].evidencias ?? {}).length)!;

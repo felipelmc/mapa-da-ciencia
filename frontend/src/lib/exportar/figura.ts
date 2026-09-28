@@ -56,7 +56,7 @@ export interface Metadados {
 	titulo: string;
 	/** O recorte, em palavras ("2015–2020 · Dados, Opinião Pública"). */
 	recorte: string;
-	/** A fonte e o modelo ("SciELO/ArticleMeta e OpenAlex · qwen3.5:9b"). */
+	/** A fonte e o modelo ("SciELO (coleção scl) e OpenAlex · qwen3.5:9b"). */
 	fonte: string;
 	/** Documentos no recorte. */
 	n: number | null;

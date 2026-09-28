@@ -13,7 +13,8 @@
 		escala,
 		dominio = [0, 1],
 		comprimento,
-		porcentagem = false
+		porcentagem = false,
+		pontas = false
 	}: {
 		orientacao: 'x' | 'y';
 		/** Anos das colunas (eixo x). */
@@ -26,7 +27,14 @@
 		/** Comprimento disponível em pixels, para decidir quantas marcas cabem. */
 		comprimento: number;
 		porcentagem?: boolean;
+		/**
+		 * Eixo x: a primeira marca começa no ponto e a última termina nele, em vez de centradas. Nos pequenos
+		 * múltiplos, lado a lado, o "2025" de um não encosta no "2010" do vizinho.
+		 */
+		pontas?: boolean;
 	} = $props();
+	const ancora = (j: number) =>
+		pontas && j === 0 ? 'start' : pontas && j === anos.length - 1 ? 'end' : 'middle';
 
 	const marcasX = $derived.by(() => {
 		const cabem = Math.max(2, Math.floor(comprimento / 48));
@@ -39,7 +47,7 @@
 {#if orientacao === 'x'}
 	<g class="eixo" aria-hidden="true">
 		{#each marcasX as { a, j } (a)}
-			<text x={escala(j)} y={posicao + 16} text-anchor="middle">{a}</text>
+			<text x={escala(j)} y={posicao + 16} text-anchor={ancora(j)}>{a}</text>
 		{/each}
 	</g>
 {:else}

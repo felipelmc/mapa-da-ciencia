@@ -261,7 +261,7 @@ test.describe('acessibilidade e casos de borda', () => {
 		await page.goto(`${url('RAIZ')}#/nao-existe`);
 		await expect(page.getByText('Nada neste ponto do céu')).toBeVisible();
 		await expect(trilho(page)).toBeVisible();
-		await page.getByRole('link', { name: 'Voltar para a Início' }).click();
+		await page.getByRole('link', { name: 'Voltar ao Início' }).click();
 		await expect(h1(page)).toHaveText(manifesto.projeto.titulo);
 	});
 

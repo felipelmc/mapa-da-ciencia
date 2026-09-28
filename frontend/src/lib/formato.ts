@@ -41,6 +41,14 @@ export function formatarPp(v: number, casas = 2): string {
 	return `${v > 0 ? '+' : v < 0 ? '\u2212' : ''}${texto} p.p.`;
 }
 
+/** Nome legível de uma fonte do recorte: `scielo:scl` → `SciELO (coleção scl)`, `openalex` → `OpenAlex`. */
+export function nomeDaFonte(fonte: string): string {
+	if (fonte.startsWith('scielo:')) return `SciELO (coleção ${fonte.slice('scielo:'.length)})`;
+	if (fonte === 'scielo') return 'SciELO';
+	if (fonte === 'openalex') return 'OpenAlex';
+	return fonte;
+}
+
 /** Duração em segundos → `45 s`, `3 min`, `2 h 10 min`. */
 export function formatarDuracao(segundos: number): string {
 	if (segundos < 90) return `${Math.round(segundos)} s`;
