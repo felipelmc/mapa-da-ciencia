@@ -14,6 +14,44 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 - o repositório ignora as cópias que o iCloud Drive cria ("teste 2.py", "index 2.md") no git, no pytest e no MkDocs, e o CI falha se alguma entrar num commit (armadilha em `desenvolvimento`).
 
+### Corrigido
+
+- as vistas cabem na tela do celular, do tablet e de 1024 px: Tópicos, Geografia, Classificação, Validação e a Início rolavam de lado (a coluna das grades crescia até o gráfico mais largo), e no celular a barra de navegação saía da tela; as tabelas da Validação rolam na própria caixa, os macrotemas e as tendências se rearranjam pela largura da seção e a linha do tempo quebra de linha.
+- o mapa acompanha a janela redimensionada, o modo apresentação (++p++) e o painel recolhido; antes, o canvas ficava no tamanho do primeiro desenho, cortado ou menor que a tela.
+- no celular, o painel e o cartão do mapa terminam acima da barra de navegação (a legenda ficava espremida atrás dela), e a lista de resultados da busca aparece inteira ao lado de uma legenda longa, dizendo quantos resultados ficaram de fora.
+- a barra de navegação do celular mostra, com um degradê na borda, que há mais seções, e deixa de fora a seção ainda desativada.
+- texto que informa (créditos, notas, o intervalo do kappa, a legenda da matriz de confusão) usa `--texto-suave`, com contraste AA, e não mais `--texto-fraco`, reservado a itens desativados; a diagonal da matriz também passa no AA, e um teste varre os componentes.
+- o CSV das figuras sai com números crus (ponto decimal, sem separador de milhar, proporções como fração, intervalos em duas colunas), que o R e o pandas leem sem limpeza; antes, reaproveitava os números formatados em pt-BR da tela, e o R lia 1.095 documentos como 1,095.
+- o SVG e o PNG exportados levam o fundo do tema do preset; saíam transparentes, e no Telão e no Slide o título quase branco sumia num slide claro.
+- uma figura sem gráfico (as tendências, o cruzamento, o ranking) exporta o CSV já escolhido, e o primeiro clique em Baixar não falha mais.
+- uma falha passageira de rede não deixa as vistas quebradas até recarregar a página: elas mostram "Tentar de novo", a barra do recorte volta sozinha (também quando se segue pelo trilho), e a falha do arquivo das afiliações só afeta a Geografia.
+- o título de Tópicos, Geografia, Classificação e Validação é anunciado ao navegar (os leitores de tela ouviam o da página anterior), e ao fechar a gaveta do tópico ou o cartão do mapa o foco volta a quem os abriu.
+- um link com "&" na busca do mapa reabre a mesma busca (o SvelteKit decodifica o hash na carga, e "voto & partido" abria como "voto").
+- um gesto nos controles de ano cria uma entrada só no histórico do navegador (antes, uma por ano), e o campo de busca do mapa acompanha a URL ao voltar.
+- o chip "Laço" mostra quantos documentos há no laço, e não repete o contador do recorte.
+- um laço compartilhado não abre mais com o aviso de "versão anterior do mapa" depois de uma reexportação (classificar, geografia, publicar): a versão do mapa passa a ser um hash das coordenadas dos documentos.
+- na codificação, o ++tab++ sai da ficha (antes, trocava de variável e prendia o foco nela); ++down++ e ++up++ continuam trocando de variável.
+- a Ajuda do site publicado não diz mais que as vistas prontas "chegam no marco M3…M6", nem que os arquivos estão "no seu computador", e descreve a Validação como concordância com uma codificação de referência (de uma pessoa ou de outro modelo).
+- a nota de "Em alta e em queda" e a Ajuda avisam que um pico no primeiro ou no último ano do período (um dossiê temático) pode puxar a tendência, e que algumas marcações são marginais.
+- na tabela da Validação, o kappa de uma variável de texto livre aparece como "não se aplica", e não como "sem variação".
+- o menu "Revistas" fecha com ++esc++ e com um clique fora, e esse clique não chega mais ao mapa (abria um documento ou filtrava um macrotema sem a pessoa perceber); aberto, o menu não passa mais da borda direita da tela entre 768 e 1024 px.
+- um link com um documento, tópico ou macrotema que não existe nesta publicação avisa e tira o parâmetro do endereço, em vez de abrir a vista calado.
+- a página 404 diz "Voltar ao Início"; no cartão, o DOI leva ao doi.org e a página do artigo (em https) é outro link; a Início mostra as fontes pelo nome ("SciELO (coleção scl)"), e não pelo código; nos pequenos múltiplos por revista, os anos das pontas não se encostam mais.
+- o botão da linha do tempo se chama "Tocar", e não "Play".
+- `mapa painel --porta` aceita só portas de 1 a 65535 (uma porta fora da faixa dava traceback), tenta ocupar a porta antes de anunciar o endereço (e explica em português por que não conseguiu) e sugere a primeira porta livre.
+- a ajuda (`-h`), com os tipos das opções (`<caminho>`, `<texto>`, `<inteiro>`), e os erros de uso mais comuns da CLI ("Opção inexistente", "Comando inexistente… Você quis dizer", "Valor inválido", "Falta o argumento", "Argumentos a mais") saem em português (`cli_portugues.py`).
+- a descrição da reatribuição do ruído nos tópicos, na metodologia, no ADR 0007 e em `topicos.votos_minimos`: votam os 14 vizinhos mais próximos, porque o grafo de 15 do UMAP inclui o próprio documento (o código não muda).
+- números do piloto nas explicações e nos ADRs, conferidos com a rodada publicada: o texto de análise (4.159 com resumo em inglês, 88 em reserva, 28 só com título), a evidência literal e o tempo da classificação completa (93,4%, 9,6 s por resumo), +2,5 pontos para comunicação política nas redes sociais, 111 divergências na técnica e 16,4 s no 90º percentil da amostra.
+- as limitações do método, nas explicações e no ADR 0007: a classificação lê o resumo em inglês quando falta o em português (18% do piloto); cerca de 25 "resumos" do piloto são fragmentos da fonte e passam pela coleta; o ARI é 0,89 no núcleo e 0,78 com os reatribuídos (não 0,79), e o maior tópico chega a 4,9% do corpus com eles; os erros medidos da geografia vêm de textos raspados pelo OpenAlex e das travas, e não de nomes parecidos; "modelos maiores concordariam mais" vira hipótese.
+- os 84% de concordância no período analisado, na validação e no ADR 0012, vêm com a nota de que 115 dos 168 acertos são "não se aplica" nos dois (entre os 85 artigos com algum período, 62%; a presença do período tem kappa 0,85).
+- a tendência dos tópicos, no ADR 0009, nos tópicos e no guia "Ler os tópicos": um dossiê no primeiro ou no último ano da janela (o período inteiro ou o filtrado) ainda pode aparecer como tendência, e três dos 13 tópicos marcados no piloto são marginais (somem com o quantil t ou com um ano a menos); o ADR dizia que todos tinham mudança sustentada.
+- o perfil `leve` classifica com o `qwen3.5:4b`, que ainda não passou pela validação: um adendo ao ADR 0005 registra a escolha, e o guia de instalação e as limitações avisam.
+- a instalação pelo *wheel*: o tutorial "Seu primeiro mapa" e a API Python dizem como abrir um Python com o pacote (`uv run --no-project --with <wheel> python`), o README, "Explorar o exemplo", o guia de instalação e a solução de problemas dizem o que fazer quando o terminal não encontra o `mapa` (`uv tool update-shell`), o guia de instalação manda trocar `1.0.1` (e não `0.6.0`), e a caixa da Documentação fala da versão 1.0.
+- deslizes menores: o link das fontes para a geografia levava ao guia do painel; a calibração dos tópicos pede o código-fonte (o script não vem no *wheel*); a primeira coleta do piloto leva uns 30 minutos, e não "alguns minutos"; a escolha dos modelos cita também o ADR 0005.
+- "Modelos locais" e "Reprodutibilidade" falavam da classificação no futuro ("o marco M5 vai") e com a projeção de 14 horas do M0: agora no presente, com os 9,6 s por resumo do piloto, cerca de 12 horas para os 4.247 resumos.
+- os exemplos de `rotulos.yaml` (explicação dos tópicos, guia e parte 2 do tutorial) trazem a `descricao` e avisam que uma entrada só com o rótulo deixa o tópico sem descrição.
+- as frases das histórias da abertura, em português e em inglês: os +4,1 pontos do tópico em alta são da tendência ajustada (o gráfico mostra a participação observada); os 79% dos autores no Brasil são da produção com país conhecido, e não de toda a produção; a BPSR, só em inglês, está entre as "outras oito", em que o inglês ficou entre 14% e 20% de 2019 a 2025; a abordagem teórica caiu quase pela metade, e o cartão diz que o modelo a marca mais que a referência (40% contra 27% na validação), com a queda nas duas leituras.
+
 ## [1.0.1] - 2026-09-27
 
 A versão 1.0.1 é a primeira com DOI: o repositório passa a ser arquivado no Zenodo a cada *release*. E o pacote fica pronto para o PyPI.
@@ -41,7 +79,7 @@ A versão 1.0.0 fecha o plano do projeto. A abertura do site, "Céu que se forma
 
 ## [0.7.0] - 2026-09-27
 
-A publicação, as figuras e a oficina: o projeto vira um site estático, com os resumos só de licença Creative Commons e nenhum e-mail; cada gráfico do painel sai em SVG, PNG ou CSV no tamanho de um artigo ou de um slide; e um caderno do Colab monta um mapa do zero numa GPU gratuita. O piloto inteiro está publicado na [demo](https://felipelamarca.com/mapa-da-ciencia/demo/): os 4.247 resumos classificados pelo `qwen3.5:9b` num notebook, em cerca de 10 horas (9,6 s por resumo), com 100% de JSON válido na primeira tentativa e 93,4% das evidências copiadas literalmente do resumo.
+A publicação, as figuras e a oficina: o projeto vira um site estático, com os resumos só de licença Creative Commons e nenhum e-mail; cada gráfico do painel sai em SVG, PNG ou CSV no tamanho de um artigo ou de um slide; e um caderno do Colab monta um mapa do zero numa GPU gratuita. O piloto inteiro está publicado na [demo](https://felipelamarca.com/mapa-da-ciencia/demo/): os 4.247 resumos classificados pelo `qwen3.5:9b` num notebook, em cerca de 12 horas (9,6 s por resumo, na mediana), com 100% de JSON válido na primeira tentativa e 93,4% das evidências copiadas literalmente do título ou do resumo.
 
 ### Adicionado
 

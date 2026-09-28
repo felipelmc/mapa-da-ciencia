@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ErroAoAbrir from '$lib/componentes/ErroAoAbrir.svelte';
 	import PaginaDeSecao from '$lib/componentes/PaginaDeSecao.svelte';
 	import type { Validacao } from '$lib/contrato/tipos';
 	import { usarProjeto } from '$lib/dados/contexto';
@@ -10,11 +11,19 @@
 
 	const { fonte, manifesto } = usarProjeto();
 	// no painel local, as métricas vêm da API (calculadas agora, com as divergências de todos); no site, do contrato
-	const metricas: Promise<Validacao | null> = manifesto.api
-		? lerMetricas().catch(() => fonte.validacao())
-		: fonte.validacao();
-	const dados = Promise.all([metricas, fonte.codebook(), abrirCorpus(fonte)]);
+	const abrir = () => {
+		const metricas: Promise<Validacao | null> = manifesto.api
+			? lerMetricas().catch(() => fonte.validacao())
+			: fonte.validacao();
+		return Promise.all([metricas, fonte.codebook(), abrirCorpus(fonte)]);
+	};
+	let dados = $state(abrir());
 </script>
+
+<!-- o título fica na rota, fora do await: o anúncio da navegação (lido um instante depois) já o encontra -->
+<svelte:head>
+	<title>Validação · mapa da ciência</title>
+</svelte:head>
 
 {#await dados}
 	<p class="aviso" role="status">Carregando a validação…</p>
@@ -23,6 +32,7 @@
 		<VistaValidacao {validacao} {codebook} tabela={corpus?.tabela ?? null} api={manifesto.api} />
 	{:else}
 		<PaginaDeSecao
+			comTitulo={false}
 			secao={secao('validacao')}
 			vazio={{ titulo: 'Este projeto ainda não tem validação.', sobretitulo: 'Sem validação' }}
 		>
@@ -34,7 +44,7 @@
 		</PaginaDeSecao>
 	{/if}
 {:catch erro}
-	<p class="aviso" role="alert">Não foi possível abrir a validação: {erro.message}</p>
+	<ErroAoAbrir oque="a validação" {erro} tentar={() => (dados = abrir())} />
 {/await}
 
 <style>

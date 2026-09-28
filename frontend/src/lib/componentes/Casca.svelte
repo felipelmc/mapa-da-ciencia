@@ -179,12 +179,14 @@
 				'conteudo';
 		}
 
+		/* sem zerar o min-height (100dvh), ele venceria a altura, e o mapa passaria por baixo da barra */
 		.casca.tela-cheia {
-			height: calc(100dvh - 4.5rem - env(safe-area-inset-bottom));
+			min-height: 0;
+			height: calc(100dvh - var(--altura-trilho, calc(4.5rem + env(safe-area-inset-bottom))));
 		}
 
 		.conteudo {
-			padding: 1.5rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
+			padding: 1.5rem 1rem calc(1rem + var(--altura-trilho, calc(4.5rem + env(safe-area-inset-bottom))));
 		}
 
 		.conteudo.tela-cheia {

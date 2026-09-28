@@ -58,8 +58,13 @@
 <style>
 	.colunas {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
 		gap: 1.5rem;
+	}
+
+	/* cada coluna mede a própria largura: estreita (celular, ou duas colunas numa tela média), a sparkline desce */
+	.coluna {
+		container-type: inline-size;
 	}
 
 	h3 {
@@ -140,5 +145,15 @@
 
 	.vazio {
 		color: var(--texto-suave);
+	}
+
+	@container (max-width: 28rem) {
+		li {
+			grid-template-columns: 0.7rem minmax(0, 1fr) auto;
+			grid-template-areas:
+				'cor nome pp'
+				'. linha linha'
+				'. detalhe detalhe';
+		}
 	}
 </style>

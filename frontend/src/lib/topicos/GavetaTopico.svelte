@@ -2,7 +2,7 @@
 	/**
 	 * A gaveta de um tópico (`topico=` na URL): o que ele é (rótulo, descrição, palavras-chave, documentos
 	 * representativos), como ele anda no tempo no recorte (série e tendência) e em quais revistas aparece. Dali se
-	 * vai ao mapa com o tópico filtrado. `Esc` fecha; o foco vai para o título ao abrir.
+	 * vai ao mapa com o tópico filtrado. `Esc` fecha; o foco vai para o título ao abrir e volta a quem abriu ao fechar.
 	 */
 	import { tick } from 'svelte';
 	import type { Macrotema, Topico, Topicos } from '$lib/contrato/tipos';
@@ -34,6 +34,11 @@
 	$effect(() => {
 		void topico.id;
 		tick().then(() => titulo?.focus());
+	});
+	// quem abriu a gaveta (o item da lista, a faixa do fluxo) recebe o foco de volta quando ela fecha
+	const origem = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+	$effect(() => () => {
+		if (origem?.isConnected && origem !== document.body) origem.focus();
 	});
 
 	const t = $derived(cubo.t);

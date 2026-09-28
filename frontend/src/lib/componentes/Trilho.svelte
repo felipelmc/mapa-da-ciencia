@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { MediaQuery } from 'svelte/reactivity';
 	import type { ProjetoAberto } from '$lib/dados/contexto';
 	import { filtrosDaPagina } from '$lib/estado/filtros';
 	import { escreverFiltros, recorteDe, rota } from '$lib/estado/url';
@@ -15,9 +16,36 @@
 	// as vistas de análise recebem o recorte atual (anos, revistas, tópicos, laço, lugares); as outras, não
 	const recorte = $derived(escreverFiltros(recorteDe(filtrosDaPagina())));
 	const destino = (s: Secao) => rota(s.caminho, s.recorte ? recorte : undefined);
+
+	// Na tela estreita, o trilho é uma barra fixa embaixo, e a casca desconta a altura dela (`--altura-trilho`):
+	// o mapa e os painéis sobre ele terminam onde a barra começa. A altura muda com a letra e a área segura.
+	const estreita = new MediaQuery('(max-width: 820px)');
+	let altura = $state(0);
+	$effect(() => {
+		const estilo = document.documentElement.style;
+		if (estreita.current && altura) estilo.setProperty('--altura-trilho', `${altura}px`);
+		else estilo.removeProperty('--altura-trilho');
+	});
+
+	// Na barra do celular, que rola de lado sem barra de rolagem, um degradê na borda mostra que há mais itens.
+	let nav = $state<HTMLElement>();
+	let maisADireita = $state(false);
+	let maisAEsquerda = $state(false);
+	function medirRolagem() {
+		if (!nav) return;
+		maisADireita = nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 1;
+		maisAEsquerda = nav.scrollLeft > 1;
+	}
+	$effect(() => {
+		if (!nav) return;
+		const observador = new ResizeObserver(medirRolagem);
+		observador.observe(nav);
+		if (nav.firstElementChild) observador.observe(nav.firstElementChild);
+		return () => observador.disconnect();
+	});
 </script>
 
-<aside class="lateral transicao-tema">
+<aside class="lateral transicao-tema" bind:offsetHeight={altura}>
 	<a class="marca" href={rota('/')}>
 		<svg class="marca-astro" viewBox="0 0 24 24" aria-hidden="true">
 			<circle cx="12" cy="12" r="10.5" />
@@ -26,7 +54,13 @@
 		<span class="marca-nome">mapa <em>da</em> ciência</span>
 	</a>
 
-	<nav aria-label="Seções">
+	<nav
+		aria-label="Seções"
+		bind:this={nav}
+		onscroll={medirRolagem}
+		class:mais-a-direita={maisADireita}
+		class:mais-a-esquerda={maisAEsquerda}
+	>
 		<ul>
 			{#each secoes as s (s.id)}
 				<li class:separado={s.selo || s.soNoPainel || s.noSite}>
@@ -251,9 +285,28 @@
 			scrollbar-width: none;
 		}
 
+		nav.mais-a-direita {
+			mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+		}
+
+		nav.mais-a-esquerda {
+			mask-image: linear-gradient(to left, #000 calc(100% - 3rem), transparent);
+		}
+
+		nav.mais-a-direita.mais-a-esquerda {
+			mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent);
+		}
+
+		/* uma seção desativada (que ainda não chegou) não ocupa lugar na barra estreita */
+		li:has(.desativado) {
+			display: none;
+		}
+
 		ul {
 			grid-auto-flow: column;
-			grid-auto-columns: minmax(4.4rem, 1fr);
+			/* 72 px, inteiros: com as oito seções (as Redes entre elas), 70,4 px deixavam a última cortada em fração de
+			   pixel no fim da rolagem */
+			grid-auto-columns: minmax(4.5rem, 1fr);
 			gap: 0.25rem;
 		}
 

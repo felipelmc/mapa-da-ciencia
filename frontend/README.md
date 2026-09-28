@@ -138,7 +138,7 @@ A interface esconde o que a fonte não pode fazer. Por exemplo, a seção **Proj
 
 `src/lib/dados/cubo.ts` responde, para o recorte da URL, quais documentos passam e quantos há por ano, tópico, revista e lugar. Cada dimensão (ano, revista, tópico, busca, laço, UF, país, instituição) tem um bit, e `falhas[i]` guarda as dimensões que o documento *não* atende. Cada vista agrega **excluindo a própria dimensão** (`exceto`): o fluxo por ano mostra o período inteiro com o intervalo destacado, e o mapa das UFs mantém as outras UFs clicáveis. Os filtros de lugar valem por documento (basta uma afiliação); o peso fracionário só entra nas somas geográficas.
 
-`src/lib/dados/corpus.ts` abre o corpus uma vez por fonte (`abrirCubo`): tabela de documentos, tópicos, afiliações (se houver) e o cubo, compartilhado pelas vistas e pela barra de recorte. A busca (`dados/busca.ts`) monta o índice uma vez (`indiceDe`).
+`src/lib/dados/corpus.ts` abre o corpus uma vez por fonte (`abrirCubo`): tabela de documentos, tópicos, afiliações (se houver) e o cubo, compartilhado pelas vistas e pela barra de recorte. Como na `FonteEstatica`, uma falha não fica guardada: a próxima chamada pede de novo, e o "Tentar de novo" das vistas (`ErroAoAbrir.svelte`) chama `reabrirCubo`. Quando o cubo reabre, ou abre depois de uma falha (uma vista aberta pelo trilho), `aoReabrir` avisa a barra do recorte, que volta sozinha. Se só as afiliações falharem, o cubo abre sem lugares (`erroAfiliacoes`), e só a Geografia mostra o erro. A busca (`dados/busca.ts`) monta o índice uma vez (`indiceDe`).
 
 As redes (`redes.json` e `citacoes.json`, gerados pelo `mapa redes`) chegam com o corpus inteiro, mas a vista Redes as recalcula no recorte: com `anos=2015-2020`, duas pessoas que só escreveram juntas em 2012 não ficam ligadas. Por isso as autorias, as citações internas e os citantes do cânone vêm pelo índice do documento. `src/lib/dados/redes.ts` os decodifica em arrays tipados, com as pessoas de cada documento e os documentos de cada pessoa em CSR (`abrirRedes`, `abrirCitacoes`, uma vez por fonte). `src/lib/redes/calculo.ts` é puro. Ele refaz os pares com peso 1/(n−1) por documento, como o `pares_ponderados` do Python, para coautoria, instituições e UFs (com `EX` para o exterior). Também calcula a colaboração por ano, as citações internas com as duas pontas no recorte, a matriz entre macrotemas e os citantes de cada obra do cânone.
 
@@ -153,7 +153,7 @@ As redes (`redes.json` e `citacoes.json`, gerados pelo `mapa redes`) chegam com 
 | `topicos` | `3,12` (`-1` = sem tópico) | todos |
 | `cor` | `topico`, `macrotema`, `revista`, `ano` | `topico` |
 | `busca` | `coalizão` | vazio |
-| `laco` | `a1b2~0.1,0.2~0.3,0.1~…` (versão do mapa e vértices em coordenadas dos dados) | nenhum |
+| `laco` | `a1b2~0.1,0.2~0.3,0.1~…` (versão do mapa, um hash das coordenadas dos documentos, e vértices em coordenadas dos dados) | nenhum |
 | `uf` | `SP,RJ` (documentos com alguma afiliação nessas UFs) | todas |
 | `pais` | `AR,US` (ISO alfa-2) | todos |
 | `inst` | `ror:036rp1748` | todas |
@@ -166,6 +166,8 @@ As redes (`redes.json` e `citacoes.json`, gerados pelo `mapa redes`) chegam com 
 | `doc` | `exemplo:00042` | nenhum |
 
 O **recorte** (`CHAVES_RECORTE`: `anos`, `revistas`, `topicos`, `busca`, `laco`, `uf`, `pais`, `inst`) é o que as vistas de análise compartilham: o trilho o leva de uma seção a outra (seções com `recorte: true` em `secoes.ts`). Os demais parâmetros são de cada vista e ficam para trás.
+
+A busca vai para o link sem `&`, `%` e `+`, que viram espaço (`normalizarBusca`): na carga, o SvelteKit decodifica o hash inteiro antes de a interface lê-lo, e `%26`, `%25` e `%2B` voltariam como separador de parâmetros, escape e espaço. Na busca, esses sinais já separam palavras, então o resultado não muda.
 
 `escreverFiltros()` omite os valores padrão e usa ordem fixa, então o mesmo estado gera sempre o mesmo link. `lerFiltros()` ignora valores inválidos sem erro. O teste de ida e volta (`url.test.ts`) cobre filtros → URL → filtros, URL canônica → filtros → mesma URL e 300 combinações aleatórias com semente fixa.
 
@@ -216,12 +218,13 @@ Um só sistema de tokens (`src/lib/estilos/tokens.css`) com dois temas, escolhid
 | `estatistica/glm.test.ts` | a tendência no navegador igual à referência em Python: os 13 casos de `contrato/casos/tendencia.json` e o gabarito de cada tópico e macrotema do exemplo |
 | `graficos/fluxo.test.ts` | empilhamento do fluxo (proporção soma 1, absoluto soma o total, fluxo preserva as espessuras, ordem fixa entre os modos) e rótulos dentro das faixas só onde cabem |
 | `formato.test.ts` | decimais, porcentagens e pontos percentuais em pt-BR |
+| `dados/corpus.test.ts` | uma falha passageira não fica guardada, e o cubo que abre depois dela avisa a barra do recorte; sem as afiliações, o cubo abre sem lugares, e `reabrirCubo` tenta de novo; a versão do mapa só muda com as coordenadas |
 | `dados/cubo.test.ts` | o filtro cruzado contra o gabarito do Python (`agregados.json`): tópico × ano × revista com e sem filtros, UFs, países e instituições fracionários, séries; 300 recortes aleatórios contra uma filtragem ingênua; exclusão de dimensões; lugares por documento; busca e laço |
 | `redes/calculo.test.ts` | as redes do corpus inteiro contra o Python: pares de coautores (`arestas_coautoria`) e grau de cada pessoa, pares e grau das instituições, pares de UFs com o exterior (`uf_pares`), a colaboração por ano, os citantes do cânone (`canone_n`) e a matriz das citações entre macrotemas; no recorte, contra uma contagem ingênua |
 | `dados/documentos.test.ts` | decodificação do `documentos.json`: NDC com a mesma escala nos dois eixos, enquadramento que resiste a ilhas, vizinhos, índice |
 | `estado/url.test.ts` | `rota()`, `lerHash()` e a ida e volta dos filtros, inclusive `laco` e `vista` |
 | `estado/sem-resolve.test.ts` | nenhum `resolve()` nem link absoluto em `src/` |
-| `estilos/contraste.test.ts` | contraste AA dos tokens nos dois temas, inclusive os números sobre cada tom da escala sequencial (`--sobre-seq-*`) |
+| `estilos/contraste.test.ts` | contraste AA dos tokens nos dois temas; `--texto-fraco` pintando só o texto de itens desativados (varre os `.svelte`); a diagonal da matriz de confusão com texto AA |
 | `graficos/geometria.test.ts` | simplificação do laço (RDP) e ponto no polígono |
 | `mapa/busca.test.ts` | busca por título e autor sem diferença de acentos |
 | `mapa/contornos.test.ts` | contornos que envolvem o núcleo de cada tópico, banda adaptada, ~80% dentro |
@@ -248,14 +251,15 @@ Os testes cobrem:
 - troca de tema e memória da escolha;
 - o link de pular;
 - rota inexistente;
-- tela estreita;
+- falha passageira de rede (o "Tentar de novo" abre a vista sem recarregar) e o arquivo das afiliações indisponível (só a Geografia falha);
+- tela estreita: nenhuma rota rola de lado a 375 px (celular emulado, com a barra de navegação na tela e o recorte do Mapa aberto), 768, 900 e 1024 px, também com o menu das revistas aberto;
 - projeto vazio, sem pedir arquivos ausentes;
-- no Mapa (`mapa.spec.ts`): o desenho dos pontos, contornos e rótulos pelo zoom, legenda, cor por revista, cartão pelo link e pelo clique, busca, laço pelo link e pelo mouse, play da linha do tempo e atalhos.
+- no Mapa (`mapa.spec.ts`): o desenho dos pontos, contornos e rótulos pelo zoom, legenda, cor por revista, cartão pelo link e pelo clique, busca, laço pelo link e pelo mouse, play da linha do tempo, atalhos, o canvas que acompanha a janela, o modo apresentação e o painel recolhido, a lista da busca ao lado de uma legenda longa e, no celular, o painel e o cartão acima da barra de navegação.
 - nas Redes (`redes.spec.ts`): os quatro modos desenhados pela URL (via `window.__redesDebug`), com os números do gabarito (pares de coautores, pares de UFs, citantes do cânone, a matriz entre macrotemas); um filtro de anos que reduz as arestas no recorte como uma contagem feita no próprio teste; o cartão aberto pelo clique num nó, com os documentos da pessoa no recorte; a busca pelo teclado; "Filtrar por esta instituição"; o clique numa UF que vai para o recorte; a nota da cobertura do cânone; "Ver como tabela"; a exportação do grafo (o canvas vira imagem embaixo dos rótulos); o celular (375 px) sem rolagem horizontal; o movimento reduzido; o site publicado e o projeto vazio.
 - na Geografia (`geografia.spec.ts`): o peso de cada UF igual ao gabarito do Python, o ranking pela instituição de maior peso, o Brasil fora da escala do mundo, o clique numa UF que vai para o recorte e dali para o Mapa, o teclado, "Ver como tabela", "Mostrar mais", a cobertura por ano (o aviso dos anos com muito peso sem afiliação) e o projeto vazio.
 - na Classificação, na Validação e na codificação (`classificacao.spec.ts`, `validacao.spec.ts`, `codificar.spec.ts`): as barras e o cruzamento conferidos com o exemplo, a lista com a evidência marcada, os selos de kappa, a matriz de confusão e 20 fichas codificadas só pelo teclado que sobrevivem a um reload.
 - no Projeto (`projeto.spec.ts`): a linha de metrô, o job ao vivo que sobrevive à queda proposital da primeira conexão SSE, cancelar, retomar depois de um reload, baixar um modelo, o assistente e o editor do codebook; no site estático, a Metodologia.
-- na exportação (`exportar.spec.ts`): SVG com as fontes embutidas e a largura do artigo, PNG na largura do preset, CSV com BOM e o modo apresentação.
+- na exportação (`exportar.spec.ts`): SVG com as fontes embutidas e a largura do artigo, PNG na largura do preset, o fundo do tema do preset (opaco) no SVG e no PNG, CSV com BOM e números crus (os pesos das UFs iguais ao gabarito do Python, proporções como fração, a variação das tendências com sinal ASCII) e o modo apresentação.
 - no site publicado (`publicado.spec.ts`): nenhuma chamada à API, a Metodologia com o que a publicação retirou e o cartão de um artigo sem licença aberta, com os valores da classificação e sem o resumo nem os trechos citados.
 
 As capturas ficam em `test-results/` (ignorado pelo git): `tema-observatorio-1440x900.png`, `tema-prancha-1440x900.png` e `estreita-observatorio-390x844.png`.

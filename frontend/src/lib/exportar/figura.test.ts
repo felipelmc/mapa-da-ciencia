@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { larguraPx, nomeDeArquivo, paraCsv, PRESETS } from './figura';
+import { larguraPx, nomeDeArquivo, numeroCru, paraCsv, PRESETS } from './figura';
 
 describe('exportar', () => {
 	it('CSV com BOM, aspas quando precisa e CRLF', () => {
 		const csv = paraCsv(['Nome', 'n'], [['Dados, Rio', 3], ['Diz "oi"', 4]]);
 		expect(csv).toBe('﻿Nome,n\r\n"Dados, Rio",3\r\n"Diz ""oi""",4\r\n');
+	});
+
+	it('CSV com números crus: ponto decimal, sem separador de milhar, vazio onde não há valor', () => {
+		const csv = paraCsv(['UF', 'Peso', 'Documentos', 'IC'], [['São Paulo', numeroCru(929.5912000000001), 1095, null]]);
+		expect(csv).toBe('﻿UF,Peso,Documentos,IC\r\nSão Paulo,929.5912,1095,\r\n');
+		expect(numeroCru(-1.5512345, 3)).toBe(-1.551);
 	});
 
 	it('larguras dos presets em pixels', () => {

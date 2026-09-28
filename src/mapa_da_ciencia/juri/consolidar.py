@@ -169,7 +169,12 @@ def decidir(projeto: Projeto, votos: Votos | None = None) -> list[DecisaoFinal]:
     hash_cb = codebook.hash()
     votos = votos if votos is not None else votos_do_juri(projeto, membros)
     r2, info = votos_da_deliberacao(codebook, votos, ler_deliberacao(projeto, hash_cb)) if cfg.deliberar else ({}, {})
-    deliberados = {(doc, var) for doc, var, _ in info}
+    # deliberada é a disputa em que todos os membros deliberaram: uma deliberação interrompida no meio (memória,
+    # ctrl+c) deixa o item pendente, e `mapa juri deliberar` retoma de onde parou
+    quem: dict[tuple[str, str], set[str]] = {}
+    for doc, var, membro in info:
+        quem.setdefault((doc, var), set()).add(membro)
+    deliberados = {item for item, membros_do_item in quem.items() if membros_do_item >= set(membros)}
     arbitragens = respostas_do_supervisor(projeto, hash_cb, "arbitragem", cfg.supervisor.nome)
     saida = []
     for doc in sorted(votos):
@@ -232,36 +237,61 @@ def _linha_fonte(d: DecisaoFinal, valor: Any, voto: Voto | None, supervisor: dic
     }
 
 
+def _revisou(d: DecisaoFinal, x: Voto, info_r2: dict) -> bool:
+    linha = info_r2.get((d.doc, d.variavel.id, x.membro))
+    return bool(linha and linha["revisou"])
+
+
+def _resumo(projeto: Projeto) -> tuple[ResumoJuri, list[DecisaoFinal], dict]:
+    """O resumo do júri com os votos e as respostas atuais, sem gravar nada (é o que o status mostra)."""
+    membros = membros_do_juri(projeto)
+    cfg = projeto.config.juri
+    codebook = projeto.codebook
+    votos = votos_do_juri(projeto, membros)
+    decisoes = decidir(projeto, votos)
+    _, info_r2 = (
+        votos_da_deliberacao(codebook, votos, ler_deliberacao(projeto, codebook.hash())) if cfg.deliberar else ({}, {})
+    )
+    resumo = ResumoJuri(
+        membros=membros,
+        supervisor=cfg.supervisor.nome if any(d.supervisor for d in decisoes) else None,
+        documentos=len(votos),
+        gerado_em=datetime.now(UTC).isoformat(timespec="seconds"),
+    )
+    for d in decisoes:
+        por_var = resumo.etapas.setdefault(d.variavel.id, dict.fromkeys(ESTAGIOS, 0))
+        por_var[d.etapa] += 1
+        resumo.virou[d.variavel.id] = resumo.virou.get(d.variavel.id, 0) + int(d.virou)
+        resumo.nao_deliberados += int(not d.deliberada)
+        if d.etapa == "sem_maioria" and d.variavel.tipo in DELIBERAVEIS and d.deliberada:
+            if d.supervisor:
+                resumo.arbitrados += 1
+                resumo.nenhum_adequado += int(bool(d.supervisor["nenhum_adequado"]))
+            else:
+                resumo.pendentes_supervisor += 1
+        if d.votos_r2 is not d.votos_r1:
+            for x in d.votos_r2:
+                resumo.revisoes[x.membro] = resumo.revisoes.get(x.membro, 0) + int(_revisou(d, x, info_r2))
+    return resumo, decisoes, info_r2
+
+
+def resumir(projeto: Projeto) -> ResumoJuri:
+    """O resumo atual do júri, recalculado (sem ler o `resumo.json`, que é da última consolidação)."""
+    return _resumo(projeto)[0]
+
+
 def consolidar(projeto: Projeto) -> ResumoJuri:
     """Grava as decisões, os votos e as três fontes do júri; devolve o resumo."""
     membros = membros_do_juri(projeto)
     cfg = projeto.config.juri
     codebook = projeto.codebook
     hash_cb = codebook.hash()
-    votos = votos_do_juri(projeto, membros)
-    decisoes = decidir(projeto, votos)
-    _, info_r2 = votos_da_deliberacao(codebook, votos, ler_deliberacao(projeto, hash_cb)) if cfg.deliberar else ({}, {})
-    tem_supervisor = any(d.supervisor for d in decisoes)
-    resumo = ResumoJuri(
-        membros=membros,
-        supervisor=cfg.supervisor.nome if tem_supervisor else None,
-        documentos=len(votos),
-        gerado_em=datetime.now(UTC).isoformat(timespec="seconds"),
-    )
+    resumo, decisoes, info_r2 = _resumo(projeto)
+    tem_supervisor = resumo.supervisor is not None
     linhas_decisoes, linhas_votos = [], []
     fontes: dict[str, list[dict[str, Any]]] = {f: [] for f in FONTES}
     for d in decisoes:
-        por_var = resumo.etapas.setdefault(d.variavel.id, dict.fromkeys(ESTAGIOS, 0))
-        por_var[d.etapa] += 1
-        resumo.virou[d.variavel.id] = resumo.virou.get(d.variavel.id, 0) + int(d.virou)
-        resumo.nao_deliberados += int(not d.deliberada)
         sup = d.supervisor
-        if d.etapa == "sem_maioria" and d.variavel.tipo in DELIBERAVEIS and d.deliberada:
-            if sup:
-                resumo.arbitrados += 1
-                resumo.nenhum_adequado += int(bool(sup["nenhum_adequado"]))
-            else:
-                resumo.pendentes_supervisor += 1
         final = sup["valor"] if sup else valor_como_texto(d.valor_juri)
         ev = sup if sup else None
         linhas_decisoes.append(
@@ -290,10 +320,7 @@ def consolidar(projeto: Projeto) -> ResumoJuri:
             linhas_votos.append(_voto(d, x, 1, False))
         if d.votos_r2 is not d.votos_r1:
             for x in d.votos_r2:
-                linha = info_r2.get((d.doc, d.variavel.id, x.membro))
-                revisou = bool(linha and linha["revisou"])
-                resumo.revisoes[x.membro] = resumo.revisoes.get(x.membro, 0) + int(revisou)
-                linhas_votos.append(_voto(d, x, 2, revisou))
+                linhas_votos.append(_voto(d, x, 2, _revisou(d, x, info_r2)))
         fontes["juri-r1"].append(_linha_fonte(d, d.valor_r1, d.r1.voto if d.r1.decidida else d.votos_r1[0]))
         fontes["juri"].append(_linha_fonte(d, d.valor_juri, d.voto_juri))
         fontes["juri-supervisor"].append(_linha_fonte(d, d.valor_juri, d.voto_juri, sup))
@@ -321,8 +348,8 @@ def consolidar(projeto: Projeto) -> ResumoJuri:
             hash_codebook=hash_cb,
             assinatura=assinatura,
             gerado_em=resumo.gerado_em,
-            documentos=len(votos),
-            classificados=len(votos),
+            documentos=resumo.documentos,
+            classificados=resumo.documentos,
             sem_resumo=0,
             json_valido_na_primeira=1.0 if linhas else None,
             evidencia={s: round(status.count(s) / len(status), 4) for s in ("literal", "aproximada", "ausente")}

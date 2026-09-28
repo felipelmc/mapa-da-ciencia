@@ -19,7 +19,7 @@ Conteúdo do `mapa.yaml`.
 | `modelos` | [Modelos](#modelos) | valores padrão da seção | Modelos locais de cada papel. `mapa novo` preenche conforme a memória da máquina. |
 | `topicos` | [ConfigTopicos](#configtopicos) | valores padrão da seção | Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007); para outro |
 | `validacao` | [Validacao](#validacao) | valores padrão da seção | Amostra de resumos codificados por pessoas para medir a qualidade da classificação. |
-| `juri` | [ConfigJuri](#configjuri) | valores padrão da seção | Júri de modelos locais: cada membro classifica a amostra (ou o corpus), os que discordam deliberam vendo as |
+| `juri` | [ConfigJuri](#configjuri) | valores padrão da seção | Júri de modelos locais: cada membro classifica a amostra de validação, os que discordam deliberam vendo as |
 
 ### Fontes
 
@@ -108,7 +108,7 @@ corpus, `scripts/calibrar_topicos.py` refaz a grade.
 | `min_dist_mapa` | número | `0.1` | A mesma distância no mapa de 2 dimensões: maior, pontos mais espalhados. |
 | `min_cluster_size` | inteiro ou vazio | vazio | Menor tópico, em documentos. Vazio: automático, 1 a cada 200 documentos (mínimo 10). |
 | `min_samples` | inteiro | `5` | Quão conservador é o HDBSCAN: maior, mais documentos ficam de fora dos tópicos. |
-| `votos_minimos` | inteiro | `3` | Um documento que o HDBSCAN deixou sem tópico vai para o tópico com mais vizinhos seus no núcleo, se forem pelo menos estes (entre os `vizinhos` mais próximos). Menos que isso, fica sem tópico. |
+| `votos_minimos` | inteiro | `3` | Um documento que o HDBSCAN deixou sem tópico vai para o tópico com mais vizinhos seus no núcleo, se forem pelo menos estes (entre os `vizinhos` − 1 mais próximos: o grafo inclui o próprio documento). Menos que isso, fica sem tópico. |
 | `selecao` | `"eom"` \\| `"leaf"` | `"leaf"` | `leaf` fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` prefere tópicos maiores, mas pode trocar um tópico grande por vários pequenos com uma mudança mínima. |
 | `macrotemas` | inteiro | `7` | Quantos macrotemas, no máximo (grupos de tópicos próximos, com cores bem distintas). Com poucos tópicos são menos, para que cada macrotema reúna em média ao menos 3 tópicos. |
 | `sementes` | lista de inteiro | `[42, 7, 2024]` | A primeira gera os tópicos; as demais medem a estabilidade (ARI entre as execuções). |
@@ -127,7 +127,7 @@ Amostra de resumos codificados por pessoas para medir a qualidade da classifica�
 
 ### ConfigJuri
 
-Júri de modelos locais: cada membro classifica a amostra (ou o corpus), os que discordam deliberam vendo as
+Júri de modelos locais: cada membro classifica a amostra de validação, os que discordam deliberam vendo as
 respostas anônimas dos outros, e o que continuar sem maioria vai para o supervisor. Ver "Júri e supervisor".
 
 | Campo | Tipo | Padrão | Descrição |

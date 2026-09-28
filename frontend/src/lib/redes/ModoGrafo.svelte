@@ -558,7 +558,7 @@
 	}
 
 	.comunidades .suave {
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.nota {

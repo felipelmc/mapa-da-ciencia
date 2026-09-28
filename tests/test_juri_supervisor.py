@@ -171,3 +171,39 @@ def test_sorteio_da_auditoria_e_estavel_e_segue_a_config():
     outras = [decisao(d.doc, "maioria") if d.doc == fora else d for d in decisoes]
     depois = sorteio_auditoria(projeto_com(3), outras)
     assert fora not in {doc for doc, _ in depois} and set(tres[1:]) <= set(depois)
+
+
+def test_respostas_diferentes_em_dois_arquivos_nao_alternam(projeto):
+    p = _pronto(projeto)[0]
+    _responder(projeto, "a.respostas.jsonl", [{"id": p["id"], "escolha": 1, "evidencia": _ev(p)}])
+    _responder(projeto, "b.respostas.jsonl", [{"id": p["id"], "escolha": 2, "evidencia": _ev(p)}])
+    doc, var = p["id"].split(":")[1:3]
+
+    def valor():
+        return respostas_do_supervisor(projeto, projeto.codebook.hash(), "arbitragem", "supervisor")[(doc, var)][
+            "valor"
+        ]
+
+    r = importar_respostas(projeto, arquivos_de_respostas(projeto, []))
+    assert r.aceitas == 1 and r.conflitos == [p["id"]]
+    primeiro = valor()
+    assert primeiro == p["candidatos"][1]["valor"]  # vale o último arquivo em ordem alfabética (b)
+    for _ in range(3):
+        r = importar_respostas(projeto, arquivos_de_respostas(projeto, []))
+        assert (r.aceitas, r.repetidas) == (0, 1) and valor() == primeiro
+
+
+def test_pedido_de_outro_codebook_e_indice_antigo(projeto):
+    linhas = _pronto(projeto)
+    indice_arquivo = projeto.raiz / "juri" / "pedidos.json"
+    indice = json.loads(indice_arquivo.read_text(encoding="utf-8"))
+    respostas = [{"id": x["id"], "escolha": 1, "evidencia": _ev(x)} for x in linhas[:2]]
+
+    # um pedido exportado com outro codebook não vale, mesmo com os mesmos candidatos
+    indice[linhas[0]["id"]]["codebook"] = "outro-codebook"
+    # um índice gravado por uma versão anterior (sem a variável nem o codebook) continua legível
+    for chave in ("variavel", "codebook"):
+        indice[linhas[1]["id"]].pop(chave)
+    indice_arquivo.write_text(json.dumps(indice), encoding="utf-8")
+    r = importar_respostas(projeto, [_responder(projeto, "a.respostas.jsonl", respostas)])
+    assert (r.aceitas, r.antigas, r.recusadas) == (1, 1, [])

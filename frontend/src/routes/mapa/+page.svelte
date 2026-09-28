@@ -1,14 +1,14 @@
 <script lang="ts">
+	import ErroAoAbrir from '$lib/componentes/ErroAoAbrir.svelte';
 	import EstadoVazio from '$lib/componentes/EstadoVazio.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
-	import { abrirCubo, versaoDoMapa } from '$lib/dados/corpus';
+	import { abrirCubo, reabrirCubo } from '$lib/dados/corpus';
 	import VistaMapa from '$lib/mapa/VistaMapa.svelte';
 
-	const { fonte, manifesto } = usarProjeto();
-	const versaoMapa = versaoDoMapa(manifesto);
+	const { fonte } = usarProjeto();
 
 	// documentos.json e topicos.json só existem depois de `mapa topicos`; sem eles, nenhum pedido é feito
-	const dados = abrirCubo(fonte);
+	let dados = $state(abrirCubo(fonte));
 </script>
 
 <svelte:head>
@@ -19,7 +19,7 @@
 	<p class="aviso" role="status">Carregando o mapa…</p>
 {:then d}
 	{#if d}
-		<VistaMapa tabela={d.tabela} topicos={d.topicos} cubo={d.cubo} {versaoMapa} />
+		<VistaMapa tabela={d.tabela} topicos={d.topicos} cubo={d.cubo} />
 	{:else}
 		<div class="vazio">
 			<h1>Mapa</h1>
@@ -29,7 +29,7 @@
 		</div>
 	{/if}
 {:catch erro}
-	<p class="aviso" role="alert">Não foi possível abrir o mapa: {erro.message}</p>
+	<div class="aviso"><ErroAoAbrir oque="o mapa" {erro} tentar={() => (dados = reabrirCubo(fonte))} /></div>
 {/await}
 
 <style>

@@ -91,7 +91,11 @@
 							<span class="membro">valeu</span>
 							<span>
 								{valor(id, d.valor_sem_supervisor)}
-								<span class="nota">o voto do primeiro membro, até o supervisor decidir</span>
+								<span class="nota"
+									>{codebook?.variaveis.find((v) => v.id === id)?.tipo === 'texto'
+										? 'o voto do primeiro membro (texto livre não vai ao supervisor)'
+										: 'o voto do primeiro membro, até o supervisor decidir'}</span
+								>
 							</span>
 						</li>
 					{:else}
@@ -122,7 +126,7 @@
 
 	.suave,
 	.nota {
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	ul {
@@ -146,7 +150,7 @@
 
 	.etapa {
 		font-size: 0.72rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.etapa--sem_maioria,
@@ -168,7 +172,7 @@
 	.membro {
 		font-family: var(--fonte-mono);
 		font-size: 0.72rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 		overflow-wrap: anywhere;
 	}
 

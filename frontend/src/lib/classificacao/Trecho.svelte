@@ -97,18 +97,18 @@
 
 	.onde {
 		font-size: 0.78rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.suave {
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.selo-status {
 		display: inline-block;
 		margin-top: 0.25rem;
 		font-size: 0.75rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.trecho[data-status='ausente'] {

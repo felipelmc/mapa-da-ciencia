@@ -73,3 +73,7 @@ Script `spikes/s03_llm.py`, com o codebook de exemplo (`spikes/codebook_exemplo.
     uv run spikes/s03_llm.py --configs --rotulos-com qwen3.5:9b  # só os rótulos e a página de leitura
 
 A página `spikes/saida/s03_leitura.md` mostra as respostas lado a lado com os resumos, para leitura humana.
+
+## Adendo (2026-09-28, versão 1.0.1): o perfil `leve`
+
+O perfil `leve` (8 a 16 GB) usa o `qwen3.5:4b` na classificação e nos rótulos desde o primeiro perfil, porque o `qwen3.5:9b` precisa de uns 8 GB livres e não cabe com folga nessas máquinas. A medida que esta decisão pedia antes de adotá-lo (o `qwen3.5:4b` contra o `qwen3.5:9b` na amostra de validação) ainda não foi feita ([ADR 0012](0012-validacao-e-codificador-de-referencia.md)). Até lá, quem usa o perfil `leve` deve olhar a concordância da própria amostra (`mapa validar metricas`) antes de publicar.

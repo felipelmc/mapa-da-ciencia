@@ -5,20 +5,34 @@
 	 */
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { filtrosDaPagina } from '$lib/estado/filtros';
-	import { formatarPeriodo } from '$lib/formato';
-	import { baixar, larguraPx, montarSvg, nomeDeArquivo, paraCsv, paraPng, PRESETS, type Formato } from './figura';
+	import { formatarPeriodo, nomeDaFonte } from '$lib/formato';
+	import {
+		baixar,
+		graficoDe,
+		larguraPx,
+		montarSvg,
+		nomeDeArquivo,
+		paraCsv,
+		paraPng,
+		PRESETS,
+		type DadosCsv,
+		type Formato
+	} from './figura';
 
 	let {
 		figura,
 		titulo,
 		colunas,
 		linhas,
+		dados = null,
 		n = null
 	}: {
 		figura: HTMLElement | null;
 		titulo: string;
 		colunas: string[];
 		linhas: (string | number)[][];
+		/** Os números crus do CSV; sem eles, o CSV repete a tabela da tela (com os números já formatados). */
+		dados?: DadosCsv | null;
 		n?: number | null;
 	} = $props();
 
@@ -28,7 +42,15 @@
 	let preset = $state(PRESETS[1].id);
 	let erro = $state<string | null>(null);
 	let trabalhando = $state(false);
-	const temGrafico = $derived(!!figura?.querySelector('.grafico svg'));
+	// O mesmo critério da exportação (`graficoDe`: um SVG de 200 px ou mais, não as sparklines), medido ao abrir,
+	// porque o tamanho na tela não é reativo. Sem gráfico, o CSV já vem escolhido.
+	let temGrafico = $state(false);
+	function alternar() {
+		aberto = !aberto;
+		if (!aberto) return;
+		temGrafico = !!figura && graficoDe(figura) !== null;
+		if (!temGrafico) formato = 'csv';
+	}
 
 	function recorteEmPalavras(): string {
 		const f = filtrosDaPagina();
@@ -51,13 +73,12 @@
 		const nome = nomeDeArquivo(titulo);
 		try {
 			if (formato === 'csv') {
-				baixar(paraCsv(colunas, linhas), `${nome}.csv`, 'text/csv;charset=utf-8');
+				const csv = dados ?? { colunas, linhas };
+				baixar(paraCsv(csv.colunas, csv.linhas), `${nome}.csv`, 'text/csv;charset=utf-8');
 				return;
 			}
 			const p = PRESETS.find((x) => x.id === preset)!;
-			const fontes = manifesto.recorte.fontes
-				.map((x) => (x.startsWith('scielo') ? 'SciELO/ArticleMeta' : x === 'openalex' ? 'OpenAlex' : x))
-				.join(' e ');
+			const fontes = manifesto.recorte.fontes.map(nomeDaFonte).join(' e ');
 			const svg = await montarSvg(figura!, { titulo, recorte: recorteEmPalavras(), fonte: `Fonte: ${fontes}`, n }, p);
 			if (!svg) throw new Error('esta figura não tem um gráfico em SVG; exporte como CSV');
 			if (formato === 'svg') baixar(svg, `${nome}.svg`, 'image/svg+xml');
@@ -72,7 +93,7 @@
 </script>
 
 <div class="exportar">
-	<button type="button" class="abrir" aria-expanded={aberto} onclick={() => (aberto = !aberto)} data-testid="abrir-exportar">
+	<button type="button" class="abrir" aria-expanded={aberto} onclick={alternar} data-testid="abrir-exportar">
 		Exportar
 	</button>
 	{#if aberto}

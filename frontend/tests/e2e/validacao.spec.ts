@@ -32,6 +32,36 @@ test('mostra os participantes, as métricas do par e as divergências da variáv
 	expect(problemas).toEqual([]);
 });
 
+test('kappa nulo: "não se aplica" na variável de texto livre, "sem variação" só nas outras', async ({ page }) => {
+	// o exemplo não tem essas métricas; o pipeline as gera (texto livre: só a concordância)
+	const base = validacao.metricas[0];
+	const nula = (variavel: string, concordancia: number) => ({
+		...base,
+		variavel,
+		concordancia,
+		kappa: null,
+		kappa_ic95: null,
+		pabak: null,
+		alfa: null,
+		matriz: { rotulos: [], valores: [] },
+		por_classe: []
+	});
+	await page.route('**/dados/validacao.json', (r) =>
+		r.fulfill({
+			json: {
+				...validacao,
+				metricas: [...validacao.metricas, nula('periodo_analisado', 0.84), nula('recorte_geografico:nacional', 1)]
+			}
+		})
+	);
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	const tabela = page.getByTestId('tabela-metricas');
+	const texto = tabela.getByRole('row', { name: /Período analisado/ });
+	await expect(texto).toContainText('não se aplica (texto livre)');
+	await expect(texto).not.toContainText('sem variação');
+	await expect(tabela.getByRole('row', { name: /Recorte geográfico/ }).last()).toContainText('indefinido (sem variação)');
+});
+
 test('no painel, as métricas vêm da API e há o link para codificar', async ({ page }) => {
 	const problemas = vigiar(page);
 	const pedidos: string[] = [];

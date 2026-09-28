@@ -32,7 +32,7 @@ Amostra de validação do piloto (200 artigos, `qwen3.5:9b`, M4 Pro com 24 GB, a
 | Nova tentativa usada | 43 dos 200 documentos (21,5%), quase sempre por uma evidência fora do texto |
 | Evidência literal (sem as dispensadas) | 94,8%; aproximada 3,5%; ausente 1,7% |
 | Evidência literal por variável | abordagem 97,5%; técnica 98,5%; recorte 89,5%; Brasil como caso 97,3%; subárea 94,5%; período 93,0% |
-| Tempo por documento | 10,8 s (mediana); 16,6 s no 90º percentil |
+| Tempo por documento | 10,8 s (mediana); 16,4 s no 90º percentil |
 | Projeção para os 4.247 artigos com resumo | cerca de 13 h |
 
 A evidência curta não reduziu o tempo na proporção esperada (o ADR 0005 media 12,5 s com evidências longas; ficou em 10,8 s): o custo vem de escrever seis trechos por resumo, e não de um só trecho longo. A projeção de 7 h do ADR 0005 não se confirmou.

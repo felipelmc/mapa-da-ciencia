@@ -150,7 +150,8 @@ class ConfigTopicos(_Base):
         ge=1,
         le=50,
         description="Um documento que o HDBSCAN deixou sem tópico vai para o tópico com mais vizinhos seus no núcleo, "
-        "se forem pelo menos estes (entre os `vizinhos` mais próximos). Menos que isso, fica sem tópico.",
+        "se forem pelo menos estes (entre os `vizinhos` − 1 mais próximos: o grafo inclui o próprio documento). "
+        "Menos que isso, fica sem tópico.",
     )
     selecao: Literal["eom", "leaf"] = Field(
         "leaf",
@@ -238,7 +239,7 @@ class SupervisorJuri(_Base):
 
 
 class ConfigJuri(_Base):
-    """Júri de modelos locais: cada membro classifica a amostra (ou o corpus), os que discordam deliberam vendo as
+    """Júri de modelos locais: cada membro classifica a amostra de validação, os que discordam deliberam vendo as
     respostas anônimas dos outros, e o que continuar sem maioria vai para o supervisor. Ver "Júri e supervisor"."""
 
     membros: list[str] = Field(

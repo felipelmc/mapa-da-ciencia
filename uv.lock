@@ -575,6 +575,7 @@ anthropic = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "anthropic" },
     { name = "pytest" },
     { name = "respx" },
     { name = "ruff" },
@@ -608,6 +609,7 @@ provides-extras = ["anthropic"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "anthropic", specifier = ">=1.8" },
     { name = "pytest", specifier = ">=9.1" },
     { name = "respx", specifier = ">=0.23" },
     { name = "ruff", specifier = ">=0.16" },

@@ -103,7 +103,7 @@ export const SECOES: readonly Secao[] = [
 		caminho: '/validacao',
 		icone: 'validacao',
 		resumo:
-			'Quanto a classificação do modelo concorda com a codificação humana: concordância, kappa, matrizes de confusão e as divergências para revisar.',
+			'Quanto a classificação do modelo concorda com uma codificação de referência (de uma pessoa ou de outro modelo): concordância, kappa, matrizes de confusão e as divergências para revisar.',
 		chegada: 'no marco M5',
 		arquivos: ['validacao', 'codebook']
 	},

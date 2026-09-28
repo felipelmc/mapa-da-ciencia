@@ -8,6 +8,14 @@ const documentos = ler('documentos.json');
 const topicos = ler('topicos.json');
 const n: number = documentos.n;
 
+// palavras de 5 letras ou mais dos títulos, da presente em mais títulos à mais rara (para as buscas)
+const palavrasDe = (titulo: string) => titulo.toLowerCase().split(/[^\p{L}]+/u).filter((p) => p.length >= 5);
+const frequencia = new Map<string, number>();
+for (const t of documentos.colunas.titulo as string[]) {
+	for (const p of new Set(palavrasDe(t))) frequencia.set(p, (frequencia.get(p) ?? 0) + 1);
+}
+const porFrequencia = [...frequencia.keys()].sort((a, b) => frequencia.get(b)! - frequencia.get(a)!);
+
 for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 	test(`desenha os documentos do exemplo (${site === 'RAIZ' ? 'raiz' : 'subcaminho'})`, async ({ page }) => {
 		const problemas = vigiar(page);
@@ -99,6 +107,31 @@ test('projeto sem tópicos: o mapa explica o que fazer e não pede arquivos ause
 	expect(problemas).toEqual([]);
 });
 
+test('o mapa acompanha a janela, o modo apresentação e o painel recolhido', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	// diferença, em pixels, entre o canvas e a área do mapa (a `.tela`, pai do canvas)
+	const folga = () =>
+		page.evaluate(() => {
+			const c = document.querySelector<HTMLCanvasElement>('[data-testid=canvas-mapa]')!;
+			const p = c.parentElement!;
+			return Math.max(Math.abs(c.clientWidth - p.clientWidth), Math.abs(c.clientHeight - p.clientHeight));
+		});
+	expect(await folga()).toBeLessThanOrEqual(1);
+	await page.setViewportSize({ width: 1100, height: 700 });
+	await expect.poll(folga, { message: 'janela menor' }).toBeLessThanOrEqual(1);
+	await page.setViewportSize({ width: 1920, height: 1080 });
+	await expect.poll(folga, { message: 'janela maior' }).toBeLessThanOrEqual(1);
+	await page.keyboard.press('p');
+	await expect(page.getByTestId('modo-apresentacao')).toBeVisible();
+	await expect.poll(folga, { message: 'modo apresentação' }).toBeLessThanOrEqual(1);
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Recolher' }).click();
+	await expect.poll(folga, { message: 'painel recolhido' }).toBeLessThanOrEqual(1);
+	expect(problemas).toEqual([]);
+});
+
 // ---- cartão do documento
 
 type Detalhe = {
@@ -132,6 +165,30 @@ test('o link com doc= abre o cartão, e os vizinhos navegam', async ({ page }) =
 	await expect(cartao).toHaveCount(0);
 	await expect(page).not.toHaveURL(/doc=/);
 	expect(problemas).toEqual([]);
+});
+
+test('um link com um documento que não existe avisa e tira o documento da URL', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa?anos=2012-2020&doc=S0000-00000000000000000`);
+	await esperarMapa(page);
+	await expect(page.getByRole('status').filter({ hasText: 'não está nesta publicação' })).toBeVisible();
+	await expect(page).toHaveURL(/#\/mapa\?anos=2012-2020$/);
+	await expect(page.getByTestId('cartao-documento')).toHaveCount(0);
+});
+
+test('no cartão, o DOI leva ao doi.org, e a página do artigo (em https) é outro link', async ({ page }) => {
+	// como no piloto: a ArticleMeta dá a página do SciELO, em http
+	await page.route('**/dados/detalhes/*.json', async (r) => {
+		const resposta = await r.fetch();
+		const fragmento = await resposta.json();
+		for (const [id, d] of Object.entries(fragmento.documentos)) (d as { url: string }).url = `http://www.scielo.br/scielo.php?pid=${id}`;
+		await r.fulfill({ response: resposta, json: fragmento });
+	});
+	const i = documentos.colunas.doi.findIndex((d: string | null) => d);
+	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(ids[i])}`);
+	await esperarMapa(page);
+	const cartao = page.getByTestId('cartao-documento');
+	await expect(cartao.getByRole('link', { name: /^doi:/ })).toHaveAttribute('href', `https://doi.org/${documentos.colunas.doi[i]}`);
+	await expect(cartao.getByRole('link', { name: /Página do artigo/ })).toHaveAttribute('href', /^https:\/\/www\.scielo\.br\//);
 });
 
 test('o cartão marca no resumo as evidências da classificação', async ({ page }) => {
@@ -204,6 +261,101 @@ test('busca com "/" e sem acentos; um resultado abre o cartão', async ({ page }
 	expect(problemas).toEqual([]);
 });
 
+test('o link de uma busca com "&" reabre a mesma busca', async ({ page }) => {
+	// duas palavras do mesmo título: a mais comum do corpus e uma rara, para "a & b" achar menos que "a"
+	const comum = porFrequencia[0];
+	const rara = palavrasDe((documentos.colunas.titulo as string[]).find((t) => palavrasDe(t).includes(comum))!)
+		.filter((p) => p !== comum)
+		.sort((a, b) => frequencia.get(a)! - frequencia.get(b)!)[0];
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	await page.getByTestId('busca-mapa').fill(`${comum} & ${rara}`);
+	await expect(page).toHaveURL(/busca=/);
+	const contador = page.getByTestId('contador-recorte');
+	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBeLessThan(n);
+	const visiveis = await page.evaluate(() => window.__mapaDebug!.visiveis);
+	await expect(contador).toContainText(inteiro(visiveis));
+
+	// o link, aberto numa aba nova (a carga do SvelteKit decodifica o hash), mostra a mesma busca
+	const outra = await page.context().newPage();
+	await outra.goto(page.url());
+	const d = await esperarMapa(outra);
+	expect(d.visiveis).toBe(visiveis);
+	await expect(outra.getByTestId('busca-mapa')).toHaveValue(`${comum} ${rara}`);
+	await outra.close();
+});
+
+test('fechar o cartão devolve o foco ao resultado da busca que o abriu', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	await page.getByTestId('busca-mapa').fill(documentos.colunas.titulo[0].split(' ')[0]);
+	const resultado = page.getByTestId('resultados-busca').getByRole('button').first();
+	const cartao = page.getByTestId('cartao-documento');
+	for (const fechar of ['Escape', 'botão']) {
+		await resultado.focus();
+		await page.keyboard.press('Enter');
+		await expect(cartao).toBeVisible();
+		if (fechar === 'botão') await cartao.getByRole('button', { name: 'Fechar o cartão' }).focus();
+		await page.keyboard.press(fechar === 'botão' ? 'Enter' : 'Escape');
+		await expect(cartao).toHaveCount(0);
+		await expect(resultado).toBeFocused();
+	}
+});
+
+test('a lista da busca aparece inteira ao lado da legenda, e diz quantos resultados ficaram de fora', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	const campo = page.getByTestId('busca-mapa');
+	const lista = page.getByTestId('resultados-busca');
+	// a lista mostra tudo o que tem, até o próprio limite (9rem, com rolagem)
+	const inteira = () => lista.evaluate((e) => e.clientHeight >= Math.min(e.scrollHeight, 144) - 1);
+	await campo.fill('xyzxyz');
+	await expect(lista).toContainText('Nada encontrado.');
+	await expect.poll(inteira).toBe(true);
+	// a palavra presente em mais títulos: dá mais de 6 resultados
+	await campo.fill(porFrequencia[0]);
+	await expect(lista.getByRole('button')).toHaveCount(6);
+	await expect(page.getByTestId('mais-resultados')).toContainText(/^6 de [\d.]+; refine a busca/);
+	await expect.poll(inteira).toBe(true);
+});
+
+test.describe('no celular', () => {
+	test.use({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+
+	test('o painel e o cartão terminam acima da barra de navegação, e a legenda inteira é alcançável', async ({ page }) => {
+		await page.goto(`${url('RAIZ')}#/mapa`);
+		await esperarMapa(page);
+		const topoDaBarra = (await page.locator('aside.lateral').boundingBox())!.y;
+		const fim = async (seletor: string) => {
+			const caixa = (await page.locator(seletor).boundingBox())!;
+			return caixa.y + caixa.height;
+		};
+		expect(await fim('aside.painel')).toBeLessThanOrEqual(topoDaBarra + 0.5);
+		// o último item da legenda (que antes ficava atrás da barra) recebe o toque
+		await page.getByTestId('legenda-mapa').getByRole('button').last().click({ timeout: 5000 });
+		await expect(page).toHaveURL(/topicos=/);
+
+		await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(ids[0])}`);
+		await esperarMapa(page);
+		await expect(page.getByTestId('cartao-documento')).toBeVisible();
+		expect(await fim('.lado')).toBeLessThanOrEqual(topoDaBarra + 0.5);
+	});
+
+	test('recolher o recorte com o menu das revistas aberto não deixa uma camada engolindo o toque seguinte', async ({ page }) => {
+		await page.goto(`${url('RAIZ')}#/mapa`);
+		await esperarMapa(page);
+		const recorte = page.getByRole('button', { name: /^Recorte/ });
+		await recorte.click();
+		await page.locator('details.revistas summary').click();
+		await expect(page.getByTestId('fora-do-menu')).toHaveCount(1);
+		await recorte.click(); // recolhe a barra, com o menu ainda aberto
+		await expect(page.getByTestId('fora-do-menu')).toHaveCount(0);
+		// o toque seguinte chega ao que está na tela
+		await page.getByRole('button', { name: 'Recolher' }).click({ timeout: 5000 });
+		await expect(page.getByRole('button', { name: 'Mostrar controles' })).toBeVisible();
+	});
+});
+
 test('o laço fica no link e reproduz os mesmos documentos', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/mapa`);
 	await esperarMapa(page);
@@ -227,6 +379,53 @@ test('o laço fica no link e reproduz os mesmos documentos', async ({ page }) =>
 
 	await page.getByRole('button', { name: 'Tirar o laço' }).click();
 	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBe(n);
+});
+
+test('o laço só ganha o aviso de versão anterior quando o mapa muda, e não a cada reexportação', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	await page.evaluate(() => window.__mapaDebug!.laco!([[0, -1.2], [1.2, -1.2], [1.2, 1.2], [0, 1.2]]));
+	await expect(page).toHaveURL(/laco=/);
+	const link = page.url();
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	type Json = any;
+	const abrir = async (trocar: { arquivo: string; mudar: (json: Json) => Json }) => {
+		const outra = await page.context().newPage();
+		await outra.route(`**/dados/${trocar.arquivo}`, async (r) => {
+			const resposta = await r.fetch();
+			await r.fulfill({ response: resposta, json: trocar.mudar(await resposta.json()) });
+		});
+		await outra.goto(link);
+		await esperarMapa(outra);
+		await expect(outra.getByTestId('chip-laco')).toBeVisible();
+		return outra;
+	};
+	// reexportado (classificar, geografia, publicar): só o gerado_em do manifesto muda
+	const reexportado = await abrir({ arquivo: 'manifesto.json', mudar: (m) => ({ ...m, gerado_em: '2030-01-01T00:00:00+00:00' }) });
+	await expect(reexportado.getByTestId('aviso-laco')).toHaveCount(0);
+	await reexportado.close();
+	// tópicos refeitos: outras coordenadas
+	const refeito = await abrir({
+		arquivo: 'documentos.json',
+		mudar: (d) => ({ ...d, colunas: { ...d.colunas, x: d.colunas.x.map((v: number, i: number) => (i === 0 ? v + 0.5 : v)) } })
+	});
+	await expect(refeito.getByTestId('aviso-laco')).toBeVisible();
+	await refeito.close();
+});
+
+test('o chip do laço conta o laço, e não o recorte inteiro', async ({ page }) => {
+	const xs: number[] = documentos.colunas.x;
+	const centro = (Math.min(...xs) + Math.max(...xs)) / 2;
+	const noLaco = xs.filter((x) => x > centro).length;
+	const c = documentos.colunas;
+	const revista = documentos.dicionarios.revista[0];
+	const noRecorte = xs.filter((x, i) => x > centro && c.ano[i] >= 2012 && c.ano[i] <= 2018 && c.revista[i] === 0).length;
+	await page.goto(`${url('RAIZ')}#/mapa?anos=2012-2018&revistas=${revista}`);
+	await esperarMapa(page);
+	await page.evaluate(() => window.__mapaDebug!.laco!([[0, -1.2], [1.2, -1.2], [1.2, 1.2], [0, 1.2]]));
+	await expect(page).toHaveURL(/laco=/);
+	await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(noRecorte));
+	await expect(page.getByTestId('chip-laco')).toContainText(`Laço: ${inteiro(noLaco)} documentos`);
 });
 
 test('laço desenhado com o mouse depois do "L"', async ({ page }) => {
@@ -257,12 +456,67 @@ test('play passa ano a ano pela linha do tempo', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/mapa`);
 	await esperarMapa(page);
 	const primeiro = Math.min(...documentos.colunas.ano);
+	await expect(page.getByTestId('play')).toHaveText('Tocar');
 	await page.getByTestId('play').click();
+	await expect(page.getByTestId('play')).toHaveText('Pausar');
 	await expect(page).toHaveURL(new RegExp(`anos=${primeiro}(&|$)`));
 	await expect(page).toHaveURL(new RegExp(`anos=${primeiro + 1}(&|$)`), { timeout: 5000 });
 	await page.getByTestId('play').click(); // pausa
 	const doAno = documentos.colunas.ano.filter((a: number) => a === primeiro + 1).length;
 	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBe(doAno);
+});
+
+test('um gesto na linha do tempo cria uma entrada só no histórico', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	const antes = await page.evaluate(() => history.length);
+	await page.getByLabel('Primeiro ano').focus();
+	for (let i = 0; i < 5; i += 1) await page.keyboard.press('ArrowRight');
+	const primeiro = Math.min(...documentos.colunas.ano);
+	await expect(page).toHaveURL(new RegExp(`anos=${primeiro + 5}-`));
+	expect(await page.evaluate(() => history.length)).toBe(antes + 1);
+	// Voltar desfaz o gesto inteiro
+	await page.goBack();
+	await expect(page).toHaveURL(/#\/mapa$/);
+});
+
+test('Voltar leva o campo de busca junto com a URL', async ({ page }) => {
+	const [a, b] = porFrequencia;
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	const campo = page.getByTestId('busca-mapa');
+	await campo.fill(a);
+	await expect(page).toHaveURL(new RegExp(`busca=${a}`));
+	await page.getByLabel('Primeiro ano').focus();
+	await page.keyboard.press('ArrowRight'); // uma entrada nova no histórico
+	await expect(page).toHaveURL(/anos=/);
+	await campo.fill(b);
+	await expect(page).toHaveURL(new RegExp(`busca=${b}`));
+	await page.goBack();
+	await expect(page).toHaveURL(new RegExp(`busca=${a}$`));
+	await expect(campo).toHaveValue(a);
+	await expect(page.getByTestId('barra-recorte').getByText(`Busca: “${a}”`)).toBeVisible();
+});
+
+test('o menu das revistas fecha com Esc e com um clique fora, e esse clique não chega ao mapa', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	const menu = page.locator('details.revistas');
+	const resumo = menu.locator('summary');
+	await resumo.click();
+	await expect(menu).toHaveAttribute('open', '');
+	await page.keyboard.press('Escape');
+	await expect(menu).not.toHaveAttribute('open');
+	await expect(resumo).toBeFocused();
+	// um clique no meio do mapa só fecha o menu: não abre documento nem filtra macrotema
+	await resumo.click();
+	await expect(menu).toHaveAttribute('open', '');
+	const caixa = (await page.getByTestId('canvas-mapa').boundingBox())!;
+	await page.mouse.click(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2);
+	await expect(menu).not.toHaveAttribute('open');
+	await expect(page).toHaveURL(/#\/mapa$/);
+	// fechado o menu, o mapa volta a receber cliques (a camada que fechava o menu some)
+	await expect(page.getByTestId('fora-do-menu')).toHaveCount(0);
 });
 
 test('"?" abre os atalhos na Ajuda', async ({ page }) => {
