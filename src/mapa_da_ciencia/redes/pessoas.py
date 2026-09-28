@@ -94,6 +94,17 @@ def _comparaveis(a: str, b: str) -> bool:
     return _contido(pa, pb) or _contido(pb, pa)
 
 
+def _um_nome_contem_todos(chaves: set[str]) -> bool:
+    """Um dos nomes, escrito por extenso, traz as partes de todos os outros: "francisco mata machado tavares" contém
+    "francisco mata machado" e "francisco tavares", que não se comparam entre si. Junta as grafias curtas de uma pessoa
+    sem emendar "ana maria silva" com "ana paula silva" por meio de "ana silva" (nenhum dos três contém os outros dois).
+    Um nome com inicial não serve de nome inteiro: "andre m cunha" conteria "andre marenco"."""
+    partes = [c.split() for c in chaves]
+    return any(
+        all(len(t) > 1 for t in m) and all(_mesma_parte(p[0], m[0]) and _contido(p, m) for p in partes) for m in partes
+    )
+
+
 def id_publicado(interno: str, segredo: bytes) -> str:
     """ "p" e 10 dígitos hexadecimais do HMAC-SHA256 do id interno. Estável enquanto a pessoa tiver o mesmo id interno
     e o projeto o mesmo segredo; uma fusão ou uma separação no `pessoas.yaml` pode mudá-lo."""
@@ -532,7 +543,8 @@ def _pares_de_nomes(chaves: dict[int, set[str]]) -> list[tuple[int, int]]:
 
 def _regra_dos_nomes(autorias: list[Autoria], g: _Grupos) -> None:
     """Regra 3, até não mudar mais: pares de grupos com um nome igual ou variante e um coautor ou uma instituição em
-    comum, desde que todos os nomes de um sejam comparáveis com todos os do outro."""
+    comum, desde que todos os nomes de um sejam comparáveis com todos os do outro, ou que um nome por extenso contenha
+    todos os outros."""
     mudou = True
     while mudou:
         mudou = False
@@ -551,7 +563,7 @@ def _regra_dos_nomes(autorias: list[Autoria], g: _Grupos) -> None:
             if ra == rb:
                 continue
             ca, cb = g.chaves[ra], g.chaves[rb]
-            if not all(_comparaveis(p, q) for p in ca for q in cb):
+            if not (all(_comparaveis(p, q) for p in ca for q in cb) or _um_nome_contem_todos(ca | cb)):
                 continue
             if not insts[ra] & insts[rb]:
                 for r in (ra, rb):

@@ -86,15 +86,18 @@ Daí as regras de agora:
 4. homônimos e grafias variantes (o mesmo primeiro nome, as partes de um nome contidas nas do outro) se juntam com um
    coautor **ou uma instituição** em comum (as do OpenAlex, com a linhagem, e as casadas pela geografia), desde que
    todos os nomes de um grupo sejam comparáveis com todos os do outro: "Ana Silva" não emenda "Ana Maria Silva" com
-   "Ana Paula Silva".
+   "Ana Paula Silva". Uma grafia curta não barra a união quando um nome por extenso (sem iniciais) contém todos os
+   outros: "Francisco Mata Machado Tavares" junta "Francisco Mata Machado" e "Francisco Tavares".
 
 Medido com os mesmos julgamentos (os casos casados pelas autorias, na cópia do piloto): dos 30 pares de homônimos que
 eram a mesma pessoa, 25 agora se juntam, e os 2 que eram pessoas diferentes continuam separados; das variantes da
 amostra, 7 dos 12 se juntam, nenhuma das 18 distintas; os 8 ids repartidos e as 8 autorias com ORCID trocado estão
-corrigidos, e a varredura de fusões suspeitas (nomes incompatíveis na mesma pessoa) acha 0 casos, contra 8 antes. Das
-36 fusões por nome, 35 continuam; a outra virou um par de homônimos na revisão, porque a autoria ganhou um id do
-OpenAlex com o alinhamento novo. Os homônimos sem coautor nem instituição em comum (5 dos 30, como "Celso Amorim")
-continuam na revisão: um nome igual sozinho não basta, porque os dois pares distintos também eram nomes iguais.
+corrigidos, e a varredura de fusões suspeitas (nomes incompatíveis na mesma pessoa) acha 0 casos, contra 8 antes
+(fora as grafias curtas juntadas de propósito por um nome por extenso, como "Rafael Lima" e "Rafael Mesquita" em
+"Rafael Mesquita de Souza Lima": 2 no piloto). Das 36 fusões por nome, 35 continuam; a outra virou um par de
+homônimos na revisão, porque a autoria ganhou um id do OpenAlex com o alinhamento novo. Os homônimos sem coautor nem
+instituição em comum (5 dos 30, como "Celso Amorim") continuam na revisão: um nome igual sozinho não basta, porque os
+dois pares distintos também eram nomes iguais.
 
 ## Números do piloto
 

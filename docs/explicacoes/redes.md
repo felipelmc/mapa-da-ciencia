@@ -17,7 +17,9 @@ etapa junta as autorias em pessoas, em ordem de confiança:
    (no piloto, isso era a mesma pessoa com dois registros no ORCID); um id do OpenAlex nunca fica em duas pessoas;
 3. uma autoria sem id nem ORCID entra na pessoa de mesmo nome, **se houver só uma**;
 4. dois homônimos, ou duas grafias variantes do mesmo nome ("Marjorie Marona" e "Marjorie Corrêa Marona"), se juntam
-   se tiverem **um coautor ou uma instituição em comum**.
+   se tiverem **um coautor ou uma instituição em comum**, desde que os nomes de um lado se comparem com todos os do
+   outro, ou que um nome por extenso contenha todos ("Francisco Mata Machado Tavares" junta "Francisco Tavares" e
+   "Francisco Mata Machado"). Assim, "Ana Silva" não emenda "Ana Maria Silva" com "Ana Paula Silva".
 
 O que sobra fica separado e aparece em `mapa redes --revisar`, com as evidências de cada lado (documentos, anos,
 revistas, instituições, coautores e um título) e um bloco para o `pessoas.yaml` do projeto: `fundir`, `nao_fundir`
@@ -52,10 +54,10 @@ id): uma comunidade não recebe nome de pessoa. Comunidades são um agrupamento 
 declarados.
 
 O agregado das comunidades é estável, mas a **composição** de cada uma não é tanto: no piloto, trocar a semente do
-Louvain (1 a 20) mantinha o número de comunidades numeradas (37 a 40) e a modularidade (0,956 a 0,958), mas quatro
-das dez maiores trocavam de um quarto a três quintos dos membros (Jaccard mediano de 0,40 a 0,77 com a comunidade
-mais parecida), e usar os pesos arredondados a seis casas, em vez dos exatos, mudava a comunidade de quase um terço
-das pessoas (890 de 3.023). Por isso os pesos são somados como frações exatas, e a semente é fixa: o mesmo projeto dá
+Louvain (1 a 20) mantinha o número de comunidades numeradas (37 a 40) e a modularidade (0,957 a 0,958), mas quatro
+das dez maiores mudavam bastante de membros (Jaccard mediano de 0,46 a 0,61 com a comunidade mais parecida), e usar
+os pesos arredondados a seis casas, em vez dos exatos, mudava a comunidade de mais de um quarto das pessoas (806 de
+3.021). Por isso os pesos são somados como frações exatas, e a semente é fixa: o mesmo projeto dá
 sempre as mesmas comunidades, mas elas são uma leitura possível, e não a única. Os dois
 tópicos do rótulo cobrem, em geral, de um quinto a metade dos artigos de uma comunidade de coautoria; nas de
 instituições, bem menos (as instituições grandes publicam de tudo). E a maioria das pessoas com coautor (59% no

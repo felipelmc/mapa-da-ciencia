@@ -175,6 +175,24 @@ def test_homonimos_e_variantes_com_instituicao_ou_coautor_em_comum():
     assert _pessoas(j)[("d10", 0)] == _pessoas(j)[("d11", 0)]
 
 
+def test_grafia_curta_se_junta_quando_um_nome_por_extenso_contem_todos():
+    """Uma grafia curta não barra a união quando um nome por extenso contém todos os outros (mr2-02), mas um nome com
+    inicial não conta como nome inteiro."""
+    docs = [
+        # "Francisco Tavares" e "Francisco Mata Machado" não se comparam, mas "... Mata Machado Tavares" contém os dois
+        _doc("d1", [("Francisco Mata Machado Tavares", "A1", None, "I1")]),
+        _doc("d2", [("Francisco Tavares", "A1", None, "I1")]),
+        _doc("d3", [("Francisco Mata Machado", "A2", None, "I1")]),
+        # "André M. Cunha" conteria "André Marenco" (o "M."), mas não é um nome por extenso
+        _doc("d4", [("André M. Cunha", "A3", None, "I2")]),
+        _doc("d5", [("André Moreira Cunha", "A3", None, "I2")]),
+        _doc("d6", [("André Marenco", "A4", None, "I2")]),
+    ]
+    pessoa = _pessoas(identificar(docs, segredo=b"teste"))
+    assert pessoa[("d1", 0)] == pessoa[("d2", 0)] == pessoa[("d3", 0)]
+    assert pessoa[("d4", 0)] == pessoa[("d5", 0)] != pessoa[("d6", 0)]
+
+
 def test_pessoas_yaml_com_ids_de_qualquer_autoria():
     docs = [
         _doc("d1", [("Ana Silva", "A1", ORCID_1, "I1"), ("Beto Souza", "A5", None)]),
