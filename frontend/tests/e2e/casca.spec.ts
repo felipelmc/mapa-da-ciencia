@@ -534,14 +534,34 @@ test('um "%" solto no endereço não deixa a página em branco', async ({ page }
 		['#/redes?no=%ZZ', 'Redes'],
 		['#/topicos?busca=S%C3%A3o%', 'Tópicos']
 	] as const) {
+		// trocar só o hash faz o SvelteKit recarregar a página inteira: num computador lento, cada passo é uma carga
 		await page.goto(`${url('RAIZ')}${rota}`);
-		await expect(h1(page), rota).toHaveText(titulo);
+		await expect(h1(page), rota).toHaveText(titulo, { timeout: 15000 });
 	}
-	// um link bem formado com %25 abre, e recarregar também (o endereço reescrito tinha o % solto)
+	// um link bem formado com %25 (ou %26) abre, sem deixar no endereço um % solto (ou um & que parte a busca), e
+	// recarregar também
+	const decodifica = () =>
+		page.evaluate(() => {
+			try {
+				decodeURIComponent(location.hash);
+				return true;
+			} catch {
+				return false;
+			}
+		});
+	const busca = () => page.evaluate(() => new URLSearchParams(location.hash.split('?')[1] ?? '').get('busca'));
 	await page.goto(`${url('RAIZ')}#/topicos?busca=100%25`);
-	await expect(h1(page)).toHaveText('Tópicos');
+	await expect(h1(page)).toHaveText('Tópicos', { timeout: 15000 });
+	expect(await decodifica()).toBe(true);
 	await page.reload();
-	await expect(h1(page)).toHaveText('Tópicos');
+	await expect(h1(page)).toHaveText('Tópicos', { timeout: 15000 });
+	await page.goto('about:blank');
+	await page.goto(`${url('RAIZ')}#/topicos?busca=voto%26partido`);
+	await expect(h1(page)).toHaveText('Tópicos', { timeout: 15000 });
+	expect(await busca()).toBe('voto partido');
+	await page.reload();
+	await expect(h1(page)).toHaveText('Tópicos', { timeout: 15000 });
+	expect(await busca()).toBe('voto partido');
 	expect(problemas.filter((p) => p.includes('URI malformed'))).toEqual([]);
 });
 

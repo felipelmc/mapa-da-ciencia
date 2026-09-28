@@ -27,23 +27,23 @@
 		<script>
 			// Um "%" solto no endereço (um link editado à mão ou cortado, como "#/mapa?busca=50%") faz o roteador do
 			// SvelteKit falhar ao decodificar o hash, e a página fica em branco. Antes de ele começar, cada sequência
-			// que não decodifica vira espaço (as válidas, como "S%C3%A3o", ficam). Editar o hash com o app aberto
-			// recarrega a página, e este script roda de novo.
+			// que não decodifica vira espaço (as válidas, como "S%C3%A3o", ficam). "%25", "%26" e "%2B" também viram
+			// espaço, como a busca já faria: o roteador decodifica o hash na carga e os devolveria ao endereço como "%"
+			// solto, separador de parâmetros ("a%26b" viraria "a&b", e uma recarga buscaria só "a") e espaço. Editar o
+			// hash com o app aberto recarrega a página, e este script roda de novo.
 			(function () {
-				try {
-					decodeURIComponent(location.hash);
-				} catch (e) {
-					var i = location.href.indexOf('#');
-					var h = location.href.slice(i).replace(/(?:%[0-9A-Fa-f]{2})+|%/g, function (m) {
-						try {
-							decodeURIComponent(m);
-							return m;
-						} catch (e2) {
-							return m.replace(/%/g, ' ');
-						}
-					});
-					history.replaceState(history.state, '', location.href.slice(0, i) + h);
-				}
+				var i = location.href.indexOf('#');
+				if (i < 0) return;
+				var h = location.href.slice(i);
+				var limpo = h.replace(/%2[56B]/gi, '%20').replace(/(?:%[0-9A-Fa-f]{2})+|%/g, function (m) {
+					try {
+						decodeURIComponent(m);
+						return m;
+					} catch (e) {
+						return m.replace(/%/g, ' ');
+					}
+				});
+				if (limpo !== h) history.replaceState(history.state, '', location.href.slice(0, i) + limpo);
 			})();
 		</script>
 		%sveltekit.head%
