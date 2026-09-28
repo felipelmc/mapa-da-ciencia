@@ -590,3 +590,16 @@ SEQUENCIAS = {f.__name__: f for f in (
 @pytest.mark.parametrize("sequencia", list(SEQUENCIAS))
 def test_nenhuma_sequencia_perde_o_resultado_principal(proj, apis_falsas, monkeypatch, sequencia):
     SEQUENCIAS[sequencia](proj, apis_falsas, monkeypatch)
+
+
+def test_as_copias_do_icloud_nao_sao_resultados(tmp_path):
+    """O iCloud cria cópias "… 2.json" ao lado dos resultados; elas não entram como execuções."""
+    import json as _json
+
+    from mapa_da_ciencia.classificacao.resultado import Resultado, resultados
+
+    r = Resultado("m@1", "cb 1", "abc", "x", "2026-09-28T00:00:00", 1, 1, 0)
+    r.gravar(tmp_path, [])
+    original = next(tmp_path.glob("*.json"))
+    (tmp_path / f"{original.stem} 2.json").write_text(original.read_text(encoding="utf-8"), encoding="utf-8")
+    assert len(resultados(tmp_path)) == 1 and _json.loads(original.read_text(encoding="utf-8"))["modelo"] == "m@1"
