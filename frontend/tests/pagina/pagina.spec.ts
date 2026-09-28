@@ -10,11 +10,13 @@ const url = () => process.env.E2E_URL_PAGINA!;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const dados: any = JSON.parse(readFileSync(join(SITE, 'assets', 'pagina', 'dados.json'), 'utf8'));
 
-/** Erros do console e respostas ≥ 400 do próprio site (as fontes do Google ficam de fora). */
+/** Erros do console e respostas ≥ 400 do próprio site. Os recursos de terceiros ficam de fora: as fontes do Google e
+ * a API do GitHub (o cabeçalho do Material busca as estrelas do repositório e leva 403 quando passa do limite). */
 function vigiar(page: Page) {
 	const problemas: string[] = [];
 	page.on('console', (m) => {
-		if (m.type() === 'error') problemas.push(`console: ${m.text()}`);
+		const deFora = m.text().startsWith('Failed to load resource') && !m.location().url.startsWith(url());
+		if (m.type() === 'error' && !deFora) problemas.push(`console: ${m.text()}`);
 	});
 	page.on('pageerror', (e) => problemas.push(`exceção: ${e.message}`));
 	page.on('response', (r) => {
