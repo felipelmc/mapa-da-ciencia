@@ -305,7 +305,8 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.0.0...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.7.0...v1.0.0
