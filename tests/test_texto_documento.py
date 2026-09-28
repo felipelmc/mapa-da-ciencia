@@ -99,6 +99,11 @@ def test_documento_texto_em_idioma_preferido():
         "Univ. X, fulana @ exemplo.br",
         "Univ. X, fulana @exemplo.br",
         "Univ. X, fulana@exemplo. br",
+        "Univ. X, fulana@ exemplo.com.br",
+        "Univ. X, fulana.silva@ exemplo.es",
+        "Univ. X, fulana99 @exemplo.com",
+        "Univ. X, fulana@ exemplo.ca",
+        "Univ. X, f.b.silva@exemplo. com",
         "beltrano [at] exemplo [dot] br",
         "ciclano {at} exemplo.br",
         "joao (arroba) exemplo (ponto) br",
@@ -113,7 +118,20 @@ def test_emails_com_espacos_e_disfarces(texto):
 
 @pytest.mark.parametrize(
     "texto",
-    ["p @ 0.05 no teste", "O perfil @fulano. Em seguida", "looking at data. Results", "RT @usuario: texto"],
+    [
+        "p @ 0.05 no teste",
+        "O perfil @fulano. Em seguida",
+        "looking at data. Results",
+        "RT @usuario: texto",
+        # arrobas de rede social com ponto (Instagram, TikTok): nem o perfil nem a palavra anterior somem
+        "Analisamos o perfil @maria.silva no Instagram",
+        "a conta @camara.deputados publicou 300 posts",
+        "RT @jair.bolsonaro: texto do tweet",
+        "tweets de @lula.oficial e @bolsonaro.sp",
+        "look [at] data.table and dplyr",
+        "Recall@10. results show",
+        "entre tod@s. em seguida",
+    ],
 )
 def test_arroba_que_nao_e_email(texto):
     assert not contem_email(texto) and remover_emails(texto) == texto

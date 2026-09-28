@@ -15,14 +15,26 @@ from difflib import SequenceMatcher
 from typing import Any
 
 # E-mails, com as variações que aparecem em afiliações: espaço em volta do @ ou depois do ponto, e "[at]"/"(arroba)"
-# e "[dot]"/"(ponto)" entre colchetes ou parênteses. O primeiro ramo é o padrão comum; os outros dois exigem o
-# domínio final em minúsculas e só com letras, para não pegar "p @ 0.05" nem "o perfil @fulano. Em seguida".
+# e "[dot]"/"(ponto)" entre colchetes ou parênteses. O primeiro ramo é o padrão comum. Os outros dois exigem que o
+# domínio termine, em minúsculas, num dos domínios de topo de `_TLDS`: sem isso, eles pegariam "p @ 0.05", "o perfil
+# @fulano. Em seguida" e arrobas de rede social com ponto ("o perfil @maria.silva", "RT @fulano.oficial"), e apagariam
+# junto a palavra anterior, que o ramo toma pela parte local do endereço.
+_TLDS = (
+    # genéricos
+    "com", "org", "net", "edu", "gov", "mil", "int", "info", "eu",
+    # países de língua portuguesa e da América Latina
+    "br", "pt", "ao", "mz", "cv", "ar", "bo", "cl", "co", "cr", "cu", "ec", "gt", "mx", "pe", "py", "uy", "ve",
+    # outros frequentes em afiliações acadêmicas
+    "uk", "ie", "fr", "es", "it", "de", "at", "ch", "be", "nl", "dk", "se", "no", "fi", "pl", "ru", "us", "ca", "au",
+    "nz", "jp", "cn", "kr", "in", "za", "il",
+)  # fmt: skip
+_TLD = rf"(?-i:(?:{'|'.join(_TLDS)}))(?!\w)"
 _AT = r"(?:@|＠|﹫|[\[({][ \t]*(?:at|arroba)[ \t]*[\])}])"
 _DOT = r"(?:\.|[ \t]*[\[({][ \t]*(?:dot|ponto)[ \t]*[\])}][ \t]*)"
 EMAIL = re.compile(
     r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
-    rf"|[\w.+-]*\w[ \t]*{_AT}[ \t]*[\w-]+(?:{_DOT}[\w-]+)*{_DOT}(?-i:[a-z]{{2,24}})(?!\w)"
-    r"|[\w.+-]*\w@[\w-]+(?:\. ?[\w-]+)*\. ?(?-i:[a-z]{2,24})(?!\w)",
+    rf"|[\w.+-]*\w[ \t]*{_AT}[ \t]*[\w-]+(?:{_DOT}[\w-]+)*{_DOT}{_TLD}"
+    rf"|[\w.+-]*\w@[\w-]+(?:\. ?[\w-]+)*\. ?{_TLD}",
     re.IGNORECASE,
 )
 _TAG = re.compile(r"<[^>]+>")
