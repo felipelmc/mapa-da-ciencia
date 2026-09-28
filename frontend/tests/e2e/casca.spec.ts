@@ -326,7 +326,20 @@ test.describe('nenhuma rota rola de lado', () => {
 		{ nome: 'tablet deitado', viewport: { width: 900, height: 700 }, isMobile: false },
 		{ nome: 'notebook', viewport: { width: 1024, height: 768 }, isMobile: false }
 	];
-	const ROTAS = ['/', '/mapa', '/topicos', '/geografia', '/classificacao', '/validacao', '/ajuda', '/projeto'];
+	const ROTAS = [
+		'/',
+		'/mapa',
+		'/topicos',
+		'/geografia',
+		'/classificacao',
+		'/validacao',
+		'/redes',
+		'/redes?rede=instituicoes&no=' + encodeURIComponent(ler('redes.json').instituicoes.id[0]),
+		'/redes?rede=estados',
+		'/redes?rede=citacoes',
+		'/ajuda',
+		'/projeto'
+	];
 	// quanto a página passa da largura da tela (no celular emulado, a viewport de layout se estica com o conteúdo:
 	// por isso a conta é contra a largura pedida, e não contra o clientWidth)
 	const transbordo = (page: Page, largura: number) =>

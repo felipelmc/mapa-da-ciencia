@@ -11,6 +11,7 @@
 	import { mudarFiltros } from '$lib/estado/filtros';
 	import type { Filtros } from '$lib/estado/url';
 	import { contar, formatarDecimal, formatarInteiro, formatarPorcentagem } from '$lib/formato';
+	import { numeroCru } from '$lib/exportar/figura';
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { NOME_UF } from '$lib/geografia/lugares';
 	import { malhaUF, type PropsUF, type Regiao } from '$lib/geografia/malhas';
@@ -113,6 +114,10 @@
 	{resumo}
 	colunas={['Lugar', 'Com', 'Peso fracionário', 'Documentos']}
 	linhas={arcos.map((a) => [nome(a.a), nome(a.b), formatarDecimal(a.peso, 2), formatarInteiro(a.documentos)])}
+	dados={{
+		colunas: ['Lugar', 'Com', 'Peso fracionário', 'Documentos'],
+		linhas: arcos.map((a) => [a.a === EXTERIOR ? 'Exterior' : a.a, a.b === EXTERIOR ? 'Exterior' : a.b, numeroCru(a.peso), a.documentos])
+	}}
 	pronto={!!malha}
 >
 	<div class="mapa-e-pares">

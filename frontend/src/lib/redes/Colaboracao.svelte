@@ -14,6 +14,7 @@
 	import type { TabelaRedes } from '$lib/dados/redes';
 	import type { Filtros } from '$lib/estado/url';
 	import { formatarDecimal, formatarInteiro, formatarPorcentagem } from '$lib/formato';
+	import { numeroCru } from '$lib/exportar/figura';
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { colaboracaoPorAno, type Colaboracao, type Passa } from './calculo';
 	import SerieAnual from './SerieAnual.svelte';
@@ -78,6 +79,10 @@
 	{resumo}
 	colunas={['Ano', 'Documentos', ...series.map((s) => s.titulo)]}
 	linhas={anos.map((a, j) => [String(a), formatarInteiro(porAno[j]?.documentos ?? 0), ...series.map((s) => texto(s.valores[j], s.formato))])}
+	dados={{
+		colunas: ['Ano', 'Documentos', ...series.map((s) => s.titulo)],
+		linhas: anos.map((a, j) => [a, porAno[j]?.documentos ?? 0, ...series.map((s) => (s.valores[j] === null ? null : numeroCru(s.valores[j]!)))])
+	}}
 >
 	<div class="series">
 		{#each series as s (s.id)}

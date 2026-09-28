@@ -283,19 +283,41 @@
 			? `Cada ponto é uma pessoa, do tamanho dos documentos dela no corpus, na cor do macrotema mais comum na sua comunidade. Cada linha liga duas pessoas que assinaram juntas um documento do recorte; quanto mais forte a linha, mais peso tem a parceria.`
 			: `Cada ponto é uma instituição, do tamanho dos documentos com afiliação nela. Cada linha liga duas instituições que aparecem nas afiliações de um mesmo documento do recorte; quanto mais forte a linha, mais peso tem a colaboração.`
 	);
-	const colunas = $derived([pessoas ? 'Pessoa' : 'Instituição', 'Documentos no recorte', pessoas ? 'Coautores no recorte' : 'Parceiras no recorte', 'Peso das parcerias', 'Comunidade']);
-	const linhas = $derived(
+	// a força (a soma dos pesos 1/(n−1)) é um inteiro: os documentos do recorte em que o nó teve parceiro
+	const colunas = $derived([
+		pessoas ? 'Pessoa' : 'Instituição',
+		'Documentos no recorte',
+		pessoas ? 'Coautores no recorte' : 'Parceiras no recorte',
+		pessoas ? 'Documentos com coautor no recorte' : 'Documentos com parceira no recorte',
+		'Comunidade'
+	]);
+	const ordemDaTabela = $derived(
 		Array.from({ length: nos.n }, (_, i) => i)
 			.filter((i) => docsRecorte[i] > 0)
-			.sort((a, b) => docsRecorte[b] - docsRecorte[a] || forcaRecorte[b] - forcaRecorte[a])
-			.map((i) => [
-				nos.nomes[i],
-				formatarInteiro(docsRecorte[i]),
-				formatarInteiro(grauRecorte[i]),
-				formatarDecimal(forcaRecorte[i], 2),
-				nos.comunidades.get(nos.comunidade[i])?.rotulo ?? '—'
-			])
+			.sort((a, b) => docsRecorte[b] - docsRecorte[a] || forcaRecorte[b] - forcaRecorte[a] || a - b)
 	);
+	const comunidadeDe = (i: number) => nos.comunidades.get(nos.comunidade[i])?.rotulo ?? null;
+	const linhas = $derived(
+		ordemDaTabela.map((i) => [
+			nos.nomes[i],
+			formatarInteiro(docsRecorte[i]),
+			formatarInteiro(grauRecorte[i]),
+			formatarInteiro(Math.round(forcaRecorte[i])),
+			comunidadeDe(i) ?? '—'
+		])
+	);
+	const dados = $derived({
+		colunas: [...colunas, 'Id', 'Documentos no corpus'],
+		linhas: ordemDaTabela.map((i) => [
+			nos.nomes[i],
+			docsRecorte[i],
+			grauRecorte[i],
+			Math.round(forcaRecorte[i]),
+			comunidadeDe(i),
+			nos.ids[i],
+			nos.docsCorpus[i]
+		])
+	});
 	const macrosNaLegenda = $derived.by(() => {
 		const usados = new Set([...nos.comunidades.values()].map((c) => c.macro));
 		return aberto.topicos.macrotemas.filter((m) => usados.has(m.id));
@@ -354,7 +376,7 @@
 />
 
 <div class="grafo-e-lado" class:com-cartao={cartao !== null}>
-	<Figura n={noRecorte} id="grafo" titulo={pessoas ? 'Quem escreve com quem' : 'Que instituições publicam juntas'} {resumo} {colunas} {linhas}>
+	<Figura n={noRecorte} id="grafo" titulo={pessoas ? 'Quem escreve com quem' : 'Que instituições publicam juntas'} {resumo} {colunas} {linhas} {dados}>
 		<Grafo
 			bind:this={grafo}
 			x={xVisivel}

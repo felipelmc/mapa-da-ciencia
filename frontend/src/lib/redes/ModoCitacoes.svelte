@@ -121,6 +121,13 @@
 	resumo={resumoCanone}
 	colunas={['Obra', 'Tipo', 'Registro do OpenAlex', 'DOI', 'Documentos que citam', ...nomes]}
 	linhas={linhasCanone}
+	dados={{
+		colunas: ['Id', 'Autores', 'Ano', 'Título', 'Tipo', 'Resenha', 'Registro do OpenAlex', 'DOI', 'Documentos que citam', ...nomes],
+		linhas: top.map((o) => {
+			const obra = c.canone[o.obra];
+			return [obra.id, obra.autores.join('; '), obra.ano, obra.titulo, obra.tipo, obra.resenha ? 1 : 0, obra.registro_openalex ?? null, obra.doi, o.n, ...o.porMacro];
+		})
+	}}
 >
 	<ul class="legenda" aria-label="Macrotema de quem cita" data-legenda>
 		{#each nomes as nome, k (k)}
@@ -151,6 +158,7 @@
 	resumo={resumoFluxo}
 	colunas={['Quem cita ↓ / quem é citado →', ...nomes.slice(0, nMacros)]}
 	linhas={internas.matriz.map((linha, i) => [nomes[i], ...linha.map((v) => formatarInteiro(v))])}
+	dados={{ colunas: ['Quem cita / quem é citado', ...nomes.slice(0, nMacros)], linhas: internas.matriz.map((linha, i) => [nomes[i], ...linha]) }}
 >
 	<MatrizFluxo rotulos={nomes.slice(0, nMacros)} cores={cores.slice(0, nMacros)} matriz={internas.matriz} />
 	<p class="nota">

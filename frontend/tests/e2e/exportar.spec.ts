@@ -190,3 +190,37 @@ test('modo apresentação: P esconde o trilho e as barras, Esc volta', async ({ 
 	await page.getByLabel(/Seu nome/).fill('p');
 	await expect(page.getByTestId('modo-apresentacao')).toHaveCount(0);
 });
+
+test('os CSVs das Redes saem com números crus', async ({ page }) => {
+	const csvDe = async (figura: string) => lerCsv((await baixar(page, figura, 'CSV (dados)')).dados.toString('utf8'));
+	const numericas = (linhas: string[][], colunas: number[]) => {
+		for (const l of linhas) for (const k of colunas) if (l[k] !== '') expect(l[k], l.join(',')).toMatch(NUMERO);
+	};
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await expect(page.getByTestId('figura-grafo')).toHaveAttribute('data-pronto', 'sim');
+	const [cabGrafo, ...pessoas] = await csvDe('grafo');
+	expect(cabGrafo.slice(0, 4)).toEqual(['Pessoa', 'Documentos no recorte', 'Coautores no recorte', 'Documentos com coautor no recorte']);
+	numericas(pessoas, [1, 2, 3, 6]);
+	const [, ...anos] = await csvDe('colaboracao');
+	numericas(anos, [0, 1, 2, 3]);
+
+	await page.goto(`${url('RAIZ')}#/redes?rede=estados`);
+	await expect(page.getByTestId('figura-estados')).toHaveAttribute('data-pronto', 'sim');
+	const [, ...pares] = await csvDe('estados');
+	numericas(pares, [2, 3]);
+	expect(pares.map((l) => Number(l[2])).sort((a, b) => b - a)[0]).toBeCloseTo(
+		Math.max(...ler('agregados.json').uf_pares.map((p: number[]) => p[2])),
+		4
+	);
+
+	await page.goto(`${url('RAIZ')}#/redes?rede=citacoes`);
+	await expect(page.getByTestId('figura-canone')).toHaveAttribute('data-pronto', 'sim');
+	const [cabCanone, ...obras] = await csvDe('canone');
+	const n = cabCanone.indexOf('Documentos que citam');
+	numericas(obras, [2, n]);
+	expect(obras.map((l) => Number(l[n]))).toEqual(
+		[...ler('agregados.json').canone_n].sort((a: number, b: number) => b - a).slice(0, obras.length)
+	);
+	const [, ...matriz] = await csvDe('fluxo-citacoes');
+	numericas(matriz, matriz[0].map((_, k) => k).slice(1));
+});
