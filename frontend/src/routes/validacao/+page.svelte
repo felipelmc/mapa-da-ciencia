@@ -20,6 +20,11 @@
 	let dados = $state(abrir());
 </script>
 
+<!-- o título fica na rota, fora do await: o anúncio da navegação (lido um instante depois) já o encontra -->
+<svelte:head>
+	<title>Validação · mapa da ciência</title>
+</svelte:head>
+
 {#await dados}
 	<p class="aviso" role="status">Carregando a validação…</p>
 {:then [validacao, codebook, corpus]}
@@ -27,6 +32,7 @@
 		<VistaValidacao {validacao} {codebook} tabela={corpus?.tabela ?? null} api={manifesto.api} />
 	{:else}
 		<PaginaDeSecao
+			comTitulo={false}
 			secao={secao('validacao')}
 			vazio={{ titulo: 'Este projeto ainda não tem validação.', sobretitulo: 'Sem validação' }}
 		>

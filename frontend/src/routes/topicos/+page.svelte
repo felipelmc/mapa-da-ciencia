@@ -11,13 +11,18 @@
 	let dados = $state(abrirCubo(fonte));
 </script>
 
+<!-- o título fica na rota, fora do await: o anúncio da navegação (lido um instante depois) já o encontra -->
+<svelte:head>
+	<title>Tópicos · mapa da ciência</title>
+</svelte:head>
+
 {#await dados}
 	<p class="aviso" role="status">Carregando os tópicos…</p>
 {:then d}
 	{#if d}
 		<VistaTopicos topicos={d.topicos} cubo={d.cubo} />
 	{:else}
-		<PaginaDeSecao secao={secao('topicos')} vazio={{ titulo: 'Este projeto ainda não tem tópicos.', sobretitulo: 'Sem tópicos' }}>
+		<PaginaDeSecao comTitulo={false} secao={secao('topicos')} vazio={{ titulo: 'Este projeto ainda não tem tópicos.', sobretitulo: 'Sem tópicos' }}>
 			<p>Rode <code>mapa coletar</code> e depois <code>mapa topicos</code>. Em seguida, recarregue esta página.</p>
 		</PaginaDeSecao>
 	{/if}

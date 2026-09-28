@@ -16,6 +16,11 @@
 	let dados = $state(abrir(abrirCubo));
 </script>
 
+<!-- o título fica na rota, fora do await: o anúncio da navegação (lido um instante depois) já o encontra -->
+<svelte:head>
+	<title>Classificação · mapa da ciência</title>
+</svelte:head>
+
 {#await dados}
 	<p class="aviso" role="status">Carregando a classificação…</p>
 {:then d}
@@ -23,6 +28,7 @@
 		<VistaClassificacao aberto={d.aberto} codebook={d.codebook} classificacoes={d.classificacoes} validacao={d.validacao} />
 	{:else}
 		<PaginaDeSecao
+			comTitulo={false}
 			secao={secao('classificacao')}
 			vazio={{ titulo: 'Este projeto ainda não tem classificação.', sobretitulo: 'Sem classificação' }}
 		>

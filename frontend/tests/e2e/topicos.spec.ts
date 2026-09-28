@@ -106,6 +106,18 @@ test('a gaveta abre pelo link topico=, leva ao mapa com o tópico e fecha com Es
 	await expect(page.getByTestId('gaveta-topico')).toBeVisible();
 });
 
+test('fechar a gaveta com Esc devolve o foco a quem a abriu', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	const item = page.getByTestId('lista-alta').getByRole('button').first();
+	await item.focus();
+	await page.keyboard.press('Enter');
+	const gaveta = page.getByTestId('gaveta-topico');
+	await expect(gaveta.getByRole('heading', { level: 2 })).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect(gaveta).toHaveCount(0);
+	await expect(item).toBeFocused();
+});
+
 test('os pequenos múltiplos por revista filtram o recorte', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/topicos`);
 	const figura = page.getByTestId('figura-por-revista');

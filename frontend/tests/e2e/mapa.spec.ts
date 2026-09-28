@@ -229,6 +229,23 @@ test('busca com "/" e sem acentos; um resultado abre o cartão', async ({ page }
 	expect(problemas).toEqual([]);
 });
 
+test('fechar o cartão devolve o foco ao resultado da busca que o abriu', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	await page.getByTestId('busca-mapa').fill(documentos.colunas.titulo[0].split(' ')[0]);
+	const resultado = page.getByTestId('resultados-busca').getByRole('button').first();
+	const cartao = page.getByTestId('cartao-documento');
+	for (const fechar of ['Escape', 'botão']) {
+		await resultado.focus();
+		await page.keyboard.press('Enter');
+		await expect(cartao).toBeVisible();
+		if (fechar === 'botão') await cartao.getByRole('button', { name: 'Fechar o cartão' }).focus();
+		await page.keyboard.press(fechar === 'botão' ? 'Enter' : 'Escape');
+		await expect(cartao).toHaveCount(0);
+		await expect(resultado).toBeFocused();
+	}
+});
+
 test('a lista da busca aparece inteira ao lado da legenda, e diz quantos resultados ficaram de fora', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/mapa`);
 	await esperarMapa(page);

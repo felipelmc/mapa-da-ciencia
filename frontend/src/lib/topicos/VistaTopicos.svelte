@@ -232,10 +232,6 @@
 	const somaDe = (l: Float64Array) => l.reduce((a, b) => a + b, 0);
 </script>
 
-<svelte:head>
-	<title>Tópicos · mapa da ciência</title>
-</svelte:head>
-
 <div class="vista surgir">
 	<header class="cabecalho">
 		<h1>Tópicos</h1>

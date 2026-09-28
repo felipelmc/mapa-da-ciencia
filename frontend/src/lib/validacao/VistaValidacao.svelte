@@ -115,10 +115,6 @@
 	};
 </script>
 
-<svelte:head>
-	<title>Validação · mapa da ciência</title>
-</svelte:head>
-
 <div class="vista surgir">
 	<header class="cabecalho">
 		<h1>Validação</h1>

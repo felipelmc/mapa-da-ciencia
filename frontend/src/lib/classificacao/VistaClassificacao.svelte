@@ -143,10 +143,6 @@
 	const modelo = $derived(classificacoes.modelo.split('@')[0]);
 </script>
 
-<svelte:head>
-	<title>Classificação · mapa da ciência</title>
-</svelte:head>
-
 <div class="vista surgir">
 	<header class="cabecalho">
 		<h1>Classificação</h1>

@@ -12,6 +12,11 @@
 	const tentar = () => (dados = reabrirCubo(fonte));
 </script>
 
+<!-- o título fica na rota, fora do await: o anúncio da navegação (lido um instante depois) já o encontra -->
+<svelte:head>
+	<title>Geografia · mapa da ciência</title>
+</svelte:head>
+
 {#await dados}
 	<p class="aviso" role="status">Carregando a geografia…</p>
 {:then d}
@@ -21,6 +26,7 @@
 		<ErroAoAbrir oque="as afiliações" erro={d.erroAfiliacoes} {tentar} />
 	{:else}
 		<PaginaDeSecao
+			comTitulo={false}
 			secao={secao('geografia')}
 			vazio={{ titulo: 'Este projeto ainda não tem geografia.', sobretitulo: 'Sem geografia' }}
 		>

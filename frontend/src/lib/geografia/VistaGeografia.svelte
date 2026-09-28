@@ -172,10 +172,6 @@
 	const selInst = $derived(new Set(filtros.inst));
 </script>
 
-<svelte:head>
-	<title>Geografia · mapa da ciência</title>
-</svelte:head>
-
 <div class="vista surgir">
 	<header class="cabecalho">
 		<h1>Geografia</h1>

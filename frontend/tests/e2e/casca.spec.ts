@@ -203,6 +203,16 @@ test.describe('acessibilidade e casos de borda', () => {
 		expect(problemas).toEqual([]);
 	});
 
+	test('o leitor de tela ouve o título da seção nova, mesmo na primeira visita', async ({ page }) => {
+		await page.goto(url('RAIZ'));
+		await expect(h1(page)).toHaveText(manifesto.projeto.titulo);
+		for (const secao of ['Tópicos', 'Classificação', 'Geografia', 'Validação']) {
+			await trilho(page).getByRole('link', { name: secao, exact: true }).click();
+			await expect(page.locator('#svelte-announcer')).toHaveText(new RegExp(`^${secao} ·`));
+			await expect(h1(page)).toHaveText(secao);
+		}
+	});
+
 	test('uma falha passageira de rede mostra "Tentar de novo", que abre a vista sem recarregar', async ({ page }) => {
 		let falhou = false;
 		await page.route('**/dados/documentos.json', (r) => {

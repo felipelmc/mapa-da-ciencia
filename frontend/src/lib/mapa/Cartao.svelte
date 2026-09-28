@@ -36,6 +36,12 @@
 	const revista = $derived(revistas?.revistas.find((r) => r.id === acronimo)?.titulo ?? acronimo);
 	const doi = $derived(tabela.dois[indice]);
 	const vizinhos = $derived(vizinhosDe(tabela, indice));
+
+	// quem abriu o cartão (um resultado da busca, por exemplo) recebe o foco de volta quando ele fecha
+	const origem = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+	$effect(() => () => {
+		if (origem?.isConnected && origem !== document.body) origem.focus();
+	});
 </script>
 
 <article class="cartao" aria-labelledby="titulo-cartao" data-testid="cartao-documento">
