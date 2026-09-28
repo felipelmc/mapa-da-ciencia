@@ -52,7 +52,7 @@ ollama pull qwen3.5:9b
 !!! warning "Memória total não é memória livre"
     Um modelo de 6,6 GB precisa de uns 8 GB **livres** na hora de rodar, contando o contexto. Com outros programas pesados abertos (outros modelos, jobs de R ou Python, dezenas de abas), o computador pode começar a usar o disco como memória e ficar muito lento. O `mapa diagnostico` mostra se cada modelo cabe na memória livre agora, e as etapas que carregam modelos fazem essa conferência antes de começar.
 
-Por que esses modelos, e não outros? Veja [Modelos locais](../explicacoes/modelos-locais.md) e o registro de decisão [0004](../decisoes/0004-embeddings-e-idioma-de-analise.md).
+Por que esses modelos, e não outros? Veja [Modelos locais](../explicacoes/modelos-locais.md) e os registros de decisão [0004](../decisoes/0004-embeddings-e-idioma-de-analise.md) (embeddings) e [0005](../decisoes/0005-modelo-de-classificacao.md) (classificação).
 
 ## 4. Confira tudo com `mapa diagnostico`
 

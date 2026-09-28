@@ -22,6 +22,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - a tendência dos tópicos, no ADR 0009, nos tópicos e no guia "Ler os tópicos": um dossiê no primeiro ou no último ano do período filtrado ainda pode aparecer como tendência, e três dos 13 tópicos marcados no piloto são marginais (somem com o quantil t ou com um ano a menos); o ADR dizia que todos tinham mudança sustentada.
 - o perfil `leve` classifica com o `qwen3.5:4b`, que ainda não passou pela validação: um adendo ao ADR 0005 registra a escolha, e o guia de instalação e as limitações avisam.
 - a instalação pelo *wheel*: o tutorial "Seu primeiro mapa" e a API Python dizem como abrir um Python com o pacote (`uv run --no-project --with <wheel> python`), o README, "Explorar o exemplo", o guia de instalação e a solução de problemas dizem o que fazer quando o terminal não encontra o `mapa` (`uv tool update-shell`), o guia de instalação manda trocar `1.0.1` (e não `0.6.0`), e a caixa da Documentação fala da versão 1.0.
+- deslizes menores: o link das fontes para a geografia levava ao guia do painel; a calibração dos tópicos pede o código-fonte (o script não vem no *wheel*); a primeira coleta do piloto leva uns 30 minutos, e não "alguns minutos"; a escolha dos modelos cita também o ADR 0005.
 
 ## [1.0.1] - 2026-09-27
 

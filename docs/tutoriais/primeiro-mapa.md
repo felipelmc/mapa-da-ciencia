@@ -158,7 +158,7 @@ A página inicial do painel agora mostra os números do seu corpus: 25 documento
 
 ## Próximos passos
 
-- **Um recorte maior.** O projeto piloto reúne dez revistas de ciência política e relações internacionais, de 2010 a 2025: cerca de 4.300 artigos. Na primeira vez, a coleta leva alguns minutos:
+- **Um recorte maior.** O projeto piloto reúne dez revistas de ciência política e relações internacionais, de 2010 a 2025: cerca de 4.300 artigos. Na primeira vez, a coleta leva uns 30 minutos; depois, com o cache em `brutos/`, leva segundos:
 
     ```bash
     cd ../..
