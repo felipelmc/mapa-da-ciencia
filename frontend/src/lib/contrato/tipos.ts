@@ -531,6 +531,12 @@ export interface Manifesto {
 	licencas?: {
 		[k: string]: number;
 	};
+	/**
+	 * Para cada etapa desatualizada, o que mudou desde a última execução, quando se sabe (nas redes: "o pessoas.yaml", "a geografia"…).
+	 */
+	mudancas?: {
+		[k: string]: string[];
+	};
 	projeto: ProjetoInfo;
 	/**
 	 * Presente só no site publicado (`mapa publicar`).

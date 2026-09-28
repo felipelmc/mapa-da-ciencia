@@ -137,6 +137,11 @@ class Manifesto(_Arquivo):
         description="Etapas com resultado desatualizado (as entradas mudaram depois), que por isso ficou fora destes "
         "dados: `topicos`, `geografia`, `redes` ou `classificacao`. A interface diz o que rodar de novo.",
     )
+    mudancas: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="Para cada etapa desatualizada, o que mudou desde a última execução, quando se sabe (nas redes: "
+        '"o pessoas.yaml", "a geografia"…).',
+    )
 
 
 # ---------------------------------------------------------------- revistas.json

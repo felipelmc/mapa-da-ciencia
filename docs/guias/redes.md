@@ -25,9 +25,9 @@ tamanho do maior componente, as comunidades e o cânone, e quantos pares de hom�
 
 As redes ficam **desatualizadas** quando o corpus, as referências, os tópicos, a geografia ou o conteúdo do
 `pessoas.yaml` mudam (refazer uma etapa com as mesmas entradas, ou um comentário no `pessoas.yaml`, não conta). Aí o
-contrato deixa as redes antigas de fora, a vista Redes diz que elas estão desatualizadas, e o `mapa status` mostra
-a etapa como desatualizada e o que mudou. Basta rodar `mapa redes` de novo (no painel, pela estação Redes da vista
-Projeto).
+contrato deixa as redes antigas de fora, a vista Redes diz que elas estão desatualizadas e o que mudou, e o
+`mapa status` mostra a etapa como desatualizada. Basta rodar `mapa redes` de novo (no painel, pela estação Redes da
+vista Projeto). Um `mapa publicar` com as redes desatualizadas avisa e publica o site sem a vista Redes.
 
 ## Revisar os homônimos
 

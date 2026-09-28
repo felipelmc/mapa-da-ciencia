@@ -383,12 +383,33 @@ test('redes desatualizadas: a vista diz o que rodar, em vez de "sem redes"', asy
 		const m = await resposta.json();
 		m.arquivos = m.arquivos.filter((a: string) => a !== 'redes' && a !== 'citacoes');
 		m.desatualizadas = ['redes'];
+		m.mudancas = { redes: ['o pessoas.yaml'] };
 		await rota.fulfill({ response: resposta, json: m });
 	});
 	await page.goto(`${url('RAIZ')}#/redes`);
 	await expect(page.getByText('As redes deste projeto estão desatualizadas.')).toBeVisible();
-	await expect(page.getByTestId('redes-desatualizadas')).toContainText('mapa redes');
+	// o que mudou, e os arquivos como desatualizados (e não "ainda não gerado")
+	await expect(page.getByTestId('redes-desatualizadas')).toContainText('Mudou o pessoas.yaml depois da última mapa redes');
+	await expect(page.getByText('redes.json').locator('..')).toContainText('desatualizado');
+	await expect(page.getByText('ainda não gerado')).toHaveCount(0);
 	await expect(page.getByText('Este projeto ainda não tem redes.')).toHaveCount(0);
+});
+
+test('site publicado sem redes: a vista some do trilho e não dá instrução de linha de comando', async ({ page }) => {
+	await page.route('**/dados/manifesto.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const m = await resposta.json();
+		m.arquivos = m.arquivos.filter((a: string) => a !== 'redes' && a !== 'citacoes');
+		m.desatualizadas = ['redes'];
+		await rota.fulfill({ response: resposta, json: m });
+	});
+	await page.goto(`${url('PUBLICADO')}#/`);
+	await expect(h1(page)).toBeVisible();
+	await expect(page.getByRole('navigation', { name: 'Seções' }).getByRole('link', { name: 'Redes' })).toHaveCount(0);
+	await page.goto(`${url('PUBLICADO')}#/redes`);
+	await expect(page.getByText('As redes não fazem parte desta publicação.')).toBeVisible();
+	await expect(page.getByRole('main')).not.toContainText('mapa redes');
+	await expect(page.getByRole('main')).not.toContainText('Rode');
 });
 
 test('um recorte fora do período não quebra as séries', async ({ page }) => {

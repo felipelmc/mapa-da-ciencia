@@ -1,7 +1,9 @@
 <script lang="ts">
+	import ErroAoAbrir from '$lib/componentes/ErroAoAbrir.svelte';
 	import PaginaDeSecao from '$lib/componentes/PaginaDeSecao.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
-	import { abrirCubo } from '$lib/dados/corpus';
+	import { abrirCubo, reabrirCubo, type Aberto } from '$lib/dados/corpus';
+	import type { FonteDeDados } from '$lib/dados/fonte';
 	import { abrirCitacoes, abrirRedes } from '$lib/dados/redes';
 	import VistaRedes from '$lib/redes/VistaRedes.svelte';
 	import { rota } from '$lib/estado/url';
@@ -10,41 +12,69 @@
 	const { fonte, manifesto } = usarProjeto();
 	// as redes existem, mas as entradas mudaram depois: o exportador as deixou de fora e marcou no manifesto
 	const desatualizadas = (manifesto.desatualizadas ?? []).includes('redes');
+	const mudou = (manifesto.mudancas?.redes ?? []).join(' e ');
+	// no site publicado, nada de instrução de linha de comando para quem visita (o trilho nem mostra a vista)
+	const publicado = !!manifesto.publicacao;
+
 	// redes.json só existe depois de `mapa redes` (que pede os tópicos); sem ele, nenhum pedido além do manifesto
-	const dados = abrirCubo(fonte).then(async (aberto) => {
-		if (!aberto || !(await fonte.tem('redes'))) return null;
-		const [redes, citacoes] = await Promise.all([abrirRedes(fonte, aberto.tabela.n), abrirCitacoes(fonte)]);
+	async function abrir(cubo: Promise<Aberto | null>, f: FonteDeDados) {
+		const aberto = await cubo;
+		if (!aberto || !(await f.tem('redes'))) return null;
+		const [redes, citacoes] = await Promise.all([abrirRedes(f, aberto.tabela.n), abrirCitacoes(f)]);
 		return redes ? { aberto, redes, citacoes } : null;
-	});
+	}
+	let dados = $state(abrir(abrirCubo(fonte), fonte));
+	const tentar = () => (dados = abrir(reabrirCubo(fonte), fonte));
 </script>
+
+<!-- o título fica na rota, fora do await: o anúncio da navegação (lido um instante depois) já o encontra -->
+<svelte:head>
+	<title>Redes · mapa da ciência</title>
+</svelte:head>
 
 {#await dados}
 	<p class="aviso" role="status">Carregando as redes…</p>
 {:then d}
 	{#if d}
 		<VistaRedes aberto={d.aberto} redes={d.redes} citacoes={d.citacoes} />
+	{:else if publicado}
+		<PaginaDeSecao
+			comTitulo={false}
+			secao={secao('redes')}
+			vazio={{ titulo: 'As redes não fazem parte desta publicação.', sobretitulo: 'Sem redes' }}
+		>
+			<p data-testid="redes-fora-da-publicacao">
+				Este site foi publicado sem as redes de coautoria e de citação. As outras vistas mostram o corpus inteiro.
+			</p>
+		</PaginaDeSecao>
+	{:else if desatualizadas}
+		<PaginaDeSecao
+			comTitulo={false}
+			secao={secao('redes')}
+			vazio={{ titulo: 'As redes deste projeto estão desatualizadas.', sobretitulo: 'Redes desatualizadas' }}
+			desatualizados={['redes', 'citacoes']}
+		>
+			<p data-testid="redes-desatualizadas">
+				{#if mudou}Mudou {mudou}{:else}As entradas mudaram{/if} depois da última <code>mapa redes</code>, e as redes
+				antigas ficaram de fora para não misturar dados de momentos diferentes. Rode <code>mapa redes</code>{#if manifesto.api},
+					ou a etapa Redes na vista <a href={rota('/projeto')}>Projeto</a>,{/if} e recarregue esta página.
+			</p>
+		</PaginaDeSecao>
 	{:else}
-		{#if desatualizadas}
-			<PaginaDeSecao secao={secao('redes')} vazio={{ titulo: 'As redes deste projeto estão desatualizadas.', sobretitulo: 'Redes desatualizadas' }}>
-				<p data-testid="redes-desatualizadas">
-					O corpus, os tópicos, a geografia, as referências ou o <code>pessoas.yaml</code> mudaram depois da última
-					<code>mapa redes</code>, e as redes antigas ficaram de fora para não misturar dados de momentos diferentes.
-					Rode <code>mapa redes</code>{#if manifesto.api}, ou a etapa Redes na vista <a href={rota('/projeto')}>Projeto</a>,{/if}
-					e recarregue esta página. O <code>mapa status</code> diz o que mudou.
-				</p>
-			</PaginaDeSecao>
-		{:else}
-			<PaginaDeSecao secao={secao('redes')} vazio={{ titulo: 'Este projeto ainda não tem redes.', sobretitulo: 'Sem redes' }}>
-				<p>
-					Rode <code>mapa coletar</code>, <code>mapa topicos</code> e <code>mapa redes</code> (com
-					<code>mapa geografia</code> antes, para as redes de instituições e de estados){#if manifesto.api}, ou as
-					etapas na vista <a href={rota('/projeto')}>Projeto</a>{/if}. Em seguida, recarregue esta página.
-				</p>
-			</PaginaDeSecao>
-		{/if}
+		<PaginaDeSecao
+			comTitulo={false}
+			secao={secao('redes')}
+			vazio={{ titulo: 'Este projeto ainda não tem redes.', sobretitulo: 'Sem redes' }}
+		>
+			<p>
+				Rode <code>mapa coletar</code>, <code>mapa topicos</code> e <code>mapa redes</code> (com
+				<code>mapa geografia</code> antes, para as redes de instituições e de estados){#if manifesto.api}, ou as etapas
+					na vista <a href={rota('/projeto')}>Projeto</a>{/if}. Em seguida, recarregue esta página.
+			</p>
+		</PaginaDeSecao>
 	{/if}
 {:catch erro}
-	<p class="aviso" role="alert">Não foi possível abrir as redes: {erro.message}</p>
+	<ErroAoAbrir oque="as redes" {erro} {tentar} />
 {/await}
 
 <style>

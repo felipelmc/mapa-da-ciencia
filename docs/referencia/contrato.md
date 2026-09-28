@@ -52,6 +52,7 @@ a interface lê.
 | `licencas` | mapa de texto para inteiro | vazio | Licença → número de documentos. |
 | `publicacao` | [PublicacaoInfo](#publicacaoinfo) ou vazio | vazio | Presente só no site publicado (`mapa publicar`). |
 | `desatualizadas` | lista de texto | vazio | Etapas com resultado desatualizado (as entradas mudaram depois), que por isso ficou fora destes dados: `topicos`, `geografia`, `redes` ou `classificacao`. A interface diz o que rodar de novo. |
+| `mudancas` | mapa de texto para lista de texto | vazio | Para cada etapa desatualizada, o que mudou desde a última execução, quando se sabe (nas redes: "o pessoas.yaml", "a geografia"…). |
 
 ### ProjetoInfo
 

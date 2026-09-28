@@ -635,6 +635,16 @@ def test_redes_de_ponta_a_ponta(projeto):
     avisos = exportar(projeto)
     manifesto = m.Manifesto.model_validate_json((dados / "manifesto.json").read_text(encoding="utf-8"))
     assert manifesto.desatualizadas == ["redes"] and not (dados / "redes.json").exists()
+    assert manifesto.mudancas == {"redes": ["o pessoas.yaml"]}
+    # o site publicado fica sem a vista Redes, e o `mapa publicar` diz por quê
+    from mapa_da_ciencia.publicar import publicar
+
+    estatico = projeto.raiz.parent / "estatico"
+    estatico.mkdir(exist_ok=True)
+    (estatico / "index.html").write_text("<!doctype html><title>mapa</title>")
+    r = publicar(projeto, projeto.raiz.parent / "site", estatico=estatico)
+    assert any("ficaram fora do site" in a and "mudou o pessoas.yaml" in a for a in r.avisos)
+    assert not (r.destino / "dados" / "redes.json").exists()
     assert any("mudou o pessoas.yaml" in a for a in avisos)
     from typer.testing import CliRunner
 

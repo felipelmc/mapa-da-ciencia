@@ -161,6 +161,13 @@ def publicar(
     publicados, retirados, evid_retiradas = filtrar_dados(novo / "dados", sem_resumos=sem_resumos)
 
     manifesto = m.Manifesto.model_validate(_json(novo / "dados" / "manifesto.json"))
+    if "redes" in manifesto.desatualizadas:
+        # o site não mostra instruções de linha de comando a quem visita: sem redes em dia, a vista Redes some dele
+        mudou = " e ".join(manifesto.mudancas.get("redes", [])) or "as entradas"
+        avisos.append(
+            f"As redes estão desatualizadas (mudou {mudou}) e ficaram fora do site, que não mostra a vista Redes. "
+            "Rode `mapa redes` e publique de novo para incluí-las."
+        )
 
     try:
         conferir_privacidade(novo / "dados")

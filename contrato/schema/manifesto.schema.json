@@ -237,6 +237,17 @@
       "title": "Licencas",
       "type": "object"
     },
+    "mudancas": {
+      "additionalProperties": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "description": "Para cada etapa desatualizada, o que mudou desde a última execução, quando se sabe (nas redes: \"o pessoas.yaml\", \"a geografia\"…).",
+      "title": "Mudancas",
+      "type": "object"
+    },
     "projeto": {
       "$ref": "#/$defs/ProjetoInfo"
     },

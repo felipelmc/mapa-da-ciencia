@@ -30,9 +30,6 @@
 	const comInstituicoes = $derived(!!redes.instituicoes && !!aberto.afiliacoes);
 </script>
 
-<svelte:head>
-	<title>Redes · mapa da ciência</title>
-</svelte:head>
 
 <div class="vista surgir">
 	<header class="cabecalho">

@@ -425,7 +425,13 @@ def _geografia(
     return com_instituicao
 
 
-def _redes(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[str], desatualizadas: list[str]) -> None:
+def _redes(
+    projeto: Projeto,
+    arquivos: dict[str, BaseModel],
+    avisos: list[str],
+    desatualizadas: list[str],
+    mudancas: dict[str, list[str]],
+) -> None:
     """Acrescenta `redes.json` e `citacoes.json` se as redes estiverem em dia com o corpus e as entradas; senão, diz o
     que mudou e marca a etapa como desatualizada no manifesto (a vista diz o que rodar, em vez de "sem redes")."""
     from mapa_da_ciencia.contrato.redes import instituicoes_fora_de_afiliacoes, redes_contrato
@@ -435,7 +441,8 @@ def _redes(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[str], 
     if estado is None:
         return
     if estado is False:
-        mudou = " e ".join(o_que_mudou(projeto)) or "as entradas"
+        mudancas["redes"] = o_que_mudou(projeto)
+        mudou = " e ".join(mudancas["redes"]) or "as entradas"
         avisos.append(
             f"As redes ficaram desatualizadas (mudou {mudou} depois da última `mapa redes`): rode `mapa redes`."
         )
@@ -479,6 +486,7 @@ def exportar(projeto: Projeto) -> list[str]:
         return []
     avisos: list[str] = []
     desatualizadas: list[str] = []
+    mudancas: dict[str, list[str]] = {}
     cob = cobertura(caminho)
     revistas = _revistas(caminho)
     arquivos: dict[str, BaseModel] = {"revistas": Revistas(revistas=revistas)}
@@ -504,7 +512,7 @@ def exportar(projeto: Projeto) -> list[str]:
             geo = _geografia(projeto, arquivos, avisos, desatualizadas)
             if geo is not None:
                 contagens = contagens.model_copy(update={"com_instituicao": geo})
-            _redes(projeto, arquivos, avisos, desatualizadas)
+            _redes(projeto, arquivos, avisos, desatualizadas, mudancas)
 
     from mapa_da_ciencia.contrato.classificacao import exportar_classificacao
 
@@ -538,7 +546,12 @@ def exportar(projeto: Projeto) -> list[str]:
         }
     )
     manifesto = manifesto.model_copy(
-        update={"licencas": cob["licencas"], "execucao": execucao, "desatualizadas": desatualizadas}
+        update={
+            "licencas": cob["licencas"],
+            "execucao": execucao,
+            "desatualizadas": desatualizadas,
+            "mudancas": mudancas,
+        }
     )
 
     novo = projeto.saida / "dados.novo"
