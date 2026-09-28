@@ -183,6 +183,7 @@ def test_apagar_uma_resposta_e_nomes_recusados(projeto, tmp_path):
     # os nomes do júri são reservados (esconderiam as fontes do júri nas métricas)
     for nome in ("juri", "juri-r1", "Juri-Supervisor"):
         assert c.put(url, json={"codificador": nome, "respostas": {}}).status_code == 400, nome
+    assert c.put(url, json={"codificador": "juri-da-maria", "respostas": {}}).status_code == 200  # só esses três
     # um codificador de referência não abre no painel: nem a fila (as respostas dele) nem a gravação
     arquivo = tmp_path / "ref.jsonl"
     arquivo.write_text(json.dumps({"doc": doc, "respostas": _respostas(projeto)}) + "\n", encoding="utf-8")
@@ -198,3 +199,5 @@ def test_pedido_invalido_em_portugues(projeto, tmp_path):
     assert r.status_code == 422
     detalhe = r.json()["detail"]
     assert detalhe["problemas"] == ["n: precisa ser pelo menos 1"] and detalhe["mensagem"].startswith("Pedido inválido")
+    ruim = c.post("/api/validacao/amostra", content=b'{"n": ', headers={"Content-Type": "application/json"})
+    assert ruim.json()["detail"]["problemas"] == ["o corpo do pedido: não é um JSON válido"]

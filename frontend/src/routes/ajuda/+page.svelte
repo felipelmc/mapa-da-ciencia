@@ -252,7 +252,7 @@
 				<dt>arrastar</dt>
 				<dd>no fundo, move o grafo; num nó, move o nó (só na tela: “Reiniciar” devolve o desenho)</dd>
 				<dt><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt>
-				<dd>com o grafo em foco (clique nele ou chegue com Tab): aproximam, afastam, voltam ao desenho inteiro e movem</dd>
+				<dd>com o grafo em foco (clique nele ou chegue com Tab): aproximam, afastam, voltam ao desenho inteiro e movem; <kbd>Enter</kbd> abre o nó no centro</dd>
 			</dl>
 			{/if}
 			<p>

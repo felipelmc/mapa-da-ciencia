@@ -414,10 +414,14 @@ class Painel:
 
     url: str
     _servidor: Any = field(repr=False)
+    _trava: Any = field(default=None, repr=False)
 
     def parar(self) -> None:
-        """Derruba o servidor do painel."""
+        """Derruba o servidor do painel (e solta o projeto para outro painel)."""
         self._servidor.should_exit = True
+        if self._trava is not None:
+            self._trava.close()
+            self._trava = None
 
     def _repr_html_(self) -> str:  # num notebook, o painel aparece como um link
         return f'<a href="{self.url}" target="_blank">Painel do mapa-da-ciencia em {self.url}</a>'
@@ -446,6 +450,7 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
     import uvicorn
 
     from mapa_da_ciencia.servidor.app import criar_app
+    from mapa_da_ciencia.servidor.trava import travar
 
     p = _projeto(projeto)
     with socket.socket() as s:
@@ -454,6 +459,7 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
         except OSError:
             raise ErroConfig(f"A porta {porta} já está em uso: tente outra, com `porta=`.") from None
     colab = _no_colab() if colab is None else colab
+    trava = travar(p, porta)  # um painel por projeto, como o `mapa painel` (um segundo não abre)
     app = criar_app(pasta_dados=p.saida / "dados", projeto=p, api=True, so_local=not colab)
     servidor = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning"))
     fio = threading.Thread(target=servidor.run, daemon=True, name=f"mapa-painel-{porta}")
@@ -464,8 +470,10 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
         time.sleep(0.05)
     if not servidor.started:
         servidor.should_exit = True
+        if trava is not None:
+            trava.close()
         raise ErroConfig(f"O painel não subiu na porta {porta}. Tente outra, com `porta=`.")
-    aberto = Painel(f"http://127.0.0.1:{porta}/", servidor)
+    aberto = Painel(f"http://127.0.0.1:{porta}/", servidor, trava)
     if colab:
         from google.colab import output  # só existe no Colab
 

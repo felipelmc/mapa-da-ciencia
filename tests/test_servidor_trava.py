@@ -26,3 +26,26 @@ def test_um_painel_por_projeto(tmp_path):
     assert ARQUIVO in (p.raiz / ".gitignore").read_text(encoding="utf-8")
     terceiro.close()
     segundo.close()
+
+
+def test_um_projeto_antigo_ganha_a_trava_no_gitignore(tmp_path):
+    p = Projeto.criar(tmp_path / "p", modelo="vazio", perfil=PERFIS["leve"])
+    ignorar = p.raiz / ".gitignore"
+    ignorar.write_text(ignorar.read_text(encoding="utf-8").replace(f"{ARQUIVO}\n", ""), encoding="utf-8")
+    travar(p, 8765).close()
+    assert ignorar.read_text(encoding="utf-8").split().count(ARQUIVO) == 1
+    travar(p, 8765).close()  # e não repete
+    assert ignorar.read_text(encoding="utf-8").split().count(ARQUIVO) == 1
+
+
+def test_o_painel_do_notebook_tambem_trava_o_projeto(tmp_path):
+    import mapa_da_ciencia.api as mapa
+
+    p = Projeto.criar(tmp_path / "p", modelo="vazio", perfil=PERFIS["leve"])
+    aberto = mapa.painel(p, porta=8797, colab=False)
+    try:
+        with pytest.raises(PainelJaAberto, match="8797"):
+            travar(p, 8798)
+    finally:
+        aberto.parar()
+    travar(p, 8799).close()  # parado o painel, o projeto abre de novo

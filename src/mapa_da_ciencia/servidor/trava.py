@@ -49,4 +49,16 @@ def travar(projeto: Projeto, porta: int) -> IO[str] | None:
     arquivo.truncate()
     arquivo.write(json.dumps({"pid": os.getpid(), "porta": porta}))
     arquivo.flush()
+    _fora_do_git(projeto)
     return arquivo
+
+
+def _fora_do_git(projeto: Projeto) -> None:
+    """Um projeto criado antes da 2.1 não tem a trava no `.gitignore` (que o `mapa novo` gerou): acrescenta."""
+    ignorar = projeto.raiz / ".gitignore"
+    try:
+        texto = ignorar.read_text(encoding="utf-8")
+    except OSError:
+        return
+    if ARQUIVO not in texto.split():
+        ignorar.write_text(texto.rstrip("\n") + f"\n{ARQUIVO}\n", encoding="utf-8")

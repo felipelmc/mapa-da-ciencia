@@ -274,6 +274,8 @@
 
 	@container (max-width: 820px) {
 		.metro {
+			/* de pé: uma etapa embaixo da outra (o grid-auto-flow da linha deitada as punha numa linha só) */
+			grid-auto-flow: row;
 			grid-template-columns: minmax(0, 1fr);
 			gap: 1.2rem;
 		}

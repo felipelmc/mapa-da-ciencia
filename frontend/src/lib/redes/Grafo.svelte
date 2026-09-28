@@ -123,8 +123,10 @@
 	let avisoRoda = $state(false);
 	/** Nós arrastados: posição no desenho (as coordenadas do Python), por índice. */
 	let movidos = $state.raw(new Map<number, [number, number]>());
-	/** A escolha do último nó veio de um clique no grafo (e não da busca ou do link): o zoom não pula para ele. */
-	let escolhaPeloGrafo = false;
+	/** O nó escolhido por um clique no grafo (e não pela busca ou pelo link): o zoom não pula para ele. */
+	let escolhidoPeloGrafo: number | null = null;
+	/** O nó aberto antes de a área ter tamanho (um link aberto direto): enquadrado assim que ela for medida. */
+	let enquadrarQuandoMedir: number | null = null;
 	const t0 = performance.now();
 	let desenhouUmaVez = false;
 
@@ -176,6 +178,12 @@
 		const i = arvore.find((px - vista.dx) / vista.k, (py - vista.dy) / vista.k, (raioMaximo + folga) / vista.k);
 		if (i === undefined) return null;
 		return Math.hypot(telaX(i) - px, telaY(i) - py) <= Math.max(raio[i], 3) + folga ? i : null;
+	}
+
+	/** O nó mais perto do centro da área (a até 40 px): o que o Enter abre quando o mouse não está sobre um nó. */
+	function maisPertoDoCentro(): number | null {
+		const i = arvore.find((largura / 2 - vista.dx) / vista.k, (altura / 2 - vista.dy) / vista.k, 40 / vista.k);
+		return i === undefined ? null : i;
 	}
 
 	/** Posição de um nó na tela (px, relativa ao canvas), para os testes clicarem nele. */
@@ -251,18 +259,30 @@
 		if (alvo) irPara(alvo);
 	}
 
-	// o nó aberto pela busca ou pelo link: o zoom vai até ele e os vizinhos; pelo clique no grafo, nada se move
+	// o nó aberto pela busca ou pelo link: o zoom vai até ele e os vizinhos; pelo clique no grafo, nada se move. O
+	// efeito depende só do nó aberto: redimensionar a janela (ou entrar na tela cheia) não refaz o enquadramento
+	function enquadrarNo(i: number) {
+		if (!valido(i)) return;
+		const alvo = enquadrar(vizinhanca(adj, i), bx, by, largura, altura, { kMin: ZOOM.min, kMax: 8 });
+		if (alvo) irPara(alvo);
+	}
 	$effect(() => {
 		const i = selecionado;
-		if (i === null || !largura || !altura) return;
 		untrack(() => {
-			if (escolhaPeloGrafo) {
-				escolhaPeloGrafo = false;
-				return;
-			}
-			if (!valido(i)) return;
-			const alvo = enquadrar(vizinhanca(adj, i), bx, by, largura, altura, { kMin: ZOOM.min, kMax: 8 });
-			if (alvo) irPara(alvo);
+			const doGrafo = escolhidoPeloGrafo !== null && escolhidoPeloGrafo === i;
+			escolhidoPeloGrafo = null;
+			enquadrarQuandoMedir = null;
+			if (i === null || doGrafo) return;
+			if (!largura || !altura) enquadrarQuandoMedir = i;
+			else enquadrarNo(i);
+		});
+	});
+	$effect(() => {
+		if (!largura || !altura) return;
+		untrack(() => {
+			const i = enquadrarQuandoMedir;
+			enquadrarQuandoMedir = null;
+			if (i !== null && i === selecionado) enquadrarNo(i);
 		});
 	});
 	// a comunidade escolhida é enquadrada; soltá-la volta à vista inteira
@@ -284,7 +304,8 @@
 	});
 
 	function escolher(i: number | null) {
-		escolhaPeloGrafo = i !== null;
+		// só uma mudança de nó passa pelo efeito do nó aberto (um clique no nó já aberto não muda nada)
+		escolhidoPeloGrafo = i !== null && i !== selecionado ? i : null;
 		aoEscolher(i);
 	}
 
@@ -312,7 +333,10 @@
 			ArrowRight: () => (vista = { ...vista, dx: vista.dx - MOVER }),
 			ArrowUp: () => (vista = { ...vista, dy: vista.dy + MOVER }),
 			ArrowDown: () => (vista = { ...vista, dy: vista.dy - MOVER }),
-			Enter: () => sobre !== null && aoEscolher(sobre)
+			Enter: () => {
+				const i = sobre ?? maisPertoDoCentro();
+				if (i !== null) aoEscolher(i);
+			}
 		};
 		const acao = acoes[e.key];
 		if (!acao) return;
@@ -341,7 +365,11 @@
 		};
 		const baixar = (e: PointerEvent) => {
 			if (e.button > 0) return;
-			canvas.setPointerCapture(e.pointerId);
+			try {
+				canvas.setPointerCapture(e.pointerId);
+			} catch {
+				/* um ponteiro que o navegador não conhece (sintético): segue sem a captura */
+			}
 			ponteiros.set(e.pointerId, local(e));
 			if (ponteiros.size === 1) {
 				const p = local(e);
@@ -384,10 +412,18 @@
 			sobre = achar(p.x, p.y);
 			posMouse = p;
 		};
+		/** Terminada a pinça com um dedo ainda na tela, o arrasto recomeça dele (senão a vista pularia). */
+		const retomarArrasto = () => {
+			const resto = [...ponteiros.values()][0];
+			arrasto = resto ? { x: resto.x, y: resto.y, dx: vista.dx, dy: vista.dy, moveu: true, no: null } : null;
+		};
 		const soltar = (e: PointerEvent) => {
 			const p = local(e);
 			ponteiros.delete(e.pointerId);
-			if (ponteiros.size < 2) pinca = null;
+			if (pinca && ponteiros.size < 2) {
+				pinca = null;
+				retomarArrasto();
+			}
 			if (arrasto && !arrasto.moveu && ponteiros.size === 0) escolher(achar(p.x, p.y));
 			if (ponteiros.size === 0) {
 				arrasto = null;
@@ -398,8 +434,11 @@
 		const cancelar = (e: PointerEvent) => {
 			ponteiros.delete(e.pointerId);
 			pinca = null;
-			arrasto = null;
-			arrastando = false;
+			if (ponteiros.size) retomarArrasto();
+			else {
+				arrasto = null;
+				arrastando = false;
+			}
 		};
 		const sair = () => {
 			if (!arrasto) sobre = null;
@@ -679,7 +718,7 @@
 		role="application"
 		aria-roledescription="grafo"
 		tabindex="0"
-		aria-label="Grafo: + e − aproximam, 0 volta ao desenho inteiro, as setas movem e Esc solta a comunidade"
+		aria-label="Grafo: + e − aproximam, 0 volta ao desenho inteiro, as setas movem, Enter abre o nó do centro e Esc solta a comunidade"
 		data-grafo
 		onkeydown={tecla}
 		bind:clientWidth={largura}

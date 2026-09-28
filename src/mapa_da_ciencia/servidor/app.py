@@ -57,6 +57,8 @@ def pasta_estatico() -> Path:
 
 def problema_do_pedido(erro: dict) -> str:
     """Um erro de validação do pedido (do Pydantic), em português: o campo e o que há de errado com ele."""
+    if erro.get("type") == "json_invalid":  # a posição do caractere não é um campo
+        return "o corpo do pedido: não é um JSON válido"
     campo = ".".join(str(x) for x in erro.get("loc", ()) if x not in ("body", "query", "path")) or "o pedido"
     ctx = erro.get("ctx") or {}
     frases = {

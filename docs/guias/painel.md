@@ -25,7 +25,7 @@ O navegador abre em `http://127.0.0.1:8765/`. Para encerrar, aperte ++ctrl+c++ n
 | `--nao-abrir` | Não abre o navegador (útil em servidores e no Colab) |
 | `--projeto`, `-P` | Indica a pasta do projeto quando você está fora dela |
 
-Cada projeto abre num painel só. Com um painel já aberto no projeto (numa aba esquecida, por exemplo), um segundo `mapa painel` não abre e diz o endereço do primeiro: dois painéis no mesmo projeto atrapalhariam as etapas um do outro. A trava fica no arquivo `.painel.lock` da pasta do projeto e some quando o painel fecha.
+Cada projeto abre num painel só. Com um painel já aberto no projeto (numa aba esquecida, ou pelo notebook), um segundo `mapa painel` (ou `mapa.painel()`) não abre e diz o endereço do primeiro: dois painéis no mesmo projeto atrapalhariam as etapas um do outro. A trava fica no arquivo `.painel.lock` da pasta do projeto e some quando o painel fecha.
 
 Num notebook (Jupyter ou Colab), `mapa painel` prenderia a célula. Use a API Python, que deixa o servidor rodando numa *thread*:
 

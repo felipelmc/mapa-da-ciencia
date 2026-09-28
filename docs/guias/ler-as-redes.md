@@ -35,7 +35,7 @@ Para aproximar: Ctrl (⌘ no Mac) + roda, a pinça do trackpad ou de dois dedos,
 sozinha rola a página, para quem está lendo não ficar preso no grafo; em tela cheia (o botão "Tela cheia"), ela também
 aproxima. Arrastar o fundo move o grafo; arrastar um nó o move de lugar, só na sua tela, para desembaraçar um trecho
 ("Reiniciar" devolve o desenho e o zoom). Com o grafo em foco, o teclado também serve: + e − aproximam e afastam, 0
-volta ao desenho inteiro e as setas movem.
+volta ao desenho inteiro, as setas movem e Enter abre o nó que estiver no centro.
 
 O link "Como ler as redes", ao lado do título da vista, leva à seção da Ajuda com o glossário (peso, componente,
 agrupamento, modularidade).

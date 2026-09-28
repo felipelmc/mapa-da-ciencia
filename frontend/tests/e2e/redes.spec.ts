@@ -567,8 +567,10 @@ test('a roda sozinha rola a página (com um aviso); Ctrl + roda e o teclado apro
 	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(antes);
 	await expect(page.getByTestId('aviso-roda')).toBeVisible();
 	expect((await estadoDoGrafo(page)).vista.k).toBe(1);
+	// um ponto do grafo à vista, abaixo das barras do topo (que grudam no alto ao rolar)
 	const caixa2 = (await canvas.boundingBox())!;
-	await page.mouse.move(caixa2.x + caixa2.width / 2, caixa2.y + 40);
+	const barras = await page.evaluate(() => Math.max(...[...document.querySelectorAll('header.barra, .recorte')].map((e) => e.getBoundingClientRect().bottom)));
+	await page.mouse.move(caixa2.x + caixa2.width / 2, Math.max(caixa2.y, barras) + 40);
 	await page.keyboard.down('Control');
 	await page.mouse.wheel(0, -300);
 	await page.keyboard.up('Control');
@@ -625,4 +627,72 @@ test('citações: passar o mouse numa célula acende a linha e a coluna; no cân
 	await obra.hover();
 	await expect(page.getByRole('status').filter({ hasText: 'Citada por' })).toBeVisible();
 	expect(problemas).toEqual([]);
+});
+
+test('a busca enquadra o nó mesmo depois de um clique no nó já aberto, e redimensionar não desfaz o zoom', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const canvas = page.getByTestId('canvas-rede');
+	const p = central();
+	const [x, y] = (await naTela(page, redes.pessoas.id[p]))!;
+	await canvas.click({ position: { x, y } });
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	await canvas.click({ position: { x, y } }); // o mesmo nó, de novo: não muda nada
+	const antes = (await estadoDoGrafo(page)).vista;
+	// a busca abre outro nó: enquadra (antes, a marca do clique ficava presa e o zoom não vinha)
+	const outro = [...vizinhosDe(p)][0];
+	await page.getByRole('combobox').fill(redes.pessoas.nome[outro]);
+	await page.getByRole('combobox').press('Enter');
+	await expect(page).toHaveURL(new RegExp(`no=${redes.pessoas.id[outro]}`));
+	await expect.poll(async () => JSON.stringify((await estadoDoGrafo(page)).vista)).not.toBe(JSON.stringify(antes));
+	const enquadrada = (await estadoDoGrafo(page)).vista;
+	// redimensionar a janela não refaz o enquadramento nem descarta o zoom
+	await page.setViewportSize({ width: 1300, height: 820 });
+	await page.waitForTimeout(300);
+	expect((await estadoDoGrafo(page)).vista.k).toBeCloseTo(enquadrada.k, 5);
+	expect(problemas).toEqual([]);
+});
+
+test('depois de uma pinça, o dedo que fica move o grafo sem pular', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const saltos = await page.evaluate(async () => {
+		const c = document.querySelector<HTMLCanvasElement>('[data-testid="canvas-rede"]')!;
+		const caixa = c.getBoundingClientRect();
+		const ev = (tipo: string, id: number, x: number, y: number) =>
+			c.dispatchEvent(new PointerEvent(tipo, { pointerId: id, pointerType: 'touch', clientX: caixa.left + x, clientY: caixa.top + y, bubbles: true, isPrimary: id === 1 }));
+		const vista = () => window.__redesDebug!.estadoDoGrafo!()!.vista;
+		const espera = () => new Promise((r) => requestAnimationFrame(() => r(null)));
+		ev('pointerdown', 1, 200, 200);
+		ev('pointerdown', 2, 300, 200);
+		ev('pointermove', 2, 380, 200); // abre a pinça
+		await espera();
+		ev('pointerup', 2, 380, 200); // solta um dedo
+		const antes = vista();
+		ev('pointermove', 1, 204, 202); // o que ficou anda 4 px
+		await espera();
+		const depois = vista();
+		ev('pointerup', 1, 204, 202);
+		return [Math.abs(depois.dx - antes.dx), Math.abs(depois.dy - antes.dy)];
+	});
+	expect(saltos[0]).toBeLessThanOrEqual(5);
+	expect(saltos[1]).toBeLessThanOrEqual(5);
+});
+
+test('pelo teclado, Enter abre o nó que estiver no centro do grafo', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const id = redes.pessoas.id[central()];
+	const area = page.locator('[data-grafo]');
+	await area.focus();
+	// as setas trazem o nó para o centro (60 px por toque)
+	const caixa = (await area.boundingBox())!;
+	const [x, y] = (await naTela(page, id))!;
+	const [dx, dy] = [caixa.width / 2 - x, caixa.height / 2 - y];
+	for (let k = 0; k < Math.round(Math.abs(dx) / 60); k += 1) await page.keyboard.press(dx > 0 ? 'ArrowLeft' : 'ArrowRight');
+	for (let k = 0; k < Math.round(Math.abs(dy) / 60); k += 1) await page.keyboard.press(dy > 0 ? 'ArrowUp' : 'ArrowDown');
+	await page.keyboard.press('Enter');
+	await expect(page).toHaveURL(/no=/);
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
 });

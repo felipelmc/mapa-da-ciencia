@@ -35,7 +35,7 @@ TipoCodificador = Literal["humano", "referencia"]
 PASTA_EXPORTACAO = "validacao"
 ARQUIVO_AMOSTRA = "amostra.jsonl"
 _NOME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,39}")
-_RESERVADO = re.compile(r"juri(-.*)?", re.IGNORECASE)  # as fontes do júri na validação
+_RESERVADO = re.compile(r"juri|juri-r1|juri-supervisor", re.IGNORECASE)  # as fontes do júri na validação
 
 _ESQUEMA = """
 CREATE TABLE IF NOT EXISTS validacao_amostra (

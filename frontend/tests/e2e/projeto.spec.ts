@@ -157,3 +157,16 @@ test('rodar as redes pela estação: a vista Redes não depende da CLI', async (
 	await expect(page.getByTestId('estado-redes')).toHaveText('Em dia');
 	await expect(page.getByTestId('mudou-redes')).toHaveCount(0);
 });
+
+test('no celular, as etapas ficam uma embaixo da outra', async ({ browser }) => {
+	const contexto = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+	const page = await contexto.newPage();
+	await page.goto(`${url('PAINEL')}#/projeto`);
+	const estacoes = page.getByTestId('linha-metro').locator(':scope > li');
+	await expect(estacoes.first()).toBeVisible();
+	const caixas = await estacoes.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((c) => [c.left, c.top, c.width]));
+	expect(new Set(caixas.map(([x]) => Math.round(x))).size).toBe(1); // a mesma coluna
+	expect(caixas.every(([, , w]) => w > 250)).toBe(true);
+	for (let i = 1; i < caixas.length; i += 1) expect(caixas[i][1]).toBeGreaterThan(caixas[i - 1][1]);
+	await contexto.close();
+});
