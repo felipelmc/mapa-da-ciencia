@@ -824,6 +824,133 @@ def validar_relatorio(projeto: OpcaoProjeto = Path(".")) -> None:
     )
 
 
+juri_app = typer.Typer(
+    help='Júri de modelos locais: votação, deliberação, supervisor e relatório (ver o guia "Usar o júri").',
+    no_args_is_help=True,
+)
+app.add_typer(juri_app, name="juri")
+
+
+@juri_app.command("votar")
+def juri_votar(
+    projeto: OpcaoProjeto = Path("."),
+    corpus: Annotated[
+        bool, typer.Option("--corpus", help="Classifica o corpus inteiro com cada membro, e não só a amostra.")
+    ] = False,
+) -> None:
+    """Rodada 1: cada membro de `juri.membros` classifica a amostra de validação (o que ainda falta)."""
+    from mapa_da_ciencia.juri.votacao import votar
+    from mapa_da_ciencia.progresso import ProgressoRich
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        r = votar(p, somente_amostra=not corpus, progresso=ProgressoRich(console))
+    console.print(f"[bold green]Votação pronta[/]: {r}")
+    if r.ja_prontos:
+        console.print(f"Já tinham classificado tudo: {', '.join(r.ja_prontos)}.")
+    console.print("Próximo passo: [bold]mapa juri deliberar[/].")
+
+
+@juri_app.command("deliberar")
+def juri_deliberar(projeto: OpcaoProjeto = Path(".")) -> None:
+    """Rodada 2: os membros que discordam reveem as respostas vendo as dos outros, anônimas."""
+    from mapa_da_ciencia.juri.pipeline import deliberar_juri
+    from mapa_da_ciencia.progresso import ProgressoRich
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        d, r = deliberar_juri(p, ProgressoRich(console))
+    console.print(f"[bold green]Deliberação pronta[/]: {d}")
+    console.print(str(r))
+    if r.pendentes_supervisor:
+        console.print(
+            f"{num(r.pendentes_supervisor, 0)} decisão(ões) sem maioria: [bold]mapa juri exportar-pedidos[/] prepara "
+            "os pedidos ao supervisor."
+        )
+
+
+@juri_app.command("exportar-pedidos")
+def juri_exportar_pedidos(
+    projeto: OpcaoProjeto = Path("."),
+    lote: Annotated[int, typer.Option("--lote", min=1, help="Pedidos por arquivo.")] = 20,
+    todos: Annotated[bool, typer.Option("--todos", help="Inclui os pedidos que já têm resposta.")] = False,
+) -> None:
+    """Grava em `juri/` os pedidos ao supervisor (arbitragem e auditoria), em lotes JSONL, com as instruções."""
+    from mapa_da_ciencia.juri.supervisor import exportar_pedidos
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        r = exportar_pedidos(p, lote=lote, todos=todos)
+    console.print(f"[bold green]Pedidos ao supervisor[/]: {r}")
+    if r.arquivos:
+        console.print(
+            "Entregue ao supervisor as instruções ([bold]juri/instrucoes-supervisor.md[/]) e cada lote; as respostas "
+            "voltam como [bold]<lote>.respostas.jsonl[/] e entram com [bold]mapa juri importar-respostas[/]."
+        )
+
+
+@juri_app.command("importar-respostas")
+def juri_importar_respostas(
+    arquivos: Annotated[
+        list[Path] | None,
+        typer.Argument(help="Arquivos de respostas; sem nenhum, todos os `juri/*.respostas.jsonl`.", exists=True),
+    ] = None,
+    projeto: OpcaoProjeto = Path("."),
+    supervisor: Annotated[
+        str | None, typer.Option("--supervisor", help="Nome do supervisor (padrão: juri.supervisor.nome).")
+    ] = None,
+) -> None:
+    """Confere e guarda as respostas do supervisor, e consolida o júri."""
+    from mapa_da_ciencia.juri.pipeline import arquivos_de_respostas
+    from mapa_da_ciencia.juri.supervisor import importar_respostas
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        lista = arquivos_de_respostas(p, list(arquivos or []))
+        if not lista:
+            raise ErroConfig("Nenhum arquivo de respostas: passe os arquivos ou ponha-os em `juri/` do projeto.")
+        r = importar_respostas(p, lista, supervisor=supervisor)
+    console.print(f"[bold green]Respostas do supervisor[/]: {r}")
+    for motivo in r.recusadas[:10]:
+        console.print(f"[red]Recusada:[/] {motivo}")
+    if len(r.recusadas) > 10:
+        console.print(f"[red]… e mais {num(len(r.recusadas) - 10, 0)}.[/]")
+
+
+@juri_app.command("status")
+def juri_status(projeto: OpcaoProjeto = Path(".")) -> None:
+    """Em que passo o júri está."""
+    from mapa_da_ciencia.juri.pipeline import estado
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        e = estado(p)
+    tabela = Table("Membro", "Amostra classificada")
+    for membro, n in e.classificados.items():
+        tabela.add_row(membro, f"{num(n, 0)} de {num(e.amostra, 0)}")
+    console.print(tabela)
+    if e.resumo:
+        console.print(str(e.resumo))
+    console.print(f"Próximo passo: [bold]{e.proximo}[/].")
+
+
+@juri_app.command("relatorio")
+def juri_relatorio(projeto: OpcaoProjeto = Path(".")) -> None:
+    """Grava `validacao/juri.md`: kappa de cada membro e do júri, estágios, deliberação e auditoria."""
+    from mapa_da_ciencia.contrato.exportar import exportar
+    from mapa_da_ciencia.juri.relatorio import gerar
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        destino, n = gerar(p)
+        avisos = exportar(p)
+    console.print(f"[bold green]Relatório do júri[/]: [bold]{destino.relative_to(p.raiz)}[/].")
+    if n.referencia is None:
+        console.print("[yellow]Aviso:[/] sem codificador de referência, o relatório só tem os estágios.")
+    for aviso in avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
+
+
 def _f(valor: float | None, casas: int = 2) -> str:
     return "—" if valor is None else num(valor, casas)
 
