@@ -250,8 +250,20 @@ def test_classificacao_e_validacao_no_contrato(projeto, tmp_path):
 
 
 def test_so_links_http_viram_url_do_detalhe():
-    from mapa_da_ciencia.contrato.exportar import _url_segura
+    from mapa_da_ciencia.contrato.exportar import _detalhe, _url_segura
+    from mapa_da_ciencia.documento import Documento
 
     assert _url_segura("javascript:alert(1)") is None and _url_segura("JAVASCRIPT:x") is None
     assert _url_segura("https://www.scielo.br/j/op/a/x") == "https://www.scielo.br/j/op/a/x"
     assert _url_segura(None) is None
+
+    # no cartão do documento: um link que não é http(s) dá lugar ao doi.org, ou a nenhum link
+    atrib = {"idioma_analise": "pt", "fonte_analise": "resumo"}
+
+    def url(link, doi):
+        doc = Documento(id="S0104-62762024000100200", fonte="articlemeta", tipo=None, ano=2024, url=link, doi=doi)
+        return _detalhe(doc, atrib, ["pt"]).url
+
+    assert url("https://www.scielo.br/j/op/a/x", "10.1590/abc") == "https://www.scielo.br/j/op/a/x"
+    assert url("javascript:alert(1)", "10.1590/abc") == "https://doi.org/10.1590/abc"
+    assert url("javascript:alert(1)", None) is None

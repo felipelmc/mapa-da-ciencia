@@ -78,7 +78,8 @@ def test_no_colab_a_escrita_de_outra_pagina_e_recusada(tmp_path):
     for origem in ("https://outro.exemplo", "null"):
         r = cliente.patch("/api/configuracao", json={}, headers={"Origin": origem})
         assert r.status_code == 403, origem
+    # a própria página do Colab grava (qualquer outra resposta, e não só um 403, quebraria o painel no Colab)
     r = cliente.patch(
         "/api/configuracao", json={}, headers={"Origin": "https://8765-m-abc.colab.googleusercontent.com"}
     )
-    assert r.status_code != 403
+    assert r.status_code == 200, r.text

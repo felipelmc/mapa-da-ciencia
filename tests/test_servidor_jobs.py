@@ -183,11 +183,18 @@ def test_job_interrompido_numa_sessao_anterior(tmp_path, etapas):
 
     with sqlite3.connect(p.estado) as con:
         con.execute("UPDATE jobs SET estado = 'rodando' WHERE id = ?", (job.id,))
+    ultimo = max(e.seq for e in jobs.eventos(job.id))
     de_novo = Jobs(p, etapas.registro())
     j = de_novo.obter(job.id)
     assert j.estado == "falhou" and "interrompido" in j.erro
-    assert de_novo.iniciar("lenta").estado == "na_fila"
+    # a aba que ficou aberta reconecta a partir do último evento e recebe o erro e o fim, e não só batimentos
+    novos = de_novo.eventos(job.id, desde=ultimo)
+    assert [e.tipo for e in novos] == ["erro", "fim"] and novos[-1].dados == {"estado": "falhou"}
     de_novo.fechar()
+    outra = Jobs(p, etapas.registro())  # abrir de novo não repete os eventos
+    assert [e.tipo for e in outra.eventos(job.id, desde=ultimo)] == ["erro", "fim"]
+    assert outra.iniciar("lenta").estado == "na_fila"
+    outra.fechar()
 
 
 def test_opcoes_das_etapas_reais_sao_validadas(tmp_path):
