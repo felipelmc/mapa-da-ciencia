@@ -350,3 +350,13 @@ def codificacoes(projeto: Projeto, codificador: str | None = None, *, todas: boo
             return False
 
     return [c for c in linhas if vale(c)]
+
+
+def documentos_completos(projeto: Projeto) -> set[str]:
+    """Os documentos que algum codificador respondeu por inteiro (todas as variáveis do codebook atual): só eles contam
+    como validados; uma ficha salva pela metade não."""
+    variaveis = {v.id for v in projeto.codebook.variaveis}
+    respondidas: dict[tuple[str, str], set[str]] = {}
+    for c in codificacoes(projeto):
+        respondidas.setdefault((c["codificador"], c["doc"]), set()).add(c["variavel"])
+    return {doc for (_, doc), vs in respondidas.items() if variaveis <= vs}

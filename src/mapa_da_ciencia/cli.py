@@ -135,17 +135,29 @@ def status(projeto: OpcaoProjeto = Path(".")) -> None:
         f"rótulos [bold]{m.rotulos.modelo}[/]"
     )
 
+    from mapa_da_ciencia.manifesto import estados_das_etapas
+
     tabela = Table("Etapa", "Estado", "Última execução", "Duração", "Resultado")
     etapas = status_das_etapas(p)
+    estados = estados_das_etapas(p)  # o mesmo cálculo da linha de metrô do painel
+    rotulos = {
+        "pendente": "[dim]pendente[/]",
+        "em_dia": "[green]em dia[/]",
+        "incompleta": "[yellow]incompleta[/]",
+        "desatualizada": "[yellow]desatualizada[/]",
+    }
     for etapa, manifesto in etapas.items():
+        estado = estados[etapa]["estado"] if etapa in estados else ("em_dia" if manifesto else "pendente")
+        amostra = estados.get(etapa, {}).get("amostra")
         if manifesto is None:
-            tabela.add_row(etapa, "[dim]pendente[/]", "", "", "")
+            resultado = f"{num(amostra['codificados'], 0)} de {num(amostra['n'], 0)} codificados" if amostra else ""
+            tabela.add_row(etapa, rotulos[estado], "", "", resultado)
             continue
         quando = datetime.fromisoformat(manifesto["fim"]).astimezone().strftime("%d/%m/%Y %H:%M")
         # a primeira contagem é a principal da etapa; as demais aparecem nos detalhes de cada uma
         principal = next(iter(manifesto["contagens"].items()), None)
         resultado = f"{num(principal[1], 0)} {principal[0]}" if principal else ""
-        tabela.add_row(etapa, "[green]concluída[/]", quando, f"{num(manifesto['duracao_s'], 0)} s", resultado)
+        tabela.add_row(etapa, rotulos[estado], quando, f"{num(manifesto['duracao_s'], 0)} s", resultado)
     console.print(tabela)
     _mostrar_corpus(p, etapas.get("coleta"))
 

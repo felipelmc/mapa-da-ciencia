@@ -251,7 +251,7 @@ def exportar_classificacao(
     amostra = va.ler(projeto)
     if amostra is not None:
         v = calcular(projeto)
-        codificadas = {c["doc"] for c in va.codificacoes(projeto)} & set(amostra.docs)
+        codificadas = va.documentos_completos(projeto) & set(amostra.docs)  # fichas completas
         info["validados"] = len(codificadas)
         if v.metricas:
             arquivos["validacao"] = validacao_contrato(v)

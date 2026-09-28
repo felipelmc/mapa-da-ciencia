@@ -241,3 +241,31 @@ def test_codificacoes_presas_ao_codebook(projeto):
     assert len(validas) == 10 * (n - 2) and not {"abordagem", "subarea"} & {c["variavel"] for c in validas}
     assert len(va.codificacoes(projeto, "maria", todas=True)) == 10 * n
     calcular(projeto, reamostras=10)  # não quebra com o valor antigo guardado como texto
+
+
+def test_so_fichas_completas_contam_como_codificadas(tmp_path):
+    """Uma ficha salva pela metade (uma variável só) não conta como validada."""
+    from mapa_da_ciencia.llm.perfis import PERFIS
+    from mapa_da_ciencia.projeto import Projeto
+
+    p = Projeto.criar(tmp_path / "p", modelo="ciencia-politica", perfil=PERFIS["leve"])
+    variaveis = [v.id for v in p.codebook.variaveis]
+    assert len(variaveis) > 1
+    with va.conectar(p) as con:
+        for doc, n in (("d1", len(variaveis)), ("d2", 1)):
+            for var in variaveis[:n]:
+                con.execute(
+                    "INSERT INTO codificacoes (codificador, doc, variavel, valor, evidencia, incerto, nota, atualizado)"
+                    " VALUES ('ana', ?, ?, ?, '', 0, '', 'agora')",
+                    (doc, var, _valor_valido(p, var)),
+                )
+    assert va.documentos_completos(p) == {"d1"}
+
+
+def _valor_valido(p, var):
+    v = next(x for x in p.codebook.variaveis if x.id == var)
+    if v.tipo == "booleana":
+        return "true"
+    if v.tipo == "multipla":
+        return '["' + v.categorias[0].valor + '"]'
+    return v.categorias[0].valor if v.categorias else "texto"
