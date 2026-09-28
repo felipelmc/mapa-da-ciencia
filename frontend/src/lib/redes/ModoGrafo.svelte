@@ -172,6 +172,8 @@
 			return saida;
 		}
 		const alvo = nos.naAfiliacao[i];
+		// uma instituição que afiliacoes.json não conhece não tem documentos (−1 é o autor sem afiliação)
+		if (alvo < 0) return [];
 		const saida = new Set<number>();
 		for (let l = 0; l < af!.n; l += 1) if (af!.inst[l] === alvo && (!passa || passa(af!.doc[l]))) saida.add(af!.doc[l]);
 		return [...saida];

@@ -14,6 +14,7 @@ from mapa_da_ciencia.armazenamento import (
     gravar_tabela,
 )
 from mapa_da_ciencia.contrato import modelos as m
+from mapa_da_ciencia.contrato.redes import instituicoes_fora_de_afiliacoes
 from mapa_da_ciencia.documento import Afiliacao, Autor, AutoriaOpenAlex, Documento, InstituicaoOpenAlex, Texto
 from mapa_da_ciencia.fontes.openalex import COLUNAS_CITADAS, COLUNAS_REFERENCIAS
 from mapa_da_ciencia.llm.perfis import PERFIS
@@ -135,7 +136,12 @@ def projeto(tmp_path_factory):
                 AutoriaOpenAlex(
                     nome=n,
                     id=f"A{abs(hash(n)) % 10**6}" if k == 0 else None,
-                    instituicoes=[InstituicaoOpenAlex(id=iid, nome=nome, pais=pais, tipo="education")],
+                    # a USP com ROR (o id do contrato vira `ror:…`), as outras com o id do OpenAlex (`openalex:I…`)
+                    instituicoes=[
+                        InstituicaoOpenAlex(
+                            id=iid, ror="036rp1748" if iid == "I1001" else None, nome=nome, pais=pais, tipo="education"
+                        )
+                    ],
                 )
                 for k, n in enumerate(coautores)
             ]
@@ -182,6 +188,10 @@ def test_redes_de_ponta_a_ponta(projeto):
     com_coautor = {x for s in por_doc.values() if len(s) > 1 for x in s}
     assert {i for i, g in enumerate(redes.pessoas.grau) if g > 0} == com_coautor
     assert all(redes.pessoas.x[i] is not None for i in com_coautor)
+    # as instituições da rede têm os ids de afiliacoes.json (o navegador acha nome, sigla e documentos por eles)
+    afiliacoes = m.Afiliacoes.model_validate_json((dados / "afiliacoes.json").read_text(encoding="utf-8"))
+    assert redes.instituicoes and instituicoes_fora_de_afiliacoes(redes, afiliacoes) == []
+    assert {"ror:036rp1748", "openalex:I1002"} <= set(redes.instituicoes.id)
     # citações: dentro do corpus, sem laços; o cânone tem os citantes
     assert all(a != b for a, b in zip(citacoes.internas.de, citacoes.internas.para, strict=True))
     assert citacoes.canone[0].n == len(set(citacoes.canone_citantes.doc))

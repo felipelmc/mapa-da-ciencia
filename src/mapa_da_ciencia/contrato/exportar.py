@@ -233,15 +233,6 @@ def agregados_geograficos(afiliacoes: Afiliacoes) -> dict[str, Any]:
     }
 
 
-def _id_instituicao(linha: dict[str, Any]) -> str:
-    """Id no contrato: `ror:…` quando há ROR, `openalex:I…` sem ele, o nome dado pelo projeto às próprias."""
-    if linha["ror"]:
-        return f"ror:{linha['ror']}"
-    if linha["id"].startswith("I") and linha["id"][1:].isdigit():
-        return f"openalex:{linha['id']}"
-    return linha["id"]
-
-
 def arquivo_de_afiliacoes(
     pesos: list[dict[str, Any]], instituicoes: list[dict[str, Any]], indice_doc: dict[str, int]
 ) -> tuple[Afiliacoes, int]:
@@ -252,9 +243,11 @@ def arquivo_de_afiliacoes(
     """
     from collections import defaultdict
 
+    from mapa_da_ciencia.geografia.resultado import id_no_contrato
+
     ordem = sorted(instituicoes, key=lambda i: (-i["peso"], i["id"]))
     insts = [
-        Instituicao(id=_id_instituicao(i), nome=i["nome"], sigla=i["sigla"], uf=i["uf"], pais=i["pais"] or "")
+        Instituicao(id=id_no_contrato(i), nome=i["nome"], sigla=i["sigla"], uf=i["uf"], pais=i["pais"] or "")
         for i in ordem
     ]
     pos_inst = {i["id"]: k for k, i in enumerate(ordem)}
@@ -431,7 +424,7 @@ def _geografia(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[st
 
 def _redes(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[str]) -> None:
     """Acrescenta `redes.json` e `citacoes.json` se as redes estiverem em dia com o corpus e as entradas."""
-    from mapa_da_ciencia.contrato.redes import redes_contrato
+    from mapa_da_ciencia.contrato.redes import instituicoes_fora_de_afiliacoes, redes_contrato
     from mapa_da_ciencia.redes.pipeline import redes_em_dia
 
     estado = redes_em_dia(projeto)
@@ -443,6 +436,12 @@ def _redes(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[str]) 
     documentos = arquivos["documentos"]
     n_macros = len(arquivos["topicos"].macrotemas)
     redes, citacoes, gabarito = redes_contrato(projeto, list(documentos.colunas.id), n_macros)
+    if fora := instituicoes_fora_de_afiliacoes(redes, arquivos.get("afiliacoes")):  # type: ignore[arg-type]
+        avisos.append(
+            f"{len(fora)} instituição(ões) da rede sem registro em afiliacoes.json (por exemplo, {fora[0]}): a rede de "
+            "instituições ficou de fora. Rode `mapa geografia` e `mapa redes`."
+        )
+        redes = redes.model_copy(update={"instituicoes": None})
     arquivos["redes"] = redes
     if citacoes is not None:
         arquivos["citacoes"] = citacoes

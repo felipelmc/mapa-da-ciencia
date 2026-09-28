@@ -14,6 +14,15 @@ from ..projeto import Projeto
 from . import modelos as m
 
 
+def instituicoes_fora_de_afiliacoes(redes: m.Redes, afiliacoes: m.Afiliacoes | None) -> list[str]:
+    """Os ids de instituição de `redes.json` que `afiliacoes.json` não conhece (deve ser nenhum: o navegador acha o
+    nome, a sigla e os documentos de cada instituição da rede por esse id)."""
+    if redes.instituicoes is None:
+        return []
+    conhecidos = {i.id for i in afiliacoes.dicionarios.instituicao} if afiliacoes else set()
+    return [i for i in redes.instituicoes.id if i not in conhecidos]
+
+
 def _numero(x: Any) -> float | None:
     return None if x is None else round(float(x), 4)
 

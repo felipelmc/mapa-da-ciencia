@@ -134,7 +134,7 @@ COLUNAS = {
     "autorias": {"doc": "VARCHAR", "posicao": "INTEGER", "pessoa": "VARCHAR"},
     "arestas": {"rede": "VARCHAR", "a": "VARCHAR", "b": "VARCHAR", "peso": "DOUBLE", "documentos": "INTEGER"},
     "instituicoes": {
-        "id": "VARCHAR",
+        "id": "VARCHAR",  # o id do contrato (`ror:…`, `openalex:I…` ou o do `instituicoes.yaml`)
         "grau": "INTEGER",
         "forca": "DOUBLE",
         "comunidade": "INTEGER",
@@ -176,13 +176,6 @@ COLUNAS = {
 }
 
 
-def _por_doc(linhas: list[dict[str, Any]], chave: str) -> dict[str, list[str]]:
-    saida: dict[str, list[str]] = defaultdict(list)
-    for linha in linhas:
-        saida[linha["doc"]].append(linha[chave])
-    return saida
-
-
 def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoRedes:
     progresso = progresso or ProgressoNulo()
     t0, inicio = time.perf_counter(), datetime.now(UTC)
@@ -218,7 +211,7 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     # 2. instituições e estados, pela geografia
     from ..geografia.pipeline import geografia_em_dia
     from ..geografia.resultado import PASTA as PASTA_GEO
-    from ..geografia.resultado import ler_pesos
+    from ..geografia.resultado import id_no_contrato, ler_instituicoes, ler_pesos
 
     inst_do_doc: dict[str, list[str]] | None = None
     lugares: dict[str, list[str]] | None = None
@@ -229,8 +222,12 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     pos_i: dict[str, tuple[float, float]] = {}
     if geografia_em_dia(projeto):
         pesos = ler_pesos(projeto.dados / PASTA_GEO)
-        inst_do_doc = _por_doc([p for p in pesos if p["instituicao"] and p["instituicao"] != NAO_IDENTIFICADA],
-                               "instituicao")  # fmt: skip
+        # os ids do contrato (`ror:…`, `openalex:I…`), os mesmos de `afiliacoes.json`
+        no_contrato = {i["id"]: id_no_contrato(i) for i in ler_instituicoes(projeto.dados / PASTA_GEO)}
+        inst_do_doc = defaultdict(list)
+        for p in pesos:
+            if p["instituicao"] and p["instituicao"] != NAO_IDENTIFICADA:
+                inst_do_doc[p["doc"]].append(no_contrato.get(p["instituicao"], p["instituicao"]))
         lugares = defaultdict(list)
         for p in pesos:
             if p["pais"] == "BR" and p["uf"]:

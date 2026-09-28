@@ -115,6 +115,16 @@ class Resultado:
         return cls(**json.loads(arquivo.read_text(encoding="utf-8")))
 
 
+def id_no_contrato(linha: dict[str, Any]) -> str:
+    """Id de uma instituição de `instituicoes.parquet` no contrato: `ror:…` quando há ROR, `openalex:I…` sem ele, o
+    nome dado pelo projeto às próprias. `afiliacoes.json` e `redes.json` usam o mesmo."""
+    if linha["ror"]:
+        return f"ror:{linha['ror']}"
+    if linha["id"].startswith("I") and linha["id"][1:].isdigit():
+        return f"openalex:{linha['id']}"
+    return linha["id"]
+
+
 def ler_pesos(pasta: Path) -> list[dict[str, Any]]:
     return ler_tabela(pasta / ARQUIVO_PESOS)
 
