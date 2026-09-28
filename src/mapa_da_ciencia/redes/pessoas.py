@@ -389,18 +389,19 @@ def identificar(
         for i in y:
             g.marcas[i].add((k, 1))
 
-    # 1. o mesmo id do OpenAlex e o mesmo ORCID (já conferido pelo nome)
+    # 1. o mesmo id do OpenAlex e o mesmo ORCID (já conferido pelo nome). Cada autoria tenta os grupos já formados com
+    # o mesmo valor, em ordem, e só abre um grupo novo se um nao_fundir a impedir de entrar em todos: separar uma
+    # autoria (mesmo a primeira) não parte o resto da pessoa
     for atributo in ("openalex", "orcid"):
-        primeiro: dict[str, int] = {}
+        grupos_do_valor: dict[str, list[int]] = defaultdict(list)
         for i, a in enumerate(autorias):
             valor = getattr(a, atributo)
             if not valor:
                 continue
             valor = valor.upper() if atributo == "orcid" else valor
-            if valor in primeiro:
-                g.unir(primeiro[valor], i)
-            else:
-                primeiro[valor] = i
+            representantes = grupos_do_valor[valor]
+            if not any(g.unir(r, i) for r in representantes):
+                representantes.append(i)
 
     # 2. sem id nem ORCID: a pessoa com o mesmo nome, se houver só uma
     por_nome: dict[str, set[int]] = defaultdict(set)

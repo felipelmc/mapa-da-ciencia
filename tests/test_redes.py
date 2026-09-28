@@ -224,6 +224,16 @@ def test_exemplo_do_guia_funciona():
     assert maria.nome == "Maria da Silva"
 
 
+def test_nao_fundir_de_uma_autoria_nao_parte_o_resto():
+    docs = [_doc(f"d{k}", [("Ana Lima", "A1", None)]) for k in range(1, 6)]
+    for separada in ("d1#0", "d3#0", "d5#0"):  # a primeira, uma do meio e a última autoria do id
+        i = identificar(docs, CorrecoesPessoas(nao_fundir=[["openalex:A1", separada]]), segredo=b"t")
+        pessoa = _pessoas(i)
+        resto = {pessoa[(f"d{k}", 0)] for k in range(1, 6) if f"d{k}#0" != separada}
+        assert len(resto) == 1 and pessoa[(separada.split("#")[0], 0)] not in resto, separada
+        assert len(i.pessoas) == 2
+
+
 def test_pessoas_yaml_com_erro_de_formato(tmp_path):
     from mapa_da_ciencia.config import ErroConfig
     from mapa_da_ciencia.redes.pessoas import ler_correcoes
