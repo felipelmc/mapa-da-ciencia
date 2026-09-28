@@ -164,3 +164,28 @@ def test_rodada_completa_com_falhas_depois_de_atualizar_o_modelo_substitui(proje
     exportado = json.loads((projeto.saida / "dados" / "manifesto.json").read_text(encoding="utf-8"))
     assert exportado["execucao"]["modelos"]["classificacao"] == guardado.modelo
     assert exportado["contagens"]["classificados"] == total - 1
+
+
+def test_somente_amostra_com_a_versao_nova_fica_a_parte_e_entra_nas_metricas(projeto, apis_falsas):
+    """Medir na amostra um modelo atualizado (ou um parâmetro novo) sem rodar o corpus inteiro e sem trocar o
+    resultado completo anterior, que continua no painel."""
+    from mapa_da_ciencia.validacao.metricas import calcular
+
+    mapa.classificar(projeto, progresso=False)
+    pasta, hash_cb = projeto.dados / PASTA, projeto.codebook.hash()
+    completo = Resultado.ler(pasta, "qwen3.5:4b", hash_cb)
+    a = mapa.amostra_de_validacao(projeto, n=5)
+    apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"
+    r = runner.invoke(app, ["classificar", "-P", str(projeto.raiz), "--somente-amostra"], env={"COLUMNS": "200"})
+    assert r.exit_code == 0 and '"qwen3.5:4b (só amostra)"' in " ".join(r.output.split()), r.output
+    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb) == completo and classificacao_em_dia(projeto) is True
+    a_parte = Resultado.ler(pasta, "qwen3.5:4b", hash_cb, somente_amostra=True)
+    assert a_parte.modelo.endswith("@novo00000000") and a_parte.parcial and a_parte.classificados == len(a.docs)
+    v = calcular(projeto, reamostras=10)
+    assert [p.nome for p in v.participantes if p.tipo == "modelo"] == ["qwen3.5:4b", "qwen3.5:4b (só amostra)"]
+    assert any(m.comparacao == "qwen3.5:4b × qwen3.5:4b (só amostra)" for m in v.metricas)
+    # a rodada completa com a versão nova substitui o completo, e a amostra à parte, agora repetida, sai
+    mapa.classificar(projeto, progresso=False)
+    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb).modelo.endswith("@novo00000000")
+    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb, somente_amostra=True) is None
+    assert [p.nome for p in calcular(projeto, reamostras=10).participantes] == ["qwen3.5:4b"]

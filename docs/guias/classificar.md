@@ -31,7 +31,7 @@ Outras formas de rodar:
 | Opção | O que faz |
 |---|---|
 | `--limite N` | Classifica só os primeiros N da fila (a amostra de validação primeiro, depois por id). |
-| `--somente-amostra` | Classifica só os documentos da amostra de validação (`mapa validar amostra`). Útil para começar a validação antes da rodada completa. |
+| `--somente-amostra` | Classifica só os documentos da amostra de validação (`mapa validar amostra`). Útil para começar a validação antes da rodada completa, ou para medir na amostra uma versão nova do modelo (veja abaixo). |
 | `--modelo X` | Usa outro modelo do Ollama, para comparar com o principal na amostra de validação. O resultado fica ao lado do principal, e o painel continua mostrando o do modelo do `mapa.yaml`. |
 
 ## Quando refazer
@@ -45,6 +45,8 @@ A chave de cada resposta guardada inclui o texto, o codebook, o modelo (com a ve
 Teste o codebook numa amostra (`--limite 20`) antes de rodar o corpus inteiro.
 
 Depois de atualizar o modelo ou mudar os parâmetros, o resultado completo anterior continua valendo até uma rodada completa com a versão nova terminar. Um `--estimar`, um `--limite` ou uma rodada interrompida não o substituem, e a saída avisa. A rodada completa o substitui mesmo que alguns documentos falhem nas duas tentativas: eles ficam para a próxima rodada, e o `mapa status` mostra a classificação como incompleta até lá.
+
+Para medir o efeito da versão nova antes de rodar o corpus inteiro, use `--somente-amostra`: as respostas da amostra vão para um resultado à parte (`dados/classificacao/<modelo>__<hash do codebook>__amostra.*`), que não toca o completo nem o painel. `mapa validar metricas` compara as duas versões, e a nova aparece como `<modelo> (só amostra)`. A rodada completa com a versão nova apaga esse resultado à parte, que passa a repetir o completo.
 
 ## Consultar o resultado
 

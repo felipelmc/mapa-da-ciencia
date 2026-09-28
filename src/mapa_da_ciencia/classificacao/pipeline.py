@@ -64,6 +64,7 @@ class ResumoClassificacao:
     duracao_s: float
     parcial: bool
     avisos: list[str] = field(default_factory=list)
+    amostra_a_parte: bool = False  # gravado no resultado à parte da amostra (`Resultado.somente_amostra`)
 
     def __str__(self) -> str:
         literal = self.evidencia.get("literal")
@@ -166,10 +167,19 @@ def classificar(
         parcial = parcial or len(resultados) < len(textos)
         gravar_de_fato = not protegido or cobre
         gravou = gravar_de_fato
+        # --somente-amostra com o modelo atualizado ou outros parâmetros: as respostas vão para o resultado à parte da
+        # amostra, que as métricas da validação comparam com o completo anterior, sem tocar nele
+        a_parte = not gravar_de_fato and opcoes.somente_amostra
         if not gravar_de_fato and not avisos_gravacao:
+            nome = anterior.modelo.split("@", 1)[0]
             avisos_gravacao.append(
-                f"O resultado completo anterior ({anterior.modelo.split('@', 1)[0]}, de outra execução) foi mantido: "
-                "esta rodada é parcial. Rode `mapa classificar` sem --limite/--estimar para substituí-lo."
+                f"O resultado completo anterior ({nome}, de outra execução) continua valendo para o painel. As "
+                "respostas da amostra com a versão nova ficam num resultado à parte, que `mapa validar metricas` "
+                f'compara com ele como "{nome.removesuffix(":latest")} (só amostra)". Rode `mapa classificar` sem '
+                "--somente-amostra para substituí-lo."
+                if a_parte
+                else f"O resultado completo anterior ({nome}, de outra execução) foi mantido: esta rodada é "
+                "parcial. Rode `mapa classificar` sem --limite/--estimar para substituí-lo."
             )
         linhas = [linha for c in sorted(resultados, key=lambda c: c.doc) for linha in _linhas(c, variaveis)]
         status = Counter(linha["status"] for linha in linhas if linha["status"] != "dispensada")
@@ -198,9 +208,14 @@ def classificar(
             segundos_por_documento=round(statistics.median(segundos), 2) if segundos else None,
             parcial=parcial or bool(k.falhas),
             execucao=execucao,
+            somente_amostra=a_parte,
         )
-        if gravar_de_fato:
+        if gravar_de_fato or a_parte:
             resultado.gravar(projeto.dados / PASTA, linhas)
+        if gravar_de_fato:  # a amostra à parte desta mesma execução ficou repetida
+            amostra = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash(), somente_amostra=True)
+            if amostra is not None and amostra.execucao == execucao:
+                amostra.apagar(projeto.dados / PASTA)
         return resultado
 
     resultados: list[Classificacao] = []
@@ -247,6 +262,7 @@ def classificar(
         estimativa_restante_s=estimativa,
         duracao_s=round(time.perf_counter() - t0, 2),
         parcial=resultado.parcial,
+        amostra_a_parte=resultado.somente_amostra,
     )
     if k.falhas:
         resumo.avisos.append(
@@ -281,7 +297,7 @@ def classificar(
         },
     )
     resumo.avisos += avisos_gravacao
-    if principal and gravou:
+    if principal and (gravou or resultado.somente_amostra):  # a amostra à parte entra nas métricas do painel
         resumo.avisos += exportar(projeto)
     return resumo
 

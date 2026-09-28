@@ -686,7 +686,7 @@ def _mostrar_classificacao(p: Projeto, resumo, *, estimar: bool) -> None:
     from mapa_da_ciencia.classificacao.resultado import PASTA, ler_linhas
 
     console.print(f"\n[bold green]Classificação pronta[/]: {resumo}")
-    linhas = ler_linhas(p.dados / PASTA, resumo.modelo, p.codebook.hash())
+    linhas = ler_linhas(p.dados / PASTA, resumo.modelo, p.codebook.hash(), somente_amostra=resumo.amostra_a_parte)
     tabela = Table("Variável", "Mais frequentes", "Evidência literal")
     for v in p.codebook.variaveis:
         valores = Counter(linha["valor"] for linha in linhas if linha["variavel"] == v.id)

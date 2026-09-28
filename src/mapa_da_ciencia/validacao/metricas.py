@@ -32,7 +32,7 @@ from typing import Any, Literal
 import numpy as np
 
 from ..classificacao.resultado import PASTA as PASTA_CLASSIFICACAO
-from ..classificacao.resultado import ler_linhas, resultados
+from ..classificacao.resultado import Resultado, ler_linhas, resultados
 from ..config import ErroConfig
 from ..projeto import Projeto
 from . import amostra as va
@@ -326,6 +326,12 @@ def _nome_modelo(modelo: str) -> str:
     return modelo.split("@", 1)[0].removesuffix(":latest")
 
 
+def _nome_participante(r: Resultado) -> str:
+    """O nome do modelo nas métricas; o resultado à parte de um `--somente-amostra` (a versão nova do modelo ou dos
+    parâmetros, medida só na amostra) aparece ao lado do completo."""
+    return _nome_modelo(r.modelo) + (" (só amostra)" if r.somente_amostra else "")
+
+
 def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS) -> Validacao:
     """As métricas da validação do projeto: a amostra guardada, as codificações e os modelos com o codebook atual."""
     amostra = va.ler(projeto)
@@ -350,10 +356,14 @@ def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS) -> Validacao:
     evidencia_literal = {}
     modelos = []
     for r in resultados(pasta):
-        nome = _nome_modelo(r.modelo)
+        nome = _nome_participante(r)
         if r.hash_codebook != hash_cb or nome in tipos:
             continue
-        linhas = [linha for linha in ler_linhas(pasta, r.modelo, hash_cb) if linha["doc"] in na_amostra]
+        linhas = [
+            linha
+            for linha in ler_linhas(pasta, r.modelo, hash_cb, somente_amostra=r.somente_amostra)
+            if linha["doc"] in na_amostra
+        ]
         if not linhas:
             continue
         modelos.append(nome)
