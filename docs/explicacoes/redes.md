@@ -52,9 +52,11 @@ id): uma comunidade não recebe nome de pessoa. Comunidades são um agrupamento 
 declarados.
 
 O agregado das comunidades é estável, mas a **composição** de cada uma não é tanto: no piloto, trocar a semente do
-Louvain (1 a 20) mantinha o número de comunidades (37 a 41) e a modularidade (0,958 a 0,959), mas algumas das dez
-maiores trocavam de 30% a 45% dos membros, e usar os pesos arredondados a seis casas, em vez dos exatos, mudava a
-comunidade de um terço das pessoas. Por isso os pesos são somados como frações exatas, e a semente é fixa. Os dois
+Louvain (1 a 20) mantinha o número de comunidades numeradas (37 a 40) e a modularidade (0,956 a 0,958), mas quatro
+das dez maiores trocavam de um quarto a três quintos dos membros (Jaccard mediano de 0,40 a 0,77 com a comunidade
+mais parecida), e usar os pesos arredondados a seis casas, em vez dos exatos, mudava a comunidade de quase um terço
+das pessoas (890 de 3.023). Por isso os pesos são somados como frações exatas, e a semente é fixa: o mesmo projeto dá
+sempre as mesmas comunidades, mas elas são uma leitura possível, e não a única. Os dois
 tópicos do rótulo cobrem, em geral, de um quinto a metade dos artigos de uma comunidade de coautoria; nas de
 instituições, bem menos (as instituições grandes publicam de tudo). E a maioria das pessoas com coautor (59% no
 piloto) está em grupos menores do que o mínimo, fora das comunidades numeradas.
