@@ -458,6 +458,27 @@ test('Voltar leva o campo de busca junto com a URL', async ({ page }) => {
 	await expect(page.getByTestId('barra-recorte').getByText(`Busca: “${a}”`)).toBeVisible();
 });
 
+test('o menu das revistas fecha com Esc e com um clique fora, e esse clique não chega ao mapa', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	const menu = page.locator('details.revistas');
+	const resumo = menu.locator('summary');
+	await resumo.click();
+	await expect(menu).toHaveAttribute('open', '');
+	await page.keyboard.press('Escape');
+	await expect(menu).not.toHaveAttribute('open');
+	await expect(resumo).toBeFocused();
+	// um clique no meio do mapa só fecha o menu: não abre documento nem filtra macrotema
+	await resumo.click();
+	await expect(menu).toHaveAttribute('open', '');
+	const caixa = (await page.getByTestId('canvas-mapa').boundingBox())!;
+	await page.mouse.click(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2);
+	await expect(menu).not.toHaveAttribute('open');
+	await expect(page).toHaveURL(/#\/mapa$/);
+	// fechado o menu, o mapa volta a receber cliques (a camada que fechava o menu some)
+	await expect(page.getByTestId('fora-do-menu')).toHaveCount(0);
+});
+
 test('"?" abre os atalhos na Ajuda', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/mapa`);
 	await esperarMapa(page);

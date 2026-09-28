@@ -98,12 +98,35 @@
 	const nFiltros = $derived(chips.length + (filtros.laco ? 1 : 0) + (filtros.anos ? 1 : 0) + filtros.revistas.length);
 	let expandida = $state(false);
 
+	// o menu das revistas fecha com Esc e com um clique fora; o clique que fecha não chega ao que está embaixo
+	// (no mapa, ele abriria um documento ou filtraria um macrotema sem a pessoa perceber)
+	// `revistasAberto` só acompanha o <details> (já no clique do summary, antes de o navegador abrir o menu, e pelo
+	// evento toggle, que chega um instante depois); quem fecha o menu escreve direto nele
+	let revistasAberto = $state(false);
+	let menuRevistas = $state<HTMLDetailsElement>();
+	function fecharRevistas() {
+		if (menuRevistas) menuRevistas.open = false;
+		revistasAberto = false;
+	}
+	function teclaRevistas(e: KeyboardEvent) {
+		if (e.key !== 'Escape' || !menuRevistas?.open) return;
+		fecharRevistas();
+		menuRevistas.querySelector('summary')?.focus();
+	}
+
 	function alternarRevista(id: string) {
 		mudar({ revistas: filtros.revistas.includes(id) ? filtros.revistas.filter((r) => r !== id) : [...filtros.revistas, id] });
 	}
 </script>
 
+<svelte:window onkeydown={teclaRevistas} />
+
 {#if aberto}
+	{#if revistasAberto}
+		<!-- quem usa o teclado fecha com Esc; o clique fora só precisa fechar -->
+		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+		<div class="fora-do-menu" data-testid="fora-do-menu" onclick={fecharRevistas}></div>
+	{/if}
 	<section class="recorte" class:expandida aria-label="Recorte" data-testid="barra-recorte">
 		<button type="button" class="resumo" aria-expanded={expandida} onclick={() => (expandida = !expandida)}>
 			Recorte{nFiltros ? ` (${nFiltros})` : ''} · {formatarInteiro(n)} docs
@@ -114,8 +137,8 @@
 				anos={filtros.anos}
 				aoMudar={(anos, substituir) => mudar({ anos }, !!substituir)}
 			/>
-			<details class="revistas">
-				<summary>
+			<details class="revistas" bind:this={menuRevistas} ontoggle={() => (revistasAberto = !!menuRevistas?.open)}>
+				<summary onclick={() => (revistasAberto = !menuRevistas?.open)}>
 					Revistas{filtros.revistas.length ? ` (${filtros.revistas.length})` : ''}
 				</summary>
 				<ul>
@@ -188,6 +211,13 @@
 
 	.revistas {
 		position: relative;
+	}
+
+	/* por cima de tudo menos da barra do recorte (z-index 20), enquanto o menu das revistas está aberto */
+	.fora-do-menu {
+		position: fixed;
+		inset: 0;
+		z-index: 19;
 	}
 
 	.revistas summary {
