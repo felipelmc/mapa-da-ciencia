@@ -10,9 +10,9 @@ Os artigos são listados na ArticleMeta do SciELO, revista a revista, e filtrado
 
 - **Texto:** título e resumo em inglês (97% do piloto); na falta dele, no idioma disponível (2,2%) ou só o título (0,4%), com marca.
 - **Embeddings:** `qwen3-embedding:0.6b`, rodando localmente no Ollama, com vetores normalizados.
-- **Vizinhança:** os 15 vizinhos mais próximos de cada documento, por similaridade de cosseno, calculados de forma exata.
+- **Vizinhança:** os 15 vizinhos mais próximos de cada documento (incluindo o próprio documento, como no UMAP), por similaridade de cosseno, calculados de forma exata.
 - **Redução:** UMAP para 5 dimensões (agrupamento, `min_dist` 0) e para 2 (o mapa), com semente fixa.
-- **Agrupamento:** HDBSCAN com seleção `leaf`, `min_cluster_size` de 1 a cada 200 documentos (mínimo 10) e `min_samples` 5. Os documentos de ruído vão para o tópico com pelo menos 3 dos seus 15 vizinhos no núcleo; os outros ficam sem tópico.
+- **Agrupamento:** HDBSCAN com seleção `leaf`, `min_cluster_size` de 1 a cada 200 documentos (mínimo 10) e `min_samples` 5. Os documentos de ruído vão para o tópico com pelo menos 3 dos seus 14 vizinhos mais próximos no núcleo; os outros ficam sem tópico.
 - **Descrição:** palavras-chave por c-TF-IDF sobre o núcleo de cada tópico; rótulo e descrição em português escritos pelo `qwen3.5:9b` a partir de 15 termos e 5 títulos representativos; macrotemas por aglomeração de Ward dos centros dos tópicos (até 7).
 - **Estabilidade:** índice de Rand ajustado entre três sementes, sobre os documentos que estão no núcleo nas duas execuções.
 

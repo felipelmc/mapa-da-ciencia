@@ -13,6 +13,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 - o repositório ignora as cópias que o iCloud Drive cria ("teste 2.py", "index 2.md") no git, no pytest e no MkDocs, e o CI falha se alguma entrar num commit (armadilha em `desenvolvimento`).
 
+### Corrigido
+
+- a descrição da reatribuição do ruído nos tópicos, na metodologia, no ADR 0007 e em `topicos.votos_minimos`: votam os 14 vizinhos mais próximos, porque o grafo de 15 do UMAP inclui o próprio documento (o código não muda).
+
 ## [1.0.1] - 2026-09-27
 
 A versão 1.0.1 é a primeira com DOI: o repositório passa a ser arquivado no Zenodo a cada *release*. E o pacote fica pronto para o PyPI.

@@ -48,7 +48,7 @@ O que a grade mostra:
 
 **Documentos só com título.** Com `leaf`, 21 dos 28 documentos que não têm resumo formavam um tópico próprio, de 29 documentos, junto com textos sem relação entre si (quase todos ensaios da *Novos Estudos CEBRAP*). Textos curtos ficam parecidos entre si pela forma, e não pelo assunto.
 
-**Reatribuição do ruído.** Um documento de ruído vai para o tópico com mais vizinhos seus no núcleo, se forem pelo menos 3 dos 15 mais próximos (similaridade de cosseno entre os embeddings, não no UMAP). Para calibrar o limite: um documento típico do núcleo tem 8 dos 15 vizinhos no próprio tópico, e o 10º percentil tem 4. Com o limite em 3 e os padrões finais, no piloto:
+**Reatribuição do ruído.** Um documento de ruído vai para o tópico com mais vizinhos seus no núcleo, se forem pelo menos 3 dos 14 mais próximos (o grafo de 15 inclui o próprio documento; similaridade de cosseno entre os embeddings, não no UMAP). Para calibrar o limite: um documento típico do núcleo tem 8 dos 14 vizinhos no próprio tópico, e o 10º percentil tem 4. Com o limite em 3 e os padrões finais, no piloto:
 
 | | Documentos | % do corpus |
 |---|---|---|

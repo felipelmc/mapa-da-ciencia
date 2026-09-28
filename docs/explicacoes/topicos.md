@@ -64,7 +64,7 @@ Os documentos **só com título** nunca entram no núcleo. Textos curtos ficam p
 
 No piloto, um terço dos documentos fica como ruído, com qualquer configuração estável do agrupamento ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)). Deixá-los de fora esconderia um terço do corpus, e forçar parâmetros para reduzir o ruído cria tópicos gigantes e instáveis. O `mapa` faz outra coisa: **reatribui por vizinhança**.
 
-- Cada documento de ruído olha para os seus 15 vizinhos mais próximos (no espaço dos embeddings, não no UMAP).
+- Cada documento de ruído olha para os seus 14 vizinhos mais próximos no espaço dos embeddings, e não no UMAP (os 15 do grafo de vizinhança, que incluem o próprio documento, como o UMAP espera).
 - Os vizinhos que estão no núcleo de algum tópico votam no próprio tópico, com peso igual à similaridade.
 - O documento vai para o tópico vencedor se ele tiver ao menos 3 desses vizinhos (`topicos.votos_minimos`). Senão, fica **sem tópico**.
 
