@@ -3,6 +3,7 @@
 import hashlib
 import json
 import re
+from pathlib import Path
 
 import pytest
 from corpus_sintetico import AFILIACOES, corpus_sintetico
@@ -40,46 +41,175 @@ def test_pesos_fracionarios():
     assert forca == {"a": 2, "b": 3, "c": 2}  # documentos com coautor de cada um
 
 
-def _doc(i: str, autores: list[tuple[str, str | None, str | None]]) -> Documento:
-    """autores: (nome completo, id do OpenAlex, ORCID)."""
+def _doc(i: str, autores: list[tuple]) -> Documento:
+    """autores: (nome, id do OpenAlex, ORCID da ArticleMeta[, instituição do OpenAlex[, ORCID do OpenAlex]])."""
+    completos = [(*a, None, None)[:5] for a in autores]
     return Documento(
         id=i,
         fonte="articlemeta",
         tipo="research-article",
         ano=2020,
         titulos=[Texto(idioma="pt", texto=f"Título {i}")],
-        autores=[Autor(nome=n.split()[0], sobrenome=n.split()[-1], orcid=o) for n, _, o in autores],
-        autorias_openalex=[AutoriaOpenAlex(nome=n, id=a) for n, a, _ in autores],
+        autores=[Autor(nome=" ".join(n.split()[:-1]), sobrenome=n.split()[-1], orcid=o) for n, _, o, _, _ in completos],
+        autorias_openalex=[
+            AutoriaOpenAlex(
+                nome=n, id=a, orcid=o_oa, instituicoes=[InstituicaoOpenAlex(id=inst, nome=inst)] if inst else []
+            )
+            for n, a, _, inst, o_oa in completos
+        ],
     )
+
+
+def _pessoas(ident) -> dict[tuple[str, int], str]:
+    return {(a.doc, a.posicao): ident.pessoas[ident.pessoa_da_autoria[k]].interno for k, a in enumerate(ident.autorias)}
+
+
+ORCID_1, ORCID_2, ORCID_3 = "0000-0001-0000-0001", "0000-0002-0000-0002", "0000-0003-0000-0003"
 
 
 def test_identidade_das_pessoas():
     docs = [
-        _doc("d1", [("Ana Silva", "A1", "0000-0001-0000-0001"), ("Beto Souza", None, None)]),
+        _doc("d1", [("Ana Silva", "A1", ORCID_1), ("Beto Souza", None, None)]),
         _doc("d2", [("Ana Silva", "A1", None), ("Caio Lima", "A3", None)]),
-        # o OpenAlex fundiu duas "Ana Silva" com ORCIDs diferentes: não se juntam
-        _doc("d3", [("Ana Silva", "A1", "0000-0002-0000-0002"), ("Dora Reis", None, None)]),
+        # o mesmo id do OpenAlex com outro ORCID: no piloto, era a mesma pessoa com dois registros no ORCID; junta, e
+        # a pessoa vai para a revisão (dois ORCIDs)
+        _doc("d3", [("Ana Silva", "A1", ORCID_2), ("Dora Reis", None, None)]),
         # sem id nem ORCID: entra na única "Beto Souza" que existe
         _doc("d4", [("Beto Souza", None, None), ("Caio Lima", "A3", None)]),
-        # homônimo sem id nem coautor em comum: fica separado e vira candidato
+        # homônimo sem id, sem coautor e sem instituição em comum: entra na única "Eva Nunes" com id (regra 2)
         _doc("d5", [("Eva Nunes", None, None)]),
-        _doc("d6", [("Eva Nunes", None, "0000-0003-0000-0003")]),
+        _doc("d6", [("Eva Nunes", None, ORCID_3)]),
     ]
     i = identificar(docs, segredo=b"teste")
-    pessoa = {(a.doc, a.posicao): i.pessoas[i.pessoa_da_autoria[k]].interno for k, a in enumerate(i.autorias)}
-    assert pessoa[("d1", 0)] == pessoa[("d2", 0)] != pessoa[("d3", 0)]
-    assert i.conflitos == 1
+    pessoa = _pessoas(i)
+    assert pessoa[("d1", 0)] == pessoa[("d2", 0)] == pessoa[("d3", 0)] == "openalex:A1"
+    assert i.conflitos == 1  # uma pessoa com dois ORCIDs
     assert pessoa[("d1", 1)] == pessoa[("d4", 0)]
     assert pessoa[("d2", 1)] == pessoa[("d4", 1)] == "openalex:A3"
-    # a "Eva" de d5 é a mesma da de d6? Sem ORCID em d5, entra na única com o mesmo nome
     assert pessoa[("d5", 0)] == pessoa[("d6", 0)]
     ids = [p.publicado for p in i.pessoas]
     assert len(ids) == len(set(ids)) and all(not ORCID.search(x) for x in ids)
-    # correções manuais: fundir força a união; nomes troca o nome exibido
-    anas = sorted({pessoa[("d1", 0)], pessoa[("d3", 0)]})
-    j = identificar(docs, CorrecoesPessoas(fundir=[anas], nomes={anas[0]: "Ana M. Silva"}), segredo=b"teste")
-    pj = {(a.doc, a.posicao): j.pessoas[j.pessoa_da_autoria[k]] for k, a in enumerate(j.autorias)}
-    assert pj[("d1", 0)] is pj[("d3", 0)] and pj[("d1", 0)].nome == "Ana M. Silva"
+    # nenhum id do OpenAlex em duas pessoas
+    por_id = {}
+    for k, a in enumerate(i.autorias):
+        if a.openalex:
+            por_id.setdefault(a.openalex, set()).add(i.pessoa_da_autoria[k])
+    assert all(len(x) == 1 for x in por_id.values())
+
+
+def test_orcid_conferido_pelo_nome():
+    docs = [
+        _doc("d1", [("Matheus Mazzilli Pereira", "A2", ORCID_2), ("Ana Lima", "A9", None)]),
+        _doc("d2", [("Matheus Mazzilli Pereira", "A2", ORCID_2)]),
+        _doc("d3", [("Marcelo Kunrath Silva", "A1", ORCID_1)]),
+        # um ORCID trocado na fonte: o de Matheus na autoria de Marcelo (que tem o id do OpenAlex dele)
+        _doc("d4", [("Marcelo Kunrath Silva", "A1", ORCID_2), ("Rui Dias", "A8", None)]),
+        # ArticleMeta e OpenAlex discordam do ORCID de Rui: nenhum dos dois vale
+        _doc("d5", [("Rui Dias", "A8", ORCID_1, None, ORCID_3)]),
+    ]
+    i = identificar(docs, segredo=b"teste")
+    pessoa = _pessoas(i)
+    assert pessoa[("d1", 0)] == pessoa[("d2", 0)] != pessoa[("d4", 0)]
+    assert pessoa[("d3", 0)] == pessoa[("d4", 0)] == "openalex:A1"
+    assert [(i.autorias[k].id, o) for k, o in i.orcids_retirados] == [("d4#0", ORCID_2)]
+    assert i.orcids_divergentes == 1 and i.autorias[[a.id for a in i.autorias].index("d5#0")].orcid is None
+    matheus = next(p for p in i.pessoas if p.interno == "openalex:A2")
+    assert matheus.nome == "Matheus Mazzilli Pereira" and len(matheus.autorias) == 2
+
+
+def test_homonimos_e_variantes_com_instituicao_ou_coautor_em_comum():
+    docs = [
+        # dois ids do OpenAlex para o mesmo "Fabiano Santos", com a mesma instituição
+        _doc("d1", [("Fabiano Santos", "A1", None, "I1")]),
+        _doc("d2", [("Fabiano Santos", "A2", ORCID_1, "I1")]),
+        # grafia variante com a mesma instituição
+        _doc("d3", [("Marjorie Marona", "A3", None, "I2")]),
+        _doc("d4", [("Marjorie Correa Marona", "A4", None, "I2")]),
+        # homônimos com um coautor em comum (e ORCIDs diferentes, que não impedem mais)
+        _doc("d5", [("Tiago Lopes", "A5", ORCID_2), ("Marcos Maio", "A7", None)]),
+        _doc("d6", [("Tiago Lopes", "A6", ORCID_3), ("Marcos Maio", "A7", None)]),
+        # "Ana Silva" não emenda "Ana Maria Silva" com "Ana Paula Silva", ainda que as três dividam a instituição
+        _doc("d7", [("Ana Silva", "A10", None, "I3")]),
+        _doc("d8", [("Ana Maria Silva", "A11", None, "I3")]),
+        _doc("d9", [("Ana Paula Silva", "A12", None, "I3")]),
+        # homônimos sem nada em comum: ficam separados e vão para a revisão
+        _doc("d10", [("Luis Fernandes", "A13", None, "I4")]),
+        _doc("d11", [("Luis Fernandes", "A14", None, "I5")]),
+    ]
+    i = identificar(docs, segredo=b"teste")
+    pessoa = _pessoas(i)
+    assert pessoa[("d1", 0)] == pessoa[("d2", 0)]
+    assert pessoa[("d3", 0)] == pessoa[("d4", 0)]
+    assert pessoa[("d5", 0)] == pessoa[("d6", 0)]
+    assert pessoa[("d8", 0)] != pessoa[("d9", 0)]
+    assert pessoa[("d10", 0)] != pessoa[("d11", 0)]
+    assert ("openalex:A13", "openalex:A14", "homonimo") in {(c.a, c.b, c.tipo) for c in i.candidatos}
+    assert any(c.tipo == "variante" for c in i.candidatos)
+    # as instituições da geografia também contam
+    j = identificar(docs, segredo=b"teste", instituicoes={("d10", 0): {"I9"}, ("d11", 0): {"I9"}})
+    assert _pessoas(j)[("d10", 0)] == _pessoas(j)[("d11", 0)]
+
+
+def test_pessoas_yaml_com_ids_de_qualquer_autoria():
+    docs = [
+        _doc("d1", [("Ana Silva", "A1", ORCID_1, "I1"), ("Beto Souza", "A5", None)]),
+        _doc("d2", [("Ana Silva", "A2", None, "I1")]),  # juntada pela instituição
+        _doc("d3", [("Ana Silva", "A1", None)]),  # uma autoria que o OpenAlex pôs no id A1 por engano
+        _doc("d4", [("Eva Nunes", "A3", None)]),
+        _doc("d5", [("Eva Nunes", "A4", None)]),
+    ]
+    assert _pessoas(identificar(docs, segredo=b"t"))[("d1", 0)] == _pessoas(identificar(docs, segredo=b"t"))[("d2", 0)]
+    correcoes = CorrecoesPessoas(
+        # nao_fundir desfaz a fusão automática e tira uma autoria do id do OpenAlex
+        nao_fundir=[["openalex:A1", "openalex:A2"], ["orcid:0000-0001-0000-0001", "d3#0"]],
+        # fundir aceita o id de qualquer autoria (aqui, pelo nome e pelo id que não é o menor)
+        fundir=[["nome:eva nunes", "openalex:A4"]],
+        nomes={"openalex:A4": "Eva M. Nunes", "A5": "Ninguém", "openalex:A999": "Ninguém"},
+    )
+    i = identificar(docs, correcoes, segredo=b"t")
+    pessoa = _pessoas(i)
+    assert len({pessoa[("d1", 0)], pessoa[("d2", 0)], pessoa[("d3", 0)]}) == 3
+    assert pessoa[("d4", 0)] == pessoa[("d5", 0)]
+    eva = i.pessoas[i.pessoa_da_autoria[[a.id for a in i.autorias].index("d4#0")]]
+    assert eva.nome == "Eva M. Nunes"
+    # o id do OpenAlex separado explicitamente fica em duas pessoas, com ids internos distintos
+    assert len({p.interno for p in i.pessoas}) == len(i.pessoas)
+    # ids desconhecidos viram aviso, com a dica do prefixo
+    (aviso,) = i.avisos
+    assert "2 id(s) não existem" in aviso and "A5 (falta o prefixo: openalex:A5)" in aviso and "openalex:A999" in aviso
+
+
+def test_exemplo_do_guia_funciona():
+    import yaml
+
+    guia = (Path(__file__).resolve().parent.parent / "docs" / "guias" / "redes.md").read_text(encoding="utf-8")
+    bloco = next(b for b in re.findall(r"```yaml\n(.*?)```", guia, re.S) if "fundir:" in b)
+    correcoes = CorrecoesPessoas.model_validate(yaml.safe_load(bloco))
+    docs = [
+        _doc("d1", [("Maria Silva", "A1111111111", None, "I1")]),
+        _doc("d2", [("Maria S. Silva", "A2222222222", None, "I2")]),
+        _doc("d3", [("Rui Lima", "A3333333333", None, "I3")]),
+        _doc("d4", [("Rui Lima", "A4444444444", None, "I3")]),  # a instituição juntaria; o nao_fundir separa
+        _doc("S0011-52582020000100201", [("Ana Souza", "A6666666666", None), ("Eva Dias", "A5555555555", None)]),
+        _doc("d6", [("Eva Dias", "A5555555555", None)]),
+    ]
+    i = identificar(docs, correcoes, segredo=b"t")
+    pessoa = _pessoas(i)
+    assert not i.avisos
+    assert pessoa[("d1", 0)] == pessoa[("d2", 0)] and pessoa[("d3", 0)] != pessoa[("d4", 0)]
+    assert pessoa[("S0011-52582020000100201", 1)] != pessoa[("d6", 0)]
+    maria = i.pessoas[i.pessoa_da_autoria[[a.id for a in i.autorias].index("d1#0")]]
+    assert maria.nome == "Maria da Silva"
+
+
+def test_pessoas_yaml_com_erro_de_formato(tmp_path):
+    from mapa_da_ciencia.config import ErroConfig
+    from mapa_da_ciencia.redes.pessoas import ler_correcoes
+
+    (tmp_path / "pessoas.yaml").write_text("fundir:\n  - openalex:A1, openalex:A2\n", encoding="utf-8")
+    with pytest.raises(ErroConfig, match=r"cada item é uma lista de ids entre colchetes") as erro:
+        ler_correcoes(tmp_path)
+    assert "pydantic" not in str(erro.value)
 
 
 def test_id_publicado_nao_se_liga_ao_orcid():

@@ -163,7 +163,7 @@ COLUNAS = {
         "citantes": "VARCHAR[]",
         "edicoes": "VARCHAR[]",
     },
-    "candidatos": {"a": "VARCHAR", "b": "VARCHAR", "nome": "VARCHAR"},
+    "candidatos": {"a": "VARCHAR", "b": "VARCHAR", "nome": "VARCHAR", "tipo": "VARCHAR"},
     "colaboracao": {
         "ano": "INTEGER",
         "documentos": "INTEGER",
@@ -195,10 +195,23 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     macro_do_doc = {d: macro_do_topico.get(t, -1) for d, t in topico_do_doc.items() if t is not None}
     rotulo_do_topico = {t.id: t.rotulo for t in topicos.topicos}
 
-    # 1. pessoas e coautoria
+    from ..geografia.pipeline import geografia_em_dia
+    from ..geografia.resultado import PASTA as PASTA_GEO
+    from ..geografia.resultado import id_no_contrato, ler_instituicoes, ler_pesos, ler_vinculos
     from ..segredos import segredo
 
-    ident = identificar(docs, ler_correcoes(projeto.raiz), segredo=segredo(projeto, "redes"))
+    com_geografia = bool(geografia_em_dia(projeto))
+
+    # 1. pessoas e coautoria (as instituições casadas pela geografia ajudam a juntar homônimos)
+    insts_da_autoria: dict[tuple[str, int], set[str]] = defaultdict(set)
+    if com_geografia:
+        for v in ler_vinculos(projeto.dados / PASTA_GEO):
+            if v["autor"] is not None and v["instituicao"] and v["instituicao"] != NAO_IDENTIFICADA:
+                insts_da_autoria[(v["doc"], v["autor"])].add(v["instituicao"])
+    ident = identificar(
+        docs, ler_correcoes(projeto.raiz), segredo=segredo(projeto, "redes"), instituicoes=insts_da_autoria
+    )
+    avisos += ident.avisos
     pessoas = ident.pessoas
     autores_do_doc: dict[str, list[str]] = defaultdict(list)
     for i, a in enumerate(ident.autorias):
@@ -211,10 +224,6 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     progresso.avancar()
 
     # 2. instituições e estados, pela geografia
-    from ..geografia.pipeline import geografia_em_dia
-    from ..geografia.resultado import PASTA as PASTA_GEO
-    from ..geografia.resultado import id_no_contrato, ler_instituicoes, ler_pesos
-
     inst_do_doc: dict[str, list[str]] | None = None
     lugares: dict[str, list[str]] | None = None
     arestas_i: dict[tuple[str, str], tuple[float, int]] = {}
@@ -222,7 +231,7 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     com_i: dict[str, int] = {}
     met_i = None
     pos_i: dict[str, tuple[float, float]] = {}
-    if geografia_em_dia(projeto):
+    if com_geografia:
         pesos = ler_pesos(projeto.dados / PASTA_GEO)
         # os ids do contrato (`ror:…`, `openalex:I…`), os mesmos de `afiliacoes.json`
         no_contrato = {i["id"]: id_no_contrato(i) for i in ler_instituicoes(projeto.dados / PASTA_GEO)}
@@ -348,7 +357,7 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
         "comunidades": linhas_com,
         "citacoes": linhas_cit,
         "canone": linhas_canone,
-        "candidatos": [{"a": a, "b": b, "nome": n} for a, b, n in ident.candidatos],
+        "candidatos": [asdict(c) for c in ident.candidatos],
         "colaboracao": [{k: v for k, v in asdict(c).items() if k != "extras"} for c in serie],
     }
     for nome, linhas in tabelas.items():
@@ -368,7 +377,9 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
             "citacoes_internas": len(linhas_cit),
             "canone": len(linhas_canone),
             "candidatos": len(ident.candidatos),
-            "conflitos_orcid": ident.conflitos,
+            "pessoas_com_dois_orcids": ident.conflitos,
+            "orcids_retirados": len(ident.orcids_retirados),
+            "orcids_divergentes": ident.orcids_divergentes,
         },
         metricas={"coautoria": asdict(met_p), **({"instituicoes": asdict(met_i)} if met_i else {})},
         cobertura_citacoes=cobertura,

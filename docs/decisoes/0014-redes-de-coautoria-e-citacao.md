@@ -13,10 +13,12 @@ OpenAlex tem as referências já resolvidas (`referenced_works`), a 1 crédito p
 
 ## Decisões
 
-1. **Identidade das pessoas por *union-find*, em ordem de confiança:** mesmo id do OpenAlex ou mesmo ORCID (nunca
-   juntando dois ORCIDs diferentes); autoria sem id na única pessoa de mesmo nome; homônimos com coautor em comum. O
-   resto dos homônimos vai para `mapa redes --revisar` e para o `pessoas.yaml`. Alternativa descartada: casar nomes
-   por semelhança (fundiria homônimos comuns na área, como "Silva").
+1. **Identidade das pessoas por *union-find*, em ordem de confiança:** o ORCID conferido pelo nome; o mesmo id do
+   OpenAlex ou o mesmo ORCID; a autoria sem id na única pessoa de mesmo nome; homônimos e grafias variantes com um
+   coautor ou uma instituição em comum. O resto vai para `mapa redes --revisar` e para o `pessoas.yaml`, cujo
+   `nao_fundir` também desfaz as fusões automáticas. Alternativa descartada: casar nomes por semelhança sem evidência
+   (fundiria homônimos comuns na área, como "Silva"). O raciocínio e as medidas estão em "Identidade: o que o piloto
+   mostrou", abaixo.
 2. **Pesos fracionários** (`1/(n − 1)` por par em cada artigo com `n` autores distintos), a mesma lógica da contagem
    fracionária da geografia (ADR 0008): a força de uma pessoa é o número de artigos com coautor, e os artigos com
    muitos autores não dominam a rede.
@@ -41,6 +43,47 @@ OpenAlex tem as referências já resolvidas (`referenced_works`), a 1 crédito p
    sequencial num mapa interno também serviria, mas mudaria com a ordem das pessoas; o HMAC só muda quando a
    identidade da pessoa muda (ou o segredo se perde). O `mapa publicar` procura ORCIDs (com o dígito verificador),
    além de e-mails, em todos os JSON do site.
+
+## Identidade: o que o piloto mostrou
+
+A primeira versão confiava no ORCID acima de tudo: dois ORCIDs diferentes nunca se juntavam ("quando o OpenAlex funde
+homônimos, o ORCID separa"), e dois homônimos só se juntavam com um coautor em comum. A auditoria da identidade
+(todos os casos julgados à mão, com coautores, instituições, revistas e títulos de cada lado) mostrou o contrário do
+que a regra supunha:
+
+- **O ORCID errava para os dois lados.** Os 8 ids do OpenAlex que o conflito de ORCIDs repartia em duas pessoas não
+  eram homônimos fundidos: 5 eram a mesma pessoa com dois registros no ORCID, e 3 vinham de um ORCID trocado na fonte
+  (o de um coautor). E a união por ORCID juntava 8 autorias de nomes incompatíveis ("Marcelo Kunrath Silva" com o
+  ORCID de "Matheus Mazzilli Pereira"), com arestas falsas; em 2 delas a ArticleMeta e o OpenAlex discordavam do
+  ORCID, e o código preferia o da ArticleMeta.
+- **Manter homônimos separados errava quase sempre.** Dos 32 pares de homônimos exatos que ficavam separados, 30
+  eram a mesma pessoa (93,8%, IC95% de Wilson 79,9%–98,3%); numa amostra de 30 dos 81 pares de grafias variantes
+  ("Marjorie Marona" e "Marjorie Corrêa Marona"), 12 eram (40%, IC95% 24,6%–57,7%). Já as fusões por nome não
+  erraram (0 de 36). O erro dominante é a **fragmentação**: o OpenAlex dá vários ids à mesma pessoa.
+- **A instituição separa bem.** Juntar os homônimos com uma instituição casada em comum acertaria 22 dos 30 sem
+  nenhuma fusão errada; nas variantes da amostra, 7 dos 12, também sem fusão errada.
+
+Daí as regras de agora:
+
+1. o ORCID é conferido pelo nome antes de valer: se a ArticleMeta e o OpenAlex discordam, nenhum vale; um ORCID em
+   autorias de nomes incompatíveis (nenhuma parte do nome depois da primeira em comum) fica só com o maior grupo de
+   nomes compatíveis;
+2. o mesmo id do OpenAlex junta sempre, e o mesmo ORCID também, mesmo que a pessoa fique com dois ORCIDs; essas
+   pessoas vão para a revisão. Assim **nenhum id do OpenAlex fica em duas pessoas**, salvo um `nao_fundir` explícito
+   no `pessoas.yaml`;
+3. a autoria sem id nem ORCID entra na única pessoa de mesmo nome, como antes;
+4. homônimos e grafias variantes (o mesmo primeiro nome, as partes de um nome contidas nas do outro) se juntam com um
+   coautor **ou uma instituição** em comum (as do OpenAlex, com a linhagem, e as casadas pela geografia), desde que
+   todos os nomes de um grupo sejam comparáveis com todos os do outro: "Ana Silva" não emenda "Ana Maria Silva" com
+   "Ana Paula Silva".
+
+Medido com os mesmos julgamentos (os casos casados pelas autorias, na cópia do piloto): dos 30 pares de homônimos que
+eram a mesma pessoa, 25 agora se juntam, e os 2 que eram pessoas diferentes continuam separados; das variantes da
+amostra, 7 dos 12 se juntam, nenhuma das 18 distintas; os 8 ids repartidos e as 8 autorias com ORCID trocado estão
+corrigidos, e a varredura de fusões suspeitas (nomes incompatíveis na mesma pessoa) acha 0 casos, contra 8 antes. Das
+36 fusões por nome, 35 continuam; a outra virou um par de homônimos na revisão, porque a autoria ganhou um id do
+OpenAlex com o alinhamento novo. Os homônimos sem coautor nem instituição em comum (5 dos 30, como "Celso Amorim")
+continuam na revisão: um nome igual sozinho não basta, porque os dois pares distintos também eram nomes iguais.
 
 ## Números do piloto
 

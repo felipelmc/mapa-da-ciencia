@@ -6,16 +6,23 @@ autores, das afiliações e das referências que a coleta já traz.
 
 ## Quem é quem
 
-Um autor aparece em vários artigos com grafias diferentes, e dois autores diferentes podem ter o mesmo nome. A etapa
-junta as autorias em pessoas, em ordem de confiança:
+Um autor aparece em vários artigos com grafias diferentes, e dois autores diferentes podem ter o mesmo nome. No
+piloto, o erro mais comum é o primeiro: o OpenAlex dá vários ids à mesma pessoa, e a rede a mostraria em pedaços. A
+etapa junta as autorias em pessoas, em ordem de confiança:
 
-1. o **mesmo id de autor no OpenAlex** ou o **mesmo ORCID** (da ArticleMeta ou do OpenAlex) é a mesma pessoa, mas
-   dois ORCIDs diferentes nunca se juntam: quando o OpenAlex fundiu homônimos, o ORCID separa;
-2. uma autoria sem id nem ORCID entra na pessoa de mesmo nome, **se houver só uma**;
-3. dois homônimos sem ORCIDs em conflito se juntam se tiverem **um coautor em comum**.
+1. o **ORCID é conferido pelo nome**: se a ArticleMeta e o OpenAlex dão ORCIDs diferentes à mesma autoria, nenhum
+   vale; e um ORCID que aparece com nomes incompatíveis (um ORCID trocado na fonte, o de um coautor) fica só com o
+   nome dono dele;
+2. o **mesmo id de autor no OpenAlex** e o **mesmo ORCID** são a mesma pessoa, ainda que ela acabe com dois ORCIDs
+   (no piloto, isso era a mesma pessoa com dois registros no ORCID); um id do OpenAlex nunca fica em duas pessoas;
+3. uma autoria sem id nem ORCID entra na pessoa de mesmo nome, **se houver só uma**;
+4. dois homônimos, ou duas grafias variantes do mesmo nome ("Marjorie Marona" e "Marjorie Corrêa Marona"), se juntam
+   se tiverem **um coautor ou uma instituição em comum**.
 
-O que sobra de homônimos fica separado e aparece em `mapa redes --revisar`, com um bloco pronto para o `pessoas.yaml`
-do projeto (`fundir`, `nao_fundir` e `nomes`). O site não publica ORCIDs nem ids do OpenAlex: cada pessoa tem um id
+O que sobra fica separado e aparece em `mapa redes --revisar`, com as evidências de cada lado (documentos, anos,
+revistas, instituições, coautores e um título) e um bloco para o `pessoas.yaml` do projeto: `fundir`, `nao_fundir`
+(que também desfaz uma fusão automática) e `nomes`. As taxas medidas no piloto estão no
+[ADR 0014](../decisoes/0014-redes-de-coautoria-e-citacao.md#identidade-o-que-o-piloto-mostrou). O site não publica ORCIDs nem ids do OpenAlex: cada pessoa tem um id
 curto, um HMAC com o segredo do projeto (ver [Privacidade e licenças](privacidade-e-licencas.md)).
 
 ## Pesos fracionários
@@ -52,8 +59,9 @@ As referências vêm do OpenAlex (`referenced_works`), em lotes de 100 obras por
 - **O cânone é enviesado para o que o OpenAlex indexa**: artigos com DOI e livros em inglês entram bem; livros,
   capítulos e teses em português, muitas vezes, não. A coleta também guarda as referências da ArticleMeta, mas só
   3% a 9% delas trazem DOI, e o casamento aproximado por título fica para uma versão futura.
-- A identidade das pessoas erra nos homônimos sem id nem ORCID (a revisão manual corrige) e herda os erros de fusão
-  do OpenAlex que não têm ORCID para separá-los.
+- A identidade das pessoas erra mais por **fragmentação** do que por fusão: homônimos e grafias variantes sem
+  coautor nem instituição em comum ficam separados (5 dos 30 pares de homônimos do piloto que eram a mesma pessoa),
+  e a revisão manual corrige. Um id do OpenAlex que junte duas pessoas de mesmo nome só se separa no `pessoas.yaml`.
 - As afiliações não identificadas ficam fora da rede de instituições; os artigos sem afiliação, fora da rede de
   estados.
 - A rede é do corpus: uma pessoa que escreve com colegas de fora dele aparece com menos coautores do que tem.
