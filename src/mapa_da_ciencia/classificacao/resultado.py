@@ -8,9 +8,10 @@
 Guardar um par por modelo permite comparar modelos na amostra de validação (`mapa classificar --modelo`). O
 modelo principal, que vai para o painel, é o de `modelos.classificacao.modelo`.
 
-Um `--somente-amostra` com o modelo atualizado ou com outros parâmetros não pode trocar o resultado completo de
-outra execução: ele grava um terceiro par, `<modelo>__<hash do codebook>__amostra`, que só as métricas da
-validação leem (como `<modelo> (só amostra)`), até a rodada completa com a versão nova.
+Uma rodada que não pode trocar o resultado completo de outra execução (modelo atualizado, outros parâmetros ou
+outro prompt), por ser parcial (`--somente-amostra`, `--estimar`, `--limite`, interrompida) ou por ter falhas
+demais, grava as respostas da versão nova num terceiro par, `<modelo>__<hash do codebook>__a-parte`, que só as
+métricas da validação leem (como `<modelo> (versão nova)`).
 
 O `valor` fica como texto: a categoria, `true`/`false` nas booleanas, o texto livre, ou uma lista JSON nas de
 múltipla escolha.
@@ -43,11 +44,11 @@ COLUNAS = {
 }
 
 
-def nome_do_arquivo(modelo: str, hash_codebook: str, *, somente_amostra: bool = False) -> str:
-    """`qwen3.5:9b` e `fd011aa28377255d` → `qwen3.5-9b__fd011aa28377255d` (sem o digest do modelo), com `__amostra`
-    no fim no resultado à parte de um `--somente-amostra`."""
+def nome_do_arquivo(modelo: str, hash_codebook: str, *, a_parte: bool = False) -> str:
+    """`qwen3.5:9b` e `fd011aa28377255d` → `qwen3.5-9b__fd011aa28377255d` (sem o digest do modelo), com `__a-parte`
+    no fim no resultado à parte da versão nova."""
     base = re.sub(r"[^A-Za-z0-9._-]+", "-", modelo.split("@", 1)[0]).strip("-")
-    return f"{base}__{hash_codebook}" + ("__amostra" if somente_amostra else "")
+    return f"{base}__{hash_codebook}" + ("__a-parte" if a_parte else "")
 
 
 def valor_como_texto(valor: Any) -> str:
@@ -83,11 +84,11 @@ class Resultado:
     segundos_por_documento: float | None = None  # mediana das chamadas novas desta execução
     parcial: bool = False  # com --limite, --somente-amostra ou --estimar
     execucao: str = ""  # hash de modelo@digest, versão do prompt e parâmetros (vazio nos resultados antigos)
-    somente_amostra: bool = False  # o resultado à parte de um --somente-amostra (ver o começo do módulo)
+    a_parte: bool = False  # o resultado à parte da versão nova (ver o começo do módulo)
 
     def gravar(self, pasta: Path, linhas: list[dict[str, Any]]) -> None:
         pasta.mkdir(parents=True, exist_ok=True)
-        nome = nome_do_arquivo(self.modelo, self.hash_codebook, somente_amostra=self.somente_amostra)
+        nome = nome_do_arquivo(self.modelo, self.hash_codebook, a_parte=self.a_parte)
         (pasta / f"{nome}.json").unlink(missing_ok=True)
         gravar_tabela(linhas, COLUNAS, pasta / f"{nome}.parquet", ordem="doc")
         tmp = pasta / f"{nome}.json.tmp"
@@ -95,26 +96,26 @@ class Resultado:
         os.replace(tmp, pasta / f"{nome}.json")
 
     @classmethod
-    def ler(cls, pasta: Path, modelo: str, hash_codebook: str, *, somente_amostra: bool = False) -> Resultado | None:
-        arquivo = pasta / f"{nome_do_arquivo(modelo, hash_codebook, somente_amostra=somente_amostra)}.json"
+    def ler(cls, pasta: Path, modelo: str, hash_codebook: str, *, a_parte: bool = False) -> Resultado | None:
+        arquivo = pasta / f"{nome_do_arquivo(modelo, hash_codebook, a_parte=a_parte)}.json"
         if not arquivo.exists():
             return None
         return cls(**json.loads(arquivo.read_text(encoding="utf-8")))
 
     def apagar(self, pasta: Path) -> None:
-        nome = nome_do_arquivo(self.modelo, self.hash_codebook, somente_amostra=self.somente_amostra)
+        nome = nome_do_arquivo(self.modelo, self.hash_codebook, a_parte=self.a_parte)
         for sufixo in (".json", ".parquet"):
             (pasta / f"{nome}{sufixo}").unlink(missing_ok=True)
 
 
-def ler_linhas(pasta: Path, modelo: str, hash_codebook: str, *, somente_amostra: bool = False) -> list[dict[str, Any]]:
-    arquivo = pasta / f"{nome_do_arquivo(modelo, hash_codebook, somente_amostra=somente_amostra)}.parquet"
+def ler_linhas(pasta: Path, modelo: str, hash_codebook: str, *, a_parte: bool = False) -> list[dict[str, Any]]:
+    arquivo = pasta / f"{nome_do_arquivo(modelo, hash_codebook, a_parte=a_parte)}.parquet"
     return ler_tabela(arquivo) if arquivo.exists() else []
 
 
 def resultados(pasta: Path) -> list[Resultado]:
-    """Todas as execuções gravadas (um modelo e um codebook cada, e os resultados à parte de um --somente-amostra),
-    da mais recente à mais antiga."""
+    """Todas as execuções gravadas (um modelo e um codebook cada, e os resultados à parte da versão nova), da mais
+    recente à mais antiga."""
     saida = []
     for arquivo in pasta.glob("*.json") if pasta.exists() else []:
         saida.append(Resultado(**json.loads(arquivo.read_text(encoding="utf-8"))))

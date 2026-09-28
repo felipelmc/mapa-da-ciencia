@@ -133,6 +133,61 @@ def test_rodada_parcial_de_outra_execucao_nao_troca_o_resultado_completo(projeto
     assert not guardado.parcial and guardado.modelo.endswith("@novo00000000")
 
 
+def _falhar(apis_falsas, fracao: float):
+    """O chat responde algo que não é JSON para a `fracao` dos documentos, sempre os mesmos (pelo texto)."""
+    import zlib
+
+    original = apis_falsas.responder_chat
+
+    def responder(corpo):
+        documento = next(m["content"] for m in corpo["messages"] if m["role"] == "user")
+        return "isto não é JSON" if zlib.crc32(documento.encode()) % 1000 < 1000 * fracao else original(corpo)
+
+    apis_falsas.responder_chat = responder
+
+
+@pytest.mark.parametrize("fracao", [1.0, 0.5])
+def test_rodada_completa_com_falhas_demais_nao_troca_o_resultado_completo(projeto, apis_falsas, fracao):
+    """Um modelo atualizado (ou um parâmetro novo) que devolve JSON inválido em tudo, ou na metade, não apaga a
+    classificação completa anterior: ela fica, e as respostas da versão nova ficam à parte, com aviso na CLI e no
+    `mapa status`."""
+    completo = mapa.classificar(projeto, progresso=False)
+    pasta, hash_cb = projeto.dados / PASTA, projeto.codebook.hash()
+    antes = Resultado.ler(pasta, "qwen3.5:4b", hash_cb)
+    time.sleep(1.05)  # o manifesto de cada execução tem o segundo no nome
+    apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"
+    _falhar(apis_falsas, fracao)
+    r = runner.invoke(app, ["classificar", "-P", str(projeto.raiz)], env={"COLUMNS": "200"})
+    saida = " ".join(r.output.split())
+    assert r.exit_code == 0, r.output
+    assert "mais que o limite para substituí-lo (1, 2% dos documentos)" in saida
+    assert '"qwen3.5:4b (versão nova)"' in saida and "Documentos que falham sempre" in saida
+    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb) == antes and classificacao_em_dia(projeto) is True
+    a_parte = Resultado.ler(pasta, "qwen3.5:4b", hash_cb, a_parte=True)
+    assert a_parte.modelo.endswith("@novo00000000") and len(a_parte.falhas) > 1
+    assert a_parte.classificados + len(a_parte.falhas) == completo.documentos
+    m = ultima_execucao(projeto, "classificacao")
+    assert m["parametros"]["gravado"] is False
+    m = ultima_execucao(projeto, "classificacao", da_classificacao_principal(projeto))
+    assert m["modelos"]["classificacao"] == antes.modelo
+    exportado = json.loads((projeto.saida / "dados" / "manifesto.json").read_text(encoding="utf-8"))
+    assert exportado["execucao"]["modelos"]["classificacao"] == antes.modelo
+    assert exportado["contagens"]["classificados"] == completo.documentos
+    s = runner.invoke(app, ["status", "-P", str(projeto.raiz)], env={"COLUMNS": "200"})
+    assert "Uma versão nova (qwen3.5:4b@novo00000000) está à parte e não substituiu esta" in " ".join(s.output.split())
+
+
+def test_status_explica_o_documento_que_falha_sempre(projeto, apis_falsas):
+    """Com uma falha determinística, a classificação fica incompleta: o `mapa status` diz por quê, sem mandar só
+    rodar de novo."""
+    _falhar_sempre_num_documento(apis_falsas)
+    r = mapa.classificar(projeto, progresso=False)
+    assert len(r.falhas) == 1 and classificacao_em_dia(projeto) is False
+    s = " ".join(runner.invoke(app, ["status", "-P", str(projeto.raiz)], env={"COLUMNS": "200"}).output.split())
+    assert f"1 documento(s) sem resposta válida nas duas tentativas (por exemplo {r.falhas[0]})" in s
+    assert "Documentos que falham sempre" in s and "para completá-la" not in s
+
+
 def _falhar_sempre_num_documento(apis_falsas):
     """O chat responde algo que não é JSON para um documento, nas duas tentativas (uma falha determinística, como
     com temperatura 0 e semente fixa)."""
@@ -177,17 +232,17 @@ def test_somente_amostra_com_a_versao_nova_fica_a_parte_e_entra_nas_metricas(pro
     a = mapa.amostra_de_validacao(projeto, n=5)
     apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"
     r = runner.invoke(app, ["classificar", "-P", str(projeto.raiz), "--somente-amostra"], env={"COLUMNS": "200"})
-    assert r.exit_code == 0 and '"qwen3.5:4b (só amostra)"' in " ".join(r.output.split()), r.output
+    assert r.exit_code == 0 and '"qwen3.5:4b (versão nova)"' in " ".join(r.output.split()), r.output
     assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb) == completo and classificacao_em_dia(projeto) is True
-    a_parte = Resultado.ler(pasta, "qwen3.5:4b", hash_cb, somente_amostra=True)
+    a_parte = Resultado.ler(pasta, "qwen3.5:4b", hash_cb, a_parte=True)
     assert a_parte.modelo.endswith("@novo00000000") and a_parte.parcial and a_parte.classificados == len(a.docs)
     v = calcular(projeto, reamostras=10)
-    assert [p.nome for p in v.participantes if p.tipo == "modelo"] == ["qwen3.5:4b", "qwen3.5:4b (só amostra)"]
-    assert any(m.comparacao == "qwen3.5:4b × qwen3.5:4b (só amostra)" for m in v.metricas)
+    assert [p.nome for p in v.participantes if p.tipo == "modelo"] == ["qwen3.5:4b", "qwen3.5:4b (versão nova)"]
+    assert any(m.comparacao == "qwen3.5:4b × qwen3.5:4b (versão nova)" for m in v.metricas)
     # a rodada completa com a versão nova substitui o completo, e a amostra à parte, agora repetida, sai
     mapa.classificar(projeto, progresso=False)
     assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb).modelo.endswith("@novo00000000")
-    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb, somente_amostra=True) is None
+    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb, a_parte=True) is None
     assert [p.nome for p in calcular(projeto, reamostras=10).participantes] == ["qwen3.5:4b"]
 
 
@@ -215,3 +270,18 @@ def test_codebook_editado_no_meio_da_etapa_nao_muda_o_hash_do_manifesto(projeto,
     assert projeto.codebook.hash() != antes  # a edição chegou ao projeto
     assert Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", antes).hash_codebook == antes
     assert ultima_execucao(projeto, "classificacao")["hash_codebook"] == antes
+
+
+def test_gravacoes_periodicas_da_rodada_completa_nao_deixam_aviso_de_parcial(projeto, apis_falsas, monkeypatch):
+    """Numa rodada completa longa com a versão nova, as gravações a cada N documentos vão para o resultado à parte;
+    no fim, o completo é trocado, e a saída não diz que o anterior foi mantido."""
+    import mapa_da_ciencia.classificacao.pipeline as pipeline
+
+    mapa.classificar(projeto, progresso=False)
+    apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"
+    monkeypatch.setattr(pipeline, "GRAVAR_A_CADA", 2)
+    r = mapa.classificar(projeto, progresso=False)
+    assert not r.parcial and not any("foi mantido" in a for a in r.avisos), r.avisos
+    pasta, hash_cb = projeto.dados / PASTA, projeto.codebook.hash()
+    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb).modelo.endswith("@novo00000000")
+    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb, a_parte=True) is None

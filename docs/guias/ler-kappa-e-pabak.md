@@ -60,7 +60,7 @@ Uma categoria com revocação baixa é uma que o modelo não reconhece; com prec
 
 Com dois modelos classificando a amostra (`mapa classificar --somente-amostra --modelo X`), o **teste de McNemar exato** compara os acertos dos dois contra a mesma referência. Ele conta só os documentos em que um acertou e o outro errou, e o valor-p diz se essa diferença vai além do acaso. A saída menciona só as variáveis com p < 0,05. Com muitas variáveis, alguma sai abaixo de 0,05 por acaso: leia o conjunto, não uma variável isolada.
 
-O mesmo vale para duas versões do modelo principal. Depois de atualizá-lo no Ollama ou de mudar um parâmetro dele, `mapa classificar --somente-amostra` grava as respostas da versão nova à parte, e elas aparecem nas métricas como `<modelo> (só amostra)`, ao lado do resultado completo anterior.
+O mesmo vale para duas versões do modelo principal. Depois de atualizá-lo no Ollama ou de mudar um parâmetro dele, `mapa classificar --somente-amostra` grava as respostas da versão nova à parte, e elas aparecem nas métricas como `<modelo> (versão nova)`, ao lado do resultado completo anterior (veja [Uma versão nova do modelo ou dos parâmetros](classificar.md#uma-versao-nova-do-modelo-ou-dos-parametros)).
 
 ## Codificador de referência não é uma pessoa
 

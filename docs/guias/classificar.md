@@ -44,9 +44,19 @@ A chave de cada resposta guardada inclui o texto, o codebook, o modelo (com a ve
 
 Teste o codebook numa amostra (`--limite 20`) antes de rodar o corpus inteiro.
 
-Depois de atualizar o modelo ou mudar os parâmetros, o resultado completo anterior continua valendo até uma rodada completa com a versão nova terminar. Um `--estimar`, um `--limite` ou uma rodada interrompida não o substituem, e a saída avisa. A rodada completa o substitui mesmo que alguns documentos falhem nas duas tentativas: eles ficam para a próxima rodada, e o `mapa status` mostra a classificação como incompleta até lá.
+### Uma versão nova do modelo ou dos parâmetros
 
-Para medir o efeito da versão nova antes de rodar o corpus inteiro, use `--somente-amostra`: as respostas da amostra vão para um resultado à parte (`dados/classificacao/<modelo>__<hash do codebook>__amostra.*`), que não toca o completo nem o painel. `mapa validar metricas` compara as duas versões, e a nova aparece como `<modelo> (só amostra)`. A rodada completa com a versão nova apaga esse resultado à parte, que passa a repetir o completo.
+Depois de atualizar o modelo ou mudar os parâmetros, o resultado completo anterior continua valendo até uma rodada completa com a versão nova terminar. Um `--somente-amostra`, um `--estimar`, um `--limite` ou uma rodada interrompida não o substituem. A rodada completa o substitui mesmo que alguns documentos falhem nas duas tentativas, até 2% deles (no mínimo 1). Com mais falhas que isso, a versão nova provavelmente tem um problema (um parâmetro que corta a resposta, um modelo que não segue o esquema), e o resultado anterior fica.
+
+Enquanto a versão nova não substitui o resultado completo, as respostas dela vão para um resultado à parte (`dados/classificacao/<modelo>__<hash do codebook>__a-parte.*`), e a saída avisa. O `mapa status` mostra essa versão à parte, e `mapa validar metricas` a compara com o resultado completo na amostra de validação, como `<modelo> (versão nova)`. Para medir o efeito de uma versão nova antes de rodar o corpus inteiro, use `--somente-amostra`. A rodada completa com a versão nova apaga o resultado à parte, que passa a repetir o completo.
+
+### Documentos que falham sempre
+
+Um documento sem resposta válida depois de duas tentativas fica sem classificação, e a saída e o `mapa status` dizem quais são. Com temperatura 0 e semente fixa (o padrão), o modelo responde igual a cada rodada, e a falha tende a se repetir: rodar de novo não resolve, e a classificação continua "incompleta" no `mapa status` e no painel. Nesse caso:
+
+1. **Veja o documento** (o id vem na saída): um resumo muito longo, cortado ou com a formatação quebrada costuma ser a causa.
+2. **Aumente `num_ctx`** ou **desligue `pensar`** em `modelos.classificacao`, no `mapa.yaml`, se o resumo é longo ou se o raciocínio consome o contexto. Isso muda a execução: a próxima rodada classifica tudo de novo, e o resultado anterior só é trocado quando ela termina. Meça antes na amostra (`--somente-amostra`).
+3. **Ou deixe como está.** Os documentos que falharam ficam fora das contagens da classificação, e o `mapa status` continua dizendo quantos são.
 
 ## Consultar o resultado
 

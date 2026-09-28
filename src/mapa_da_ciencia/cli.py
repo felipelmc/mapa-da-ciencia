@@ -246,11 +246,32 @@ def _mostrar_classificacao_status(p: Projeto) -> None:
         + (f"; evidência literal em {num(100 * literal, 0)}%" if literal is not None else "")
         + "."
     )
-    if em_dia is False:
+    so_falhas = bool(r.falhas) and r.classificados + len(r.falhas) >= r.documentos  # nada mais ficou de fora
+    if em_dia is False and not (so_falhas and _mesmo_corpus(p, r.assinatura)):
         console.print(
             "[yellow]A classificação está incompleta ou é de antes da última coleta.[/] Rode "
             "[bold]mapa classificar[/] para completá-la."
         )
+    if r.falhas:
+        console.print(
+            f"[yellow]{num(len(r.falhas), 0)} documento(s) sem resposta válida nas duas tentativas[/] (por exemplo "
+            f"{', '.join(r.falhas[:3])}). Com temperatura 0 e semente fixa, a falha tende a se repetir: veja "
+            "“Documentos que falham sempre” no guia Classificar os resumos."
+        )
+    a_parte = Resultado.ler(p.dados / PASTA, cfg.modelo, p.codebook.hash(), a_parte=True)
+    if a_parte is not None:
+        console.print(
+            f"[yellow]Uma versão nova ({a_parte.modelo}) está à parte e não substituiu esta[/]: "
+            f"{num(a_parte.classificados, 0)} de {num(a_parte.documentos, 0)} documentos, "
+            f"{num(len(a_parte.falhas), 0)} sem resposta válida. `mapa validar metricas` compara as duas na amostra."
+        )
+
+
+def _mesmo_corpus(p: Projeto, assinatura: str) -> bool:
+    from mapa_da_ciencia.armazenamento import ler_documentos
+    from mapa_da_ciencia.topicos.resultado import assinatura_corpus
+
+    return assinatura == assinatura_corpus([d.id for d in ler_documentos(p.dados / ARQUIVO_DOCUMENTOS)])
 
 
 def _mostrar_geografia(p: Projeto) -> None:
@@ -686,7 +707,7 @@ def _mostrar_classificacao(p: Projeto, resumo, *, estimar: bool) -> None:
     from mapa_da_ciencia.classificacao.resultado import PASTA, ler_linhas
 
     console.print(f"\n[bold green]Classificação pronta[/]: {resumo}")
-    linhas = ler_linhas(p.dados / PASTA, resumo.modelo, p.codebook.hash(), somente_amostra=resumo.amostra_a_parte)
+    linhas = ler_linhas(p.dados / PASTA, resumo.modelo, p.codebook.hash(), a_parte=resumo.a_parte)
     tabela = Table("Variável", "Mais frequentes", "Evidência literal")
     for v in p.codebook.variaveis:
         valores = Counter(linha["valor"] for linha in linhas if linha["variavel"] == v.id)

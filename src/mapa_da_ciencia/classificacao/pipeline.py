@@ -35,6 +35,9 @@ from .resultado import PASTA, Resultado, resultados, valor_como_texto
 
 AMOSTRA_ESTIMATIVA = 5
 GRAVAR_A_CADA = 50
+# a fração dos textos que pode ficar sem resposta válida numa rodada completa que substitui o resultado completo de
+# outra execução (com no mínimo 1 documento): acima disso, a versão nova provavelmente tem um problema
+LIMITE_FALHAS = 0.02
 
 
 @dataclass
@@ -64,7 +67,7 @@ class ResumoClassificacao:
     duracao_s: float
     parcial: bool
     avisos: list[str] = field(default_factory=list)
-    amostra_a_parte: bool = False  # gravado no resultado à parte da amostra (`Resultado.somente_amostra`)
+    a_parte: bool = False  # gravado no resultado à parte da versão nova (`Resultado.a_parte`)
 
     def __str__(self) -> str:
         literal = self.evidencia.get("literal")
@@ -143,17 +146,19 @@ def classificar(
     parametros = (modelo_cfg.num_ctx, modelo_cfg.temperatura, modelo_cfg.semente, modelo_cfg.pensar)
     execucao = chave_de(classificador.modelo, VERSAO_PROMPT, parametros)[:16]
     # um resultado completo de outra execução (modelo atualizado, outro prompt ou outros parâmetros) não é trocado
-    # por um parcial desta (um --estimar ou --limite, ou uma rodada interrompida): só a rodada completa o substitui,
-    # mesmo que alguns documentos tenham falhado nas duas tentativas (com temperatura 0 e semente fixa, a falha
-    # tende a se repetir, e o resultado novo nunca chegaria)
+    # por um parcial desta (--somente-amostra, --estimar, --limite ou uma rodada interrompida): só a rodada completa
+    # o substitui, mesmo que alguns documentos tenham falhado nas duas tentativas (com temperatura 0 e semente fixa, a
+    # falha tende a se repetir, e o resultado novo nunca chegaria), mas não com falhas demais (acima de
+    # `LIMITE_FALHAS`: um modelo que devolve JSON inválido em tudo apagaria horas de classificação). Enquanto isso,
+    # as respostas da versão nova ficam no resultado à parte, que as métricas da validação comparam com o completo
     anterior = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
     protegido = (
         anterior is not None
         and not anterior.parcial
         and (anterior.execucao or anterior.modelo) != (execucao if anterior.execucao else classificador.modelo)
     )
-    avisos_gravacao: list[str] = []
-    gravou = False  # a última chamada de `gravar` gravou o resultado?
+    limite_falhas = max(1, int(len(textos) * LIMITE_FALHAS))
+    gravou = False  # a última chamada de `gravar` gravou o resultado principal?
     principal = not opcoes.modelo or opcoes.modelo == cfg.modelos.classificacao.modelo
     assinatura = assinatura_corpus([d.id for d in docs])
 
@@ -162,25 +167,11 @@ def classificar(
         com uma exportação para o painel (assim a rodada longa aparece enquanto corre)."""
         nonlocal gravou
         resultados = resultados + fora_do_alvo
-        # cobre o corpus: a rodada chegou ao fim, e cada texto foi classificado ou falhou nas duas tentativas
-        cobre = not parcial and len(resultados) + len(k.falhas) >= len(textos)
+        # cobre o corpus: a rodada chegou ao fim, cada texto foi classificado ou falhou nas duas tentativas, e as
+        # falhas não passam do limite
+        cobre = not parcial and len(resultados) + len(k.falhas) >= len(textos) and len(k.falhas) <= limite_falhas
         parcial = parcial or len(resultados) < len(textos)
-        gravar_de_fato = not protegido or cobre
-        gravou = gravar_de_fato
-        # --somente-amostra com o modelo atualizado ou outros parâmetros: as respostas vão para o resultado à parte da
-        # amostra, que as métricas da validação comparam com o completo anterior, sem tocar nele
-        a_parte = not gravar_de_fato and opcoes.somente_amostra
-        if not gravar_de_fato and not avisos_gravacao:
-            nome = anterior.modelo.split("@", 1)[0]
-            avisos_gravacao.append(
-                f"O resultado completo anterior ({nome}, de outra execução) continua valendo para o painel. As "
-                "respostas da amostra com a versão nova ficam num resultado à parte, que `mapa validar metricas` "
-                f'compara com ele como "{nome.removesuffix(":latest")} (só amostra)". Rode `mapa classificar` sem '
-                "--somente-amostra para substituí-lo."
-                if a_parte
-                else f"O resultado completo anterior ({nome}, de outra execução) foi mantido: esta rodada é "
-                "parcial. Rode `mapa classificar` sem --limite/--estimar para substituí-lo."
-            )
+        gravou = not protegido or cobre
         linhas = [linha for c in sorted(resultados, key=lambda c: c.doc) for linha in _linhas(c, variaveis)]
         status = Counter(linha["status"] for linha in linhas if linha["status"] != "dispensada")
         total_status = sum(status.values()) or 1
@@ -208,14 +199,13 @@ def classificar(
             segundos_por_documento=round(statistics.median(segundos), 2) if segundos else None,
             parcial=parcial or bool(k.falhas),
             execucao=execucao,
-            somente_amostra=a_parte,
+            a_parte=not gravou,
         )
-        if gravar_de_fato or a_parte:
-            resultado.gravar(projeto.dados / PASTA, linhas)
-        if gravar_de_fato:  # a amostra à parte desta mesma execução ficou repetida
-            amostra = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash(), somente_amostra=True)
-            if amostra is not None and amostra.execucao == execucao:
-                amostra.apagar(projeto.dados / PASTA)
+        resultado.gravar(projeto.dados / PASTA, linhas)
+        if gravou:  # a versão à parte desta mesma execução ficou repetida
+            a_parte = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash(), a_parte=True)
+            if a_parte is not None and a_parte.execucao == execucao:
+                a_parte.apagar(projeto.dados / PASTA)
         return resultado
 
     resultados: list[Classificacao] = []
@@ -262,12 +252,33 @@ def classificar(
         estimativa_restante_s=estimativa,
         duracao_s=round(time.perf_counter() - t0, 2),
         parcial=resultado.parcial,
-        amostra_a_parte=resultado.somente_amostra,
+        a_parte=resultado.a_parte,
     )
     if k.falhas:
         resumo.avisos.append(
             f"{num(len(k.falhas), 0)} documento(s) sem resposta válida depois de duas tentativas (por exemplo "
-            f"{', '.join(k.falhas[:3])}); rode a etapa de novo para tentar outra vez."
+            f"{', '.join(k.falhas[:3])}). Rodar de novo tenta outra vez, mas com temperatura 0 e semente fixa a falha "
+            "tende a se repetir: veja “Documentos que falham sempre” no guia Classificar os resumos."
+        )
+    if resultado.a_parte:
+        nome = anterior.modelo.split("@", 1)[0] if anterior else classificador.modelo.split("@", 1)[0]
+        versao_nova = f'"{nome.removesuffix(":latest")} (versão nova)"'
+        if len(k.falhas) > limite_falhas and resultado.classificados + len(k.falhas) >= len(textos):
+            motivo = (
+                f"{num(len(k.falhas), 0)} documentos ficaram sem resposta válida com a versão nova, mais que o limite "
+                f"para substituí-lo ({num(limite_falhas, 0)}, 2% dos documentos)"
+            )
+            conselho = (
+                "Confira o modelo e os parâmetros na amostra (`mapa classificar --somente-amostra`) antes de rodar "
+                "tudo de novo."
+            )
+        else:
+            motivo = "esta rodada é parcial"
+            conselho = "Rode `mapa classificar` sem --somente-amostra, --limite ou --estimar para substituí-lo."
+        resumo.avisos.append(
+            f"O resultado completo anterior ({nome}, de outra execução) foi mantido: {motivo}. As respostas da versão "
+            f"nova ficam num resultado à parte, que `mapa validar metricas` compara com ele como {versao_nova}. "
+            + conselho
         )
     registrar_execucao(
         projeto,
@@ -297,8 +308,7 @@ def classificar(
         },
         hash_codebook=resultado.hash_codebook,  # o do começo da etapa, mesmo que o arquivo mude no meio dela
     )
-    resumo.avisos += avisos_gravacao
-    if principal and (gravou or resultado.somente_amostra):  # a amostra à parte entra nas métricas do painel
+    if principal and (gravou or resultado.a_parte):  # a versão à parte entra nas métricas do painel
         resumo.avisos += exportar(projeto)
     return resumo
 

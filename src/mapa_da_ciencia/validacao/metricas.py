@@ -327,9 +327,9 @@ def _nome_modelo(modelo: str) -> str:
 
 
 def _nome_participante(r: Resultado) -> str:
-    """O nome do modelo nas métricas; o resultado à parte de um `--somente-amostra` (a versão nova do modelo ou dos
-    parâmetros, medida só na amostra) aparece ao lado do completo."""
-    return _nome_modelo(r.modelo) + (" (só amostra)" if r.somente_amostra else "")
+    """O nome do modelo nas métricas; o resultado à parte (a versão nova do modelo ou dos parâmetros, que ainda não
+    substituiu o completo) aparece ao lado do completo."""
+    return _nome_modelo(r.modelo) + (" (versão nova)" if r.a_parte else "")
 
 
 def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS) -> Validacao:
@@ -360,9 +360,7 @@ def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS) -> Validacao:
         if r.hash_codebook != hash_cb or nome in tipos:
             continue
         linhas = [
-            linha
-            for linha in ler_linhas(pasta, r.modelo, hash_cb, somente_amostra=r.somente_amostra)
-            if linha["doc"] in na_amostra
+            linha for linha in ler_linhas(pasta, r.modelo, hash_cb, a_parte=r.a_parte) if linha["doc"] in na_amostra
         ]
         if not linhas:
             continue
