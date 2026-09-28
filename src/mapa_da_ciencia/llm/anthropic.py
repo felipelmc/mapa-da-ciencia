@@ -7,10 +7,13 @@ que é uma dependência opcional: `pip install 'mapa-da-ciencia[anthropic]'`.
 - **Saída estruturada:** a resposta segue um JSON Schema (`output_config.format`), e o texto volta como JSON.
 - **Cache do prompt:** as instruções do supervisor (iguais em todos os pedidos) vão com `cache_control`, e só a
   primeira chamada paga a entrada inteira delas.
-- **Custo:** o uso de tokens de cada resposta é somado e convertido em dólares pela tabela `PRECOS`; `ErroOrcamento`
-  para antes de passar do limite. A estimativa prévia (`estimar_custo`) é conservadora: conta o raciocínio do
-  modelo como saída.
-- **Chave:** vem de `ANTHROPIC_API_KEY` (ambiente ou `.env` do projeto) e nunca é gravada em lugar nenhum.
+- **Custo:** o uso de tokens de cada resposta é somado e convertido em dólares pela tabela `PRECOS`. Antes de cada
+  chamada, `ErroOrcamento` para se o **pior caso** dela (a entrada, as instruções escritas no cache e `MAX_TOKENS`
+  de saída, raciocínio incluído) passaria do limite: o gasto nunca passa dele. A estimativa prévia (`estimar_custo`)
+  é a do custo esperado, com `SAIDA_ESTIMADA` tokens de saída por pedido.
+- **Chave:** vem de `ANTHROPIC_API_KEY` (ambiente ou `.env` do projeto), nunca é gravada em lugar nenhum e fica fora
+  do `repr`.
+- **Rede:** o cliente do SDK usa os certificados do sistema operacional, como o resto do pacote (ADR 0001).
 """
 
 from __future__ import annotations
@@ -29,7 +32,7 @@ PRECOS: dict[str, tuple[float, float, float, float]] = {
 }
 CARACTERES_POR_TOKEN = 3.5
 SAIDA_ESTIMADA = 1500  # tokens por resposta, com o raciocínio (o esforço médio pensa pouco num pedido curto)
-MAX_TOKENS = 16000
+MAX_TOKENS = 8000  # teto da resposta, raciocínio incluído: é o pior caso que o limite de gasto confere
 
 
 class ErroOrcamento(ErroProvedor):
@@ -59,6 +62,14 @@ def estimar_custo(modelo: str, sistema: str, pedidos: list[str]) -> float:
     return total / 1e6
 
 
+def pior_caso(modelo: str, sistema: str, pedido: str) -> float:
+    """O máximo que uma chamada pode custar, em dólares: as instruções escritas no cache (o preço mais alto delas), o
+    pedido como entrada e `MAX_TOKENS` de saída."""
+    entrada, saida, _, escrita = precos(modelo)
+    tokens = estimar_tokens(sistema) * max(entrada, escrita) + estimar_tokens(pedido) * entrada
+    return (tokens + MAX_TOKENS * saida) / 1e6
+
+
 @dataclass
 class Uso:
     entrada: int = 0
@@ -81,8 +92,8 @@ class Anthropic:
     modelo: str
     esforco: str = "medium"
     limite_usd: float | None = None
-    chave: str | None = None
-    cliente: Any = None  # um `anthropic.Anthropic` (ou um substituto nos testes)
+    chave: str | None = field(default=None, repr=False)
+    cliente: Any = field(default=None, repr=False)  # um `anthropic.Anthropic` (ou um substituto nos testes)
     uso: Uso = field(default_factory=Uso)
 
     def __post_init__(self) -> None:
@@ -100,20 +111,24 @@ class Anthropic:
                     "Falta a chave da API: ponha `ANTHROPIC_API_KEY=...` no `.env` do projeto (o arquivo não vai para "
                     "o git) ou no ambiente."
                 )
-            self.cliente = anthropic.Anthropic(api_key=self.chave, max_retries=4)
+            from ..rede import contexto_ssl
+
+            self.cliente = anthropic.Anthropic(
+                api_key=self.chave,
+                max_retries=4,
+                http_client=anthropic.DefaultHttpxClient(verify=contexto_ssl()),
+            )
 
     def custo_usd(self) -> float:
         return self.uso.custo(self.modelo)
 
     def gerar_estruturado(self, sistema: str, pedido: str, esquema: dict[str, Any]) -> dict[str, Any]:
         """Uma chamada: as instruções (com cache), o pedido e a resposta no formato do esquema."""
-        if self.limite_usd is not None:
-            proxima = estimar_custo(self.modelo, "", [pedido]) + estimar_tokens(sistema) * precos(self.modelo)[2] / 1e6
-            if self.custo_usd() + proxima > self.limite_usd:
-                raise ErroOrcamento(
-                    f"A próxima chamada passaria do limite de gasto (US$ {self.limite_usd:.2f}; gasto até aqui: "
-                    f"US$ {self.custo_usd():.2f}). Aumente `--limite-gasto` para continuar."
-                )
+        if self.limite_usd is not None and self.custo_usd() + pior_caso(self.modelo, sistema, pedido) > self.limite_usd:
+            raise ErroOrcamento(
+                f"A próxima chamada poderia passar do limite de gasto (US$ {self.limite_usd:.2f}; gasto até aqui: "
+                f"US$ {self.custo_usd():.2f}). Aumente `--limite-gasto` para continuar."
+            )
         try:
             resposta = self.cliente.messages.create(
                 model=self.modelo,

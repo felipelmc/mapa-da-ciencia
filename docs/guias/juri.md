@@ -90,8 +90,10 @@ mapa juri supervisionar
 ```
 
 O comando mostra quantos pedidos serão enviados e o custo estimado, e pergunta antes de enviar (`--sim` pula a
-pergunta). Se a estimativa passar do limite, ele não começa; se o gasto real chegar perto do limite, ele para e
-guarda o que já respondeu. As respostas passam pela mesma conferência do protocolo por arquivos.
+pergunta). Se a estimativa passar do limite, ele não começa. Antes de cada pedido, ele confere se o pior caso (a
+resposta mais longa possível, com o raciocínio do modelo) ainda cabe no que sobra do limite; se não couber, para e
+guarda o que já respondeu. Assim, o gasto nunca passa do limite, e pode parar um pouco antes dele. As respostas
+passam pela mesma conferência do protocolo por arquivos.
 
 ## O relatório
 
