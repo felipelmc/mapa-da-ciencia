@@ -117,11 +117,12 @@ def test_o_status_mostra_a_execucao_que_gerou_o_resultado(projeto, apis_falsas):
     def dados():
         return Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
 
-    mapa.classificar(projeto, limite=12, progresso=False)  # parcial, versão 1
+    mapa.classificar(projeto, limite=3, progresso=False)  # parcial, versão 1
     va.sortear(projeto)
     time.sleep(1.05)
     apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"
-    mapa.classificar(projeto, somente_amostra=True, progresso=False)  # grava o principal: o anterior era parcial
+    # grava o principal: o anterior tinha menos documentos classificados que a amostra
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)
     m = ultima_classificacao(projeto)
     assert dados().modelo.endswith("@novo00000000") and m["modelos"]["classificacao"] == dados().modelo
     assert estados_das_etapas(projeto)["classificacao"]["ultima"]["contagens"]["classificados"] == dados().classificados
@@ -138,13 +139,13 @@ def test_o_status_mostra_a_execucao_que_gerou_o_resultado(projeto, apis_falsas):
 
 
 def test_rodada_interrompida_que_grava_o_resultado_deixa_manifesto(projeto, apis_falsas, monkeypatch):
-    """Uma rodada interrompida que grava o resultado principal (o anterior era parcial) registra a execução: o status
-    mostra a dos dados, e não a anterior. Se nem assim houver manifesto dela, nenhum é mostrado."""
+    """Uma rodada interrompida que grava o resultado principal (o anterior tinha menos documentos) registra a
+    execução: o status mostra a dos dados, e não a anterior. Se nem assim houver manifesto dela, nenhum é mostrado."""
     import mapa_da_ciencia.classificacao.pipeline as pipeline
     from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado
     from mapa_da_ciencia.manifesto import estados_das_etapas, ultima_classificacao
 
-    mapa.classificar(projeto, limite=12, progresso=False)  # parcial, versão 1
+    mapa.classificar(projeto, limite=3, progresso=False)  # parcial, versão 1, com menos que a rodada interrompida
     time.sleep(1.05)
     apis_falsas.digests["qwen3.5:4b"] = "v2000000000000000"
     monkeypatch.setattr(pipeline, "GRAVAR_A_CADA", 3)

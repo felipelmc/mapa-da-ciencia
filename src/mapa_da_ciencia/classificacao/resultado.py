@@ -8,10 +8,9 @@
 Guardar um par por modelo permite comparar modelos na amostra de validação (`mapa classificar --modelo`). O
 modelo principal, que vai para o painel, é o de `modelos.classificacao.modelo`.
 
-Uma rodada que não pode trocar o resultado completo de outra execução (modelo atualizado, outros parâmetros ou
-outro prompt), por ser parcial (`--somente-amostra`, `--estimar`, `--limite`, interrompida) ou por ter falhas
-demais, grava as respostas da versão nova num terceiro par, `<modelo>__<hash do codebook>__a-parte`, que só as
-métricas da validação leem (como `<modelo> (versão nova)`).
+Uma rodada que não pode gravar no resultado principal (ver `classificacao.pipeline.classificar`: só uma rodada que
+cobre o corpus o substitui, e nenhuma outra o diminui) grava as respostas num terceiro par,
+`<modelo>__<hash do codebook>__a-parte`, que só as métricas da validação leem (como `<modelo> (versão nova)`).
 
 O `valor` fica como texto: a categoria, `true`/`false` nas booleanas, o texto livre, ou uma lista JSON nas de
 múltipla escolha.

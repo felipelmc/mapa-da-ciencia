@@ -123,7 +123,7 @@ def test_rodada_parcial_de_outra_execucao_nao_troca_o_resultado_completo(projeto
     time.sleep(1.05)  # o manifesto de cada execução tem o segundo no nome: o próximo não pode sobrescrever este
     apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"  # o modelo foi atualizado
     r = mapa.classificar(projeto, estimar=True, progresso=False)
-    assert any("resultado completo anterior" in a for a in r.avisos)
+    assert any("O resultado anterior (qwen3.5:4b, 25 documentos classificados) foi mantido" in a for a in r.avisos)
     guardado = Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
     assert guardado.classificados == completo and not guardado.parcial
     # o status e a duração publicada mostram a execução dos dados, e não o --estimar que não gravou
@@ -340,7 +340,7 @@ def _interromper_depois_de(apis_falsas, n: int):
 @pytest.mark.parametrize("rodada", ["tudo_falha", "interrompida", "somente_amostra"])
 def test_resultado_completo_com_uma_falha_continua_protegido(projeto, apis_falsas, monkeypatch, rodada):
     """Um resultado completo com uma falha (aceito dentro do limite, ou com um documento que falha sempre) fica
-    marcado como parcial, mas a rodada que o gravou terminou: ele continua protegido contra a versão seguinte."""
+    marcado como parcial, mas nenhuma rodada da versão seguinte que não cobre o corpus o diminui."""
     import mapa_da_ciencia.classificacao.pipeline as pipeline
 
     mapa.classificar(projeto, progresso=False)
@@ -386,9 +386,9 @@ def _resultado_sem_execucao(projeto):
 
 
 def test_resultado_de_uma_versao_anterior_do_pacote(projeto, apis_falsas):
-    """Um resultado sem `execucao` (como o do piloto, gravado pela 1.0.1): com outros parâmetros no manifesto que o
-    gravou, ou sem manifesto para conferir, conta como de outra execução e fica protegido; com o mesmo modelo e os
-    mesmos parâmetros, a rodada seguinte o regrava normalmente."""
+    """Um resultado sem `execucao` (como o do piloto, gravado pela 1.0.1): uma rodada parcial com outros parâmetros,
+    ou sem as respostas no cache, não o diminui; com o mesmo modelo e os mesmos parâmetros, o cache cobre tudo, e a
+    rodada seguinte o regrava normalmente."""
     mapa.classificar(projeto, progresso=False)
     mapa.amostra_de_validacao(projeto, n=5)
     pasta, hash_cb = projeto.dados / PASTA, projeto.codebook.hash()

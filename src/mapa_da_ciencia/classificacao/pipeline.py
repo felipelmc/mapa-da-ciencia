@@ -17,7 +17,6 @@ import time
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
 
 from ..armazenamento import ARQUIVO, ler_documentos
 from ..config import ErroConfig
@@ -25,7 +24,7 @@ from ..contrato.exportar import exportar
 from ..formatar import num
 from ..llm.cache import chave_de
 from ..llm.ollama import Ollama
-from ..manifesto import registrar_execucao, ultima_execucao
+from ..manifesto import registrar_execucao
 from ..progresso import Progresso, ProgressoNulo
 from ..projeto import Projeto
 from ..topicos.resultado import assinatura_corpus
@@ -146,31 +145,18 @@ def classificar(
     k = classificador.contadores
     parametros = (modelo_cfg.num_ctx, modelo_cfg.temperatura, modelo_cfg.semente, modelo_cfg.pensar)
     execucao = chave_de(classificador.modelo, VERSAO_PROMPT, parametros)[:16]
-    # um resultado completo (de uma rodada que terminou, mesmo com falhas) de outra execução (modelo atualizado, outro
-    # prompt ou outros parâmetros) não é trocado por um parcial desta (--somente-amostra, --estimar, --limite ou uma
-    # rodada interrompida): só a rodada completa o substitui, mesmo que alguns documentos tenham falhado nas duas
-    # tentativas (com temperatura 0 e semente fixa, a falha tende a se repetir, e o resultado novo nunca chegaria),
-    # mas não com falhas demais (acima de `LIMITE_FALHAS`: um modelo que devolve JSON inválido em tudo apagaria horas
-    # de classificação). Enquanto isso, as respostas da versão nova ficam no resultado à parte, que as métricas da
-    # validação comparam com o completo
+    # Duas regras protegem o resultado principal, decididas pelo que ESTA rodada fez (e não pelo que a última gravação
+    # deixou marcado nele):
+    # 1. uma rodada que cobre o corpus atual (todos os textos, do cache ou do modelo, sem --estimar, --limite ou
+    #    --somente-amostra, sem ser interrompida) e com falhas até o limite substitui o principal, seja de que execução
+    #    for, mesmo que ele tenha um documento a mais ou a menos;
+    # 2. qualquer outra rodada nunca o diminui: grava no principal só se não houver principal ou se não reduz o número
+    #    de documentos classificados dele (a retomada da mesma execução, com o mesmo corpus e os mesmos textos). Senão,
+    #    as respostas vão para o resultado à parte, que as métricas da validação comparam com o principal.
+    # Um modelo que devolve JSON inválido em tudo, depois de um `ollama pull`, apagaria horas de classificação, e as
+    # respostas antigas ficam no cache com a chave do digest antigo, que o Ollama não devolve mais.
     anterior = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
-    protegido = (
-        anterior is not None
-        and anterior.classificados + len(anterior.falhas) >= anterior.documentos  # a rodada que o gravou terminou
-        and not _mesma_execucao(
-            projeto,
-            anterior,
-            execucao,
-            classificador.modelo,
-            {
-                "num_ctx": modelo_cfg.num_ctx,
-                "temperatura": modelo_cfg.temperatura,
-                "semente": modelo_cfg.semente,
-                "pensar": modelo_cfg.pensar,
-                "versao_prompt": VERSAO_PROMPT,
-            },
-        )
-    )
+    rodada_completa = not (opcoes.estimar or opcoes.limite is not None or opcoes.somente_amostra)
     limite_falhas = max(1, int(len(textos) * LIMITE_FALHAS))
     gravou = False  # a última chamada de `gravar` gravou o resultado principal?
     principal = not opcoes.modelo or opcoes.modelo == cfg.modelos.classificacao.modelo
@@ -181,11 +167,17 @@ def classificar(
         com uma exportação para o painel (assim a rodada longa aparece enquanto corre)."""
         nonlocal gravou
         resultados = resultados + fora_do_alvo
-        # cobre o corpus: a rodada chegou ao fim, cada texto foi classificado ou falhou nas duas tentativas, e as
-        # falhas não passam do limite
-        cobre = not parcial and len(resultados) + len(k.falhas) >= len(textos) and len(k.falhas) <= limite_falhas
+        # regra 1: a rodada cobre o corpus atual (chegou ao fim sem opções que o recortam, e cada texto foi
+        # classificado ou falhou nas duas tentativas) e as falhas não passam do limite
+        cobre = (
+            rodada_completa
+            and not parcial
+            and len(resultados) + len(k.falhas) >= len(textos)
+            and len(k.falhas) <= limite_falhas
+        )
+        # regra 2: qualquer outra gravação não diminui o principal
+        gravou = cobre or anterior is None or len(resultados) >= anterior.classificados
         parcial = parcial or len(resultados) < len(textos)
-        gravou = not protegido or cobre
         linhas = [linha for c in sorted(resultados, key=lambda c: c.doc) for linha in _linhas(c, variaveis)]
         status = Counter(linha["status"] for linha in linhas if linha["status"] != "dispensada")
         total_status = sum(status.values()) or 1
@@ -262,7 +254,7 @@ def classificar(
             resultados.append(c)
             if not c.do_cache and k.novos % GRAVAR_A_CADA == 0:
                 gravar(resultados, parcial=True)
-                if principal and not protegido:
+                if principal and gravou:
                     with contextlib.suppress(Exception):  # o painel acompanha; uma falha aqui não para a etapa
                         exportar(projeto)
     except BaseException:
@@ -309,54 +301,32 @@ def classificar(
             "tende a se repetir: veja “Documentos que falham sempre” no guia Classificar os resumos."
         )
     if resultado.a_parte:
-        nome = anterior.modelo.split("@", 1)[0] if anterior else classificador.modelo.split("@", 1)[0]
+        nome = anterior.modelo.split("@", 1)[0]
         versao_nova = f'"{nome.removesuffix(":latest")} (versão nova)"'
-        if len(k.falhas) > limite_falhas and resultado.classificados + len(k.falhas) >= len(textos):
+        if rodada_completa and len(k.falhas) > limite_falhas:
             motivo = (
-                f"{num(len(k.falhas), 0)} documentos ficaram sem resposta válida com a versão nova, mais que o limite "
-                f"para substituí-lo ({num(limite_falhas, 0)}, 2% dos documentos)"
+                f"{num(len(k.falhas), 0)} documentos ficaram sem resposta válida nesta rodada, mais que o limite para "
+                f"substituí-lo ({num(limite_falhas, 0)}, 2% dos documentos)"
             )
             conselho = (
                 "Confira o modelo e os parâmetros na amostra (`mapa classificar --somente-amostra`) antes de rodar "
                 "tudo de novo."
             )
         else:
-            motivo = "esta rodada é parcial"
+            motivo = (
+                f"esta rodada não cobre o corpus e deixaria o resultado com menos documentos classificados "
+                f"({num(resultado.classificados, 0)}, e não {num(anterior.classificados, 0)})"
+            )
             conselho = "Rode `mapa classificar` sem --somente-amostra, --limite ou --estimar para substituí-lo."
         resumo.avisos.append(
-            f"O resultado completo anterior ({nome}, de outra execução) foi mantido: {motivo}. As respostas da versão "
-            f"nova ficam num resultado à parte, que `mapa validar metricas` compara com ele como {versao_nova}. "
-            + conselho
+            f"O resultado anterior ({nome}, {num(anterior.classificados, 0)} documentos classificados) foi mantido: "
+            f"{motivo}. As respostas desta rodada ficam num resultado à parte, que `mapa validar metricas` compara "
+            f"com ele como {versao_nova}. " + conselho
         )
     registrar(resultado)
     if principal and gravou:  # a versão à parte não muda o contrato (ver `validacao.metricas.calcular`)
         resumo.avisos += exportar(projeto)
     return resumo
-
-
-def _mesma_execucao(
-    projeto: Projeto, anterior: Resultado, execucao: str, modelo: str, parametros: dict[str, Any]
-) -> bool:
-    """O resultado `anterior` é desta mesma execução (o mesmo modelo com o digest, a versão do prompt e os
-    parâmetros)? Um resultado gravado por uma versão anterior do pacote não tem a marca `execucao`: vale o modelo que
-    ele registra e os parâmetros do manifesto da rodada que o gravou (a mais recente com esse modelo, também sem a
-    marca). Sem manifesto para conferir, não é: na dúvida, o resultado fica protegido."""
-    if anterior.execucao:
-        return anterior.execucao == execucao
-    if anterior.modelo != modelo:
-        return False
-    manifesto = ultima_execucao(
-        projeto,
-        "classificacao",
-        lambda m: (
-            (m.get("modelos") or {}).get("classificacao") == anterior.modelo
-            and "execucao" not in (m.get("parametros") or {})
-        ),
-    )
-    if manifesto is None:
-        return False
-    gravados = manifesto.get("parametros") or {}
-    return all(k in gravados and gravados[k] == v for k, v in parametros.items())
 
 
 def classificacao_em_dia(projeto: Projeto) -> bool | None:
