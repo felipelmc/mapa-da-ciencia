@@ -42,8 +42,8 @@ def travar(projeto: Projeto, porta: int) -> IO[str] | None:
         arquivo.close()
         onde = f" em http://127.0.0.1:{dono['porta']}/" if dono.get("porta") else ""
         raise PainelJaAberto(
-            f"Este projeto já tem um painel aberto{onde}. Use aquele (ou feche-o com Ctrl+C antes de abrir outro): "
-            "dois painéis no mesmo projeto atrapalham as etapas um do outro."
+            f"Este projeto já tem um painel aberto{onde}. Use aquele, ou feche-o antes de abrir outro (Ctrl+C no "
+            "terminal, ou `.parar()` no notebook): dois painéis no mesmo projeto atrapalham as etapas um do outro."
         ) from None
     arquivo.seek(0)
     arquivo.truncate()

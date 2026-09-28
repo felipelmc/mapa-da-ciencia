@@ -237,6 +237,7 @@
 		const alvo = e.target as HTMLElement | null;
 		if (e.key !== 'Escape' || e.defaultPrevented || selecionado !== null || comunidadeEscolhida === null) return;
 		if (alvo?.closest('input, textarea, select')) return;
+		if (document.documentElement.dataset.apresentacao === 'sim' || document.querySelector('details[open]')) return;
 		escolherComunidade(null);
 	}
 	let grafoELado = $state<HTMLElement | null>(null);
@@ -572,13 +573,21 @@
 
 	.lado {
 		display: grid;
+		align-content: start;
 		gap: 1rem;
 		min-width: 0;
-		/* acompanha a rolagem da página: com o grafo à vista, o cartão também está (e não com o nome acima da tela) */
+		/* a coluna vai até o fim do grafo, para o cartão acompanhar a rolagem ao longo dele */
+		align-self: stretch;
+	}
+
+	/* o cartão acompanha a rolagem da página: com o grafo à vista, ele também está (e não com o nome acima da tela) */
+	.lado > :global(.cartao) {
 		position: sticky;
+		z-index: 2;
 		top: calc(var(--altura-barra, 4rem) + var(--altura-recorte, 3rem) + 0.75rem);
 		max-height: calc(100dvh - var(--altura-barra, 4rem) - var(--altura-recorte, 3rem) - 1.5rem);
 		overflow-y: auto;
+		scroll-margin-top: calc(var(--altura-recorte, 0px) + 1rem);
 	}
 
 	/* em tela cheia, o grafo e a coluna do cartão juntos */
@@ -588,9 +597,15 @@
 		background: var(--fundo);
 	}
 
-	.grafo-e-lado:fullscreen .lado {
+	.grafo-e-lado:fullscreen .lado > :global(.cartao) {
 		top: 0;
 		max-height: calc(100dvh - 2rem);
+	}
+
+	/* RR-02: em tela cheia, o título e o resumo da figura saem, e o grafo cabe na altura da tela */
+	.grafo-e-lado:fullscreen :global(.figura > header),
+	.grafo-e-lado:fullscreen :global(.figura > .resumo) {
+		display: none;
 	}
 
 	.legenda {
@@ -735,7 +750,7 @@
 			grid-template-columns: minmax(0, 1fr);
 		}
 
-		.lado {
+		.lado > :global(.cartao) {
 			position: static;
 			max-height: none;
 			overflow: visible;

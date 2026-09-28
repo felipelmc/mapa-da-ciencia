@@ -460,7 +460,12 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
             raise ErroConfig(f"A porta {porta} já está em uso: tente outra, com `porta=`.") from None
     colab = _no_colab() if colab is None else colab
     trava = travar(p, porta)  # um painel por projeto, como o `mapa painel` (um segundo não abre)
-    app = criar_app(pasta_dados=p.saida / "dados", projeto=p, api=True, so_local=not colab)
+    try:
+        app = criar_app(pasta_dados=p.saida / "dados", projeto=p, api=True, so_local=not colab)
+    except BaseException:
+        if trava is not None:
+            trava.close()
+        raise
     servidor = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning"))
     fio = threading.Thread(target=servidor.run, daemon=True, name=f"mapa-painel-{porta}")
     fio.start()

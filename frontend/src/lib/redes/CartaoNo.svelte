@@ -78,7 +78,7 @@
 		// um clique no grafo (ou no fundo da página) põe o foco na área do grafo ou no <main>: não é o teclado, e o
 		// foco não pula (nem a página rola) para o cartão; pelo teclado (Tab até o grafo e Enter), vai. A área do
 		// grafo diz como veio a última interação (`data-origem`), mesmo depois de alguém usar uma tecla e clicar
-		const grafo = ativo.closest<HTMLElement>('[data-grafo]');
+		const grafo = ativo.closest<HTMLElement>('[data-grafo-raiz]');
 		if (ativo.id === 'conteudo' || (grafo && grafo.dataset.origem !== 'teclado')) return;
 		if (!ativo.closest('[data-testid="cartao-no"]')) voltarPara = ativo as HTMLElement;
 		titulo_?.focus({ preventScroll: true });

@@ -210,13 +210,19 @@ code {
 	}
 }
 
-/* O texto corrido das vistas na medida de leitura (~70 caracteres por linha): especificidade zero, para qualquer
+/* O texto corrido das vistas na medida de leitura (64ch, de 70 a 90 caracteres por linha): especificidade zero, para qualquer
    componente que precise de outra largura ganhar. */
 :where(main.conteudo) p {
 	max-width: var(--medida);
 }
 
-/* um link para uma seção (#…) não a deixa embaixo das barras que grudam no alto */
+/* um link para uma seção (#…) não a deixa embaixo das barras que grudam no alto (no celular, só a do recorte gruda) */
 :where([id]) {
 	scroll-margin-top: calc(var(--altura-barra, 4rem) + var(--altura-recorte, 0px) + 1rem);
+}
+
+@media (max-width: 820px) {
+	:where([id]) {
+		scroll-margin-top: calc(var(--altura-recorte, 0px) + 1rem);
+	}
 }

@@ -642,5 +642,11 @@
 		.par-e-detalhe .lado-a-lado {
 			grid-template-columns: minmax(0, 1fr);
 		}
+
+		/* a tabela do par acompanha a rolagem ao lado do detalhe (que é longo, com as divergências) */
+		.par-e-detalhe > :first-child {
+			position: sticky;
+			top: calc(var(--altura-barra, 4rem) + 1rem);
+		}
 	}
 </style>

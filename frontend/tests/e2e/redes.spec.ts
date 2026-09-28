@@ -717,29 +717,36 @@ test('os rótulos das comunidades não tomam o clique dos nós; a comunidade se 
 });
 
 test('a busca de alguém numa dupla escondida mostra as duplas e enquadra o nó', async ({ page }) => {
+	// o exemplo não tem duplas desenhadas: um documento de autor único passa a ser de duas pessoas novas, que só
+	// assinam ele (uma dupla, que a vista esconde por padrão); o autor original tem outros documentos com coautores
+	const porDoc = new Map<number, number[]>();
+	redes.autorias.doc.forEach((d: number, k: number) => porDoc.set(d, [...(porDoc.get(d) ?? []), k]));
+	const [doc, [k]] = [...porDoc.entries()].find(([, ks]) => ks.length === 1)!;
+	const n = redes.pessoas.id.length;
+	await page.route('**/dados/redes.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const r = await resposta.json();
+		r.autorias.pessoa[k] = n;
+		r.autorias.doc.push(doc);
+		r.autorias.pessoa.push(n + 1);
+		const novas = { id: ['pteste0001a', 'pteste0001b'], nome: ['Pessoa de Teste A', 'Pessoa de Teste B'], documentos: [1, 1], grau: [1, 1], comunidade: [-1, -1], x: [0.9, 0.95], y: [-0.95, -0.95] };
+		for (const [coluna, valores] of Object.entries(novas)) r.pessoas[coluna].push(...valores);
+		await rota.fulfill({ response: resposta, json: r });
+	});
 	await page.goto(`${url('RAIZ')}#/redes`);
 	await esperarRedes(page, 'coautoria');
-	// uma pessoa com posição, num componente de 2 ou 3 (escondido por padrão)
-	const tamanhos = new Map<number, number>();
-	const pai = redes.pessoas.id.map((_: string, i: number) => i);
-	const achar = (i: number): number => (pai[i] === i ? i : (pai[i] = achar(pai[i])));
-	for (const pessoas of pessoasPorDoc(() => true).values()) {
-		const l = [...pessoas];
-		for (let k = 1; k < l.length; k += 1) pai[achar(l[k])] = achar(l[0]);
-	}
-	pai.forEach((_: number, i: number) => tamanhos.set(achar(i), (tamanhos.get(achar(i)) ?? 0) + 1));
-	const p = pai.findIndex((_: number, i: number) => redes.pessoas.x[i] !== null && (tamanhos.get(achar(i)) ?? 0) <= 3);
-	test.skip(p < 0, 'o exemplo não tem duplas');
-	await page.getByRole('combobox', { name: /^Buscar/ }).fill(redes.pessoas.nome[p]);
+	expect(await naTela(page, 'pteste0001b')).toBeUndefined(); // escondida por padrão
+	await page.getByRole('combobox', { name: /^Buscar/ }).fill('Pessoa de Teste B');
 	await page.getByRole('combobox', { name: /^Buscar/ }).press('Enter');
 	await expect(page).toHaveURL(/duplas=1/);
 	const caixa = (await page.getByTestId('canvas-rede').boundingBox())!;
 	await expect
 		.poll(async () => {
-			const q = await naTela(page, redes.pessoas.id[p]);
+			const q = await naTela(page, 'pteste0001b');
 			return !!q && q[0] >= 0 && q[0] <= caixa.width && q[1] >= 0 && q[1] <= caixa.height;
 		})
 		.toBe(true);
+	expect((await estadoDoGrafo(page)).vista.k).toBeGreaterThan(1);
 });
 
 test('depois de usar o teclado no grafo, um clique num nó não faz a página pular', async ({ page }) => {
@@ -771,4 +778,39 @@ test('em tela cheia, o cartão do nó aparece junto com o grafo', async ({ page 
 	await page.getByTestId('canvas-rede').click({ position: { x, y } });
 	await expect.poll(() => page.evaluate(() => !!document.fullscreenElement?.querySelector('[data-testid="cartao-no"]'))).toBe(true);
 	await page.keyboard.press('Escape');
+});
+
+test('com o cartão aberto, a exportação da colaboração continua clicável ao lado do grafo', async ({ page }) => {
+	await page.setViewportSize({ width: 1920, height: 1080 });
+	await page.goto(`${url('RAIZ')}#/redes?no=${redes.pessoas.id[central()]}`);
+	await esperarRedes(page, 'coautoria');
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	const abrir = page.locator('aside.lado').getByTestId('abrir-exportar').first();
+	await abrir.scrollIntoViewIfNeeded();
+	await abrir.click();
+	const baixar = page.locator('aside.lado').getByTestId('baixar-figura');
+	await expect(baixar).toBeVisible();
+	await baixar.scrollIntoViewIfNeeded();
+	await expect.poll(() => baixar.evaluate((el) => {
+		const c = el.getBoundingClientRect();
+		const topo = document.elementFromPoint(c.left + c.width / 2, c.top + c.height / 2);
+		return !!topo && (topo === el || el.contains(topo));
+	})).toBe(true);
+});
+
+test('no toque, depois de usar um botão do grafo, tocar num nó não faz a página pular', async ({ browser }) => {
+	const contexto = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
+	const page = await contexto.newPage();
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	await page.getByTestId('canvas-rede').scrollIntoViewIfNeeded();
+	await page.getByTestId('zoom-mais').tap();
+	await page.getByTestId('zoom-menos').tap();
+	const id = redes.pessoas.id[central()];
+	const [x, y] = (await naTela(page, id))!;
+	const antes = await page.evaluate(() => scrollY);
+	await page.getByTestId('canvas-rede').tap({ position: { x, y } });
+	await expect(page).toHaveURL(new RegExp(`no=${id}`));
+	expect(await page.evaluate(() => scrollY)).toBe(antes);
+	await contexto.close();
 });

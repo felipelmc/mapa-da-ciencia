@@ -4,6 +4,7 @@ import hashlib
 import itertools
 import json
 import math
+import os
 import random
 import re
 from pathlib import Path
@@ -436,6 +437,32 @@ def test_as_constantes_do_desenho_batem_com_as_da_vista():
         assert (r["a"], r["b"]) == pytest.approx((minimo, maximo)), rede
     assert re.search(rf"const MINIMO_VISIVEL = {d.MINIMO_VISIVEL};", modo)
     assert re.search(rf"const MARGEM = {d.MARGEM_TELA};", grafo_)
+
+
+def test_o_desenho_nao_depende_do_hash_das_strings():
+    """O networkx devolve as arestas numa ordem que depende do hash das strings (PYTHONHASHSEED): o desenho, não."""
+    import subprocess
+    import sys
+
+    codigo = (
+        "import json; from mapa_da_ciencia.redes.desenho import desenhar, raios_na_vista; "
+        "from mapa_da_ciencia.redes.grafos import comunidades, grafo, pares_ponderados; "
+        "grupos = {f'd{k}': [f'p{k}', f'p{(k * 7) % 40}', f'p{(k * 3 + 1) % 40}'] for k in range(60)}; "
+        "g = grafo(pares_ponderados(grupos)); "
+        "_, part = comunidades(g, 'coautoria'); "
+        "print(json.dumps(sorted(desenhar(g, part, raios_na_vista(dict.fromkeys(g.nodes, 1), 'coautoria')).items())))"
+    )
+    saidas = {
+        subprocess.run(
+            [sys.executable, "-c", codigo],
+            capture_output=True,
+            text=True,
+            check=True,
+            env={**os.environ, "PYTHONHASHSEED": s},
+        ).stdout
+        for s in ("1", "2", "3")
+    }
+    assert len(saidas) == 1
 
 
 def test_citacoes_e_canone():

@@ -53,8 +53,11 @@ def _spring(grafo, nos: list[str], **opcoes) -> dict[str, tuple[float, float]]:
 
     sub = nx.Graph()
     sub.add_nodes_from(nos)
+    # as arestas orientadas (menor, maior): a ordem em que o networkx as devolve depende do hash das strings
+    # (PYTHONHASHSEED), e com ela mudariam a ordem e o desenho
     sub.add_weighted_edges_from(
-        sorted((a, b, d.get("peso", 1.0)) for a, b, d in grafo.subgraph(nos).edges(data=True)), weight="peso"
+        sorted((min(a, b), max(a, b), d.get("peso", 1.0)) for a, b, d in grafo.subgraph(nos).edges(data=True)),
+        weight="peso",
     )
     pos = nx.spring_layout(sub, seed=SEMENTE, weight="peso", **opcoes)
     return {k: (float(v[0]), float(v[1])) for k, v in pos.items()}
@@ -98,10 +101,13 @@ def _por_comunidades(grafo, nos: list[str], particao: list[set[str]]) -> dict[st
     # 2. o grafo das comunidades, com o peso das arestas entre elas
     s = nx.Graph()
     s.add_nodes_from(range(len(grupos)))
-    for a, b, d in sorted(grafo.subgraph(nos).edges(data=True)):
-        ka, kb = de[a], de[b]
+    # somadas numa ordem fixa (as arestas orientadas), para o total não depender do hash das strings
+    for a, b, peso in sorted(
+        (min(a, b), max(a, b), d.get("peso", 1.0)) for a, b, d in grafo.subgraph(nos).edges(data=True)
+    ):
+        ka, kb = sorted((de[a], de[b]))
         if ka != kb:
-            s.add_edge(ka, kb, w=s.get_edge_data(ka, kb, {"w": 0.0})["w"] + d.get("peso", 1.0))
+            s.add_edge(ka, kb, w=s.get_edge_data(ka, kb, {"w": 0.0})["w"] + peso)
     centro = nx.spring_layout(s, seed=SEMENTE, weight="w", k=1.5 / math.sqrt(len(grupos)), iterations=300)
     c = np.array([centro[k] for k in range(len(grupos))], dtype=float)
     r = np.array(raios)
@@ -118,36 +124,42 @@ def _arranjar_discos(c, r, folga: float, voltas: int = 600):
     """Os discos das comunidades sem se sobrepor, mantendo o arranjo do grafo das comunidades: primeiro o arranjo é
     ampliado até nenhum disco encostar noutro (a posição relativa fica a mesma), e depois contraído aos poucos para o
     centro de massa, desfazendo a cada passo as sobreposições que a contração criar. Assim as comunidades muito
-    ligadas continuam perto uma da outra (relaxar a partir do arranjo apertado as embaralhava)."""
+    ligadas continuam perto uma da outra (relaxar a partir do arranjo apertado as embaralhava). Os empurrões de cada
+    passo são calculados de uma vez, para todos os pares (numpy)."""
     import numpy as np
 
     area = r**2
     c = c - (c * area[:, None]).sum(axis=0) / area.sum()
     n = len(r)
-    ampliar = 1.0
-    for i in range(n):
-        for j in range(i + 1, n):
-            ampliar = max(ampliar, (r[i] + r[j] + folga) / max(math.hypot(*(c[i] - c[j])), 1e-9))
-    c = c * ampliar
+    i, j = np.triu_indices(n, 1)
+    alvo = r[i] + r[j] + folga
+    peso_i, peso_j = area[j] / (area[i] + area[j]), area[i] / (area[i] + area[j])
+    fixa = np.column_stack([np.cos(i * 2.399), np.sin(i * 2.399)])  # direção de pares coincidentes
+
+    def desfazer(c):
+        d = c[j] - c[i]
+        dist = np.hypot(d[:, 0], d[:, 1])
+        perto = dist < alvo
+        if not perto.any():
+            return c, False
+        juntos = dist < 1e-9
+        d = np.where(juntos[:, None], fixa, d)
+        dist = np.where(juntos, 1.0, dist)
+        passo = np.where(perto, alvo - np.where(juntos, 0.0, dist), 0.0)[:, None] * d / dist[:, None]
+        delta = np.zeros_like(c)
+        np.add.at(delta, i, -passo * peso_i[:, None])
+        np.add.at(delta, j, passo * peso_j[:, None])
+        return c + delta, True
+
+    if n > 1:
+        d = c[j] - c[i]
+        c = c * max(1.0, float((alvo / np.maximum(np.hypot(d[:, 0], d[:, 1]), 1e-9)).max()))
     for volta in range(voltas + 1):
         if volta < voltas:
             c = c - 0.03 * (c - (c * area[:, None]).sum(axis=0) / area.sum())
         # entre as contrações, umas poucas passadas; no fim, até não sobrar sobreposição nenhuma
-        for _ in range(3 if volta < voltas else 500):
-            mexeu = False
-            for i in range(n):
-                for j in range(i + 1, n):
-                    d = c[j] - c[i]
-                    dist = math.hypot(d[0], d[1])
-                    alvo = r[i] + r[j] + folga
-                    if dist >= alvo:
-                        continue
-                    if dist < 1e-9:  # coincidentes: uma direção fixa pelo índice
-                        d, dist = np.array([math.cos(i * 2.399), math.sin(i * 2.399)]), 1.0
-                    passo = (alvo - dist) * d / dist
-                    c[i] -= passo * area[j] / (area[i] + area[j])
-                    c[j] += passo * area[i] / (area[i] + area[j])
-                    mexeu = True
+        for _ in range(3 if volta < voltas else 2000):
+            c, mexeu = desfazer(c)
             if not mexeu:
                 break
     return c

@@ -154,22 +154,24 @@ de 4 nós ou mais), por um auditor independente e conferido de novo depois do aj
 | Piloto, vista inicial | Coautoria, 2.0.0 | Coautoria, 2.1.0 | Instituições, 2.0.0 | Instituições, 2.1.0 |
 |---|---|---|---|---|
 | Nós encostados em outro, tela de 1920 × 1080 (1206 × 838 px) | 58% | 0% | 25% | 0% |
-| Nós encostados em outro, notebook de 1440 × 900 (726 × 547 px) | 84% | 63% | 67% | 19% |
-| Distância ao vizinho mais próximo (mediana, 1206 × 838) | 5,8 px | 7,7 px | 10,0 px | 17,2 px |
-| Área do desenho ocupada pelo maior componente | 27% | 62% | 50% | 85% |
-| O vizinho mais próximo é um parceiro (coautor, instituição parceira) | 55% | 75% | 14% | 33% |
+| Nós encostados em outro, notebook de 1440 × 900 (726 × 547 px) | 84% | 63% | 67% | 18% |
+| Idem, com o grafo em tela cheia (1032 × 868 px; a 2.0.0 não tinha tela cheia) | — | 3% | — | 0% |
+| Distância ao vizinho mais próximo (mediana, 1206 × 838) | 5,8 px | 7,7 px | 10,0 px | 17,4 px |
+| Área do desenho ocupada pelo maior componente | 27% | 61% | 50% | 87% |
+| O vizinho mais próximo é um parceiro (coautor, instituição parceira) | 55% | 75% | 14% | 34% |
 | Dos 5 vizinhos mais próximos, os da mesma comunidade | 62% | 98% | 35% | 98% |
 
-Numa tela pequena, os nós ainda se tocam: o botão "Tela cheia" e o zoom os separam. A última linha é alta em boa parte
+Numa tela pequena, os nós ainda se tocam; em tela cheia, quase nenhum, e o zoom separa o resto. A última linha é alta em boa parte
 por construção (cada comunidade tem um disco próprio), e **o vão entre dois grupos não é uma medida**, como a distância
 em geral (veja "Como ler as redes"). A proximidade entre as comunidades acompanha a ligação entre elas só em parte:
 entre as comunidades de 8 nós ou mais, a correlação de Spearman entre o peso das arestas que as ligam e a distância
-entre elas é de −0,53 na coautoria (−0,28 na 2.0.0) e de −0,19 nas instituições (−0,46 na 2.0.0), e a comunidade mais
-ligada a cada uma está entre as três mais próximas dela em 35% e 78% dos casos (16% e 38% seriam o acaso; 25% e 67% na
+entre elas é de −0,54 na coautoria (−0,28 na 2.0.0) e de −0,19 nas instituições (−0,46 na 2.0.0), e a comunidade mais
+ligada a cada uma está entre as três mais próximas dela em 40% e 78% dos casos (16% e 38% seriam o acaso; 25% e 67% na
 2.0.0). Nas instituições, 45% das arestas do maior componente ligam comunidades diferentes: o desenho as esmaece (as
 arestas entre comunidades ficam mais fracas que as de dentro), e passar o mouse num nó as acende.
 
-O desenho leva cerca de 1 s no piloto, e três rodadas de `mapa redes` deram arquivos idênticos byte a byte. Só as
+O desenho leva cerca de 1 s no piloto e não depende do hash das strings do Python (`PYTHONHASHSEED`): três rodadas de
+`mapa redes`, com sementes diferentes, deram arquivos idênticos byte a byte. Só as
 coordenadas mudaram: pessoas, comunidades, métricas, arestas, citações e o cânone são os mesmos da 2.0.0. O
-relaxamento garante a folga até o tamanho do piloto; numa rede muito maior (dezenas de milhares de nós), os nós voltam
-a se tocar na tela de referência, e o zoom continua sendo o caminho.
+relaxamento garante a folga até o tamanho do piloto; numa rede bem maior, os nós voltam a se tocar na tela de
+referência (num corpus sintético, 0,4% com 3 mil nós desenhados, 82% com 8 mil), e o zoom continua sendo o caminho.

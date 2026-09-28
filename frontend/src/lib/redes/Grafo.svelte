@@ -42,13 +42,13 @@
 	 * e os nós movidos são só daqui. A interação:
 	 * - passar o mouse num nó acende ele, os vizinhos e as arestas entre eles, e escreve o nome dos vizinhos;
 	 * - o clique abre o cartão (`aoEscolher`); o nó aberto fica aceso, e "Enquadrar" leva o zoom até a vizinhança;
-	 * - uma comunidade escolhida (na legenda ou pelo rótulo no desenho) fica acesa e enquadrada;
+	 * - uma comunidade escolhida (no seletor da barra do grafo ou na legenda) fica acesa e enquadrada;
 	 * - arrastar um nó o move (só na tela: "Reiniciar" devolve o desenho); arrastar o fundo move a tela;
 	 * - Ctrl/⌘ + roda, a pinça do trackpad ou de dois dedos, os botões e o clique duplo aproximam (a roda sozinha rola a
 	 *   página, a não ser em tela cheia); com o grafo em foco, `+`, `−` e `0`, as setas movem e Esc solta o destaque;
 	 * - com zoom, aparecem os nomes dos nós maiores, sem se cobrirem.
 	 *
-	 * Os rótulos ficam num SVG por cima; só os das comunidades recebem o clique.
+	 * Os rótulos ficam num SVG por cima, que deixa passar o mouse e o toque.
 	 */
 	import { quadtree, type Quadtree } from 'd3-quadtree';
 	import { onMount, untrack } from 'svelte';
@@ -704,7 +704,16 @@
 	}
 </script>
 
-<div class="grafo" class:tela-cheia={telaCheia} bind:this={grafo}>
+<div
+	class="grafo"
+	class:tela-cheia={telaCheia}
+	bind:this={grafo}
+	data-grafo-raiz
+	data-origem={origem}
+	onpointerdowncapture={() => (origem = 'ponteiro')}
+	onkeydowncapture={() => (origem = 'teclado')}
+	role="presentation"
+>
 	<div class="ferramentas" role="toolbar" aria-label="Controles do grafo">
 		{#if opcoesComunidade.length}
 			<select
@@ -752,7 +761,6 @@
 		tabindex="0"
 		aria-label="Grafo: + e − aproximam, 0 volta ao desenho inteiro, as setas movem, Enter abre o nó do centro e Esc solta a comunidade"
 		data-grafo
-		data-origem={origem}
 		onkeydown={tecla}
 		bind:clientWidth={largura}
 		bind:clientHeight={altura}
@@ -819,6 +827,10 @@
 
 	.ferramentas > * {
 		pointer-events: auto;
+	}
+
+	/* especificidade zero: o botão pressionado (Tela cheia) mantém o fundo dele */
+	:where(.ferramentas > *) {
 		background: color-mix(in oklab, var(--superficie) 88%, transparent);
 	}
 
@@ -831,7 +843,19 @@
 		text-overflow: ellipsis;
 	}
 
-	/* no toque, botões do tamanho do dedo */
+	@media (max-width: 820px) {
+		.ferramentas {
+			position: static;
+			padding-bottom: 0.4rem;
+		}
+
+		.ferramentas select {
+			flex: 1 1 100%;
+			max-width: none;
+		}
+	}
+
+	/* no toque, botões maiores */
 	@media (pointer: coarse) {
 		.ferramentas .botao {
 			min-width: 2.6rem;
