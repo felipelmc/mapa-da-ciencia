@@ -209,3 +209,14 @@ code {
 		scroll-behavior: auto !important;
 	}
 }
+
+/* O texto corrido das vistas na medida de leitura (~70 caracteres por linha): especificidade zero, para qualquer
+   componente que precise de outra largura ganhar. */
+:where(main.conteudo) p {
+	max-width: var(--medida);
+}
+
+/* um link para uma seção (#…) não a deixa embaixo das barras que grudam no alto */
+:where([id]) {
+	scroll-margin-top: calc(var(--altura-barra, 4rem) + var(--altura-recorte, 0px) + 1rem);
+}

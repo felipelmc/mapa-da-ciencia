@@ -103,6 +103,44 @@ mudanças na entrada. Para a 2.0.0, os tópicos do piloto continuam os da 1.0.1,
 (os mesmos embeddings do cache), com os rótulos corrigidos à mão. O corpus publicado já é o novo, sem os e-mails. Um
 recálculo dos tópicos fica para quando o piloto for coletado de novo.
 
+## Segunda rodada: a interface (2.1.0)
+
+Depois da 2.0.0, o autor apontou três problemas ao usar o site: os grafos das redes, apertados e pouco interativos; o
+conteúdo encostado à esquerda numa tela larga; e a vista Validação, que não carregava. Antes de corrigir, quatro
+agentes independentes percorreram a demo do piloto e o painel local com o Playwright, cada um com um foco: erros em
+tempo de execução (todas as rotas e modos, dois temas, de 375 a 2560 px, e uma varredura das chaves das listas
+contra os dados do piloto), telas largas (medidas de 1440 a 3440 px), a vista Redes e o painel local (API, CLI e as
+telas que só existem nele).
+
+- **A Validação** parava em "Carregando…" porque uma lista repetia a chave com os seis modelos do júri, e o Svelte
+  lança esse erro também em produção. O exemplo sintético tinha um modelo só: de novo, **os dados reais acharam o
+  que o exemplo escondia**. Agora o exemplo tem vários pares por variável, e uma proteção em cada vista mostra
+  "Tentar de novo" em vez de deixar a página parada.
+- **A largura:** a casca tinha 76rem e ficava encostada no trilho (em 1920 px, sobravam 536 px à direita). Ela passa
+  a ser centrada, com até 112rem, e as vistas põem painéis lado a lado a partir de 1600 px.
+- **As redes:** o desenho novo (adendo do ADR 0014) foi escolhido entre seis candidatos por métricas e por um
+  avaliador que não sabia qual era qual; as interações novas (destaque dos vizinhos, comunidades clicáveis, nomes
+  pelo zoom, arrasto, teclado, tela cheia) vieram da lista do revisor da vista.
+
+Os achados de severidade média ou maior do painel e dos erros de execução passaram por verificadores novos, que
+tentaram reproduzi-los e refutá-los: dos 25 verificados, 22 se confirmaram e 3 só em parte, e dois verificadores
+corrigiram a causa ou a correção proposta (a animação de entrada das vistas, que prendia os painéis de exportação
+embaixo da barra do celular; e a limpeza do endereço com um `%` solto, que precisava testar cada sequência). Os
+mais sérios do painel: um segundo `mapa painel` no mesmo projeto marcava como falha a etapa que o primeiro rodava;
+a tela dizia que mudar um rótulo do codebook não refazia nada, quando o rótulo de uma variável refaz a classificação
+inteira; e a codificação aceitava o nome do codificador de referência, mostrando as respostas dele.
+
+Antes do merge, três agentes novos revisaram o resultado: o código (aprovado com ressalvas: 5 achados médios, todos
+corrigidos, como o enquadramento do nó que deixava de funcionar depois de um clique no nó já aberto), o desenho das
+redes (aprovado com ressalvas: o auditor recalculou as métricas do zero, confirmou que só as coordenadas mudaram e
+mostrou que a frase "as comunidades muito ligadas ficam vizinhas" não valia, o que levou a um ajuste do arranjo e a
+números em vez da frase) e o uso, nas várias telas.
+
+Ficaram para depois, registrados: a cor dos nós por comunidade (hoje é a do macrotema, e várias comunidades dividem
+a mesma cor); o cartão do documento, que cobre parte do mapa numa tela de 1440 px; o kappa de uma pessoa, que conta
+fichas ainda não confirmadas; o editor do codebook, que acrescenta listas vazias ao YAML; o histórico das etapas, que
+mostra "na fila" durante a execução; e o júri, que ainda não aparece na linha das etapas nem no `mapa status`.
+
 ## Como repetir
 
 Os prompts dos revisores e verificadores, a rubrica e os formatos de saída estão no plano da revisão; os pareceres, com

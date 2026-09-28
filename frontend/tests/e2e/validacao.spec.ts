@@ -172,3 +172,10 @@ test('no painel, um erro da API de métricas aparece, em vez das métricas antig
 	await expect(page.getByTestId('falha-ao-abrir')).toContainText('falhou ao calcular');
 	await expect(page.getByTestId('tabela-metricas')).toHaveCount(0);
 });
+
+test('a comparação entre modelos diz quem acerta mais que quem, e o p pequeno como "< 0,001"', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	const itens = page.getByTestId('lista-mcnemar').locator('li');
+	await expect(itens.first()).toContainText('acerta mais que');
+	await expect(page.getByTestId('lista-mcnemar')).not.toContainText('p = 0,000');
+});

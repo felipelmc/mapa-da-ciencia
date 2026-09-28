@@ -373,8 +373,8 @@ test('movimento reduzido: nada anima, nem ao aproximar ou abrir um nó', async (
 		);
 	await expect.poll(animando).toBe(0);
 	await page.getByTestId('zoom-mais').click();
-	await page.getByRole('combobox').fill(redes.pessoas.nome[3]);
-	await page.getByRole('combobox').press('Enter');
+	await page.getByRole('combobox', { name: /^Buscar/ }).fill(redes.pessoas.nome[3]);
+	await page.getByRole('combobox', { name: /^Buscar/ }).press('Enter');
 	await expect(page.getByTestId('cartao-no')).toBeVisible();
 	expect(await animando()).toBe(0);
 });
@@ -642,8 +642,8 @@ test('a busca enquadra o nó mesmo depois de um clique no nó já aberto, e redi
 	const antes = (await estadoDoGrafo(page)).vista;
 	// a busca abre outro nó: enquadra (antes, a marca do clique ficava presa e o zoom não vinha)
 	const outro = [...vizinhosDe(p)][0];
-	await page.getByRole('combobox').fill(redes.pessoas.nome[outro]);
-	await page.getByRole('combobox').press('Enter');
+	await page.getByRole('combobox', { name: /^Buscar/ }).fill(redes.pessoas.nome[outro]);
+	await page.getByRole('combobox', { name: /^Buscar/ }).press('Enter');
 	await expect(page).toHaveURL(new RegExp(`no=${redes.pessoas.id[outro]}`));
 	await expect.poll(async () => JSON.stringify((await estadoDoGrafo(page)).vista)).not.toBe(JSON.stringify(antes));
 	const enquadrada = (await estadoDoGrafo(page)).vista;
@@ -695,4 +695,80 @@ test('pelo teclado, Enter abre o nó que estiver no centro do grafo', async ({ p
 	await page.keyboard.press('Enter');
 	await expect(page).toHaveURL(/no=/);
 	await expect(page.getByTestId('cartao-no')).toBeVisible();
+});
+
+test('os rótulos das comunidades não tomam o clique dos nós; a comunidade se escolhe no seletor do grafo', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	await expect(page.getByTestId('rotulo-comunidade').first()).toHaveCSS('pointer-events', 'none');
+	const seletor = page.getByTestId('escolher-comunidade');
+	const opcao = await seletor.locator('option').nth(1).getAttribute('value');
+	await seletor.selectOption(opcao!);
+	await expect(page).toHaveURL(new RegExp(`comunidade=${opcao}`));
+	await seletor.selectOption('');
+	await expect(page).not.toHaveURL(/comunidade=/);
+	// Esc, sem cartão aberto e fora do grafo, também solta a comunidade
+	await seletor.selectOption(opcao!);
+	await page.locator('h1').click();
+	await page.keyboard.press('Escape');
+	await expect(page).not.toHaveURL(/comunidade=/);
+	expect(problemas).toEqual([]);
+});
+
+test('a busca de alguém numa dupla escondida mostra as duplas e enquadra o nó', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	// uma pessoa com posição, num componente de 2 ou 3 (escondido por padrão)
+	const tamanhos = new Map<number, number>();
+	const pai = redes.pessoas.id.map((_: string, i: number) => i);
+	const achar = (i: number): number => (pai[i] === i ? i : (pai[i] = achar(pai[i])));
+	for (const pessoas of pessoasPorDoc(() => true).values()) {
+		const l = [...pessoas];
+		for (let k = 1; k < l.length; k += 1) pai[achar(l[k])] = achar(l[0]);
+	}
+	pai.forEach((_: number, i: number) => tamanhos.set(achar(i), (tamanhos.get(achar(i)) ?? 0) + 1));
+	const p = pai.findIndex((_: number, i: number) => redes.pessoas.x[i] !== null && (tamanhos.get(achar(i)) ?? 0) <= 3);
+	test.skip(p < 0, 'o exemplo não tem duplas');
+	await page.getByRole('combobox', { name: /^Buscar/ }).fill(redes.pessoas.nome[p]);
+	await page.getByRole('combobox', { name: /^Buscar/ }).press('Enter');
+	await expect(page).toHaveURL(/duplas=1/);
+	const caixa = (await page.getByTestId('canvas-rede').boundingBox())!;
+	await expect
+		.poll(async () => {
+			const q = await naTela(page, redes.pessoas.id[p]);
+			return !!q && q[0] >= 0 && q[0] <= caixa.width && q[1] >= 0 && q[1] <= caixa.height;
+		})
+		.toBe(true);
+});
+
+test('depois de usar o teclado no grafo, um clique num nó não faz a página pular', async ({ page }) => {
+	await page.setViewportSize({ width: 1440, height: 800 });
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const canvas = page.getByTestId('canvas-rede');
+	await canvas.scrollIntoViewIfNeeded();
+	await page.locator('[data-grafo]').focus();
+	await page.keyboard.press('+');
+	await page.keyboard.press('0');
+	const id = redes.pessoas.id[central()];
+	const [x, y] = (await naTela(page, id))!;
+	const antes = await page.evaluate(() => scrollY);
+	await canvas.click({ position: { x, y } });
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	expect(await page.evaluate(() => scrollY)).toBe(antes);
+});
+
+test('em tela cheia, o cartão do nó aparece junto com o grafo', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const botao = page.getByTestId('tela-cheia');
+	test.skip((await botao.count()) === 0, 'navegador sem a API de tela cheia');
+	await botao.click();
+	await expect.poll(async () => (await estadoDoGrafo(page)).telaCheia).toBe(true);
+	const id = redes.pessoas.id[central()];
+	const [x, y] = (await naTela(page, id))!;
+	await page.getByTestId('canvas-rede').click({ position: { x, y } });
+	await expect.poll(() => page.evaluate(() => !!document.fullscreenElement?.querySelector('[data-testid="cartao-no"]'))).toBe(true);
+	await page.keyboard.press('Escape');
 });

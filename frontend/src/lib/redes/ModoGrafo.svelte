@@ -208,6 +208,10 @@
 			const repetido = primeiros.filter((t) => t === primeiros[k]).length > 1;
 			const texto = repetido ? rotuloCurto(c.rotulo.split(' · ').slice(1).join(' · ') || c.rotulo) : primeiros[k];
 			return { id: String(c.id), texto, x: sx / n, y: topo, comunidade: c.id };
+		}).map((r, k, todos) => {
+			// se ainda assim dois rótulos saírem iguais (o segundo tópico também repetido), o tamanho os distingue
+			const iguais = todos.filter((o) => o.texto === r.texto).length > 1;
+			return iguais ? { ...r, texto: `${r.texto} (${formatarInteiro(escolhidas[k].n)})` } : r;
 		});
 	});
 
@@ -217,6 +221,25 @@
 		filtros.comunidade !== null && nos.comunidades.has(filtros.comunidade) ? filtros.comunidade : null
 	);
 	const escolherComunidade = (c: number | null) => mudarFiltros({ comunidade: c }, { em });
+	/** Pela legenda, embaixo do grafo: escolhe e traz o grafo à vista (senão ele mudaria fora da tela). */
+	function escolherPelaLegenda(c: number | null) {
+		escolherComunidade(c);
+		const area = document.querySelector<HTMLElement>('[data-grafo]');
+		const caixa = area?.getBoundingClientRect();
+		if (area && caixa && (caixa.top < 0 || caixa.bottom > window.innerHeight)) area.scrollIntoView({ block: 'center' });
+	}
+	/** As comunidades do seletor na barra do grafo, das maiores às menores. */
+	const opcoesComunidade = $derived(
+		[...nos.comunidades.values()].sort((a, b) => b.n - a.n || a.id - b.id).map((c) => ({ id: c.id, rotulo: `${c.rotulo} (${formatarInteiro(c.n)})` }))
+	);
+	// Esc solta a comunidade em destaque (com o cartão aberto, o Esc é dele, e num campo de texto, do campo)
+	function tecla(e: KeyboardEvent) {
+		const alvo = e.target as HTMLElement | null;
+		if (e.key !== 'Escape' || e.defaultPrevented || selecionado !== null || comunidadeEscolhida === null) return;
+		if (alvo?.closest('input, textarea, select')) return;
+		escolherComunidade(null);
+	}
+	let grafoELado = $state<HTMLElement | null>(null);
 	const abrir = (i: number | null) => mudarFiltros({ no: i === null ? null : nos.ids[i] }, { em });
 	const documentosDo = (i: number): number[] => {
 		if (pessoas) {
@@ -391,7 +414,9 @@
 	aoEscolher={(id) => mudarFiltros({ no: id }, { em })}
 />
 
-<div class="grafo-e-lado" class:com-cartao={cartao !== null}>
+<svelte:window onkeydown={tecla} />
+
+<div class="grafo-e-lado" class:com-cartao={cartao !== null} bind:this={grafoELado}>
 	<Figura n={noRecorte} id="grafo" titulo={pessoas ? 'Quem escreve com quem' : 'Que instituições publicam juntas'} {resumo} {colunas} {linhas} {dados}>
 		<Grafo
 			bind:this={grafo}
@@ -410,6 +435,8 @@
 			{dica}
 			aoEscolher={abrir}
 			aoEscolherComunidade={escolherComunidade}
+			{opcoesComunidade}
+			alvoTelaCheia={grafoELado}
 			rotulo={rotuloGrafo}
 			aoDesenhar={(ms) => ((debug.desenhado = true), (debug.msAtePrimeiroDesenho = ms))}
 		/>
@@ -465,7 +492,7 @@
 					<li class="titulo-legenda">
 						As maiores comunidades (rótulo: os dois tópicos mais frequentes; clique numa para destacá-la):
 						{#if comunidadeEscolhida !== null}
-							<button type="button" class="todas" onclick={() => escolherComunidade(null)} data-testid="todas-comunidades">Todas</button>
+							<button type="button" class="todas" onclick={() => escolherPelaLegenda(null)} data-testid="todas-comunidades">Todas</button>
 						{/if}
 					</li>
 					{#each maioresComunidades as c (c.id)}
@@ -474,7 +501,7 @@
 								type="button"
 								class="comunidade"
 								aria-pressed={comunidadeEscolhida === c.id}
-								onclick={() => escolherComunidade(comunidadeEscolhida === c.id ? null : c.id)}
+								onclick={() => escolherPelaLegenda(comunidadeEscolhida === c.id ? null : c.id)}
 								data-testid="comunidade"
 							>
 								<span class="bolinha" style:background={corDaComunidade(c.id) ?? 'var(--texto-fraco)'}></span>
@@ -547,6 +574,23 @@
 		display: grid;
 		gap: 1rem;
 		min-width: 0;
+		/* acompanha a rolagem da página: com o grafo à vista, o cartão também está (e não com o nome acima da tela) */
+		position: sticky;
+		top: calc(var(--altura-barra, 4rem) + var(--altura-recorte, 3rem) + 0.75rem);
+		max-height: calc(100dvh - var(--altura-barra, 4rem) - var(--altura-recorte, 3rem) - 1.5rem);
+		overflow-y: auto;
+	}
+
+	/* em tela cheia, o grafo e a coluna do cartão juntos */
+	.grafo-e-lado:fullscreen {
+		padding: 1rem;
+		overflow: auto;
+		background: var(--fundo);
+	}
+
+	.grafo-e-lado:fullscreen .lado {
+		top: 0;
+		max-height: calc(100dvh - 2rem);
 	}
 
 	.legenda {
@@ -689,6 +733,12 @@
 	@media (max-width: 1100px) {
 		.grafo-e-lado {
 			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.lado {
+			position: static;
+			max-height: none;
+			overflow: visible;
 		}
 
 		.ir-ao-cartao {

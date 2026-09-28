@@ -323,6 +323,5 @@
 	.falha .detalhe {
 		font-family: var(--fonte-mono);
 		font-size: 0.75rem;
-		color: var(--texto-fraco);
 	}
 </style>

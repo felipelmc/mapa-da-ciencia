@@ -246,7 +246,7 @@
 				<dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd></dt>
 				<dd>na busca, escolhem a pessoa ou a instituição e abrem o cartão dela</dd>
 				<dt><kbd>Esc</kbd></dt>
-				<dd>fecha o cartão (ou solta a comunidade em destaque)</dd>
+				<dd>fecha o cartão; sem cartão aberto, solta a comunidade em destaque</dd>
 				<dt><kbd>Ctrl</kbd> (<kbd>⌘</kbd> no Mac) + roda, pinça, clique duplo</dt>
 				<dd>aproximam o grafo (a roda sozinha rola a página; em tela cheia, também aproxima)</dd>
 				<dt>arrastar</dt>

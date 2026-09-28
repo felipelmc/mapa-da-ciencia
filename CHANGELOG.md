@@ -6,7 +6,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Adicionado
 
-- **Grafos mais interativos** na coautoria e nas instituições: passar o mouse num nó acende ele, os vizinhos e as ligações entre eles, com os nomes; uma comunidade escolhida na legenda ou no rótulo do desenho fica acesa e enquadrada, e vai para o link (`comunidade=`); "Enquadrar" leva o zoom até a vizinhança do nó aberto (e a busca e os links já abrem o nó enquadrado); os nomes aparecem com o zoom, sem se cobrirem; arrastar um nó o move na tela; clique duplo, teclado (+, −, 0, as setas e Enter, que abre o nó no centro) e tela cheia. As arestas entre comunidades ficam mais fracas que as de dentro delas.
+- **Grafos mais interativos** na coautoria e nas instituições: passar o mouse num nó acende ele, os vizinhos e as ligações entre eles, com os nomes; uma comunidade escolhida no seletor da barra do grafo ou na legenda fica acesa e enquadrada, e vai para o link (`comunidade=`; Esc solta); "Enquadrar" leva o zoom até a vizinhança do nó aberto (e a busca e os links já abrem o nó enquadrado); os nomes aparecem com o zoom, sem se cobrirem; arrastar um nó o move na tela; clique duplo, teclado (+, −, 0, as setas e Enter, que abre o nó no centro) e tela cheia (com o cartão ao lado). Os botões ficam sobre o grafo, e o cartão acompanha a rolagem da página. As arestas entre comunidades ficam mais fracas que as de dentro delas.
 - Nas redes de estados e de citações: passar o mouse numa UF acende só os arcos dela (sem filtrar), e o Exterior ganha dica; na matriz de citações, passar o mouse numa célula acende a linha e a coluna, e os rótulos usam a largura que sobra; no cânone, a dica traz a referência inteira e os citantes por macrotema.
 
 ### Mudado
@@ -18,6 +18,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Corrigido
 
+- Validação: numa tela larga, a tabela do par e o detalhe da variável ficam lado a lado; a comparação entre modelos diz quem acerta mais que quem, com o p pequeno como "< 0,001" (e não "0,000"). Os parágrafos das vistas ficam na medida de leitura, e um link para uma seção não a deixa embaixo das barras do topo.
 - rolando a página, a barra do recorte gruda logo abaixo da barra do topo, em vez de cobri-la (no celular, só ela gruda). No celular, o painel de exportação abre como uma folha acima da barra de navegação, que cobria o "Baixar" das últimas figuras: a animação de entrada das vistas deixava um `transform` preso, que prendia o painel embaixo da barra.
 - um `%` solto no endereço (um link editado à mão ou cortado, como `#/mapa?busca=50%`) deixava a página inteira em branco; agora ele vira espaço antes de o roteador ler o endereço.
 - sem WebGL (numa máquina virtual ou com a aceleração gráfica desligada), o Mapa avisa e aponta as outras vistas, em vez de ficar em branco.

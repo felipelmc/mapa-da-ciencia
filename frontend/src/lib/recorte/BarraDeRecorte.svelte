@@ -104,6 +104,13 @@
 	// evento toggle, que chega um instante depois); quem fecha o menu escreve direto nele
 	let revistasAberto = $state(false);
 	let menuRevistas = $state<HTMLDetailsElement>();
+	// a altura da barra (muda com o conteúdo e, no celular, quando ela se abre), para o que gruda embaixo dela
+	let alturaDaBarra = $state(0);
+	$effect(() => {
+		const estilo = document.documentElement.style;
+		if (alturaDaBarra) estilo.setProperty('--altura-recorte', `${alturaDaBarra}px`);
+		return () => estilo.removeProperty('--altura-recorte');
+	});
 	function fecharRevistas() {
 		if (menuRevistas) menuRevistas.open = false;
 		revistasAberto = false;
@@ -137,7 +144,7 @@
 		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 		<div class="fora-do-menu" data-testid="fora-do-menu" onclick={fecharRevistas}></div>
 	{/if}
-	<section class="recorte" class:expandida aria-label="Recorte" data-testid="barra-recorte">
+	<section class="recorte" class:expandida aria-label="Recorte" data-testid="barra-recorte" bind:offsetHeight={alturaDaBarra}>
 		<button
 			type="button"
 			class="resumo"

@@ -79,6 +79,10 @@
 		dica: (i: number) => string[];
 		aoEscolher: (i: number | null) => void;
 		aoEscolherComunidade: (c: number | null) => void;
+		/** As comunidades do seletor na barra do grafo (as maiores, com o rótulo inteiro). */
+		opcoesComunidade?: { id: number; rotulo: string }[];
+		/** O elemento que vai para a tela cheia (o grafo com o cartão ao lado); sem ele, só o grafo. */
+		alvoTelaCheia?: HTMLElement | null;
 		/** Descrição para leitores de tela. */
 		rotulo: string;
 		/** Chamado depois do primeiro desenho, com o tempo desde a montagem. */
@@ -101,6 +105,8 @@
 		dica,
 		aoEscolher,
 		aoEscolherComunidade,
+		opcoesComunidade = [],
+		alvoTelaCheia = null,
 		rotulo,
 		aoDesenhar
 	}: Props = $props();
@@ -127,6 +133,10 @@
 	let escolhidoPeloGrafo: number | null = null;
 	/** O nó aberto antes de a área ter tamanho (um link aberto direto): enquadrado assim que ela for medida. */
 	let enquadrarQuandoMedir: number | null = null;
+	/** O nó aberto que ainda não está no desenho (numa dupla escondida): enquadrado quando aparecer. */
+	let enquadrarQuandoAparecer: number | null = null;
+	/** Como veio a última interação com o grafo: o cartão só recebe o foco quando foi pelo teclado. */
+	let origem = $state<'ponteiro' | 'teclado'>('ponteiro');
 	const t0 = performance.now();
 	let desenhouUmaVez = false;
 
@@ -262,7 +272,10 @@
 	// o nó aberto pela busca ou pelo link: o zoom vai até ele e os vizinhos; pelo clique no grafo, nada se move. O
 	// efeito depende só do nó aberto: redimensionar a janela (ou entrar na tela cheia) não refaz o enquadramento
 	function enquadrarNo(i: number) {
-		if (!valido(i)) return;
+		if (!valido(i)) {
+			enquadrarQuandoAparecer = i; // a vista vai mostrar as duplas e os trios, e o nó entra no desenho
+			return;
+		}
 		const alvo = enquadrar(vizinhanca(adj, i), bx, by, largura, altura, { kMin: ZOOM.min, kMax: 8 });
 		if (alvo) irPara(alvo);
 	}
@@ -271,7 +284,7 @@
 		untrack(() => {
 			const doGrafo = escolhidoPeloGrafo !== null && escolhidoPeloGrafo === i;
 			escolhidoPeloGrafo = null;
-			enquadrarQuandoMedir = null;
+			enquadrarQuandoMedir = enquadrarQuandoAparecer = null;
 			if (i === null || doGrafo) return;
 			if (!largura || !altura) enquadrarQuandoMedir = i;
 			else enquadrarNo(i);
@@ -283,6 +296,16 @@
 			const i = enquadrarQuandoMedir;
 			enquadrarQuandoMedir = null;
 			if (i !== null && i === selecionado) enquadrarNo(i);
+		});
+	});
+	$effect(() => {
+		void bx;
+		void by;
+		untrack(() => {
+			const i = enquadrarQuandoAparecer;
+			if (i === null || i !== selecionado || !largura || !altura || !valido(i)) return;
+			enquadrarQuandoAparecer = null;
+			enquadrarNo(i);
 		});
 	});
 	// a comunidade escolhida é enquadrada; soltá-la volta à vista inteira
@@ -312,17 +335,13 @@
 	// ---- tela cheia (a figura inteira do grafo, com os botões)
 	async function alternarTelaCheia() {
 		if (document.fullscreenElement) await document.exitFullscreen();
-		else await grafo.requestFullscreen?.();
+		else await (alvoTelaCheia ?? grafo).requestFullscreen?.();
 	}
 
 	// ---- teclado (com a área do grafo em foco)
 	function tecla(e: KeyboardEvent) {
 		if (e.metaKey || e.ctrlKey || e.altKey) return;
-		if (e.key === 'Escape' && comunidadeEscolhida !== null && selecionado === null) {
-			aoEscolherComunidade(null);
-			e.preventDefault(); // o Esc do cartão (na janela) não fecha mais nada
-			return;
-		}
+		origem = 'teclado';
 		const acoes: Record<string, () => void> = {
 			'+': aproximar,
 			'=': aproximar,
@@ -347,7 +366,7 @@
 	// ---- mouse, dedos e roda
 	onMount(() => {
 		podeTelaCheia = !!document.fullscreenEnabled && typeof grafo.requestFullscreen === 'function';
-		const aoMudarTelaCheia = () => (telaCheia = document.fullscreenElement === grafo);
+		const aoMudarTelaCheia = () => (telaCheia = !!document.fullscreenElement && document.fullscreenElement.contains(grafo));
 		document.addEventListener('fullscreenchange', aoMudarTelaCheia);
 
 		const ponteiros = new Map<number, { x: number; y: number }>();
@@ -365,6 +384,7 @@
 		};
 		const baixar = (e: PointerEvent) => {
 			if (e.button > 0) return;
+			origem = 'ponteiro';
 			try {
 				canvas.setPointerCapture(e.pointerId);
 			} catch {
@@ -446,7 +466,7 @@
 		const roda = (e: WheelEvent) => {
 			// a roda sozinha é da página (rolar até o fim dela passa pelo grafo); Ctrl/⌘ + roda e a pinça do trackpad
 			// (que chega como roda com Ctrl) aproximam; em tela cheia, a roda sozinha também
-			if (!(e.ctrlKey || e.metaKey || document.fullscreenElement === grafo)) {
+			if (!(e.ctrlKey || e.metaKey || telaCheia)) {
 				avisoRoda = true;
 				clearTimeout(temporizador);
 				temporizador = window.setTimeout(() => (avisoRoda = false), 1600);
@@ -685,7 +705,19 @@
 </script>
 
 <div class="grafo" class:tela-cheia={telaCheia} bind:this={grafo}>
-	<div class="ferramentas">
+	<div class="ferramentas" role="toolbar" aria-label="Controles do grafo">
+		{#if opcoesComunidade.length}
+			<select
+				class="botao"
+				aria-label="Comunidade em destaque"
+				value={comunidadeEscolhida === null ? '' : String(comunidadeEscolhida)}
+				onchange={(e) => aoEscolherComunidade(e.currentTarget.value === '' ? null : Number(e.currentTarget.value))}
+				data-testid="escolher-comunidade"
+			>
+				<option value="">Todas as comunidades</option>
+				{#each opcoesComunidade as c (c.id)}<option value={String(c.id)}>{c.rotulo}</option>{/each}
+			</select>
+		{/if}
 		{#if enquadravel}
 			<button type="button" class="botao" onclick={enquadrarDestaque} data-testid="zoom-enquadrar">
 				{selecionado !== null ? 'Enquadrar o nó' : 'Enquadrar a comunidade'}
@@ -720,6 +752,7 @@
 		tabindex="0"
 		aria-label="Grafo: + e − aproximam, 0 volta ao desenho inteiro, as setas movem, Enter abre o nó do centro e Esc solta a comunidade"
 		data-grafo
+		data-origem={origem}
 		onkeydown={tecla}
 		bind:clientWidth={largura}
 		bind:clientHeight={altura}
@@ -740,16 +773,15 @@
 				<text x={r.px} y={r.py} class="nome" text-anchor="middle" data-testid="nome-no">{r.texto}</text>
 			{/each}
 			{#each rotulosNaTela as r (r.id)}
-				<!-- o clique no rótulo é um atalho: a lista das comunidades, na legenda, tem os mesmos botões pelo teclado -->
-				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+				<!-- os rótulos não recebem o clique (no celular, tomavam o toque dos nós embaixo deles): a comunidade se
+				     escolhe no seletor da barra do grafo ou na legenda -->
 				<text
 					x={r.px}
 					y={r.py}
 					class="comunidade"
 					class:escolhida={r.comunidade === comunidadeEscolhida}
 					text-anchor="middle"
-					data-testid="rotulo-comunidade"
-					onclick={() => aoEscolherComunidade(r.comunidade === comunidadeEscolhida ? null : r.comunidade)}>{r.texto}</text
+					data-testid="rotulo-comunidade">{r.texto}</text
 				>
 			{/each}
 			{#if nomeAberto}
@@ -767,19 +799,44 @@
 
 <style>
 	.grafo {
+		position: relative;
 		display: grid;
-		gap: 0.4rem;
 	}
 
+	/* por cima do canto de cima do grafo: continua à vista quando a página rola até ele */
 	.ferramentas {
+		position: absolute;
+		z-index: 6;
+		top: 0.45rem;
+		right: 0.45rem;
+		left: 0.45rem;
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: flex-end;
 		gap: 0.3rem;
+		pointer-events: none;
+	}
+
+	.ferramentas > * {
+		pointer-events: auto;
+		background: color-mix(in oklab, var(--superficie) 88%, transparent);
 	}
 
 	.ferramentas .botao {
 		min-width: 2rem;
+	}
+
+	.ferramentas select {
+		max-width: min(22rem, 100%);
+		text-overflow: ellipsis;
+	}
+
+	/* no toque, botões do tamanho do dedo */
+	@media (pointer: coarse) {
+		.ferramentas .botao {
+			min-width: 2.6rem;
+			min-height: 2.6rem;
+		}
 	}
 
 	.ferramentas .botao:disabled {
@@ -802,14 +859,8 @@
 		outline-offset: 2px;
 	}
 
-	.grafo.tela-cheia {
-		grid-template-rows: auto minmax(0, 1fr);
-		padding: 1rem;
-		background: var(--fundo);
-	}
-
 	.grafo.tela-cheia .area {
-		height: auto;
+		height: calc(100dvh - 2rem);
 	}
 
 	canvas {
@@ -851,11 +902,8 @@
 		font-size: 0.85rem;
 		font-style: italic;
 		opacity: 0.85;
-		pointer-events: auto;
-		cursor: pointer;
 	}
 
-	.comunidade:hover,
 	.comunidade.escolhida {
 		opacity: 1;
 		text-decoration: underline;

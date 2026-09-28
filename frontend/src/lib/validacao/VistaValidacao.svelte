@@ -143,6 +143,8 @@
 		const unan = Object.values(juri.etapas).reduce((s, e) => s + (e.unanime ?? 0), 0);
 		return `${formatarInteiro(juri.membros.length)} modelos locais votaram em ${formatarInteiro(juri.documentos)} documentos: ${formatarPorcentagem(total ? unan / total : 0)} das decisões foram unânimes.`;
 	});
+	/** O valor-p do McNemar: "< 0,001" em vez de "= 0,000". */
+	const textoP = (p: number) => (p < 0.001 ? '< 0,001' : `= ${formatarDecimal(p, 3)}`);
 	const titulo = (doc: string) => {
 		const i = tabela?.indice.get(doc);
 		return i === undefined ? doc : tabela!.titulos[i];
@@ -181,113 +183,116 @@
 		</p>
 	{/if}
 
-	<Figura
-		id="concordancia"
-		titulo="{quem(ref)} × {quem(comp)}"
-		resumo={resumoPar}
-		colunas={['Variável', 'n', 'Concordância', 'Kappa', 'IC 95%', 'PABAK', 'Alfa']}
-		linhas={linhasPar}
-		dados={dadosPar}
-	>
-		<div class="rolagem-lateral">
-			<table class="metricas" data-testid="tabela-metricas">
-				<thead>
-					<tr>
-						<th scope="col">Variável</th>
-						<th scope="col" class="num">n</th>
-						<th scope="col" class="num">Concordância</th>
-						<th scope="col" class="kappa">Kappa (IC 95%)</th>
-						<th scope="col" class="num">PABAK</th>
-						<th scope="col" class="num">Alfa</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each doPar as m (m.variavel)}
-						<tr class:escolhida={m === metrica}>
-							<th scope="row">
-								<button type="button" onclick={() => (variavelEscolhida = m.variavel)} aria-pressed={m === metrica} data-testid="linha-variavel">
-									{nomeVariavel(m.variavel)}
-								</button>
-							</th>
-							<td class="num">{formatarInteiro(m.n)}</td>
-							<td class="num">{m.concordancia === null ? '—' : formatarPorcentagem(m.concordancia)}</td>
-							<td class="kappa">
-								{#if m.kappa === null}
-									<span class="suave">{semKappa(m.variavel)}</span>
-								{:else}
-									<span class="barra-kappa" class:fraco={m.kappa < KAPPA_FRACO}>
-										<span style:width="{Math.max(0, m.kappa) * 100}%"></span>
-									</span>
-									{formatarDecimal(m.kappa, 2)}
-									{#if m.kappa_ic95}<span class="suave">({formatarDecimal(m.kappa_ic95[0], 2)} a {formatarDecimal(m.kappa_ic95[1], 2)})</span>{/if}
-								{/if}
-							</td>
-							<td class="num">{m.pabak === null ? '—' : formatarDecimal(m.pabak, 2)}</td>
-							<td class="num">{m.alfa === null ? '—' : formatarDecimal(m.alfa, 2)}</td>
+	<!-- numa tela larga, a tabela do par e o detalhe da variável lado a lado -->
+	<div class="par-e-detalhe">
+		<Figura
+			id="concordancia"
+			titulo="{quem(ref)} × {quem(comp)}"
+			resumo={resumoPar}
+			colunas={['Variável', 'n', 'Concordância', 'Kappa', 'IC 95%', 'PABAK', 'Alfa']}
+			linhas={linhasPar}
+			dados={dadosPar}
+		>
+			<div class="rolagem-lateral">
+				<table class="metricas" data-testid="tabela-metricas">
+					<thead>
+						<tr>
+							<th scope="col">Variável</th>
+							<th scope="col" class="num">n</th>
+							<th scope="col" class="num">Concordância</th>
+							<th scope="col" class="kappa">Kappa (IC 95%)</th>
+							<th scope="col" class="num">PABAK</th>
+							<th scope="col" class="num">Alfa</th>
 						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
-	</Figura>
-
-	{#if metrica}
-		<section class="detalhe" aria-labelledby="titulo-detalhe" data-testid="detalhe-variavel">
-			<h2 id="titulo-detalhe">{nomeVariavel(metrica.variavel)}</h2>
-			<div class="lado-a-lado" class:largo={metrica.matriz.rotulos.length > 5}>
-				{#if metrica.matriz.rotulos.length}
-					<div>
-						<h3>Matriz de confusão</h3>
-						<MatrizConfusao matriz={metrica.matriz} referencia={quem(ref)} comparado={quem(comp)} rotulo={(v) => rotuloValor(metrica.variavel, v)} />
-					</div>
-				{/if}
-				{#if metrica.por_classe?.length}
-					<div>
-						<h3>Por categoria</h3>
-						<div class="rolagem-lateral">
-							<table class="classes">
-								<thead>
-									<tr><th scope="col">Categoria</th><th scope="col" class="num">Na referência</th><th scope="col" class="num">Precisão</th><th scope="col" class="num">Revocação</th><th scope="col" class="num">F1</th></tr>
-								</thead>
-								<tbody>
-									{#each metrica.por_classe.filter((c) => c.suporte || c.precisao !== null) as c (c.rotulo)}
-										<tr>
-											<th scope="row">{rotuloValor(metrica.variavel, c.rotulo)}</th>
-											<td class="num">{formatarInteiro(c.suporte)}</td>
-											<td class="num">{c.precisao === null ? '—' : formatarDecimal(c.precisao, 2)}</td>
-											<td class="num">{c.revocacao === null ? '—' : formatarDecimal(c.revocacao, 2)}</td>
-											<td class="num">{c.f1 === null ? '—' : formatarDecimal(c.f1, 2)}</td>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
-						</div>
-						<p class="suave">Tomando {quem(ref)} como referência.</p>
-					</div>
-				{/if}
+					</thead>
+					<tbody>
+						{#each doPar as m (m.variavel)}
+							<tr class:escolhida={m === metrica}>
+								<th scope="row">
+									<button type="button" onclick={() => (variavelEscolhida = m.variavel)} aria-pressed={m === metrica} data-testid="linha-variavel">
+										{nomeVariavel(m.variavel)}
+									</button>
+								</th>
+								<td class="num">{formatarInteiro(m.n)}</td>
+								<td class="num">{m.concordancia === null ? '—' : formatarPorcentagem(m.concordancia)}</td>
+								<td class="kappa">
+									{#if m.kappa === null}
+										<span class="suave">{semKappa(m.variavel)}</span>
+									{:else}
+										<span class="barra-kappa" class:fraco={m.kappa < KAPPA_FRACO}>
+											<span style:width="{Math.max(0, m.kappa) * 100}%"></span>
+										</span>
+										{formatarDecimal(m.kappa, 2)}
+										{#if m.kappa_ic95}<span class="suave">({formatarDecimal(m.kappa_ic95[0], 2)} a {formatarDecimal(m.kappa_ic95[1], 2)})</span>{/if}
+									{/if}
+								</td>
+								<td class="num">{m.pabak === null ? '—' : formatarDecimal(m.pabak, 2)}</td>
+								<td class="num">{m.alfa === null ? '—' : formatarDecimal(m.alfa, 2)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
 			</div>
+		</Figura>
 
-			{#if divergencias.length}
-				<h3>Divergências ({formatarInteiro(divergencias.length)})</h3>
-				<ol class="divergencias" data-testid="divergencias">
-					{#each divergencias as d (d.doc + d.codificador)}
-						<li>
-							<a href={rota('/mapa', escreverFiltros({ doc: d.doc }))}>{titulo(d.doc)}</a>
-							<p>
-								<strong>{quem(d.codificador || ref)}</strong>: {rotuloValor(d.variavel, d.humano)}{#if d.incerto} <span class="incerto">incerto</span>{/if}
-								· <strong>{comp}</strong>: {rotuloValor(d.variavel, d.modelo)}
-							</p>
-							{#if d.evidencia}
-								<blockquote class:ausente={d.status === 'ausente'}>
-									«{d.evidencia}»{#if d.status === 'ausente'} <span class="suave">(trecho não encontrado no resumo)</span>{/if}
-								</blockquote>
-							{/if}
-						</li>
-					{/each}
-				</ol>
-			{/if}
-		</section>
-	{/if}
+		{#if metrica}
+			<section class="detalhe" aria-labelledby="titulo-detalhe" data-testid="detalhe-variavel">
+				<h2 id="titulo-detalhe">{nomeVariavel(metrica.variavel)}</h2>
+				<div class="lado-a-lado" class:largo={metrica.matriz.rotulos.length > 5}>
+					{#if metrica.matriz.rotulos.length}
+						<div>
+							<h3>Matriz de confusão</h3>
+							<MatrizConfusao matriz={metrica.matriz} referencia={quem(ref)} comparado={quem(comp)} rotulo={(v) => rotuloValor(metrica.variavel, v)} />
+						</div>
+					{/if}
+					{#if metrica.por_classe?.length}
+						<div>
+							<h3>Por categoria</h3>
+							<div class="rolagem-lateral">
+								<table class="classes">
+									<thead>
+										<tr><th scope="col">Categoria</th><th scope="col" class="num">Na referência</th><th scope="col" class="num">Precisão</th><th scope="col" class="num">Revocação</th><th scope="col" class="num">F1</th></tr>
+									</thead>
+									<tbody>
+										{#each metrica.por_classe.filter((c) => c.suporte || c.precisao !== null) as c (c.rotulo)}
+											<tr>
+												<th scope="row">{rotuloValor(metrica.variavel, c.rotulo)}</th>
+												<td class="num">{formatarInteiro(c.suporte)}</td>
+												<td class="num">{c.precisao === null ? '—' : formatarDecimal(c.precisao, 2)}</td>
+												<td class="num">{c.revocacao === null ? '—' : formatarDecimal(c.revocacao, 2)}</td>
+												<td class="num">{c.f1 === null ? '—' : formatarDecimal(c.f1, 2)}</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+							<p class="suave">Tomando {quem(ref)} como referência.</p>
+						</div>
+					{/if}
+				</div>
+
+				{#if divergencias.length}
+					<h3>Divergências ({formatarInteiro(divergencias.length)})</h3>
+					<ol class="divergencias" data-testid="divergencias">
+						{#each divergencias as d (d.doc + d.codificador)}
+							<li>
+								<a href={rota('/mapa', escreverFiltros({ doc: d.doc }))}>{titulo(d.doc)}</a>
+								<p>
+									<strong>{quem(d.codificador || ref)}</strong>: {rotuloValor(d.variavel, d.humano)}{#if d.incerto} <span class="incerto">incerto</span>{/if}
+									· <strong>{comp}</strong>: {rotuloValor(d.variavel, d.modelo)}
+								</p>
+								{#if d.evidencia}
+									<blockquote class:ausente={d.status === 'ausente'}>
+										«{d.evidencia}»{#if d.status === 'ausente'} <span class="suave">(trecho não encontrado no resumo)</span>{/if}
+									</blockquote>
+								{/if}
+							</li>
+						{/each}
+					</ol>
+				{/if}
+			</section>
+		{/if}
+	</div>
 
 	{#if validacao.comparacoes_modelos?.length}
 		<Figura
@@ -295,7 +300,7 @@
 			titulo="Comparação entre modelos"
 			resumo="Teste de McNemar exato: só os documentos em que um modelo acertou e o outro errou, contra a mesma referência. Com muitas variáveis, alguma diferença com p < 0,05 aparece por acaso."
 			colunas={['Variável', 'Referência', 'Modelos', 'n', 'Acertos', 'p']}
-			linhas={validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), c.referencia, `${c.modelo_a} × ${c.modelo_b}`, formatarInteiro(c.n), `${c.acertos_a} × ${c.acertos_b}`, formatarDecimal(c.p, 3)])}
+			linhas={validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), c.referencia, `${c.modelo_a} × ${c.modelo_b}`, formatarInteiro(c.n), `${c.acertos_a} × ${c.acertos_b}`, c.p < 0.001 ? '< 0,001' : formatarDecimal(c.p, 3)])}
 			dados={{
 				colunas: ['Variável', 'Referência', 'Modelo A', 'Modelo B', 'n', 'Acertos de A', 'Acertos de B', 'p'],
 				linhas: validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), c.referencia, c.modelo_a, c.modelo_b, c.n, c.acertos_a, c.acertos_b, c.p])
@@ -303,7 +308,8 @@
 		>
 			<ul class="mcnemar" data-testid="lista-mcnemar">
 				{#each validacao.comparacoes_modelos.filter((c) => c.p < 0.05) as c (`${c.variavel}|${c.referencia}|${c.modelo_a}|${c.modelo_b}`)}
-					<li>{nomeVariavel(c.variavel)} (contra {quem(c.referencia)}): {c.acertos_a > c.acertos_b ? c.modelo_a : c.modelo_b} acerta mais ({c.acertos_a} × {c.acertos_b} de {c.n}; p = {formatarDecimal(c.p, 3)}).</li>
+					{@const [vence, perde, av, ap] = c.acertos_a >= c.acertos_b ? [c.modelo_a, c.modelo_b, c.acertos_a, c.acertos_b] : [c.modelo_b, c.modelo_a, c.acertos_b, c.acertos_a]}
+					<li>{nomeVariavel(c.variavel)}, contra {quem(c.referencia)}: <strong>{vence}</strong> acerta mais que {perde} ({av} × {ap} acertos em {c.n}; p {textoP(c.p)}).</li>
 				{:else}
 					<li>Nenhuma diferença entre os modelos com p &lt; 0,05.</li>
 				{/each}
@@ -616,6 +622,24 @@
 
 	@media (max-width: 900px) {
 		.lado-a-lado {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+
+	.par-e-detalhe {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 1.5rem;
+		align-items: start;
+	}
+
+	@media (min-width: 1600px) {
+		.par-e-detalhe {
+			grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+		}
+
+		/* na coluna, a matriz e as categorias uma embaixo da outra */
+		.par-e-detalhe .lado-a-lado {
 			grid-template-columns: minmax(0, 1fr);
 		}
 	}
