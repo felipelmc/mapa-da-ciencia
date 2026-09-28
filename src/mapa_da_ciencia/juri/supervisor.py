@@ -10,16 +10,18 @@ dos candidatos (ou, na auditoria, o valor sugerido é uma categoria da variável
 evidência `ausente` recusa a resposta, a menos que ela seja "sem informação"). As recusas são contadas e listadas;
 rodar `exportar-pedidos` de novo pede só o que falta.
 
-**Auditoria:** `juri.auditoria` itens (documento × variável) sorteados uma vez, com a semente da validação, entre as
-decisões unânimes das variáveis categóricas, booleanas e de múltipla escolha. A taxa de erro sai com o intervalo de
-Wilson de 95%.
+O id de cada pedido termina num pedaço da chave dos candidatos, e o índice (`pedidos.json`) guarda todos os pedidos
+já exportados: uma resposta a um pedido antigo, que ficou na pasta, é reconhecida como antiga e ignorada, e nunca cai
+sobre os candidatos novos. Só valem as respostas do supervisor de `juri.supervisor.nome`.
+
+**Auditoria:** `juri.auditoria` itens (documento × variável) sorteados entre as decisões unânimes das variáveis
+categóricas, booleanas e de múltipla escolha. A taxa de erro sai com o intervalo de Wilson de 95%.
 """
 
 from __future__ import annotations
 
 import json
 import math
-import random
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -30,6 +32,7 @@ from ..classificacao.codebook import EVIDENCIA_MAXIMA, conferir_valor, sem_infor
 from ..classificacao.evidencia import conferir
 from ..classificacao.resultado import valor_como_texto, valor_do_texto
 from ..config import ErroConfig
+from ..llm.cache import chave_de
 from ..projeto import Projeto
 from .consolidar import DecisaoFinal, chave_pedido, consolidar, decidir, respostas_do_supervisor
 from .deliberacao import DELIBERAVEIS
@@ -51,28 +54,18 @@ def wilson(erros: int, n: int, z: float = 1.959964) -> tuple[float, float] | Non
 
 
 def sorteio_auditoria(projeto: Projeto, decisoes: list[DecisaoFinal]) -> list[tuple[str, str]]:
-    """Os itens da auditoria: sorteados na primeira vez e guardados; depois, sempre os mesmos."""
-    n = projeto.config.juri.auditoria
-    hash_cb = projeto.codebook.hash()
-    with conectar(projeto) as con:
-        guardados = con.execute(
-            "SELECT doc, variavel FROM juri_auditoria WHERE hash_codebook = ? ORDER BY ordem", (hash_cb,)
-        ).fetchall()
-        if guardados or n == 0:
-            return [(r["doc"], r["variavel"]) for r in guardados]
-        unanimes = sorted(
-            (d.doc, d.variavel.id) for d in decisoes if d.etapa == "unanime" and d.variavel.tipo in DELIBERAVEIS
-        )
-        itens = random.Random(projeto.config.validacao.semente).sample(unanimes, min(n, len(unanimes)))
-        con.executemany(
-            "INSERT INTO juri_auditoria (hash_codebook, doc, variavel, ordem) VALUES (?, ?, ?, ?)",
-            [(hash_cb, doc, var, i) for i, (doc, var) in enumerate(itens)],
-        )
-    return itens
+    """Os itens da auditoria: as `juri.auditoria` decisões unânimes de menor prioridade, sendo a prioridade de cada
+    item um hash da semente da validação, do documento e da variável. O sorteio é estável sem ser guardado: um item
+    continua sorteado enquanto for unânime, mudar `juri.auditoria` só acrescenta ou tira itens do fim da fila, e o que
+    deixa de ser unânime sai (a auditoria estima o erro entre os unânimes)."""
+    semente = projeto.config.validacao.semente
+    unanimes = [(d.doc, d.variavel.id) for d in decisoes if d.etapa == "unanime" and d.variavel.tipo in DELIBERAVEIS]
+    return sorted(unanimes, key=lambda item: chave_de("auditoria", semente, *item))[: projeto.config.juri.auditoria]
 
 
-def _id(tarefa: str, doc: str, variavel: str) -> str:
-    return f"{tarefa[:3]}:{doc}:{variavel}"
+def _id(tarefa: str, doc: str, variavel: str, chave: str) -> str:
+    """O id público do pedido: muda junto com os candidatos, e uma resposta antiga nunca vale para um pedido novo."""
+    return f"{tarefa[:3]}:{doc}:{variavel}:{chave[:8]}"
 
 
 @dataclass
@@ -101,6 +94,8 @@ def pedidos(projeto: Projeto, *, todos: bool = False) -> tuple[list[dict], list[
     for d in decisoes:
         if d.etapa != "sem_maioria" or d.variavel.tipo not in DELIBERAVEIS or (d.supervisor and not todos):
             continue
+        if not d.deliberada:
+            continue
         texto = textos.get(d.doc)
         if texto is None:
             continue
@@ -115,7 +110,7 @@ def pedidos(projeto: Projeto, *, todos: bool = False) -> tuple[list[dict], list[
         ]
         arbitragem.append(
             {
-                "id": _id("arbitragem", d.doc, d.variavel.id),
+                "id": _id("arbitragem", d.doc, d.variavel.id, d.chave_pedido),
                 "tarefa": "arbitragem",
                 "titulo": texto.titulo or "",
                 "resumo": texto.resumo,
@@ -125,7 +120,7 @@ def pedidos(projeto: Projeto, *, todos: bool = False) -> tuple[list[dict], list[
                 "_chave": d.chave_pedido,
             }
         )
-    respondidas = respostas_do_supervisor(projeto, hash_cb, "auditoria")
+    respondidas = respostas_do_supervisor(projeto, hash_cb, "auditoria", projeto.config.juri.supervisor.nome)
     for doc, var in sorteio_auditoria(projeto, decisoes):
         d = por_item.get((doc, var))
         texto = textos.get(doc)
@@ -136,7 +131,7 @@ def pedidos(projeto: Projeto, *, todos: bool = False) -> tuple[list[dict], list[
             continue
         auditoria.append(
             {
-                "id": _id("auditoria", doc, var),
+                "id": _id("auditoria", doc, var, chave),
                 "tarefa": "auditoria",
                 "titulo": texto.titulo or "",
                 "resumo": texto.resumo,
@@ -151,7 +146,11 @@ def pedidos(projeto: Projeto, *, todos: bool = False) -> tuple[list[dict], list[
 
 def exportar_pedidos(projeto: Projeto, *, lote: int = 20, todos: bool = False) -> Pedidos:
     """Grava os pedidos em lotes JSONL e as instruções, para um supervisor externo."""
-    consolidar(projeto)
+    if (resumo := consolidar(projeto)).nao_deliberados:
+        raise ErroConfig(
+            f"{resumo.nao_deliberados} decisão(ões) em disputa ainda não passaram pela deliberação: rode "
+            "`mapa juri deliberar` antes de pedir ao supervisor."
+        )
     arbitragem, auditoria = pedidos(projeto, todos=todos)
     pasta = pasta_pedidos(projeto)
     pasta.mkdir(exist_ok=True)
@@ -159,14 +158,21 @@ def exportar_pedidos(projeto: Projeto, *, lote: int = 20, todos: bool = False) -
         if not antigo.name.endswith(".respostas.jsonl"):
             antigo.unlink()
     (pasta / "instrucoes-supervisor.md").write_text(INSTRUCOES_SUPERVISOR, encoding="utf-8")
-    indice = {}
+    # o índice acumula os pedidos de todas as exportações: uma resposta antiga continua reconhecível (e é ignorada
+    # se os candidatos mudaram), em vez de parecer um pedido desconhecido
+    indice = _ler_indice(pasta)
     arquivos = []
     for nome, itens in (("arbitragem", arbitragem), ("auditoria", auditoria)):
         for i in range(0, len(itens), lote):
             arquivo = pasta / f"{nome}-{i // lote + 1:02d}.jsonl"
             with arquivo.open("w", encoding="utf-8") as f:
                 for p in itens[i : i + lote]:
-                    indice[p["id"]] = {"tarefa": p["tarefa"], "doc": p["_doc"], "chave": p["_chave"]}
+                    indice[p["id"]] = {
+                        "tarefa": p["tarefa"],
+                        "doc": p["_doc"],
+                        "variavel": p["variavel"]["id"],
+                        "chave": p["_chave"],
+                    }
                     publico = {k: v for k, v in p.items() if not k.startswith("_")}
                     f.write(json.dumps(publico, ensure_ascii=False) + "\n")
             arquivos.append(arquivo)
@@ -174,13 +180,24 @@ def exportar_pedidos(projeto: Projeto, *, lote: int = 20, todos: bool = False) -
     return Pedidos(len(arbitragem), len(auditoria), arquivos)
 
 
+def _ler_indice(pasta: Path) -> dict[str, dict[str, str]]:
+    arquivo = pasta / "pedidos.json"
+    return json.loads(arquivo.read_text(encoding="utf-8")) if arquivo.exists() else {}
+
+
 @dataclass
 class ResumoRespostas:
     aceitas: int = 0
     recusadas: list[str] = field(default_factory=list)  # "id: motivo"
+    antigas: int = 0  # respostas a pedidos cujos candidatos mudaram depois: ignoradas
+    repetidas: int = 0  # já importadas antes, iguais
 
     def __str__(self) -> str:
         texto = f"{self.aceitas} resposta(s) do supervisor aceitas"
+        if self.repetidas:
+            texto += f", {self.repetidas} já importada(s) antes"
+        if self.antigas:
+            texto += f", {self.antigas} a pedido(s) antigo(s) ignorada(s) (os candidatos mudaram depois)"
         if self.recusadas:
             texto += f", {len(self.recusadas)} recusada(s) (por exemplo: {'; '.join(self.recusadas[:3])})"
         return texto + "."
@@ -199,22 +216,26 @@ def _ler_respostas(arquivos: Iterable[Path]) -> list[dict[str, Any]]:
     return saida
 
 
-def importar_respostas(
-    projeto: Projeto, arquivos: list[Path], *, supervisor: str | None = None, origem: str = "arquivo"
-) -> ResumoRespostas:
-    """Confere e guarda as respostas do supervisor, e consolida o júri de novo."""
+def importar_respostas(projeto: Projeto, arquivos: list[Path], *, origem: str = "arquivo") -> ResumoRespostas:
+    """Confere e guarda as respostas do supervisor (o de `juri.supervisor.nome`), e consolida o júri de novo."""
     codebook = projeto.codebook
     hash_cb = codebook.hash()
-    nome = supervisor or projeto.config.juri.supervisor.nome
-    indice_arquivo = pasta_pedidos(projeto) / "pedidos.json"
-    if not indice_arquivo.exists():
+    nome = projeto.config.juri.supervisor.nome
+    indice = _ler_indice(pasta_pedidos(projeto))
+    if not indice:
         raise ErroConfig("Não há pedidos exportados. Rode `mapa juri exportar-pedidos` antes.")
-    indice = json.loads(indice_arquivo.read_text(encoding="utf-8"))
     variaveis = {v.id: v for v in codebook.variaveis}
     textos = {t.doc: t for t in textos_da_amostra(projeto)}
     decisoes = {(d.doc, d.variavel.id): d for d in decidir(projeto)}
     resumo = ResumoRespostas()
     agora = datetime.now(UTC).isoformat(timespec="seconds")
+    with conectar(projeto) as con:
+        guardadas = {
+            (x["tarefa"], x["doc"], x["variavel"]): dict(x)
+            for x in con.execute(
+                "SELECT * FROM juri_supervisor WHERE hash_codebook = ? AND supervisor = ?", (hash_cb, nome)
+            ).fetchall()
+        }
     linhas = []
     for r in _ler_respostas(arquivos):
         rid = str(r.get("id", ""))
@@ -222,20 +243,19 @@ def importar_respostas(
         if pedido is None:
             resumo.recusadas.append(f"{rid or '(sem id)'}: pedido desconhecido")
             continue
-        tarefa, doc = pedido["tarefa"], pedido["doc"]
-        var_id = rid.rsplit(":", 1)[-1]
+        tarefa, doc, var_id = pedido["tarefa"], pedido["doc"], pedido["variavel"]
         v, d, texto = variaveis.get(var_id), decisoes.get((doc, var_id)), textos.get(doc)
         if v is None or d is None or texto is None:
             resumo.recusadas.append(f"{rid}: o documento ou a variável não estão mais no júri")
             continue
         if pedido["chave"] != chave_pedido(doc, var_id, d.candidatos):
-            resumo.recusadas.append(f"{rid}: os candidatos mudaram depois do pedido; exporte de novo")
+            resumo.antigas += 1  # a resposta é de um pedido antigo; o pedido atual tem outro id
             continue
         evidencia = " ".join(str(r.get("evidencia") or "").split())[:EVIDENCIA_MAXIMA]
         justificativa = " ".join(str(r.get("justificativa") or "").split())[:JUSTIFICATIVA_MAXIMA]
         if tarefa == "arbitragem":
             escolha = r.get("escolha")
-            if not isinstance(escolha, int) or not 1 <= escolha <= len(d.juri.candidatos):
+            if isinstance(escolha, bool) or not isinstance(escolha, int) or not 1 <= escolha <= len(d.juri.candidatos):
                 resumo.recusadas.append(f"{rid}: `escolha` precisa ser um dos candidatos (1 a {len(d.candidatos)})")
                 continue
             valor = d.juri.candidatos[escolha - 1].valor
@@ -265,6 +285,23 @@ def importar_respostas(
         c = conferir(evidencia, texto.resumo, texto.titulo, sem_informacao=sem_informacao(v, referencia))
         if c.status == "ausente":
             resumo.recusadas.append(f"{rid}: a evidência não está no título nem no resumo")
+            continue
+        antes = guardadas.get((tarefa, doc, var_id))
+        if (
+            antes
+            and antes["chave_pedido"] == pedido["chave"]
+            and all(
+                antes[k] == x
+                for k, x in (
+                    ("escolha", linha["escolha"]),
+                    ("correto", linha["correto"]),
+                    ("valor_sugerido", linha["valor_sugerido"]),
+                    ("evidencia", evidencia),
+                    ("justificativa", justificativa),
+                )
+            )
+        ):
+            resumo.repetidas += 1
             continue
         linhas.append(
             (
@@ -312,7 +349,7 @@ def auditoria(projeto: Projeto) -> Auditoria:
     """A taxa de erro entre as decisões unânimes auditadas pelo supervisor."""
     hash_cb = projeto.codebook.hash()
     decisoes = {(d.doc, d.variavel.id): d for d in decidir(projeto)}
-    respostas = respostas_do_supervisor(projeto, hash_cb, "auditoria")
+    respostas = respostas_do_supervisor(projeto, hash_cb, "auditoria", projeto.config.juri.supervisor.nome)
     validas = [
         r
         for (doc, var), r in respostas.items()
@@ -452,5 +489,5 @@ def supervisionar(
         carimbo = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         arquivo = pasta_pedidos(projeto) / f"api-{carimbo}.respostas.jsonl"
         arquivo.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in respostas) + "\n", encoding="utf-8")
-        resumo.importacao = importar_respostas(projeto, [arquivo], supervisor=cfg.nome, origem="api")
+        resumo.importacao = importar_respostas(projeto, [arquivo], origem="api")
     return resumo

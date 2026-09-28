@@ -60,7 +60,7 @@ def estado(projeto: Projeto, *, ollama: Ollama | None = None) -> EstadoJuri:
     resumo = ler_resumo(projeto)
     if any(n < len(textos) for n in classificados.values()):
         proximo = "mapa juri votar"
-    elif resumo is None:
+    elif resumo is None or resumo.nao_deliberados:
         proximo = "mapa juri deliberar"
     elif resumo.pendentes_supervisor:
         proximo = "mapa juri exportar-pedidos (e depois importar-respostas)"

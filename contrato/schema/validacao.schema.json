@@ -148,6 +148,32 @@
       "title": "ComparacaoModelos",
       "type": "object"
     },
+    "ConcordanciaSupervisor": {
+      "additionalProperties": false,
+      "description": "A concordância com a referência nas decisões sem maioria que o supervisor arbitrou, com a escolha dele.",
+      "properties": {
+        "acertos": {
+          "title": "Acertos",
+          "type": "integer"
+        },
+        "circular": {
+          "description": "O supervisor e a referência são da mesma família: não é medida independente.",
+          "title": "Circular",
+          "type": "boolean"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "n",
+        "acertos",
+        "circular"
+      ],
+      "title": "ConcordanciaSupervisor",
+      "type": "object"
+    },
     "Divergencia": {
       "additionalProperties": false,
       "description": "Um caso em que um codificador de referência e o modelo principal discordam, para arbitragem.",
@@ -491,9 +517,21 @@
             },
             "type": "object"
           },
-          "description": "Estágio → {n, acertos} contra a referência.",
+          "description": "Estágio → {n, acertos} contra a referência, com a decisão do júri sem o supervisor (no estágio `sem_maioria`, o voto do primeiro membro).",
           "title": "Concordancia Por Etapa",
           "type": "object"
+        },
+        "concordancia_supervisor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConcordanciaSupervisor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Nas decisões sem maioria arbitradas, a concordância com a escolha do supervisor."
         },
         "deliberacao": {
           "additionalProperties": {

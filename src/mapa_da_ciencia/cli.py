@@ -854,19 +854,14 @@ app.add_typer(juri_app, name="juri")
 
 
 @juri_app.command("votar")
-def juri_votar(
-    projeto: OpcaoProjeto = Path("."),
-    corpus: Annotated[
-        bool, typer.Option("--corpus", help="Classifica o corpus inteiro com cada membro, e não só a amostra.")
-    ] = False,
-) -> None:
+def juri_votar(projeto: OpcaoProjeto = Path(".")) -> None:
     """Rodada 1: cada membro de `juri.membros` classifica a amostra de validação (o que ainda falta)."""
     from mapa_da_ciencia.juri.votacao import votar
     from mapa_da_ciencia.progresso import ProgressoRich
 
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
-        r = votar(p, somente_amostra=not corpus, progresso=ProgressoRich(console))
+        r = votar(p, progresso=ProgressoRich(console))
     console.print(f"[bold green]Votação pronta[/]: {r}")
     if r.ja_prontos:
         console.print(f"Já tinham classificado tudo: {', '.join(r.ja_prontos)}.")
@@ -918,11 +913,8 @@ def juri_importar_respostas(
         typer.Argument(help="Arquivos de respostas; sem nenhum, todos os `juri/*.respostas.jsonl`.", exists=True),
     ] = None,
     projeto: OpcaoProjeto = Path("."),
-    supervisor: Annotated[
-        str | None, typer.Option("--supervisor", help="Nome do supervisor (padrão: juri.supervisor.nome).")
-    ] = None,
 ) -> None:
-    """Confere e guarda as respostas do supervisor, e consolida o júri."""
+    """Confere e guarda as respostas do supervisor (o de `juri.supervisor.nome`), e consolida o júri."""
     from mapa_da_ciencia.juri.pipeline import arquivos_de_respostas
     from mapa_da_ciencia.juri.supervisor import importar_respostas
 
@@ -931,7 +923,7 @@ def juri_importar_respostas(
         lista = arquivos_de_respostas(p, list(arquivos or []))
         if not lista:
             raise ErroConfig("Nenhum arquivo de respostas: passe os arquivos ou ponha-os em `juri/` do projeto.")
-        r = importar_respostas(p, lista, supervisor=supervisor)
+        r = importar_respostas(p, lista)
     console.print(f"[bold green]Respostas do supervisor[/]: {r}")
     for motivo in r.recusadas[:10]:
         console.print(f"[red]Recusada:[/] {motivo}")

@@ -315,7 +315,16 @@
 			{#if juri.referencia && Object.keys(juri.concordancia_por_etapa ?? {}).length}
 				<p class="creditos">
 					Concordância com {quem(juri.referencia)} por estágio:
-					{#each Object.entries(juri.concordancia_por_etapa ?? {}) as [etapa, c], i (etapa)}{i ? '; ' : ''}{ETAPAS_JURI[etapa as keyof typeof ETAPAS_JURI] ?? etapa}, {formatarPorcentagem(c.n ? c.acertos / c.n : 0)} de {formatarInteiro(c.n)}{/each}.
+					{#each Object.entries(juri.concordancia_por_etapa ?? {}) as [etapa, c], i (etapa)}{i ? '; ' : ''}{ETAPAS_JURI[etapa as keyof typeof ETAPAS_JURI] ?? etapa}, {formatarPorcentagem(c.n ? c.acertos / c.n : 0)} de {formatarInteiro(c.n)}{/each}
+					(a decisão do júri sem o supervisor).
+					{#if juri.concordancia_supervisor}
+						{@const s = juri.concordancia_supervisor}
+						<span data-testid="concordancia-supervisor">
+							Com a escolha do supervisor, nas {formatarInteiro(s.n)} decisões sem maioria que ele arbitrou:
+							{formatarPorcentagem(s.n ? s.acertos / s.n : 0)}{#if s.circular}
+								<span class="circular" title="O supervisor e a referência são da mesma família de modelo">circular</span>{/if}.
+						</span>
+					{/if}
 				</p>
 			{/if}
 			{#if juri.auditoria}

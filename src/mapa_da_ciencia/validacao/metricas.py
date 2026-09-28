@@ -332,8 +332,9 @@ def familias_dos_participantes(projeto: Projeto) -> dict[str, str]:
     """A família de modelo de cada participante que não é uma pessoa e cuja família se conhece: os codificadores de
     `validacao.familias` e o `juri-supervisor` (a família do supervisor do júri)."""
     familias = dict(projeto.config.validacao.familias)
-    if projeto.config.juri.membros:
-        familias.setdefault("juri-supervisor", projeto.config.juri.supervisor.familia)
+    supervisor = projeto.config.juri.supervisor
+    if projeto.config.juri.membros and supervisor.e_modelo and supervisor.familia_efetiva:
+        familias.setdefault("juri-supervisor", supervisor.familia_efetiva)
     return familias
 
 

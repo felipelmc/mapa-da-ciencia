@@ -10,6 +10,7 @@ Textos para entender o **porquê**: de onde vêm os dados, por que modelos locai
 | [Geografia da produção](geografia.md) | Como as afiliações viram instituições, a contagem fracionária, UF e país, e os vieses |
 | [Classificação ancorada em evidência](classificacao.md) | Como o modelo lê o resumo, cita a evidência, é conferido, tenta de novo e é guardado em cache |
 | [Desenho da validação](validacao.md) | A amostra estratificada, a codificação cega, quem responde, as métricas e o que o piloto mostrou |
+| [Júri de modelos e supervisor](juri.md) | Vários modelos locais votando e deliberando, o supervisor e por que o número principal não passa por ele |
 | [Modelos locais](modelos-locais.md) | Por que rodar os modelos na sua máquina, quais modelos e com que cuidados |
 | [Reprodutibilidade](reprodutibilidade.md) | Manifestos, hashes, sementes e caches |
 | [Privacidade e licenças](privacidade-e-licencas.md) | O que nunca é exportado e quando um resumo pode ser publicado |

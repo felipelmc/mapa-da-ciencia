@@ -8,7 +8,9 @@ A ordem das tabelas segue a honestidade metodológica (ADR 0015):
 2. **Limite superior (circular):** a referência contra `juri-supervisor`. Quando o supervisor e o codificador de
    referência são da mesma família (os dois Claude, no piloto), esse número superestima a qualidade.
 3. **Estágios:** quantas decisões foram unânimes, por maioria, na deliberação ou sem maioria.
-4. **Concordância com a referência por estágio:** mostra se a unanimidade serve de sinal de confiança.
+4. **Concordância com a referência por estágio:** mostra se a unanimidade serve de sinal de confiança. Usa a
+   decisão do júri sem o supervisor; a concordância com a escolha dele, nas decisões arbitradas, vem à parte e
+   marcada "circular" quando for o caso.
 5. **Deliberação:** quantas vezes cada membro mudou de voto, e se mudou na direção da referência ou para longe.
 6. **Auditoria:** a taxa de erro entre as decisões unânimes, pelo supervisor, com o intervalo de Wilson.
 
@@ -27,7 +29,7 @@ from ..classificacao.resultado import valor_do_texto
 from ..formatar import num
 from ..projeto import Projeto
 from ..validacao import amostra as va
-from ..validacao.metricas import Validacao, calcular
+from ..validacao.metricas import Validacao, calcular, circular, familias_dos_participantes
 from .agregacao import chave
 from .consolidar import ESTAGIOS, ResumoJuri, consolidar
 from .deliberacao import ler_deliberacao
@@ -57,6 +59,7 @@ class NumerosJuri:
     etapas: dict[str, dict[str, int]]
     virou: dict[str, int]
     concordancia_por_etapa: dict[str, dict[str, float | int]] = field(default_factory=dict)  # etapa → {n, acertos}
+    concordancia_supervisor: dict[str, Any] | None = None  # {n, acertos, circular}: a escolha do supervisor
     deliberacao: dict[str, dict[str, int]] = field(default_factory=dict)  # membro → {mudou, para_referencia, …}
     auditoria: Auditoria | None = None
     minutos: dict[str, float] = field(default_factory=dict)
@@ -75,7 +78,7 @@ def numeros(projeto: Projeto, resumo: ResumoJuri, v: Validacao) -> NumerosJuri:
         referencia=ref,
         membros=resumo.membros,
         supervisor=resumo.supervisor,
-        familia_supervisor=cfg.supervisor.familia if resumo.supervisor else None,
+        familia_supervisor=cfg.supervisor.familia_efetiva if resumo.supervisor else None,
         documentos=resumo.documentos,
         etapas=resumo.etapas,
         virou=resumo.virou,
@@ -95,10 +98,18 @@ def numeros(projeto: Projeto, resumo: ResumoJuri, v: Validacao) -> NumerosJuri:
             )
 
         for etapa in ESTAGIOS:
-            dessa = [igual(d["doc"], d["variavel"], d["valor_final"]) for d in decisoes if d["etapa"] == etapa]
+            dessa = [igual(d["doc"], d["variavel"], d["valor_juri"]) for d in decisoes if d["etapa"] == etapa]
             dessa = [x for x in dessa if x is not None]
             if dessa:
                 n.concordancia_por_etapa[etapa] = {"n": len(dessa), "acertos": sum(dessa)}
+        arbitradas = [igual(d["doc"], d["variavel"], d["valor_final"]) for d in decisoes if d["supervisor"]]
+        arbitradas = [x for x in arbitradas if x is not None]
+        if arbitradas:
+            n.concordancia_supervisor = {
+                "n": len(arbitradas),
+                "acertos": sum(arbitradas),
+                "circular": circular(familias_dos_participantes(projeto), ref, "juri-supervisor"),
+            }
         votos_r1 = {}
         votos = ler_tabela(pasta / "votos.parquet") if (pasta / "votos.parquet").exists() else []
         for linha in votos:
@@ -150,7 +161,14 @@ def gerar(projeto: Projeto) -> tuple[Path, NumerosJuri]:
         "",
         f"Membros: {', '.join(f'`{m}`' for m in nums.membros)}. Documentos: {nums.documentos} (a amostra de "
         f"validação). Supervisor: {nums.supervisor or 'ainda sem respostas'}"
-        + (f" (família `{nums.familia_supervisor}`)." if nums.supervisor else "."),
+        + (
+            ""
+            if not nums.supervisor
+            else f" (família `{nums.familia_supervisor}`)"
+            if nums.familia_supervisor
+            else " (sem família de modelo declarada: tratado como uma pessoa)"
+        )
+        + ".",
         "",
     ]
     if ref:
@@ -172,7 +190,8 @@ def gerar(projeto: Projeto) -> tuple[Path, NumerosJuri]:
                 ),
                 None,
             )
-            mc_txt = "—" if mc is None else f"p = {num(mc.p, 3)} ({mc.so_a} × {mc.so_b})"
+            p_txt = "p < 0,001" if mc is not None and mc.p < 0.001 else f"p = {num(mc.p, 3)}" if mc else ""
+            mc_txt = "—" if mc is None else f"{p_txt} ({mc.so_a} × {mc.so_b})"
             linhas.append(f"| `{var}` | " + " | ".join(_k(v, ref, p, var) for p in participantes) + f" | {mc_txt} |")
         linhas.append("")
         if any(p.nome == "juri-supervisor" for p in v.participantes):
@@ -204,7 +223,18 @@ def gerar(projeto: Projeto) -> tuple[Path, NumerosJuri]:
         linhas += [f"## 4. Concordância com `{ref}` por estágio", "", "| Estágio | n | Concordância |", "|---|---|---|"]
         for etapa, c in nums.concordancia_por_etapa.items():
             linhas.append(f"| {etapa} | {c['n']} | {num(100 * c['acertos'] / c['n'], 0)}% |")
-        linhas.append("")
+        linhas += [
+            "",
+            "Com a decisão do júri sem o supervisor (no estágio `sem_maioria`, o voto do primeiro membro).",
+            "",
+        ]
+        if (s := nums.concordancia_supervisor) is not None:
+            linhas += [
+                f"Nas {s['n']} decisões sem maioria que o supervisor arbitrou, a escolha dele concorda com `{ref}` em "
+                f"{num(100 * s['acertos'] / s['n'], 0)}%"
+                + (" (**circular**: os dois são da mesma família de modelo)." if s["circular"] else "."),
+                "",
+            ]
     if nums.deliberacao:
         linhas += [
             "## 5. Deliberação",
@@ -248,6 +278,7 @@ def como_dict(n: NumerosJuri) -> dict[str, Any]:
         "etapas": n.etapas,
         "virou": n.virou,
         "concordancia_por_etapa": n.concordancia_por_etapa,
+        "concordancia_supervisor": n.concordancia_supervisor,
         "deliberacao": n.deliberacao,
         "auditoria": None
         if not a or not a.n

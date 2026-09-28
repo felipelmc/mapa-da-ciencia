@@ -58,7 +58,7 @@ def projeto(tmp_path, apis_falsas):
     )
     arquivo = p.raiz / "mapa.yaml"
     cfg = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
-    cfg["juri"] = {"membros": MEMBROS, "auditoria": 3}
+    cfg["juri"] = {"membros": MEMBROS, "auditoria": 3, "supervisor": {"familia": "claude"}}
     cfg.setdefault("validacao", {})["familias"] = {"claude-opus": "claude"}
     arquivo.write_text(yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8")
     coletar(p)
@@ -228,3 +228,73 @@ def test_supervisor_pela_api_com_consentimento_e_limite(projeto):
 
     r = supervisionar(p, limite_gasto=5, confirmar=True, cliente=ClienteFalso())
     assert ler_resumo(p).pendentes_supervisor == 0 and auditoria(p).n == 3
+
+
+def test_antes_de_deliberar_nada_e_rotulado_como_deliberacao(projeto):
+    from mapa_da_ciencia.config import ErroConfig
+    from mapa_da_ciencia.juri.consolidar import consolidar
+
+    votar(projeto)
+    n = len(va.ler(projeto).docs)
+    resumo = consolidar(projeto)
+    assert resumo.etapas["subarea"]["maioria"] == n and resumo.etapas["subarea"]["deliberacao"] == 0
+    assert resumo.nao_deliberados == 2 * n  # abordagem e subarea, em todos os documentos
+    assert resumo.pendentes_supervisor == 0  # nada vai ao supervisor antes da deliberação
+    assert estado(projeto).proximo == "mapa juri deliberar"
+    with pytest.raises(ErroConfig, match="deliberar"):
+        exportar_pedidos(projeto)
+    _, resumo = deliberar_juri(projeto)
+    assert resumo.nao_deliberados == 0 and resumo.etapas["subarea"]["deliberacao"] == n
+
+
+def test_o_juri_fica_na_amostra_mesmo_com_o_corpus_classificado(projeto):
+    from mapa_da_ciencia.classificacao.pipeline import OpcoesClassificacao, classificar
+
+    for membro in MEMBROS:
+        classificar(projeto, OpcoesClassificacao(modelo=membro))
+    n = len(va.ler(projeto).docs)
+    d, resumo = deliberar_juri(projeto)
+    assert d.documentos == n and resumo.documentos == n
+    assert resumo.pendentes_supervisor == n and resumo.nao_deliberados == 0
+
+
+def test_concordancia_por_estagio_nao_inclui_o_supervisor(projeto):
+    votar(projeto)
+    deliberar_juri(projeto)
+    exportar_pedidos(projeto, lote=1000)
+    pasta = projeto.raiz / "juri"
+    linhas = [json.loads(x) for f in sorted(pasta.glob("arbitragem-*.jsonl")) for x in f.read_text().splitlines()]
+    escolha = next(c["n"] for c in linhas[0]["candidatos"] if c["valor"] == "qualitativa")
+    respostas = [
+        {"id": p["id"], "escolha": escolha, "evidencia": " ".join(p["resumo"].split()[:5]), "justificativa": "x"}
+        for p in linhas
+    ]
+    arquivo = pasta / "a.respostas.jsonl"
+    arquivo.write_text("\n".join(json.dumps(r) for r in respostas), encoding="utf-8")
+    importar_respostas(projeto, [arquivo])
+    referencia = projeto.raiz / "ref.jsonl"
+    with referencia.open("w", encoding="utf-8") as f:
+        for doc in va.ler(projeto).docs:
+            valores = {
+                v.id: {
+                    "valor": "2010–2020"
+                    if v.tipo == "texto"
+                    else True
+                    if v.tipo == "booleana"
+                    else [v.categorias[0].valor]
+                    if v.tipo == "multipla"
+                    else "qualitativa"
+                    if v.id == "abordagem"
+                    else v.categorias[0].valor
+                }
+                for v in projeto.codebook.variaveis
+            }
+            f.write(json.dumps({"doc": doc, "respostas": valores}, ensure_ascii=False) + "\n")
+    va.importar(projeto, referencia, "claude-opus", tipo="referencia")
+    destino, numeros = gerar(projeto)
+    sem_maioria = numeros.concordancia_por_etapa["sem_maioria"]
+    assert sem_maioria["acertos"] < sem_maioria["n"]  # o voto do presidente, e não a escolha do supervisor
+    s = numeros.concordancia_supervisor
+    assert s["acertos"] == s["n"] == len(linhas) and s["circular"]
+    secao4 = destino.read_text(encoding="utf-8").split("## 4.")[1].split("## 5.")[0]
+    assert "circular" in secao4

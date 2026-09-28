@@ -9,6 +9,8 @@
 
 As únicas chamadas externas são as da coleta de metadados públicos (ArticleMeta e OpenAlex), identificadas por um User-Agent do projeto.
 
+A exceção é opcional e explícita: o supervisor do júri pela API da Anthropic (`juri.supervisor.modo: api`) envia os títulos e resumos dos pedidos em disputa. Ele só roda com `enviar_textos: true` no `mapa.yaml`, uma confirmação a cada execução e um limite de gasto; o padrão é o supervisor por arquivos, sem rede. Veja [Usar o júri](../guias/juri.md#o-supervisor-pela-api-da-anthropic-opcional).
+
 ## Licenças dos resumos
 
 O painel local mostra os resumos para você trabalhar. O site publicado ([`mapa publicar`](../guias/publicar.md)) é outra coisa: redistribui os resumos na internet, e aí a licença de cada artigo importa.
