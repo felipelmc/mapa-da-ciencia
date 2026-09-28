@@ -10,6 +10,7 @@
 	import { goto } from '$app/navigation';
 	import type { Topicos } from '$lib/contrato/tipos';
 	import { buscar, indiceDe } from '$lib/dados/busca';
+	import { versaoDoMapa } from '$lib/dados/corpus';
 	import type { Cubo } from '$lib/dados/cubo';
 	import { deNdc, paraNdc, type TabelaDocumentos } from '$lib/dados/documentos';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
@@ -26,9 +27,8 @@
 	let {
 		tabela,
 		topicos,
-		cubo,
-		versaoMapa
-	}: { tabela: TabelaDocumentos; topicos: Topicos; cubo: Cubo; versaoMapa: string } = $props();
+		cubo
+	}: { tabela: TabelaDocumentos; topicos: Topicos; cubo: Cubo } = $props();
 
 	const filtros = $derived(filtrosDaPagina());
 
@@ -73,7 +73,7 @@
 	function aoLaco(vertices: Ponto[]) {
 		modoLaco = false;
 		const pontos = simplificar(vertices).map(([x, y]) => deNdc(tabela.escala, x, y));
-		mudarFiltros({ laco: { versao: versaoMapa, pontos } });
+		mudarFiltros({ laco: { versao: versaoDoMapa(tabela), pontos } });
 	}
 
 	// o recorte inteiro (anos, revistas, tópicos, busca, laço e lugares) sai do cubo compartilhado

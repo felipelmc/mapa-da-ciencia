@@ -149,7 +149,7 @@ A interface esconde o que a fonte não pode fazer. Por exemplo, a seção **Proj
 | `topicos` | `3,12` (`-1` = sem tópico) | todos |
 | `cor` | `topico`, `macrotema`, `revista`, `ano` | `topico` |
 | `busca` | `coalizão` | vazio |
-| `laco` | `a1b2~0.1,0.2~0.3,0.1~…` (versão do mapa e vértices em coordenadas dos dados) | nenhum |
+| `laco` | `a1b2~0.1,0.2~0.3,0.1~…` (versão do mapa, um hash das coordenadas dos documentos, e vértices em coordenadas dos dados) | nenhum |
 | `uf` | `SP,RJ` (documentos com alguma afiliação nessas UFs) | todas |
 | `pais` | `AR,US` (ISO alfa-2) | todos |
 | `inst` | `ror:036rp1748` | todas |

@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { Afiliacoes, Documentos, Manifesto, Topicos } from '$lib/contrato/tipos';
 import { FILTROS_PADRAO } from '$lib/estado/url';
-import { abrirCubo, aoReabrir, reabrirCubo } from './corpus';
+import { abrirCubo, aoReabrir, lacoVale, reabrirCubo, versaoDoMapa } from './corpus';
+import { decodificar } from './documentos';
 import type { FonteDeDados, NomeArquivo } from './fonte';
 
 const pasta = join(import.meta.dirname, '../../../../contrato/exemplo/dados');
@@ -69,5 +70,29 @@ describe('abrirCubo', () => {
 		expect(reaberto!.afiliacoes).not.toBeNull();
 		expect(reaberto!.erroAfiliacoes).toBeNull();
 		expect(await abrirCubo(fonte)).toBe(reaberto);
+	});
+});
+
+describe('versão do mapa (a do laço)', () => {
+	const tabela = decodificar(documentos);
+
+	it('não muda com uma reexportação (outro gerado_em), só com as coordenadas', () => {
+		expect(versaoDoMapa(decodificar(documentos))).toBe(versaoDoMapa(tabela));
+		const reexportado = { ...manifesto, gerado_em: '2026-09-28T09:00:00Z' };
+		expect(lacoVale(versaoDoMapa(tabela), tabela, reexportado)).toBe(true);
+		// tópicos refeitos: outras coordenadas, outra versão, e o laço antigo ganha o aviso
+		const x = documentos.colunas.x.map((v, i) => (i === 0 ? v + 0.5 : v));
+		const refeito = decodificar({ ...documentos, colunas: { ...documentos.colunas, x } });
+		expect(versaoDoMapa(refeito)).not.toBe(versaoDoMapa(tabela));
+		expect(lacoVale(versaoDoMapa(tabela), refeito, manifesto)).toBe(false);
+	});
+
+	it('um laço de um link até a 1.0.1 (versão pelo manifesto) vale no mesmo manifesto', () => {
+		const texto = `${manifesto.gerado_em}|${manifesto.contagens.topicos}`;
+		let h = 0x811c9dc5;
+		for (let i = 0; i < texto.length; i += 1) h = Math.imul(h ^ texto.charCodeAt(i), 0x01000193) >>> 0;
+		const antiga = h.toString(36).slice(0, 6);
+		expect(lacoVale(antiga, tabela, manifesto)).toBe(true);
+		expect(lacoVale(antiga, tabela, { ...manifesto, gerado_em: '2026-09-28T09:00:00Z' })).toBe(false);
 	});
 });

@@ -343,6 +343,38 @@ test('o laço fica no link e reproduz os mesmos documentos', async ({ page }) =>
 	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBe(n);
 });
 
+test('o laço só ganha o aviso de versão anterior quando o mapa muda, e não a cada reexportação', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	await page.evaluate(() => window.__mapaDebug!.laco!([[0, -1.2], [1.2, -1.2], [1.2, 1.2], [0, 1.2]]));
+	await expect(page).toHaveURL(/laco=/);
+	const link = page.url();
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	type Json = any;
+	const abrir = async (trocar: { arquivo: string; mudar: (json: Json) => Json }) => {
+		const outra = await page.context().newPage();
+		await outra.route(`**/dados/${trocar.arquivo}`, async (r) => {
+			const resposta = await r.fetch();
+			await r.fulfill({ response: resposta, json: trocar.mudar(await resposta.json()) });
+		});
+		await outra.goto(link);
+		await esperarMapa(outra);
+		await expect(outra.getByTestId('chip-laco')).toBeVisible();
+		return outra;
+	};
+	// reexportado (classificar, geografia, publicar): só o gerado_em do manifesto muda
+	const reexportado = await abrir({ arquivo: 'manifesto.json', mudar: (m) => ({ ...m, gerado_em: '2030-01-01T00:00:00+00:00' }) });
+	await expect(reexportado.getByTestId('aviso-laco')).toHaveCount(0);
+	await reexportado.close();
+	// tópicos refeitos: outras coordenadas
+	const refeito = await abrir({
+		arquivo: 'documentos.json',
+		mudar: (d) => ({ ...d, colunas: { ...d.colunas, x: d.colunas.x.map((v: number, i: number) => (i === 0 ? v + 0.5 : v)) } })
+	});
+	await expect(refeito.getByTestId('aviso-laco')).toBeVisible();
+	await refeito.close();
+});
+
 test('o chip do laço conta o laço, e não o recorte inteiro', async ({ page }) => {
 	const xs: number[] = documentos.colunas.x;
 	const centro = (Math.min(...xs) + Math.max(...xs)) / 2;

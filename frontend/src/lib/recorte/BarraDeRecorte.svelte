@@ -9,7 +9,7 @@
 	import { Tween, prefersReducedMotion } from 'svelte/motion';
 	import type { Revistas } from '$lib/contrato/tipos';
 	import { usarProjeto } from '$lib/dados/contexto';
-	import { abrirCubo, aoReabrir, versaoDoMapa, type Aberto } from '$lib/dados/corpus';
+	import { abrirCubo, aoReabrir, lacoVale, type Aberto } from '$lib/dados/corpus';
 	import { D } from '$lib/dados/cubo';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { lerHash, limparRecorte, temRecorte } from '$lib/estado/url';
@@ -19,7 +19,6 @@
 	const { fonte, manifesto } = usarProjeto();
 	const filtros = $derived(filtrosDaPagina());
 	const caminho = $derived(lerHash(page.url.hash).caminho);
-	const versaoMapa = versaoDoMapa(manifesto);
 
 	let aberto = $state<Aberto | null>(null);
 	let revistas = $state<Revistas | null>(null);
@@ -95,7 +94,7 @@
 	});
 
 	const lugaresSemDados = $derived(!!aberto && !aberto.afiliacoes && (filtros.uf.length + filtros.pais.length + filtros.inst.length > 0));
-	const lacoAntigo = $derived(!!filtros.laco && filtros.laco.versao !== versaoMapa);
+	const lacoAntigo = $derived(!!aberto && !!filtros.laco && !lacoVale(filtros.laco.versao, aberto.tabela, manifesto));
 	const nFiltros = $derived(chips.length + (filtros.laco ? 1 : 0) + (filtros.anos ? 1 : 0) + filtros.revistas.length);
 	let expandida = $state(false);
 

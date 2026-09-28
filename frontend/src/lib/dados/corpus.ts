@@ -100,10 +100,40 @@ export function reabrirCubo(fonte: FonteDeDados): Promise<Aberto | null> {
 	return p;
 }
 
-/** Versão do mapa: muda quando os tópicos são regenerados. Um laço de um link antigo abre com aviso. */
-export function versaoDoMapa(manifesto: Manifesto): string {
+function fnv1a(bytes: Uint8Array, h = 0x811c9dc5): number {
+	for (let i = 0; i < bytes.length; i += 1) h = Math.imul(h ^ bytes[i], 0x01000193) >>> 0;
+	return h;
+}
+
+const versoes = new WeakMap<TabelaDocumentos, string>();
+
+/**
+ * Versão do mapa: um hash das coordenadas dos documentos, na ordem dos ids. O laço guarda a versão em que foi
+ * desenhado, e só um mapa com outras coordenadas (os tópicos refeitos) o abre com aviso. Reexportar sem refazer os
+ * tópicos (classificar, geografia, publicar) não muda a versão.
+ */
+export function versaoDoMapa(tabela: TabelaDocumentos): string {
+	let v = versoes.get(tabela);
+	if (!v) {
+		const bytes = (a: Float32Array) => new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
+		v = fnv1a(bytes(tabela.y), fnv1a(bytes(tabela.x))).toString(36).slice(0, 6);
+		versoes.set(tabela, v);
+	}
+	return v;
+}
+
+/**
+ * A versão que os laços levavam até a 1.0.1: o hash de `gerado_em` do manifesto, que mudava a cada reexportação.
+ * Um laço com ela ainda vale se o manifesto for o mesmo em que ele foi desenhado.
+ */
+function versaoPeloManifesto(manifesto: Manifesto): string {
 	const texto = `${manifesto.gerado_em}|${manifesto.contagens.topicos}`;
 	let h = 0x811c9dc5;
 	for (let i = 0; i < texto.length; i += 1) h = Math.imul(h ^ texto.charCodeAt(i), 0x01000193) >>> 0;
 	return h.toString(36).slice(0, 6);
+}
+
+/** `true` se um laço desenhado na versão `versao` vale neste mapa (sem o aviso de "versão anterior"). */
+export function lacoVale(versao: string, tabela: TabelaDocumentos, manifesto: Manifesto): boolean {
+	return versao === versaoDoMapa(tabela) || versao === versaoPeloManifesto(manifesto);
 }
