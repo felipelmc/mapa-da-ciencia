@@ -31,7 +31,7 @@ def cliente(projeto, tmp_path):
 def test_estado_das_etapas(cliente, projeto):
     e = cliente.get("/api/projeto/etapas").json()
     assert {k: v["estado"] for k, v in e.items()} == dict.fromkeys(
-        ["coleta", "topicos", "geografia", "classificacao", "validacao"], "pendente"
+        ["coleta", "topicos", "geografia", "redes", "classificacao", "validacao"], "pendente"
     )
     coletar(projeto)
     mapa.classificar(projeto, limite=3, progresso=False)
@@ -139,3 +139,14 @@ def test_revistas_do_retrato(cliente):
     pedidas = cliente.get("/api/revistas", params={"issn": "0011-5258,0104-6276,9999-9999"}).json()
     assert [r["acronimo"] for r in pedidas] == ["dados", "op"]
     assert len(cliente.get("/api/revistas", params={"busca": "a"}).json()) <= 50
+
+
+def test_redes_e_uma_etapa_do_painel():
+    import pydantic
+
+    from mapa_da_ciencia.servidor.etapas import ETAPAS_DO_PAINEL, OPCOES
+
+    # a vista Redes some quando outra etapa a desatualiza: o painel precisa refazê-la sem a CLI
+    assert "redes" in ETAPAS_DO_PAINEL and OPCOES["redes"]().model_dump() == {}
+    with pytest.raises(pydantic.ValidationError):
+        OPCOES["redes"](limite=3)

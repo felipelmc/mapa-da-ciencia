@@ -14,7 +14,71 @@ import unicodedata
 from difflib import SequenceMatcher
 from typing import Any
 
-EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+# E-mails, com as variações que aparecem em afiliações: o arroba largo (＠, ﹫), espaço em volta do @ ou depois do
+# ponto, e "[at]"/"(arroba)" e "[dot]"/"(ponto)" entre colchetes ou parênteses. O último ramo é o padrão comum. Os
+# outros exigem que o domínio termine, em minúsculas, num domínio de topo (qualquer domínio de país da IANA ou um
+# genérico comum): sem isso, pegariam "p @ 0.05" e "o perfil @fulano. Em seguida", e apagariam junto a palavra
+# anterior, que tomam pela parte local do endereço.
+#
+# A forma "palavra @dominio.tld" (espaço só antes do @) é ambígua: pode ser um e-mail com espaço ("fulana
+# @ufrj.br") ou um perfil de rede social citado num texto ("o perfil @frente.pe"). Nela, o e-mail é só o
+# "@dominio.tld": `remover_emails` devolve a palavra anterior ao texto (o grupo `palavra`). Assim o endereço nunca
+# fica reconstruível, e um perfil perde só o @handle. Um perfil sem domínio de topo ("@maria.silva") fica inteiro.
+#
+# Todos os ramos só começam no início de uma sequência de [\w.+-] (o lookbehind): sem ele, cada posição de uma
+# sequência longa sem espaço (um token de 20 mil caracteres num JSON) seria tentada até o fim dela, em tempo
+# quadrático. O resultado de uma busca não muda, porque um endereço achado no meio da sequência também seria achado
+# a partir do começo dela; na remoção, ver `remover_emails`.
+_GENERICOS = (  # noqa: SIM905 (uma lista longa de códigos fica mais legível numa string)
+    "com org net edu gov mil int info biz name pro cat eus gal museum coop aero asia app dev online site xyz tech"
+).split()
+# os domínios de país da IANA (os códigos ISO 3166 de duas letras, mais ac, eu, su e uk)
+_CCTLDS = (  # noqa: SIM905 (uma lista longa de códigos fica mais legível numa string)
+    "ac ad ae af ag ai al am ao aq ar as at au aw ax az ba bb bd be bf bg bh bi bj bm bn bo br bs bt bv bw by bz ca "
+    "cc cd cf cg ch ci ck cl cm cn co cr cu cv cw cx cy cz de dj dk dm do dz ec ee eg er es et eu fi fj fk fm fo fr "
+    "ga gb gd ge gf gg gh gi gl gm gn gp gq gr gs gt gu gw gy hk hm hn hr ht hu id ie il im in io iq ir is it je jm "
+    "jo jp ke kg kh ki km kn kp kr kw ky kz la lb lc li lk lr ls lt lu lv ly ma mc md me mg mh mk ml mm mn mo mp mq "
+    "mr ms mt mu mv mw mx my mz na nc ne nf ng ni nl no np nr nu nz om pa pe pf pg ph pk pl pm pn pr ps pt pw py qa "
+    "re ro rs ru rw sa sb sc sd se sg sh si sj sk sl sm sn so sr ss st su sv sx sy sz tc td tf tg th tj tk tl tm tn "
+    "to tr tt tv tw tz ua ug uk us uy uz va vc ve vg vi vn vu wf ws ye yt za zm zw"
+).split()
+
+
+def _tld(nomes: list[str]) -> str:
+    return rf"(?-i:(?:{'|'.join(sorted(set(nomes), key=lambda n: (-len(n), n)))}))(?!\w)"
+
+
+_TLD = _tld(_CCTLDS + _GENERICOS)
+_LOCAL = r"[\w.+-]*\w"
+_ROTULO = r"[\w-]+"
+_ARROBA = r"(?:@|＠|﹫)"
+_AT_DISFARCADO = r"[\[({][ \t]*(?:at|arroba)[ \t]*[\])}]"
+_DOT_DISFARCADO = r"[ \t]*[\[({][ \t]*(?:dot|ponto)[ \t]*[\])}][ \t]*"
+_DOT = rf"(?:\.|{_DOT_DISFARCADO})"
+_DOMINIO = rf"{_ROTULO}(?:{_DOT}{_ROTULO})*{_DOT}{_TLD}"
+EMAIL = re.compile(
+    r"(?<![\w.+-])(?:"
+    # fulana @exemplo.br, a forma ambígua: o e-mail é o @exemplo.br (até o fim do domínio), e a palavra fica
+    rf"(?P<palavra>{_LOCAL}[ \t]+){_ARROBA}{_ROTULO}(?:\.{_ROTULO})*\.{_TLD}(?:\.{_ROTULO})*"
+    rf"|{_LOCAL}(?:"  # a parte local uma vez só, para as formas com espaço ou disfarce:
+    rf"[ \t]*{_ARROBA}[ \t]+{_DOMINIO}"  # fulana@ exemplo.br, fulana @ exemplo.br
+    rf"|[ \t]*{_AT_DISFARCADO}[ \t]*{_DOMINIO}"  # fulana [at] exemplo [dot] br
+    # fulana@exemplo (ponto) br, fulana@dcc.ufmg (ponto) br: um (ponto) em qualquer lugar do domínio
+    rf"|[ \t]*{_ARROBA}{_ROTULO}(?:\.{_ROTULO})*{_DOT_DISFARCADO}(?:{_ROTULO}{_DOT})*{_TLD}"
+    # fulana@exemplo. br: o primeiro rótulo com duas letras ou mais e uma letra, para não apagar texto em "entre
+    # tod@s. no entanto", "P@10. de acordo" ou "Recall@5. com base" (e "fulana@a. br" escapa)
+    rf"|{_ARROBA}(?=[\w-]*[^\W\d_])[\w-]{{2,}}(?:\. ?{_ROTULO})*\. ?{_TLD}"
+    r")"
+    # por último, o comum (fulana@exemplo.br, fulana＠exemplo.br), com qualquer final: se viesse antes, pegaria só o
+    # começo de "fulana@dcc.ufmg (ponto) br"
+    rf"|[\w.+-]+{_ARROBA}[\w-]+(?:\.[\w-]+)+"
+    r")",
+    re.IGNORECASE,
+)
+# Antes de procurar e-mails: sem o hífen suave e os espaços de largura zero (que `limpar` produz a partir de "&shy;"
+# e "&#8203;", e que escondem um endereço na tela: "fulana@uf\xadrj.br" aparece como fulana@ufrj.br), e com o ponto
+# largo como ponto.
+_PARA_BUSCA = {ord(c): None for c in "\u00ad\u200b\u200c\u200d\u2060\ufeff"} | {0xFF0E: "."}
 _TAG = re.compile(r"<[^>]+>")
 _ESPACOS = re.compile(r"\s+")
 _PREFIXO_RESUMO = re.compile(r"^\s*(resumo|abstract|resumen|résumé)\s*[:.\-–—]?\s+", re.IGNORECASE)
@@ -45,15 +109,29 @@ def limpar(texto: str | None, *, prefixo_resumo: bool = False) -> str:
     return texto
 
 
+def _sem_email(achado: re.Match[str]) -> str:
+    return achado.group("palavra") or ""  # na forma ambígua ("fulana @ufrj.br"), a palavra antes do @ fica
+
+
 def remover_emails(texto: str) -> str:
-    """Tira endereços de e-mail de um texto (ex.: afiliações que trazem o e-mail no meio)."""
-    return _ESPACOS.sub(" ", EMAIL.sub("", texto)).strip(" ,;")
+    """Tira endereços de e-mail de um texto (ex.: afiliações que trazem o e-mail no meio). Na forma ambígua
+    "palavra @dominio.tld", que também é a de um perfil de rede social, tira só o "@dominio.tld". Num texto com
+    e-mail, saem também o hífen suave e os espaços de largura zero, e o ponto largo vira ponto."""
+    busca = texto.translate(_PARA_BUSCA)
+    if EMAIL.search(busca):
+        texto = busca
+        # de novo até não sobrar nenhum: um endereço colado ao fim de outro ("fulana @ x.br.joao@y.br") começa no
+        # meio de uma sequência, e o padrão só o acha depois que o primeiro sai
+        while (novo := EMAIL.sub(_sem_email, texto)) != texto:
+            texto = novo
+    return _ESPACOS.sub(" ", texto).strip(" ,;")
 
 
 def contem_email(valor: Any) -> bool:
-    """Procura e-mails em qualquer estrutura JSON (usado na varredura final e nos testes)."""
+    """Procura e-mails em qualquer estrutura JSON (usado na varredura final e nos testes), também os escondidos por
+    um hífen suave, um espaço de largura zero ou o ponto largo."""
     if isinstance(valor, str):
-        return bool(EMAIL.search(valor))
+        return bool(EMAIL.search(valor.translate(_PARA_BUSCA)))
     if isinstance(valor, dict):
         return any(contem_email(v) for v in valor.values())
     if isinstance(valor, list | tuple):
@@ -69,6 +147,32 @@ def normalizar_doi(doi: str | None) -> str | None:
     if not achado:
         return None
     return achado.group(0).rstrip(".,;)]").lower()
+
+
+# o ORCID solto, na URL do orcid.org (a forma em que o OpenAlex o devolve) ou sem os hífens (16 dígitos)
+_ORCID_NO_TEXTO = re.compile(
+    r"(?:(?<=orcid\.org/)|(?<![\w/.-]))(000[09]-?\d{4}-?\d{4}-?\d{3}[\dX])(?![\w-])", re.IGNORECASE
+)
+
+
+def _digito_orcid(base: str) -> str:
+    """Dígito verificador do ORCID (ISO 7064 MOD 11-2) dos 15 primeiros dígitos."""
+    total = 0
+    for c in base:
+        total = (total + int(c)) * 2
+    resto = (12 - total % 11) % 11
+    return "X" if resto == 10 else str(resto)
+
+
+def orcids_no_texto(texto: str) -> list[str]:
+    """Os ORCIDs válidos (faixas 0000 e 0009, dígito verificador certo) que aparecem num texto. O dígito
+    verificador evita confundir com outros números de quatro em quatro dígitos."""
+    saida = []
+    for achado in _ORCID_NO_TEXTO.finditer(texto):
+        digitos = achado.group(1).upper().replace("-", "")
+        if len(digitos) == 16 and _digito_orcid(digitos[:15]) == digitos[15]:
+            saida.append("-".join(digitos[k : k + 4] for k in range(0, 16, 4)))
+    return saida
 
 
 def normalizar_orcid(orcid: str | None) -> str | None:

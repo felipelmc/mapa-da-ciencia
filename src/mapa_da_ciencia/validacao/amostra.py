@@ -29,7 +29,7 @@ from ..classificacao.executor import Texto, textos_para_classificar
 from ..classificacao.resultado import valor_como_texto, valor_do_texto
 from ..config import ErroConfig
 from ..projeto import Projeto
-from ..texto import contem_email
+from ..texto import contem_email, remover_emails
 
 TipoCodificador = Literal["humano", "referencia"]
 PASTA_EXPORTACAO = "validacao"
@@ -164,6 +164,8 @@ def sortear(projeto: Projeto, *, refazer: bool = False, n: int | None = None) ->
     rng = random.Random(cfg.semente)
     escolhidos = [doc for e in sorted(grupos) for doc in rng.sample(sorted(grupos[e]), alocacao.get(e, 0))]
     rng.shuffle(escolhidos)
+    if not escolhidos:  # antes de apagar a amostra anterior
+        raise ErroConfig("Nenhum documento com resumo para sortear: amplie o recorte e rode `mapa coletar`.")
     agora = datetime.now(UTC).isoformat(timespec="seconds")
     with conectar(projeto) as con:
         con.execute("DELETE FROM validacao_amostra")
@@ -208,9 +210,14 @@ def exportar(projeto: Projeto, amostra: Amostra) -> Path:
     destino = pasta / ARQUIVO_AMOSTRA
     with destino.open("w", encoding="utf-8") as f:
         for doc in amostra.docs:
-            t = textos[doc]
+            t = textos.get(doc)
+            if t is None:  # o documento saiu do corpus depois do sorteio (rode `mapa validar amostra --refazer`)
+                amostra.avisos.append(f"{doc} não está mais no corpus e ficou fora do arquivo.")
+                continue
             linha = {"doc": doc, "titulo": t.titulo, "resumo": t.resumo, "idioma": t.idioma}
-            assert not contem_email(linha), f"e-mail no texto de {doc}"
+            if contem_email(linha):  # um corpus coletado por uma versão cujo detector não via esta forma de e-mail
+                linha |= {"titulo": t.titulo and remover_emails(t.titulo), "resumo": remover_emails(t.resumo)}
+                amostra.avisos.append(f"{doc}: um e-mail no título ou no resumo ficou fora do arquivo.")
             f.write(json.dumps(linha, ensure_ascii=False) + "\n")
     return destino
 
@@ -350,3 +357,13 @@ def codificacoes(projeto: Projeto, codificador: str | None = None, *, todas: boo
             return False
 
     return [c for c in linhas if vale(c)]
+
+
+def documentos_completos(projeto: Projeto) -> set[str]:
+    """Os documentos que algum codificador respondeu por inteiro (todas as variáveis do codebook atual): só eles contam
+    como validados; uma ficha salva pela metade não."""
+    variaveis = {v.id for v in projeto.codebook.variaveis}
+    respondidas: dict[tuple[str, str], set[str]] = {}
+    for c in codificacoes(projeto):
+        respondidas.setdefault((c["codificador"], c["doc"]), set()).add(c["variavel"])
+    return {doc for (_, doc), vs in respondidas.items() if variaveis <= vs}

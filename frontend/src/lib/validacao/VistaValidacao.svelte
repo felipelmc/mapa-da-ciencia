@@ -12,6 +12,7 @@
 	import type { TabelaDocumentos } from '$lib/dados/documentos';
 	import { escreverFiltros, rota } from '$lib/estado/url';
 	import { formatarDecimal, formatarInteiro, formatarPorcentagem } from '$lib/formato';
+	import { numeroCru } from '$lib/exportar/figura';
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { KAPPA_FRACO } from '$lib/classificacao/agregar';
 	import MatrizConfusao from './MatrizConfusao.svelte';
@@ -64,6 +65,9 @@
 		return v?.categorias?.find((c) => c.valor === valor)?.rotulo ?? valor.replaceAll('_', ' ');
 	}
 	const quem = (nome: string) => (tipo(nome) === 'referencia' ? `${nome} (referência)` : nome);
+	// kappa nulo: numa variável de texto livre ele não se aplica; nas outras, as respostas não variaram
+	const semKappa = (id: string) =>
+		variaveis.get(id.split(':')[0])?.tipo === 'texto' ? 'não se aplica (texto livre)' : 'indefinido (sem variação)';
 
 	// ---- frases e tabelas
 	const comKappa = $derived(doPar.filter((m) => m.kappa !== null));
@@ -87,6 +91,20 @@
 			m.alfa === null ? '—' : formatarDecimal(m.alfa, 2)
 		])
 	);
+	const cru = (v: number | null | undefined, casas = 6) => (v === null || v === undefined ? null : numeroCru(v, casas));
+	const dadosPar = $derived({
+		colunas: ['Variável', 'n', 'Concordância', 'Kappa', 'IC 95% do kappa (inferior)', 'IC 95% do kappa (superior)', 'PABAK', 'Alfa'],
+		linhas: doPar.map((m) => [
+			nomeVariavel(m.variavel),
+			m.n,
+			cru(m.concordancia),
+			cru(m.kappa),
+			cru(m.kappa_ic95?.[0]),
+			cru(m.kappa_ic95?.[1]),
+			cru(m.pabak),
+			cru(m.alfa)
+		])
+	});
 	const divergencias = $derived(
 		metrica
 			? validacao.divergencias.filter(
@@ -100,6 +118,16 @@
 	const parCircular = $derived(circular(ref, comp));
 	const juri = $derived(validacao.juri ?? null);
 	const ETAPAS_JURI = { unanime: 'Unânime', maioria: 'Maioria', deliberacao: 'Na deliberação', sem_maioria: 'Sem maioria' } as const;
+	const dadosJuri = $derived({
+		colunas: ['Variável', 'Unânime', 'Maioria', 'Na deliberação', 'Sem maioria', 'Mudou na deliberação'],
+		linhas: juri
+			? Object.entries(juri.etapas).map(([v, e]) => [
+					nomeVariavel(v),
+					...(['unanime', 'maioria', 'deliberacao', 'sem_maioria'] as const).map((k) => e[k] ?? 0),
+					juri.virou?.[v] ?? 0
+				])
+			: []
+	});
 	const linhasJuri = $derived(
 		juri
 			? Object.entries(juri.etapas).map(([v, e]) => [
@@ -120,10 +148,6 @@
 		return i === undefined ? doc : tabela!.titulos[i];
 	};
 </script>
-
-<svelte:head>
-	<title>Validação · mapa da ciência</title>
-</svelte:head>
 
 <div class="vista surgir">
 	<header class="cabecalho">
@@ -163,45 +187,48 @@
 		resumo={resumoPar}
 		colunas={['Variável', 'n', 'Concordância', 'Kappa', 'IC 95%', 'PABAK', 'Alfa']}
 		linhas={linhasPar}
+		dados={dadosPar}
 	>
-		<table class="metricas" data-testid="tabela-metricas">
-			<thead>
-				<tr>
-					<th scope="col">Variável</th>
-					<th scope="col" class="num">n</th>
-					<th scope="col" class="num">Concordância</th>
-					<th scope="col" class="kappa">Kappa (IC 95%)</th>
-					<th scope="col" class="num">PABAK</th>
-					<th scope="col" class="num">Alfa</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each doPar as m (m.variavel)}
-					<tr class:escolhida={m === metrica}>
-						<th scope="row">
-							<button type="button" onclick={() => (variavelEscolhida = m.variavel)} aria-pressed={m === metrica} data-testid="linha-variavel">
-								{nomeVariavel(m.variavel)}
-							</button>
-						</th>
-						<td class="num">{formatarInteiro(m.n)}</td>
-						<td class="num">{m.concordancia === null ? '—' : formatarPorcentagem(m.concordancia)}</td>
-						<td class="kappa">
-							{#if m.kappa === null}
-								<span class="suave">— sem variação</span>
-							{:else}
-								<span class="barra-kappa" class:fraco={m.kappa < KAPPA_FRACO}>
-									<span style:width="{Math.max(0, m.kappa) * 100}%"></span>
-								</span>
-								{formatarDecimal(m.kappa, 2)}
-								{#if m.kappa_ic95}<span class="suave">({formatarDecimal(m.kappa_ic95[0], 2)} a {formatarDecimal(m.kappa_ic95[1], 2)})</span>{/if}
-							{/if}
-						</td>
-						<td class="num">{m.pabak === null ? '—' : formatarDecimal(m.pabak, 2)}</td>
-						<td class="num">{m.alfa === null ? '—' : formatarDecimal(m.alfa, 2)}</td>
+		<div class="rolagem-lateral">
+			<table class="metricas" data-testid="tabela-metricas">
+				<thead>
+					<tr>
+						<th scope="col">Variável</th>
+						<th scope="col" class="num">n</th>
+						<th scope="col" class="num">Concordância</th>
+						<th scope="col" class="kappa">Kappa (IC 95%)</th>
+						<th scope="col" class="num">PABAK</th>
+						<th scope="col" class="num">Alfa</th>
 					</tr>
-				{/each}
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					{#each doPar as m (m.variavel)}
+						<tr class:escolhida={m === metrica}>
+							<th scope="row">
+								<button type="button" onclick={() => (variavelEscolhida = m.variavel)} aria-pressed={m === metrica} data-testid="linha-variavel">
+									{nomeVariavel(m.variavel)}
+								</button>
+							</th>
+							<td class="num">{formatarInteiro(m.n)}</td>
+							<td class="num">{m.concordancia === null ? '—' : formatarPorcentagem(m.concordancia)}</td>
+							<td class="kappa">
+								{#if m.kappa === null}
+									<span class="suave">{semKappa(m.variavel)}</span>
+								{:else}
+									<span class="barra-kappa" class:fraco={m.kappa < KAPPA_FRACO}>
+										<span style:width="{Math.max(0, m.kappa) * 100}%"></span>
+									</span>
+									{formatarDecimal(m.kappa, 2)}
+									{#if m.kappa_ic95}<span class="suave">({formatarDecimal(m.kappa_ic95[0], 2)} a {formatarDecimal(m.kappa_ic95[1], 2)})</span>{/if}
+								{/if}
+							</td>
+							<td class="num">{m.pabak === null ? '—' : formatarDecimal(m.pabak, 2)}</td>
+							<td class="num">{m.alfa === null ? '—' : formatarDecimal(m.alfa, 2)}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
 	</Figura>
 
 	{#if metrica}
@@ -217,22 +244,24 @@
 				{#if metrica.por_classe?.length}
 					<div>
 						<h3>Por categoria</h3>
-						<table class="classes">
-							<thead>
-								<tr><th scope="col">Categoria</th><th scope="col" class="num">Na referência</th><th scope="col" class="num">Precisão</th><th scope="col" class="num">Revocação</th><th scope="col" class="num">F1</th></tr>
-							</thead>
-							<tbody>
-								{#each metrica.por_classe.filter((c) => c.suporte || c.precisao !== null) as c (c.rotulo)}
-									<tr>
-										<th scope="row">{rotuloValor(metrica.variavel, c.rotulo)}</th>
-										<td class="num">{formatarInteiro(c.suporte)}</td>
-										<td class="num">{c.precisao === null ? '—' : formatarDecimal(c.precisao, 2)}</td>
-										<td class="num">{c.revocacao === null ? '—' : formatarDecimal(c.revocacao, 2)}</td>
-										<td class="num">{c.f1 === null ? '—' : formatarDecimal(c.f1, 2)}</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
+						<div class="rolagem-lateral">
+							<table class="classes">
+								<thead>
+									<tr><th scope="col">Categoria</th><th scope="col" class="num">Na referência</th><th scope="col" class="num">Precisão</th><th scope="col" class="num">Revocação</th><th scope="col" class="num">F1</th></tr>
+								</thead>
+								<tbody>
+									{#each metrica.por_classe.filter((c) => c.suporte || c.precisao !== null) as c (c.rotulo)}
+										<tr>
+											<th scope="row">{rotuloValor(metrica.variavel, c.rotulo)}</th>
+											<td class="num">{formatarInteiro(c.suporte)}</td>
+											<td class="num">{c.precisao === null ? '—' : formatarDecimal(c.precisao, 2)}</td>
+											<td class="num">{c.revocacao === null ? '—' : formatarDecimal(c.revocacao, 2)}</td>
+											<td class="num">{c.f1 === null ? '—' : formatarDecimal(c.f1, 2)}</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
 						<p class="suave">Tomando {quem(ref)} como referência.</p>
 					</div>
 				{/if}
@@ -267,6 +296,10 @@
 			resumo="Teste de McNemar exato: só os documentos em que um modelo acertou e o outro errou, contra a mesma referência. Com muitas variáveis, alguma diferença com p < 0,05 aparece por acaso."
 			colunas={['Variável', 'Referência', 'Modelos', 'n', 'Acertos', 'p']}
 			linhas={validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), c.referencia, `${c.modelo_a} × ${c.modelo_b}`, formatarInteiro(c.n), `${c.acertos_a} × ${c.acertos_b}`, formatarDecimal(c.p, 3)])}
+			dados={{
+				colunas: ['Variável', 'Referência', 'Modelo A', 'Modelo B', 'n', 'Acertos de A', 'Acertos de B', 'p'],
+				linhas: validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), c.referencia, c.modelo_a, c.modelo_b, c.n, c.acertos_a, c.acertos_b, c.p])
+			}}
 		>
 			<ul class="mcnemar">
 				{#each validacao.comparacoes_modelos.filter((c) => c.p < 0.05) as c (c.variavel + c.referencia)}
@@ -292,7 +325,9 @@
 				resumo={resumoJuri}
 				colunas={['Variável', 'Unânime', 'Maioria', 'Na deliberação', 'Sem maioria', 'Mudou na deliberação']}
 				linhas={linhasJuri}
+				dados={dadosJuri}
 			>
+				<div class="rolagem-lateral">
 				<table class="metricas" data-testid="tabela-juri">
 					<thead>
 						<tr>
@@ -311,11 +346,21 @@
 						{/each}
 					</tbody>
 				</table>
+				</div>
 			</Figura>
 			{#if juri.referencia && Object.keys(juri.concordancia_por_etapa ?? {}).length}
 				<p class="creditos">
 					Concordância com {quem(juri.referencia)} por estágio:
-					{#each Object.entries(juri.concordancia_por_etapa ?? {}) as [etapa, c], i (etapa)}{i ? '; ' : ''}{ETAPAS_JURI[etapa as keyof typeof ETAPAS_JURI] ?? etapa}, {formatarPorcentagem(c.n ? c.acertos / c.n : 0)} de {formatarInteiro(c.n)}{/each}.
+					{#each Object.entries(juri.concordancia_por_etapa ?? {}) as [etapa, c], i (etapa)}{i ? '; ' : ''}{ETAPAS_JURI[etapa as keyof typeof ETAPAS_JURI] ?? etapa}, {formatarPorcentagem(c.n ? c.acertos / c.n : 0)} de {formatarInteiro(c.n)}{/each}
+					(a decisão do júri sem o supervisor).
+					{#if juri.concordancia_supervisor}
+						{@const s = juri.concordancia_supervisor}
+						<span data-testid="concordancia-supervisor">
+							Com a escolha do supervisor, nas {formatarInteiro(s.n)} decisões sem maioria que ele arbitrou:
+							{formatarPorcentagem(s.n ? s.acertos / s.n : 0)}{#if s.circular}
+								<span class="circular" title="O supervisor e a referência são da mesma família de modelo">circular</span>{/if}.
+						</span>
+					{/if}
 				</p>
 			{/if}
 			{#if juri.auditoria}
@@ -407,11 +452,12 @@
 		border: 1px dashed var(--linha-forte);
 		border-radius: 999px;
 		font-size: 0.72rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.juri {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr); /* a tabela rola na própria caixa, sem alargar a página no celular */
 		gap: 0.8rem;
 	}
 
@@ -436,6 +482,12 @@
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.86rem;
+	}
+
+	/* numa tela estreita, a tabela rola dentro da própria caixa, e não a página inteira */
+	.rolagem-lateral {
+		max-width: 100%;
+		overflow-x: auto;
 	}
 
 	th,
@@ -486,7 +538,7 @@
 	}
 
 	.suave {
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 		font-size: 0.82rem;
 	}
 
@@ -552,7 +604,7 @@
 	.creditos {
 		margin: 0;
 		font-size: 0.8rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.lado-a-lado.largo {

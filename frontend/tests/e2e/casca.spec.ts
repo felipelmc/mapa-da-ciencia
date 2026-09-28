@@ -1,7 +1,7 @@
 // Testes e2e da casca (M1), sobre o build servido por um estático sem reescrita.
 // Os sites e as URLs vêm de tests/e2e/preparar.ts.
 import { join } from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { escapar, esperarMapa, h1, inteiro, ler, TELAS, trilho, url, vigiar } from './comum';
 
 declare global {
@@ -203,11 +203,81 @@ test.describe('acessibilidade e casos de borda', () => {
 		expect(problemas).toEqual([]);
 	});
 
+	test('o leitor de tela ouve o título da seção nova, mesmo na primeira visita', async ({ page }) => {
+		await page.goto(url('RAIZ'));
+		await expect(h1(page)).toHaveText(manifesto.projeto.titulo);
+		for (const secao of ['Tópicos', 'Classificação', 'Geografia', 'Validação']) {
+			await trilho(page).getByRole('link', { name: secao, exact: true }).click();
+			await expect(page.locator('#svelte-announcer')).toHaveText(new RegExp(`^${secao} ·`));
+			await expect(h1(page)).toHaveText(secao);
+		}
+	});
+
+	test('uma falha passageira de rede mostra "Tentar de novo", que abre a vista sem recarregar', async ({ page }) => {
+		let falhou = false;
+		await page.route('**/dados/documentos.json', (r) => {
+			if (falhou) return r.continue();
+			falhou = true;
+			return r.fulfill({ status: 503, body: '' });
+		});
+		const excecoes: string[] = [];
+		page.on('pageerror', (e) => excecoes.push(e.message));
+		await page.goto(`${url('RAIZ')}#/mapa`);
+		await expect(page.getByTestId('falha-ao-abrir')).toContainText('HTTP 503');
+		await page.evaluate(() => (window.__semRecarga = true));
+		await page.getByRole('button', { name: 'Tentar de novo' }).click();
+		const d = await esperarMapa(page);
+		expect(d.erro).toBeNull();
+		await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(tabelaDocumentos.n)); // a barra também
+		await trilho(page).getByRole('link', { name: 'Tópicos', exact: true }).click();
+		await expect(h1(page)).toHaveText('Tópicos');
+		expect(await page.evaluate(() => window.__semRecarga)).toBe(true);
+		expect(excecoes).toEqual([]);
+	});
+
+	test('depois de uma falha passageira, a barra do recorte volta quando a pessoa segue pelo trilho', async ({ page }) => {
+		let falhou = false;
+		await page.route('**/dados/documentos.json', (r) => {
+			if (falhou) return r.continue();
+			falhou = true;
+			return r.fulfill({ status: 503, body: '' });
+		});
+		await page.goto(`${url('RAIZ')}#/mapa`);
+		await expect(page.getByTestId('falha-ao-abrir')).toBeVisible();
+		await expect(page.getByTestId('barra-recorte')).toHaveCount(0);
+		// sem clicar em "Tentar de novo": vai a Tópicos pelo trilho
+		await trilho(page).getByRole('link', { name: 'Tópicos', exact: true }).click();
+		await expect(page.getByTestId('figura-fluxo')).toBeVisible();
+		await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(tabelaDocumentos.n));
+	});
+
+	test('sem o arquivo das afiliações, só a Geografia falha, e "Tentar de novo" a abre', async ({ page }) => {
+		let bloqueado = true;
+		await page.route('**/dados/afiliacoes.json', (r) => (bloqueado ? r.fulfill({ status: 503, body: '' }) : r.continue()));
+		const excecoes: string[] = [];
+		page.on('pageerror', (e) => excecoes.push(e.message));
+		await page.goto(`${url('RAIZ')}#/mapa`);
+		expect((await esperarMapa(page)).erro).toBeNull();
+		for (const [rotulo, titulo] of [
+			['Tópicos', 'Tópicos'],
+			['Classificação', 'Classificação']
+		]) {
+			await trilho(page).getByRole('link', { name: rotulo, exact: true }).click();
+			await expect(h1(page)).toHaveText(titulo);
+		}
+		await trilho(page).getByRole('link', { name: 'Geografia', exact: true }).click();
+		await expect(page.getByTestId('falha-ao-abrir')).toContainText('as afiliações');
+		bloqueado = false;
+		await page.getByRole('button', { name: 'Tentar de novo' }).click();
+		await expect(page.getByTestId('figura-ufs')).toHaveAttribute('data-pronto', 'sim');
+		expect(excecoes).toEqual([]);
+	});
+
 	test('rota inexistente mostra a página de erro dentro da casca', async ({ page }) => {
 		await page.goto(`${url('RAIZ')}#/nao-existe`);
 		await expect(page.getByText('Nada neste ponto do céu')).toBeVisible();
 		await expect(trilho(page)).toBeVisible();
-		await page.getByRole('link', { name: 'Voltar para a Início' }).click();
+		await page.getByRole('link', { name: 'Voltar ao Início' }).click();
 		await expect(h1(page)).toHaveText(manifesto.projeto.titulo);
 	});
 
@@ -226,6 +296,100 @@ test.describe('acessibilidade e casos de borda', () => {
 		await trilho(page).getByRole('link', { name: 'Tópicos', exact: true }).click();
 		await expect(h1(page)).toHaveText('Tópicos');
 	});
+});
+
+test.describe('no celular', () => {
+	test.use({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+
+	test('a barra de navegação mostra que rola e traz todas as seções, com as Redes', async ({ page }) => {
+		await page.goto(url('RAIZ'));
+		await expect(h1(page)).toHaveText(manifesto.projeto.titulo);
+		const nav = trilho(page);
+		// as Redes deixaram de ser a seção desativada ("v2"): são um link como os outros
+		await expect(nav.getByRole('link', { name: 'Redes' })).toHaveCount(1);
+		// os itens não cabem em 375 px: a borda direita ganha um degradê
+		expect(await nav.evaluate((n) => n.scrollWidth > n.clientWidth)).toBe(true);
+		await expect.poll(() => nav.evaluate((n) => getComputedStyle(n).maskImage)).not.toBe('none');
+		// rolando até o fim, a Metodologia aparece, e o degradê passa para a borda esquerda
+		await nav.evaluate((n) => n.scrollTo({ left: n.scrollWidth }));
+		await expect(nav.getByRole('link', { name: 'Metodologia' })).toBeInViewport({ ratio: 1 });
+		await expect
+			.poll(() => nav.evaluate((n) => n.classList.contains('mais-a-esquerda') && !n.classList.contains('mais-a-direita')))
+			.toBe(true);
+	});
+});
+
+test.describe('nenhuma rota rola de lado', () => {
+	const LARGURAS = [
+		{ nome: 'celular', viewport: { width: 375, height: 812 }, isMobile: true },
+		{ nome: 'tablet', viewport: { width: 768, height: 1024 }, isMobile: false },
+		{ nome: 'tablet deitado', viewport: { width: 900, height: 700 }, isMobile: false },
+		{ nome: 'notebook', viewport: { width: 1024, height: 768 }, isMobile: false }
+	];
+	const ROTAS = [
+		'/',
+		'/mapa',
+		'/topicos',
+		'/geografia',
+		'/classificacao',
+		'/validacao',
+		'/redes',
+		'/redes?rede=instituicoes&no=' + encodeURIComponent(ler('redes.json').instituicoes.id[0]),
+		'/redes?rede=estados',
+		'/redes?rede=citacoes',
+		'/ajuda',
+		'/projeto'
+	];
+	// quanto a página passa da largura da tela (no celular emulado, a viewport de layout se estica com o conteúdo:
+	// por isso a conta é contra a largura pedida, e não contra o clientWidth)
+	const transbordo = (page: Page, largura: number) =>
+		page.evaluate((l) => document.documentElement.scrollWidth - l, largura);
+
+	for (const l of LARGURAS) {
+		test(`${l.viewport.width} px (${l.nome})`, async ({ browser }) => {
+			for (const r of ROTAS) {
+				// um contexto novo por rota: os gráficos medem a largura na montagem
+				const contexto = await browser.newContext({
+					viewport: l.viewport,
+					isMobile: l.isMobile,
+					hasTouch: l.isMobile,
+					reducedMotion: 'reduce'
+				});
+				const page = await contexto.newPage();
+				await page.goto(`${url('RAIZ')}#${r}`);
+				await expect(h1(page)).toBeVisible();
+				if (r === '/mapa') await esperarMapa(page);
+				await expect(page.locator('[data-testid^="figura-"]:not([data-pronto])')).toHaveCount(0);
+				await expect
+					.poll(() => transbordo(page, l.viewport.width), { message: `${r} em ${l.viewport.width} px` })
+					.toBeLessThanOrEqual(0);
+				if (l.isMobile) {
+					// no celular, a barra de navegação fica na tela
+					await expect(trilho(page)).toBeInViewport();
+					if (r === '/mapa') {
+						await page.getByRole('button', { name: /^Recorte/ }).click();
+						await expect(page.getByTestId('linha-do-tempo')).toBeVisible();
+						await expect
+							.poll(() => transbordo(page, l.viewport.width), { message: 'mapa com o recorte aberto' })
+							.toBeLessThanOrEqual(0);
+					}
+				}
+				// nas vistas com a barra do recorte, o menu das revistas aberto também cabe
+				if (await page.getByTestId('barra-recorte').count()) {
+					const menu = page.locator('details.revistas');
+					if (!(await menu.isVisible())) {
+						await page.getByTestId('barra-recorte').getByRole('button', { name: /^Recorte/ }).click();
+					}
+					await menu.locator('summary').click();
+					await expect(menu.locator('ul')).toBeVisible();
+					await expect
+						.poll(() => transbordo(page, l.viewport.width), { message: `${r} com o menu das revistas aberto` })
+						.toBeLessThanOrEqual(0);
+				}
+				await contexto.close();
+			}
+		});
+	}
 });
 
 test.describe('projeto vazio (só o manifesto, como depois do `mapa novo`)', () => {

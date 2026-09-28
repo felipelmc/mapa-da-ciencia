@@ -49,3 +49,37 @@ def test_exemplo_estatico_sem_api(tmp_path):
     assert c.get("/dados/detalhes/00.json").status_code in (200, 404)
     assert "<title>app</title>" in c.get("/").text
     assert c.get("/api/projeto").status_code == 404
+
+
+def test_so_responde_a_host_local_em_todas_as_rotas(tmp_path):
+    """Contra DNS apontado para cá: /dados/ e a interface também exigem um Host local (não só /api/)."""
+    from fastapi.testclient import TestClient
+
+    from mapa_da_ciencia.servidor.app import criar_app
+
+    (tmp_path / "dados").mkdir()
+    app = criar_app(pasta_dados=tmp_path / "dados", estatico=tmp_path)
+    fora = TestClient(app, base_url="http://rebind.exemplo.invalid")
+    for rota in ("/dados/manifesto.json", "/openapi.json", "/", "/api/saude"):
+        assert fora.get(rota).status_code == 403, rota
+    assert TestClient(app, base_url="http://127.0.0.1").get("/api/saude").status_code == 200
+
+
+def test_no_colab_a_escrita_de_outra_pagina_e_recusada(tmp_path):
+    from fastapi.testclient import TestClient
+
+    from mapa_da_ciencia.llm.perfis import PERFIS
+    from mapa_da_ciencia.projeto import Projeto
+    from mapa_da_ciencia.servidor.app import criar_app
+
+    p = Projeto.criar(tmp_path / "p", modelo="vazio", perfil=PERFIS["leve"])
+    app = criar_app(pasta_dados=p.saida / "dados", projeto=p, estatico=tmp_path, so_local=False)
+    cliente = TestClient(app, base_url="https://8765-m-abc.colab.googleusercontent.com")
+    for origem in ("https://outro.exemplo", "null"):
+        r = cliente.patch("/api/configuracao", json={}, headers={"Origin": origem})
+        assert r.status_code == 403, origem
+    # a própria página do Colab grava (qualquer outra resposta, e não só um 403, quebraria o painel no Colab)
+    r = cliente.patch(
+        "/api/configuracao", json={}, headers={"Origin": "https://8765-m-abc.colab.googleusercontent.com"}
+    )
+    assert r.status_code == 200, r.text

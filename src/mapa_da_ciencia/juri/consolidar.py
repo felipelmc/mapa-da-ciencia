@@ -9,6 +9,9 @@ Para cada documento × variável:
 | `deliberacao` | depois da deliberação houve maioria (`virou`: a maioria é outra, ou antes não havia) |
 | `sem_maioria` | nem depois da deliberação; vai para o supervisor, se houver resposta dele |
 
+O júri cobre os documentos da amostra de validação. Uma variável em disputa que ainda não foi deliberada fica com o
+estágio da rodada 1 (`maioria` ou `sem_maioria`) e entra em `nao_deliberados`: o próximo passo é deliberar.
+
 As três fontes, gravadas em `dados/classificacao/` como se fossem modelos:
 
 - `juri-r1`: a maioria da rodada 1 (sem maioria, o voto do presidente, o primeiro membro);
@@ -41,7 +44,7 @@ from .agregacao import Decisao, Voto, agregar, chave
 from .deliberacao import DELIBERAVEIS, ler_deliberacao, votos_da_deliberacao
 from .estado import conectar, pasta_dados
 from .prompt import VERSAO_PROMPT_JURI
-from .votacao import Votos, carregar_votos, membros_do_juri
+from .votacao import Votos, carregar_votos, membros_do_juri, textos_da_amostra
 
 VERSAO_JURI = 1
 FONTES = ("juri-r1", "juri", "juri-supervisor")
@@ -100,6 +103,7 @@ class DecisaoFinal:
     valor_juri: Any
     voto_juri: Voto  # de onde vem a evidência do `juri`
     supervisor: dict[str, Any] | None = None  # a resposta do supervisor que vale para este item
+    deliberada: bool = True  # False: em disputa, mas a deliberação ainda não passou por aqui
 
     @property
     def candidatos(self) -> list[str]:
@@ -119,6 +123,7 @@ class ResumoJuri:
     virou: dict[str, int] = field(default_factory=dict)  # variável → decisões que mudaram na deliberação
     revisoes: dict[str, int] = field(default_factory=dict)  # membro → valores mudados na deliberação
     pendentes_supervisor: int = 0  # sem maioria, sem resposta do supervisor
+    nao_deliberados: int = 0  # em disputa, ainda sem deliberação
     arbitrados: int = 0
     nenhum_adequado: int = 0
     gerado_em: str = ""
@@ -126,33 +131,51 @@ class ResumoJuri:
     def __str__(self) -> str:
         total = {e: sum(v.get(e, 0) for v in self.etapas.values()) for e in ESTAGIOS}
         partes = ", ".join(f"{e}: {n}" for e, n in total.items() if n)
-        return (
+        texto = (
             f"Júri de {len(self.membros)} membros em {self.documentos} documento(s): {partes}; "
-            f"{self.arbitrados} decididos pelo supervisor, {self.pendentes_supervisor} esperando o supervisor."
+            f"{self.arbitrados} decididos pelo supervisor, {self.pendentes_supervisor} esperando o supervisor"
         )
+        if self.nao_deliberados:
+            texto += f"; {self.nao_deliberados} em disputa ainda sem deliberação"
+        return texto + "."
 
 
 ESTAGIOS = ("unanime", "maioria", "deliberacao", "sem_maioria")
 
 
-def respostas_do_supervisor(projeto: Projeto, hash_codebook: str, tarefa: str) -> dict[tuple[str, str], dict]:
+def respostas_do_supervisor(
+    projeto: Projeto, hash_codebook: str, tarefa: str, supervisor: str
+) -> dict[tuple[str, str], dict]:
+    """As respostas guardadas de um supervisor (uma por documento × variável). As de outro nome não se misturam:
+    trocar `juri.supervisor.nome` começa a supervisão de novo."""
     with conectar(projeto) as con:
         linhas = con.execute(
-            "SELECT * FROM juri_supervisor WHERE hash_codebook = ? AND tarefa = ? ORDER BY atualizado",
-            (hash_codebook, tarefa),
+            "SELECT * FROM juri_supervisor WHERE hash_codebook = ? AND tarefa = ? AND supervisor = ?",
+            (hash_codebook, tarefa, supervisor),
         ).fetchall()
     return {(r["doc"], r["variavel"]): dict(r) for r in linhas}
 
 
+def votos_do_juri(projeto: Projeto, membros: list[str]) -> Votos:
+    """Os votos da rodada 1 nos documentos da amostra de validação (os membros podem ter classificado mais)."""
+    return carregar_votos(projeto, membros, {t.doc for t in textos_da_amostra(projeto)})
+
+
 def decidir(projeto: Projeto, votos: Votos | None = None) -> list[DecisaoFinal]:
-    """As decisões de todos os documentos × variáveis com votos de todos os membros."""
+    """As decisões de todos os documentos × variáveis da amostra com votos de todos os membros."""
     membros = membros_do_juri(projeto)
     cfg = projeto.config.juri
     codebook = projeto.codebook
     hash_cb = codebook.hash()
-    votos = votos if votos is not None else carregar_votos(projeto, membros)
-    r2, _ = votos_da_deliberacao(codebook, votos, ler_deliberacao(projeto, hash_cb)) if cfg.deliberar else ({}, {})
-    arbitragens = respostas_do_supervisor(projeto, hash_cb, "arbitragem")
+    votos = votos if votos is not None else votos_do_juri(projeto, membros)
+    r2, info = votos_da_deliberacao(codebook, votos, ler_deliberacao(projeto, hash_cb)) if cfg.deliberar else ({}, {})
+    # deliberada é a disputa em que todos os membros deliberaram: uma deliberação interrompida no meio (memória,
+    # ctrl+c) deixa o item pendente, e `mapa juri deliberar` retoma de onde parou
+    quem: dict[tuple[str, str], set[str]] = {}
+    for doc, var, membro in info:
+        quem.setdefault((doc, var), set()).add(membro)
+    deliberados = {item for item, membros_do_item in quem.items() if membros_do_item >= set(membros)}
+    arbitragens = respostas_do_supervisor(projeto, hash_cb, "arbitragem", cfg.supervisor.nome)
     saida = []
     for doc in sorted(votos):
         for v in codebook.variaveis:
@@ -160,7 +183,8 @@ def decidir(projeto: Projeto, votos: Votos | None = None) -> list[DecisaoFinal]:
                 continue
             v1 = votos[doc][v.id]
             d1 = agregar(v, v1)
-            deliberavel = cfg.deliberar and v.tipo in DELIBERAVEIS and d1.etapa != "unanime"
+            em_disputa = cfg.deliberar and v.tipo in DELIBERAVEIS and d1.etapa != "unanime"
+            deliberavel = em_disputa and (doc, v.id) in deliberados
             v2 = [r2.get((doc, v.id, x.membro), x) for x in v1] if deliberavel else v1
             d2 = agregar(v, v2) if deliberavel else d1
             if d1.etapa == "unanime":
@@ -173,6 +197,7 @@ def decidir(projeto: Projeto, votos: Votos | None = None) -> list[DecisaoFinal]:
             valor_r1 = d1.valor if d1.decidida else v1[0].valor
             voto_juri = d2.voto if d2.decidida else v2[0]
             final = DecisaoFinal(doc, v, etapa, virou, d1, d2, v1, v2, valor_r1, voto_juri.valor, voto_juri)
+            final.deliberada = deliberavel or not em_disputa
             if etapa == "sem_maioria":
                 resposta = arbitragens.get((doc, v.id))
                 if resposta and resposta["chave_pedido"] == final.chave_pedido:
@@ -212,35 +237,61 @@ def _linha_fonte(d: DecisaoFinal, valor: Any, voto: Voto | None, supervisor: dic
     }
 
 
+def _revisou(d: DecisaoFinal, x: Voto, info_r2: dict) -> bool:
+    linha = info_r2.get((d.doc, d.variavel.id, x.membro))
+    return bool(linha and linha["revisou"])
+
+
+def _resumo(projeto: Projeto) -> tuple[ResumoJuri, list[DecisaoFinal], dict]:
+    """O resumo do júri com os votos e as respostas atuais, sem gravar nada (é o que o status mostra)."""
+    membros = membros_do_juri(projeto)
+    cfg = projeto.config.juri
+    codebook = projeto.codebook
+    votos = votos_do_juri(projeto, membros)
+    decisoes = decidir(projeto, votos)
+    _, info_r2 = (
+        votos_da_deliberacao(codebook, votos, ler_deliberacao(projeto, codebook.hash())) if cfg.deliberar else ({}, {})
+    )
+    resumo = ResumoJuri(
+        membros=membros,
+        supervisor=cfg.supervisor.nome if any(d.supervisor for d in decisoes) else None,
+        documentos=len(votos),
+        gerado_em=datetime.now(UTC).isoformat(timespec="seconds"),
+    )
+    for d in decisoes:
+        por_var = resumo.etapas.setdefault(d.variavel.id, dict.fromkeys(ESTAGIOS, 0))
+        por_var[d.etapa] += 1
+        resumo.virou[d.variavel.id] = resumo.virou.get(d.variavel.id, 0) + int(d.virou)
+        resumo.nao_deliberados += int(not d.deliberada)
+        if d.etapa == "sem_maioria" and d.variavel.tipo in DELIBERAVEIS and d.deliberada:
+            if d.supervisor:
+                resumo.arbitrados += 1
+                resumo.nenhum_adequado += int(bool(d.supervisor["nenhum_adequado"]))
+            else:
+                resumo.pendentes_supervisor += 1
+        if d.votos_r2 is not d.votos_r1:
+            for x in d.votos_r2:
+                resumo.revisoes[x.membro] = resumo.revisoes.get(x.membro, 0) + int(_revisou(d, x, info_r2))
+    return resumo, decisoes, info_r2
+
+
+def resumir(projeto: Projeto) -> ResumoJuri:
+    """O resumo atual do júri, recalculado (sem ler o `resumo.json`, que é da última consolidação)."""
+    return _resumo(projeto)[0]
+
+
 def consolidar(projeto: Projeto) -> ResumoJuri:
     """Grava as decisões, os votos e as três fontes do júri; devolve o resumo."""
     membros = membros_do_juri(projeto)
     cfg = projeto.config.juri
     codebook = projeto.codebook
     hash_cb = codebook.hash()
-    votos = carregar_votos(projeto, membros)
-    decisoes = decidir(projeto, votos)
-    _, info_r2 = votos_da_deliberacao(codebook, votos, ler_deliberacao(projeto, hash_cb)) if cfg.deliberar else ({}, {})
-    tem_supervisor = any(d.supervisor for d in decisoes)
-    resumo = ResumoJuri(
-        membros=membros,
-        supervisor=cfg.supervisor.nome if tem_supervisor else None,
-        documentos=len(votos),
-        gerado_em=datetime.now(UTC).isoformat(timespec="seconds"),
-    )
+    resumo, decisoes, info_r2 = _resumo(projeto)
+    tem_supervisor = resumo.supervisor is not None
     linhas_decisoes, linhas_votos = [], []
     fontes: dict[str, list[dict[str, Any]]] = {f: [] for f in FONTES}
     for d in decisoes:
-        por_var = resumo.etapas.setdefault(d.variavel.id, dict.fromkeys(ESTAGIOS, 0))
-        por_var[d.etapa] += 1
-        resumo.virou[d.variavel.id] = resumo.virou.get(d.variavel.id, 0) + int(d.virou)
         sup = d.supervisor
-        if d.etapa == "sem_maioria" and d.variavel.tipo in DELIBERAVEIS:
-            if sup:
-                resumo.arbitrados += 1
-                resumo.nenhum_adequado += int(bool(sup["nenhum_adequado"]))
-            else:
-                resumo.pendentes_supervisor += 1
         final = sup["valor"] if sup else valor_como_texto(d.valor_juri)
         ev = sup if sup else None
         linhas_decisoes.append(
@@ -269,10 +320,7 @@ def consolidar(projeto: Projeto) -> ResumoJuri:
             linhas_votos.append(_voto(d, x, 1, False))
         if d.votos_r2 is not d.votos_r1:
             for x in d.votos_r2:
-                linha = info_r2.get((d.doc, d.variavel.id, x.membro))
-                revisou = bool(linha and linha["revisou"])
-                resumo.revisoes[x.membro] = resumo.revisoes.get(x.membro, 0) + int(revisou)
-                linhas_votos.append(_voto(d, x, 2, revisou))
+                linhas_votos.append(_voto(d, x, 2, _revisou(d, x, info_r2)))
         fontes["juri-r1"].append(_linha_fonte(d, d.valor_r1, d.r1.voto if d.r1.decidida else d.votos_r1[0]))
         fontes["juri"].append(_linha_fonte(d, d.valor_juri, d.voto_juri))
         fontes["juri-supervisor"].append(_linha_fonte(d, d.valor_juri, d.voto_juri, sup))
@@ -300,8 +348,8 @@ def consolidar(projeto: Projeto) -> ResumoJuri:
             hash_codebook=hash_cb,
             assinatura=assinatura,
             gerado_em=resumo.gerado_em,
-            documentos=len(votos),
-            classificados=len(votos),
+            documentos=resumo.documentos,
+            classificados=resumo.documentos,
             sem_resumo=0,
             json_valido_na_primeira=1.0 if linhas else None,
             evidencia={s: round(status.count(s) / len(status), 4) for s in ("literal", "aproximada", "ausente")}
@@ -329,4 +377,5 @@ def ler_resumo(projeto: Projeto) -> ResumoJuri | None:
     arquivo = pasta_dados(projeto, projeto.codebook.hash()) / "resumo.json"
     if not arquivo.exists():
         return None
-    return ResumoJuri(**json.loads(arquivo.read_text(encoding="utf-8")))
+    dados = json.loads(arquivo.read_text(encoding="utf-8"))
+    return ResumoJuri(**{k: x for k, x in dados.items() if k in ResumoJuri.__dataclass_fields__})

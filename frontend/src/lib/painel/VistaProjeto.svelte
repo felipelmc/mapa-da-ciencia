@@ -249,7 +249,7 @@
 	}
 
 	.suave {
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 		font-size: 0.85rem;
 	}
 
@@ -305,7 +305,7 @@
 	}
 
 	.ok {
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 		font-size: 0.8rem;
 	}
 
@@ -345,7 +345,7 @@
 
 	.estado-falhou,
 	.estado-cancelado {
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	@media (max-width: 900px) {

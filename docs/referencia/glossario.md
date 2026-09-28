@@ -12,6 +12,9 @@
 **Casamento**
 : Encontrar, no OpenAlex, o mesmo artigo que veio da ArticleMeta. O `mapa` tenta, em ordem, o DOI, o PID dentro dos endereços do OpenAlex, o DOI derivado do PID e o título mais o ano, e confere ano e título antes de aceitar (a ArticleMeta às vezes traz DOIs trocados). O passo usado fica registrado em cada documento.
 
+**Circular**
+: Marca de uma comparação entre dois codificadores da mesma família de modelos (por exemplo, a referência e o supervisor do júri, ambos Claude): a concordância mede em parte quanto um modelo concorda consigo mesmo. O relatório a mostra só como limite superior. Veja [Júri e supervisor](../explicacoes/juri.md#tres-fontes-e-por-que-o-supervisor-nao-entra-no-numero-principal).
+
 **Codebook**
 : Conjunto de variáveis, categorias e definições que o modelo usa para classificar cada resumo. Veja [Escrever um codebook](../guias/codebook.md).
 
@@ -41,6 +44,9 @@
 
 **Instituição não identificada**
 : Afiliação informada pela fonte que não casou com nenhuma instituição conhecida. Conta no país e na UF que a fonte informou, mas não no ranking das instituições. `mapa geografia --revisar` lista as mais frequentes.
+
+**Júri de modelos**
+: Vários modelos locais classificando os mesmos documentos: decidem por maioria, deliberam uma vez sobre as discordâncias e deixam para um supervisor o que continua sem maioria. Veja [Júri e supervisor](../explicacoes/juri.md).
 
 **Kappa de Cohen**
 : Medida de concordância entre dois codificadores que desconta a concordância esperada ao acaso. Vai de −1 a 1. Acima de 0,6 costuma ser considerado substancial, e acima de 0,8, quase perfeito.

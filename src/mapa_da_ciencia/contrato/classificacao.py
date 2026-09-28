@@ -241,18 +241,21 @@ def juri_contrato(projeto: Projeto, v: Validacao) -> tuple[m.ResumoJuri | None, 
                 revisou=bool(linha["revisou"]),
             )
         )
+    # um supervisor que é uma pessoa é um codificador humano: as escolhas dele não saem documento a documento
+    # (como as codificações humanas da validação), só nos números agregados
+    modelo = projeto.config.juri.supervisor.e_modelo
     por_doc: dict[str, dict[str, m.DecisaoJuri]] = {}
     for d in ler_tabela(pasta / "decisoes.parquet"):
         tipo = tipos.get(d["variavel"])
         if tipo is None:
             continue
-        justificativa = remover_emails(d["justificativa"]) if d["justificativa"] else None
+        justificativa = remover_emails(d["justificativa"]) if d["justificativa"] and modelo else None
         por_doc.setdefault(d["doc"], {})[d["variavel"]] = m.DecisaoJuri(
             etapa=d["etapa"],
             virou=bool(d["virou"]),
-            valor=valor_do_texto(d["valor_final"], tipo),
+            valor=valor_do_texto(d["valor_final"] if modelo else d["valor_juri"], tipo),
             valor_sem_supervisor=valor_do_texto(d["valor_juri"], tipo),
-            supervisor=d["supervisor"],
+            supervisor=d["supervisor"] if modelo else None,
             justificativa=justificativa,
             votos=votos.get((d["doc"], d["variavel"]), []),
         )
@@ -301,8 +304,8 @@ def exportar_classificacao(
                         detalhe.evidencias = evidencias[doc]
     amostra = va.ler(projeto)
     if amostra is not None:
-        v = calcular(projeto)
-        codificadas = {c["doc"] for c in va.codificacoes(projeto)} & set(amostra.docs)
+        v = calcular(projeto, versao_nova=False)  # a versão à parte de um modelo não vai para o contrato
+        codificadas = va.documentos_completos(projeto) & set(amostra.docs)  # fichas completas
         info["validados"] = len(codificadas)
         if v.metricas:
             validacao = validacao_contrato(v)

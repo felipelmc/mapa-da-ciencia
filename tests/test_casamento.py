@@ -156,8 +156,19 @@ def test_alinhar():
     autores = [Autor(nome="Ana", sobrenome="Souza"), Autor(nome="Bruno", sobrenome="Lima")]
     assert alinhar(autores, [autoria("Ana Souza"), autoria("Bruno Lima")]) == {0: 0, 1: 1}
     assert alinhar(autores, [autoria("B. Lima"), autoria("Ana P. Souza")]) == {0: 1, 1: 0}
-    assert alinhar(autores[:1], [autoria("Outro Nome")]) == {0: 0}  # autor único
     assert alinhar(autores, [autoria("Carla Dias")]) == {}
+    # autor único: o par vale com o nome compatível (ou sem letras latinas para comparar), não com qualquer nome
+    assert alinhar(autores[:1], [autoria("A. Souza")]) == {0: 0}
+    assert alinhar(autores[:1], [autoria("Outro Nome")]) == {}
+    assert alinhar([Autor(nome="Juan Jesús", sobrenome="Morales")], [autoria("Juan Martín")]) == {}
+    assert alinhar([Autor(nome="Camila", sobrenome="Penna de Castro")], [autoria("Camila Penna")]) == {0: 0}
+    assert alinhar([Autor(nome="Frank", sobrenome="Ruda")], [autoria("Франк Руда")]) == {0: 0}
+    # hífen tipográfico (U+2010) e "ı" sem ponto do OpenAlex
+    assert alinhar([Autor(nome="Luiz Carlos", sobrenome="Bresser-Pereira")], [autoria("Luiz Carlos Bresser‐Pereira")])
+    assert alinhar([Autor(nome="Pierre", sobrenome="Bourdieu")], [autoria("Pierre Bourdıeu")]) == {0: 0}
+    # vários autores: o nome do meio também serve ("Mesquita"), quando o sobrenome da ArticleMeta não confere
+    varios = [Autor(nome="Rafael Mesquita", sobrenome="de Souza Lima"), Autor(nome="Ana", sobrenome="Souza")]
+    assert alinhar(varios, [autoria("Rafael Mesquita"), autoria("Ana Souza")]) == {0: 0, 1: 1}
 
 
 def test_documento_com_autoria_do_openalex(indice):

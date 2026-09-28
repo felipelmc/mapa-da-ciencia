@@ -109,6 +109,55 @@ def test_exporta_so_o_texto(projeto):
     assert "@" not in arquivo.read_text(encoding="utf-8")
 
 
+def test_exporta_sem_email_e_com_arroba_de_rede_social(projeto):
+    """Um corpus coletado antes de o detector ver uma forma de e-mail: `mapa validar amostra` tira o e-mail e avisa,
+    em vez de cair; um perfil de rede social citado no resumo não é e-mail e fica."""
+    from mapa_da_ciencia.armazenamento import ARQUIVO, gravar_documentos, ler_documentos
+
+    a = va.sortear(projeto)
+    docs = ler_documentos(projeto.dados / ARQUIVO)
+    plantar = {
+        a.docs[0]: "Contato: fulana@ exemplo.com.br.",
+        a.docs[1]: "Analisamos o perfil @maria.silva no Instagram.",
+    }
+    docs = [
+        d.model_copy(
+            update={"resumos": [r.model_copy(update={"texto": f"{plantar[d.id]} {r.texto}"}) for r in d.resumos]}
+        )
+        if d.id in plantar
+        else d
+        for d in docs
+    ]
+    gravar_documentos(docs, projeto.dados / ARQUIVO)
+    r = runner.invoke(app, ["validar", "amostra", "-P", str(projeto.raiz)], env=ENV)
+    assert r.exit_code == 0, r.output
+    arquivo = projeto.raiz / "validacao" / "amostra.jsonl"
+    linhas = {x["doc"]: x for x in map(json.loads, arquivo.read_text(encoding="utf-8").splitlines())}
+    assert "fulana" not in linhas[a.docs[0]]["resumo"] and "exemplo" not in linhas[a.docs[0]]["resumo"]
+    assert linhas[a.docs[1]]["resumo"].startswith("Analisamos o perfil @maria.silva no Instagram.")
+    assert f"{a.docs[0]}: um e-mail" in " ".join(r.output.split())
+
+
+def test_amostra_com_documento_que_saiu_do_corpus(projeto):
+    """Uma coleta nova com um recorte menor depois do sorteio: `mapa validar amostra` pula o que saiu e avisa, em
+    vez de cair com KeyError (r1-10)."""
+    from mapa_da_ciencia.coleta import OpcoesColeta
+
+    a = va.sortear(projeto)
+    coletar(projeto, OpcoesColeta(limite=5))
+    ids = {t.doc for t in va.textos_do_projeto(projeto)}
+    fora = [d for d in a.docs if d not in ids]
+    assert fora
+    r = runner.invoke(app, ["validar", "amostra", "-P", str(projeto.raiz)], env=ENV)
+    assert r.exit_code == 0, r.output
+    arquivo = projeto.raiz / "validacao" / "amostra.jsonl"
+    assert [json.loads(x)["doc"] for x in arquivo.read_text(encoding="utf-8").splitlines()] == [
+        d for d in a.docs if d in ids
+    ]
+    saida = " ".join(r.output.split())
+    assert all(f"{d} não está mais no corpus" in saida for d in fora), saida
+
+
 def test_importar_codificacoes(projeto, tmp_path):
     a = va.sortear(projeto)
     arquivo = tmp_path / "claude.jsonl"
@@ -241,3 +290,31 @@ def test_codificacoes_presas_ao_codebook(projeto):
     assert len(validas) == 10 * (n - 2) and not {"abordagem", "subarea"} & {c["variavel"] for c in validas}
     assert len(va.codificacoes(projeto, "maria", todas=True)) == 10 * n
     calcular(projeto, reamostras=10)  # não quebra com o valor antigo guardado como texto
+
+
+def test_so_fichas_completas_contam_como_codificadas(tmp_path):
+    """Uma ficha salva pela metade (uma variável só) não conta como validada."""
+    from mapa_da_ciencia.llm.perfis import PERFIS
+    from mapa_da_ciencia.projeto import Projeto
+
+    p = Projeto.criar(tmp_path / "p", modelo="ciencia-politica", perfil=PERFIS["leve"])
+    variaveis = [v.id for v in p.codebook.variaveis]
+    assert len(variaveis) > 1
+    with va.conectar(p) as con:
+        for doc, n in (("d1", len(variaveis)), ("d2", 1)):
+            for var in variaveis[:n]:
+                con.execute(
+                    "INSERT INTO codificacoes (codificador, doc, variavel, valor, evidencia, incerto, nota, atualizado)"
+                    " VALUES ('ana', ?, ?, ?, '', 0, '', 'agora')",
+                    (doc, var, _valor_valido(p, var)),
+                )
+    assert va.documentos_completos(p) == {"d1"}
+
+
+def _valor_valido(p, var):
+    v = next(x for x in p.codebook.variaveis if x.id == var)
+    if v.tipo == "booleana":
+        return "true"
+    if v.tipo == "multipla":
+        return '["' + v.categorias[0].valor + '"]'
+    return v.categorias[0].valor if v.categorias else "texto"

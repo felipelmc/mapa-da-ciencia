@@ -135,7 +135,7 @@ Experimente:
 - **Clique num ponto.** O cartão ao lado mostra o título, os autores, o resumo e os cinco artigos mais parecidos, que também são clicáveis.
 - **Busque** com ++slash++, por exemplo "polarização". O mapa fica só com os artigos encontrados.
 - **Desenhe um laço** com ++l++ em volta de um grupo de pontos. O mapa fica só com eles, e a barra do recorte, no alto, mostra quantos são.
-- **Aperte Play na linha do tempo** para ver os artigos aparecerem ano a ano.
+- **Aperte Tocar na linha do tempo** para ver os artigos aparecerem ano a ano.
 - **Copie o endereço da página.** Ele guarda a câmera, o laço, os filtros e o artigo aberto. Quem abrir o link vê exatamente a mesma tela.
 
 O guia [Ler o mapa](../guias/ler-o-mapa.md) explica o que a distância entre os pontos significa e o que ela não significa. Para encerrar, aperte ++ctrl+c++ no terminal.

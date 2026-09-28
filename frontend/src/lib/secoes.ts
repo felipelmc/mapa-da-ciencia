@@ -103,7 +103,7 @@ export const SECOES: readonly Secao[] = [
 		caminho: '/validacao',
 		icone: 'validacao',
 		resumo:
-			'Quanto a classificação do modelo concorda com a codificação humana: concordância, kappa, matrizes de confusão e as divergências para revisar.',
+			'Quanto a classificação do modelo concorda com uma codificação de referência (de uma pessoa ou de outro modelo): concordância, kappa, matrizes de confusão e as divergências para revisar.',
 		chegada: 'no marco M5',
 		arquivos: ['validacao', 'codebook']
 	},
@@ -114,7 +114,7 @@ export const SECOES: readonly Secao[] = [
 		icone: 'redes',
 		resumo:
 			'Quem escreve com quem: a coautoria entre pessoas, a colaboração entre instituições e entre estados, e as obras que o corpus mais cita.',
-		chegada: 'na versão 1.1',
+		chegada: 'na versão 2.0',
 		arquivos: ['redes', 'citacoes'],
 		recorte: true
 	},
@@ -142,8 +142,16 @@ export function secao(id: IdSecao): Secao {
 }
 
 /** As seções do trilho para este projeto: no site publicado, "Projeto" vira "Metodologia". */
-export function secoesDoTrilho(manifesto: Pick<Manifesto, 'api'>): Secao[] {
-	return SECOES.filter((s) => !s.soNoPainel || manifesto.api).map((s) =>
-		!manifesto.api && s.noSite ? { ...s, ...s.noSite } : s
-	);
+export function secoesDoTrilho(manifesto: Pick<Manifesto, 'api'> & Partial<Pick<Manifesto, 'publicacao' | 'arquivos'>>): Secao[] {
+	return SECOES.filter((s) => !s.soNoPainel || manifesto.api)
+		.filter((s) => !(s.id === 'redes' && semRedesNoSite(manifesto)))
+		.map((s) => (!manifesto.api && s.noSite ? { ...s, ...s.noSite } : s));
+}
+
+/**
+ * Um site publicado (`mapa publicar`) sem `redes.json` (redes nunca geradas, ou desatualizadas na publicação) não
+ * mostra a vista Redes: quem visita não tem o que fazer com "Rode `mapa redes`".
+ */
+export function semRedesNoSite(manifesto: Partial<Pick<Manifesto, 'publicacao' | 'arquivos'>>): boolean {
+	return !!manifesto.publicacao && !(manifesto.arquivos ?? []).includes('redes');
 }

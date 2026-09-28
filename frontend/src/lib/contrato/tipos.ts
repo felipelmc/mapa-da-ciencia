@@ -171,16 +171,19 @@ export interface Agregados {
 export interface Citacoes {
 	canone: ObraCitada[];
 	canone_citantes: CitantesCanone;
+	/**
+	 * Documentos (`documentos`, `com_referencias`), referências resolvidas (`referencias`) e, nos documentos casados, as listadas na ArticleMeta (`referencias_listadas`), as resolvidas entre elas (`referencias_resolvidas`) e a mediana por documento da fração resolvida (`resolvidas_mediana_pct`); citações internas, anacrônicas e autorreferências; referências a obras apagadas (`a_obras_apagadas`); citantes, resenhas e autorias corrigidas do cânone; obras sem metadados entre as mais citadas.
+	 */
 	cobertura?: {
 		[k: string]: number;
 	};
 	/**
-	 * Citações internas de macrotema (linha) a macrotema.
+	 * Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` (pela posição, e não pelo id, que não é contíguo).
 	 */
 	fluxo_macrotemas: number[][];
 	internas: ArestasCitacao;
 	/**
-	 * Referências de cada documento no OpenAlex; -1: sem casamento.
+	 * Referências de cada documento resolvidas no OpenAlex (0: casado, sem nenhuma); -1: sem casamento.
 	 */
 	n_referencias: number[];
 	/**
@@ -189,17 +192,20 @@ export interface Citacoes {
 	versao_contrato?: string;
 }
 /**
- * Uma obra de fora do corpus entre as mais citadas (o cânone).
+ * Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate).
  */
 export interface ObraCitada {
+	/**
+	 * O ano da obra (o das referências, quando o registro do OpenAlex é uma resenha).
+	 */
 	ano: number | null;
 	/**
-	 * Até três autores.
+	 * Até três autores, conferidos nas referências da ArticleMeta.
 	 */
 	autores: string[];
 	doi: string | null;
 	/**
-	 * Outras edições somadas a esta.
+	 * Outros registros da mesma obra, somados a este.
 	 */
 	edicoes?: string[];
 	/**
@@ -210,6 +216,14 @@ export interface ObraCitada {
 	 * Documentos do corpus que a citam.
 	 */
 	n: number;
+	/**
+	 * Autores e ano do registro do OpenAlex, quando diferem dos mostrados (a conferência os mudou).
+	 */
+	registro_openalex?: string | null;
+	/**
+	 * O registro do OpenAlex é uma resenha da obra (tipo `book-review`, Choice Reviews, ou um primeiro autor que as referências não citam): autores e ano vêm das referências.
+	 */
+	resenha?: boolean;
 	tipo: string | null;
 	titulo: string | null;
 	veiculo: string | null;
@@ -505,6 +519,10 @@ export interface Manifesto {
 	 */
 	arquivos: string[];
 	contagens: Contagens;
+	/**
+	 * Etapas com resultado desatualizado (as entradas mudaram depois), que por isso ficou fora destes dados: `topicos`, `geografia`, `redes` ou `classificacao`. A interface diz o que rodar de novo.
+	 */
+	desatualizadas?: string[];
 	execucao: ExecucaoInfo;
 	gerado_em: string;
 	/**
@@ -512,6 +530,12 @@ export interface Manifesto {
 	 */
 	licencas?: {
 		[k: string]: number;
+	};
+	/**
+	 * Para cada etapa desatualizada, o que mudou desde a última execução, quando se sabe (nas redes: "o pessoas.yaml", "a geografia"…).
+	 */
+	mudancas?: {
+		[k: string]: string[];
 	};
 	projeto: ProjetoInfo;
 	/**
@@ -703,7 +727,7 @@ export interface ColunasPessoas {
 	 */
 	grau: number[];
 	/**
-	 * Id publicado (um hash curto; o site não publica ORCIDs).
+	 * Id publicado: um HMAC curto do id interno com o segredo do projeto (o site não publica ORCIDs nem ids do OpenAlex, e o id não se liga a eles sem o segredo).
 	 */
 	id: string[];
 	nome: string[];
@@ -977,13 +1001,17 @@ export interface Divergencia {
 export interface ResumoJuri {
 	auditoria?: AuditoriaJuri | null;
 	/**
-	 * Estágio → {n, acertos} contra a referência.
+	 * Estágio → {n, acertos} contra a referência, com a decisão do júri sem o supervisor (no estágio `sem_maioria`, o voto do primeiro membro).
 	 */
 	concordancia_por_etapa?: {
 		[k: string]: {
 			[k: string]: number;
 		};
 	};
+	/**
+	 * Nas decisões sem maioria arbitradas, a concordância com a escolha do supervisor.
+	 */
+	concordancia_supervisor?: ConcordanciaSupervisor | null;
 	/**
 	 * Membro → {votos, mudou, para_referencia, contra}: votos revistos na deliberação e a direção.
 	 */
@@ -1036,6 +1064,17 @@ export interface AuditoriaJuri {
 		[k: string]: [number, number];
 	};
 	taxa: number | null;
+}
+/**
+ * A concordância com a referência nas decisões sem maioria que o supervisor arbitrou, com a escolha dele.
+ */
+export interface ConcordanciaSupervisor {
+	acertos: number;
+	/**
+	 * O supervisor e a referência são da mesma família: não é medida independente.
+	 */
+	circular: boolean;
+	n: number;
 }
 /**
  * Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável.

@@ -5,13 +5,15 @@ import { FonteEstatica } from './estatica';
 import { pedirApi, urlDaApi } from './pedir';
 
 /** As etapas que o painel roda como jobs. */
-export type NomeEtapa = 'coleta' | 'topicos' | 'geografia' | 'classificacao';
+export type NomeEtapa = 'coleta' | 'topicos' | 'geografia' | 'redes' | 'classificacao';
 export type EstadoEtapa = 'pendente' | 'em_dia' | 'incompleta' | 'desatualizada';
 
 export interface EtapaDoProjeto {
 	estado: EstadoEtapa;
 	ultima: { fim: string; duracao_s: number; contagens: Record<string, number> } | null;
 	amostra?: { n: number; codificados: number };
+	/** Nas redes desatualizadas, o que mudou desde a última execução ("o pessoas.yaml", "a geografia"…). */
+	mudou?: string[];
 }
 export type EtapasDoProjeto = Record<NomeEtapa | 'validacao', EtapaDoProjeto>;
 

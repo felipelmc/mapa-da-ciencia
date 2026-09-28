@@ -21,7 +21,7 @@
 		<caption>Linhas: <strong>{referencia}</strong>; colunas: <strong>{comparado}</strong>.</caption>
 		<thead>
 			<tr>
-				<th scope="col"></th>
+				<th scope="col"><span class="visualmente-oculto">{referencia} (linhas) × {comparado} (colunas)</span></th>
 				{#each usados as j (j)}<th scope="col">{rotulo(matriz.rotulos[j])}</th>{/each}
 			</tr>
 		</thead>
@@ -61,7 +61,7 @@
 		padding-top: 0.4rem;
 		text-align: left;
 		font-size: 0.78rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	th {
@@ -85,7 +85,8 @@
 	}
 
 	td.diagonal {
-		background: color-mix(in oklab, var(--acento) calc(var(--intensidade) * 55%), transparent);
+		/* até 40% de acento: o texto continua com contraste AA nos dois temas (5,7:1 e 8,9:1 na célula mais forte) */
+		background: color-mix(in oklab, var(--acento) calc(var(--intensidade) * 40%), transparent);
 		font-weight: 600;
 	}
 </style>

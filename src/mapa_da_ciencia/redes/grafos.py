@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from fractions import Fraction
 from itertools import combinations
 
 SEMENTE = 7
@@ -23,17 +24,27 @@ EXTERIOR = "EX"
 
 
 def pares_ponderados(grupos: dict[str, list[str]]) -> dict[tuple[str, str], tuple[float, int]]:
-    """(a, b) → (peso, documentos), com 1/(n−1) por par em cada documento com n membros distintos."""
-    saida: dict[tuple[str, str], list] = defaultdict(lambda: [0.0, 0])
+    """(a, b) → (peso, documentos), com 1/(n−1) por par em cada documento com n membros distintos.
+
+    A soma é exata (frações) e só vira `float` no fim, sem arredondar: o peso de um par que escreveu três artigos a
+    quatro é 1 exato, e não 0,999999; a partição do Louvain usa esses pesos (arredondá-los a 6 casas mudava a
+    comunidade de um terço das pessoas no piloto)."""
+    saida: dict[tuple[str, str], list] = defaultdict(lambda: [Fraction(0), 0])
     for membros in grupos.values():
         distintos = sorted(set(membros))
         n = len(distintos)
         if n < 2:
             continue
         for a, b in combinations(distintos, 2):
-            saida[(a, b)][0] += 1.0 / (n - 1)
+            saida[(a, b)][0] += Fraction(1, n - 1)
             saida[(a, b)][1] += 1
-    return {k: (round(v[0], 6), v[1]) for k, v in sorted(saida.items())}
+    return {k: (float(v[0]), v[1]) for k, v in sorted(saida.items())}
+
+
+def forcas(grupos: dict[str, list[str]]) -> Counter[str]:
+    """A força de cada membro (a soma dos pesos das arestas dele): o número de documentos em que ele teve um parceiro,
+    contado direto (inteiro), sem somar pesos em ponto flutuante."""
+    return Counter(x for membros in grupos.values() if len(set(membros)) > 1 for x in set(membros))
 
 
 def grafo(arestas: dict[tuple[str, str], tuple[float, int]], nos: list[str] | None = None):
@@ -147,4 +158,4 @@ def colaboracao_por_ano(
 
 def macro_dominante(docs: list[str], macro_do_doc: dict[str, int]) -> int | None:
     contagem = Counter(macro_do_doc[d] for d in docs if macro_do_doc.get(d, -1) >= 0)
-    return contagem.most_common(1)[0][0] if contagem else None
+    return min(contagem, key=lambda m: (-contagem[m], m)) if contagem else None  # no empate, o de menor id

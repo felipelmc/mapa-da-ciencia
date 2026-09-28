@@ -12,7 +12,6 @@ import json
 from pathlib import Path
 from typing import Annotated, Literal
 
-import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 Slug = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]*$", description="Identificador em minúsculas, sem acento.")]
@@ -203,11 +202,17 @@ class SupervisorJuri(_Base):
         description="`arquivo`: pedidos e respostas em JSONL, para um supervisor externo; `api`: a API da Anthropic "
         "(precisa de `ANTHROPIC_API_KEY` no `.env`, de `enviar_textos: true` e do pacote extra `anthropic`).",
     )
-    nome: Slug = Field("supervisor", description="Nome gravado nas decisões do supervisor.")
-    familia: str = Field(
-        "claude",
-        description="Família do modelo supervisor. Se for a mesma de um codificador de referência "
-        "(`validacao.familias`), a comparação entre os dois é marcada como circular.",
+    nome: str = Field(
+        "supervisor",
+        pattern=r"^[a-z][a-z0-9_-]*$",
+        description="Nome gravado nas decisões do supervisor (minúsculas, números, - e _).",
+    )
+    familia: str | None = Field(
+        None,
+        description="Família do modelo supervisor (por exemplo, `claude`). Se for a mesma de um codificador de "
+        "referência (`validacao.familias`), a comparação entre os dois é marcada como circular. Sem família (ou com "
+        "`humano`), o supervisor é tratado como uma pessoa: as escolhas dele não saem documento a documento no painel "
+        "publicado. No modo `api`, o padrão é `claude`.",
     )
     modelo: str = Field("claude-opus-5-5", description="Modelo da API da Anthropic, no modo `api`.")
     esforco: Literal["low", "medium", "high"] = Field(
@@ -221,9 +226,19 @@ class SupervisorJuri(_Base):
         5.0, ge=0, description="Gasto máximo estimado por execução, em dólares; acima dele a etapa não começa."
     )
 
+    @property
+    def familia_efetiva(self) -> str | None:
+        """A família declarada; no modo `api`, `claude` se nada foi declarado."""
+        return self.familia or ("claude" if self.modo == "api" else None)
+
+    @property
+    def e_modelo(self) -> bool:
+        """O supervisor é um modelo (com família conhecida), e não uma pessoa."""
+        return self.familia_efetiva not in (None, "humano")
+
 
 class ConfigJuri(_Base):
-    """Júri de modelos locais: cada membro classifica a amostra (ou o corpus), os que discordam deliberam vendo as
+    """Júri de modelos locais: cada membro classifica a amostra de validação, os que discordam deliberam vendo as
     respostas anônimas dos outros, e o que continuar sem maioria vai para o supervisor. Ver "Júri e supervisor"."""
 
     membros: list[str] = Field(
@@ -332,17 +347,34 @@ def _explicar(erro: ValidationError, arquivo: Path) -> str:
             msg = "campo desconhecido (erro de digitação?)"
         elif e["type"] == "missing":
             msg = "campo obrigatório ausente"
+        elif campo == "recorte.anos" and e["type"] in ("tuple_type", "too_short", "too_long", "int_parsing"):
+            msg = "use [ano_inicial, ano_final], por exemplo [2010, 2025]"
         linhas.append(f"  - {campo}: {msg}")
     return "\n".join(linhas)
+
+
+def ler_yaml(texto: str, nome: str) -> object:
+    """Lê um YAML do projeto recusando chaves repetidas: com o leitor padrão, uma seção repetida (duas `apelidos:`,
+    por exemplo, ao colar um bloco no fim do arquivo) apagava a primeira em silêncio."""
+    from ruamel.yaml import YAML
+    from ruamel.yaml.constructor import DuplicateKeyError
+    from ruamel.yaml.error import YAMLError
+
+    try:
+        return YAML(typ="safe", pure=True).load(texto)
+    except DuplicateKeyError as e:
+        raise ErroConfig(
+            f"{nome} tem uma chave repetida ({e.problem_mark.line + 1 if e.problem_mark else '?'}ª linha): junte as "
+            "duas seções numa só, senão a primeira é perdida."
+        ) from e
+    except YAMLError as e:
+        raise ErroConfig(f"{nome} não é um YAML válido: {e}") from e
 
 
 def _ler_yaml(arquivo: Path) -> dict:
     if not arquivo.exists():
         raise ErroConfig(f"Arquivo não encontrado: {arquivo}")
-    try:
-        dados = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
-    except yaml.YAMLError as e:
-        raise ErroConfig(f"{arquivo.name} não é um YAML válido: {e}") from e
+    dados = ler_yaml(arquivo.read_text(encoding="utf-8"), arquivo.name)
     if not isinstance(dados, dict):
         raise ErroConfig(f"{arquivo.name} deveria conter um mapeamento (chave: valor) no topo.")
     return dados

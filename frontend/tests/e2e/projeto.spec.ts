@@ -26,7 +26,11 @@ test('a linha de metrô, a estimativa e os modelos', async ({ page }) => {
 	const problemas = vigiar(page);
 	await page.goto(`${url('PAINEL')}#/projeto`);
 	await expect(h1(page)).toHaveText('Projeto');
-	await expect(page.getByTestId('linha-metro').getByRole('listitem')).toHaveCount(5);
+	await expect(page.getByTestId('linha-metro').getByRole('listitem')).toHaveCount(6);
+	// as redes, depois da geografia: desatualizadas, com o que mudou, e o botão diz "Atualizar"
+	await expect(page.getByTestId('estado-redes')).toHaveText('Desatualizada');
+	await expect(page.getByTestId('mudou-redes')).toHaveText('Mudou o pessoas.yaml');
+	await expect(page.getByTestId('rodar-redes')).toHaveText('Atualizar');
 	await expect(page.getByTestId('estado-classificacao')).toHaveText('Desatualizada');
 	await expect(page.getByTestId('estacao-classificacao')).toHaveAttribute('data-estado', 'desatualizada');
 	await expect(page.getByTestId('estimativa')).toContainText('Faltam 1.280, cerca de 3 h 55 min');
@@ -143,4 +147,12 @@ test('o assistente em 5 passos salva o projeto e roda um piloto', async ({ page 
 	const codebook = await (await page.request.get(`${url('PAINEL')}api/codebook`)).json();
 	expect(codebook.variaveis.at(-1).rotulo).toMatch(/^Variável \d+$/);
 	expect(semAQueda(problemas)).toEqual([]);
+});
+
+test('rodar as redes pela estação: a vista Redes não depende da CLI', async ({ page }) => {
+	await page.goto(`${url('PAINEL')}#/projeto`);
+	await page.getByTestId('rodar-redes').click();
+	await expect(page.getByTestId('estado-job')).toHaveText('Concluído', { timeout: 15_000 });
+	await expect(page.getByTestId('estado-redes')).toHaveText('Em dia');
+	await expect(page.getByTestId('mudou-redes')).toHaveCount(0);
 });

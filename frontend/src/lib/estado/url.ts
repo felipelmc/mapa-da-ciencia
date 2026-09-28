@@ -129,6 +129,8 @@ export interface Filtros {
 	rede: Rede;
 	/** Nó aberto no cartão da vista Redes: o id publicado de uma pessoa ou o id de uma instituição. */
 	no: string | null;
+	/** Na vista Redes, mostrar as duplas e os trios isolados (que reenquadram o desenho). */
+	duplas: boolean;
 }
 
 export const FILTROS_PADRAO: Readonly<Filtros> = Object.freeze({
@@ -149,7 +151,8 @@ export const FILTROS_PADRAO: Readonly<Filtros> = Object.freeze({
 	variavel: null,
 	cruzar: 'macrotema',
 	rede: 'coautoria',
-	no: null
+	no: null,
+	duplas: false
 });
 
 /** Ordem fixa dos parâmetros na URL (as chaves novas entram sem mudar a posição das antigas). */
@@ -171,6 +174,7 @@ const ORDEM: (keyof Filtros)[] = [
 	'cruzar',
 	'rede',
 	'no',
+	'duplas',
 	'doc'
 ];
 
@@ -236,6 +240,16 @@ function normalizarAnos(anos: [number, number] | null): [number, number] | null 
 	return a <= b ? [a, b] : [b, a];
 }
 
+/**
+ * A busca na forma do link. `&`, `%` e `+` viram espaço: na carga, o SvelteKit decodifica o hash inteiro
+ * (`decodeURIComponent`) antes de a interface lê-lo, e `%26`, `%25` e `%2B` voltariam como separador de
+ * parâmetros, começo de escape e espaço (um link com "voto & partido" abriria buscando só "voto"). Na busca,
+ * esses sinais já separam palavras (e um termo de uma letra é ignorado): o resultado não muda.
+ */
+export function normalizarBusca(texto: string): string {
+	return texto.replace(/[&%+]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 /** Põe os filtros na forma canônica: sem repetição, listas ordenadas, anos em ordem. */
 export function normalizarFiltros(parcial: Partial<Filtros> = {}): Filtros {
 	const f = { ...FILTROS_PADRAO, ...parcial };
@@ -244,7 +258,7 @@ export function normalizarFiltros(parcial: Partial<Filtros> = {}): Filtros {
 		revistas: [...new Set(f.revistas.filter(Boolean))].sort(),
 		topicos: [...new Set(f.topicos.filter((t) => Number.isInteger(t) && t >= -1))].sort((a, b) => a - b),
 		cor: (CORES_POR as readonly string[]).includes(f.cor) ? f.cor : FILTROS_PADRAO.cor,
-		busca: f.busca.trim(),
+		busca: normalizarBusca(f.busca),
 		doc: f.doc || null,
 		laco: normalizarLaco(f.laco),
 		vista: normalizarVista(f.vista),
@@ -257,7 +271,8 @@ export function normalizarFiltros(parcial: Partial<Filtros> = {}): Filtros {
 		variavel: f.variavel && /^[a-z0-9_]{1,40}$/.test(f.variavel) ? f.variavel : null,
 		cruzar: (CRUZAR as readonly string[]).includes(f.cruzar) ? f.cruzar : FILTROS_PADRAO.cruzar,
 		rede: (REDES as readonly string[]).includes(f.rede) ? f.rede : FILTROS_PADRAO.rede,
-		no: f.no && /^[\w:.-]{1,64}$/.test(f.no) ? f.no : null
+		no: f.no && /^[\w:.-]{1,64}$/.test(f.no) ? f.no : null,
+		duplas: f.duplas === true
 	};
 }
 
@@ -284,7 +299,8 @@ export function lerFiltros(params: URLSearchParams): Filtros {
 		variavel: params.get('variavel'),
 		cruzar: (params.get('cruzar') ?? FILTROS_PADRAO.cruzar) as Cruzar,
 		rede: (params.get('rede') ?? FILTROS_PADRAO.rede) as Rede,
-		no: params.get('no')
+		no: params.get('no'),
+		duplas: params.get('duplas') === '1'
 	});
 }
 
@@ -309,7 +325,8 @@ export function escreverFiltros(parcial: Partial<Filtros>): URLSearchParams {
 		variavel: f.variavel,
 		cruzar: f.cruzar === FILTROS_PADRAO.cruzar ? null : f.cruzar,
 		rede: f.rede === FILTROS_PADRAO.rede ? null : f.rede,
-		no: f.no
+		no: f.no,
+		duplas: f.duplas ? '1' : null
 	};
 	const busca = new URLSearchParams();
 	for (const chave of ORDEM) {

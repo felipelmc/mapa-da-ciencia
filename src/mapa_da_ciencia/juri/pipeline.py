@@ -15,7 +15,7 @@ from ..classificacao.executor import Classificador
 from ..llm.ollama import Ollama
 from ..progresso import Progresso, ProgressoNulo
 from ..projeto import Projeto
-from .consolidar import ResumoJuri, consolidar, ler_resumo
+from .consolidar import ResumoJuri, consolidar, ler_resumo, resumir
 from .deliberacao import ResumoDeliberacao, deliberar
 from .votacao import carregar_votos, membros_do_juri, textos_da_amostra
 
@@ -57,10 +57,12 @@ def estado(projeto: Projeto, *, ollama: Ollama | None = None) -> EstadoJuri:
             classificados[membro] = len(textos) - len(pendentes)
         except Exception:  # modelo não instalado ou Ollama fora do ar: o status não quebra
             classificados[membro] = 0
-    resumo = ler_resumo(projeto)
-    if any(n < len(textos) for n in classificados.values()):
+    completos = not any(n < len(textos) for n in classificados.values())
+    # recalculado, e não o resumo.json da última consolidação: depois de uma votação nova ele estaria velho
+    resumo = resumir(projeto) if completos else ler_resumo(projeto)
+    if not completos:
         proximo = "mapa juri votar"
-    elif resumo is None:
+    elif resumo is None or resumo.nao_deliberados:
         proximo = "mapa juri deliberar"
     elif resumo.pendentes_supervisor:
         proximo = "mapa juri exportar-pedidos (e depois importar-respostas)"

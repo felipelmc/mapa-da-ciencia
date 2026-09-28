@@ -40,6 +40,17 @@ def test_maioria_sem_evidencia_no_texto_nao_decide():
     assert (d.etapa, d.voto.membro) == ("maioria", "m3")
 
 
+def test_unanimidade_sem_evidencia_decide_e_nao_vira_disputa():
+    from mapa_da_ciencia.config import Codebook
+    from mapa_da_ciencia.juri.deliberacao import em_disputa
+
+    votos = [v(m, "a", "ausente", "trecho inventado") for m in ("m1", "m2", "m3")]
+    d = agregar(CATEGORICA, votos)
+    assert (d.etapa, d.valor, d.voto.status, len(d.candidatos)) == ("unanime", "a", "ausente", 1)
+    codebook = Codebook(nome="t", versao="1", instrucoes="-", variaveis=[CATEGORICA])
+    assert em_disputa(codebook, {"abordagem": votos}) == []  # nada a deliberar
+
+
 def test_evidencia_da_decisao_e_a_de_melhor_status_e_o_empate_fica_com_a_ordem():
     d = agregar(CATEGORICA, [v("m1", "a", "aproximada"), v("m2", "a", "literal"), v("m3", "a", "literal")])
     assert d.voto.membro == "m2"
@@ -78,3 +89,13 @@ def test_candidatos_trazem_quem_votou_e_o_melhor_voto():
 
 def test_sem_votos():
     assert agregar(CATEGORICA, []).etapa == "sem_maioria"
+
+
+def test_chave_da_deliberacao_muda_com_o_prompt_da_classificacao(monkeypatch):
+    from mapa_da_ciencia.classificacao.executor import Texto
+    from mapa_da_ciencia.juri import deliberacao
+
+    texto = Texto(doc="d1", titulo="T", resumo="R", idioma="pt")
+    antes = deliberacao.chave_deliberacao("a", "m@1", (1, 0.0, 7, False), texto, "ctx")
+    monkeypatch.setattr(deliberacao, "VERSAO_PROMPT", 999)
+    assert deliberacao.chave_deliberacao("a", "m@1", (1, 0.0, 7, False), texto, "ctx") != antes

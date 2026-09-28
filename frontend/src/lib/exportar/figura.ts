@@ -5,7 +5,9 @@
  *   escolhido, que pode não ser o da tela), ganha um cabeçalho (título, recorte) e um rodapé (fonte, n, modelo,
  *   data), e leva as fontes embutidas (`@font-face` com `data:`), para abrir igual em qualquer programa.
  * - **PNG:** o mesmo SVG rasterizado num `canvas`, na resolução do preset.
- * - **CSV:** as colunas e as linhas da tabela da figura ("Ver como tabela"), em UTF-8 com BOM (abre no Excel).
+ * - **CSV:** os dados da figura em números crus (ponto decimal, sem separador de milhar, proporções como fração,
+ *   intervalos em duas colunas, vazio onde não há valor), para o R, o pandas ou uma planilha refazerem as contas;
+ *   em UTF-8 com BOM. Sem esses dados, sai a tabela da figura ("Ver como tabela") como está na tela.
  *
  * Presets: **Artigo** (85 ou 174 mm, 300 ou 600 dpi, tema Prancha), **Slide** (1920 px de largura) e **Telão**
  * (3840 px, tema Observatório).
@@ -54,7 +56,7 @@ export interface Metadados {
 	titulo: string;
 	/** O recorte, em palavras ("2015–2020 · Dados, Opinião Pública"). */
 	recorte: string;
-	/** A fonte e o modelo ("SciELO/ArticleMeta e OpenAlex · qwen3.5:9b"). */
+	/** A fonte e o modelo ("SciELO (coleção scl) e OpenAlex · qwen3.5:9b"). */
 	fonte: string;
 	/** Documentos no recorte. */
 	n: number | null;
@@ -66,12 +68,24 @@ export function larguraPx(p: Preset): number {
 }
 
 // ---------------------------------------------------------------- CSV
-function campo(v: string | number): string {
-	const texto = String(v);
+/** Uma célula do CSV: texto, número cru ou vazio (`null`, sem valor). */
+export type Celula = string | number | null;
+
+/** As colunas e as linhas que vão para o CSV de uma figura. */
+export interface DadosCsv {
+	colunas: string[];
+	linhas: Celula[][];
+}
+
+/** Número para o CSV: sem o ruído do ponto flutuante (929.5912000000001 → 929.5912). */
+export const numeroCru = (v: number, casas = 4): number => Number(v.toFixed(casas));
+
+function campo(v: Celula): string {
+	const texto = v === null ? '' : String(v);
 	return /[",;\n]/.test(texto) ? `"${texto.replaceAll('"', '""')}"` : texto;
 }
 
-export function paraCsv(colunas: string[], linhas: (string | number)[][]): string {
+export function paraCsv(colunas: string[], linhas: Celula[][]): string {
 	return '﻿' + [colunas, ...linhas].map((l) => l.map(campo).join(',')).join('\r\n') + '\r\n';
 }
 
@@ -186,6 +200,68 @@ export function graficoDe(figura: HTMLElement): SVGSVGElement | null {
  */
 type Rasterizavel = HTMLElement & { rasterizar?: () => string };
 
+/** Um item de legenda da figura (`[data-legenda] li`): o texto e a amostra (uma cor ou um traço). */
+export interface ItemLegenda {
+	texto: string;
+	/** Um título ("Peso da parceria:"), que começa uma linha nova. */
+	titulo: boolean;
+	cor: string | null;
+	traco: { cor: string; largura: number; opacidade: number } | null;
+	opacidade: number;
+}
+
+const transparente = (cor: string) => !cor || cor === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(cor);
+
+/** As legendas em HTML da figura (listas com `data-legenda`), com as cores do tema aplicado no momento. */
+export function legendaDe(figura: HTMLElement): ItemLegenda[] {
+	const itens: ItemLegenda[] = [];
+	for (const li of figura.querySelectorAll<HTMLElement>('.grafico [data-legenda] > li')) {
+		const texto = (li.textContent ?? '').replace(/\s+/g, ' ').trim();
+		if (!texto) continue;
+		const amostra = li.querySelector<HTMLElement>('.bolinha, .caixa, .cor');
+		const linha = li.querySelector<SVGLineElement>('svg line');
+		const s = amostra ? getComputedStyle(amostra) : null;
+		const t = linha ? getComputedStyle(linha) : null;
+		itens.push({
+			texto,
+			titulo: li.classList.contains('titulo-legenda'),
+			cor: s && !transparente(s.backgroundColor) ? s.backgroundColor : null,
+			opacidade: s ? Number(s.opacity) || 1 : 1,
+			traco: t
+				? { cor: t.stroke, largura: parseFloat(t.strokeWidth) || 1, opacidade: Number(t.opacity) || 1 }
+				: null
+		});
+	}
+	return itens;
+}
+
+/** A legenda em SVG, em linhas que quebram na largura `w`; devolve o SVG e a altura ocupada. */
+function legendaEmSvg(itens: ItemLegenda[], x0: number, y0: number, w: number, k: number, fonte: string, cor: string) {
+	const tamanho = 11 * k;
+	const linha = 17 * k;
+	const partes: string[] = [];
+	let [x, y] = [x0, y0 + tamanho];
+	for (const it of itens) {
+		const amostra = it.cor || it.traco ? 16 * k : 0;
+		const largura = amostra + it.texto.length * tamanho * 0.52 + 14 * k;
+		if (x > x0 && (it.titulo || x + largura > x0 + w)) [x, y] = [x0, y + linha];
+		if (it.cor) {
+			partes.push(
+				`<circle cx="${x + 5 * k}" cy="${y - tamanho * 0.35}" r="${4.5 * k}" fill="${it.cor}" fill-opacity="${it.opacidade}"/>`
+			);
+		} else if (it.traco) {
+			partes.push(
+				`<line x1="${x}" x2="${x + 12 * k}" y1="${y - tamanho * 0.35}" y2="${y - tamanho * 0.35}" stroke="${it.traco.cor}" stroke-width="${it.traco.largura * k}" stroke-opacity="${it.traco.opacidade}" stroke-linecap="round"/>`
+			);
+		}
+		partes.push(
+			`<text x="${x + amostra}" y="${y}" font-family="${escapar(fonte)}" font-size="${tamanho}" fill="${cor}">${escapar(it.texto)}</text>`
+		);
+		x += largura;
+	}
+	return { svg: partes.join('\n'), altura: itens.length ? y - y0 + linha * 0.6 : 0 };
+}
+
 export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Preset): Promise<string | null> {
 	const grafico = graficoDe(figura);
 	if (!grafico) return null;
@@ -194,8 +270,9 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 	const h = caixa.height;
 	const tema = preset.tema;
 	const raster = figura.querySelector<Rasterizavel>('.grafico [data-rasterizavel]');
-	const { clone, fundo, texto, suave, familias, imagem } = comTema(tema, () => {
+	const { clone, fundo, texto, suave, familias, imagem, legenda } = comTema(tema, () => {
 		const imagem = raster?.rasterizar?.() ?? null;
+		const legenda = legendaDe(figura);
 		const clone = grafico.cloneNode(true) as SVGSVGElement;
 		fixarEstilos(grafico, clone);
 		const s = getComputedStyle(document.body);
@@ -211,7 +288,10 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 		return {
 			clone,
 			imagem,
-			fundo: s.backgroundColor,
+			legenda,
+			// o fundo do tema fica no <html> (o <body> é transparente): sem ele, o PNG saía transparente, e o título
+			// quase branco do Observatório sumia num slide claro
+			fundo: raiz.getPropertyValue('--fundo').trim() || raiz.backgroundColor,
 			texto: raiz.getPropertyValue('--texto').trim() || s.color,
 			suave: raiz.getPropertyValue('--texto-suave').trim() || s.color,
 			familias
@@ -225,7 +305,8 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 	const topo = margem + 30 * k + (meta.recorte ? 22 * k : 0) + 12 * k;
 	const rodape = 22 * k + margem;
 	const W = w + 2 * margem;
-	const H = topo + h + rodape;
+	const leg = legendaEmSvg(legenda, margem, topo + h + 12 * k, w, k, fonteTexto, suave);
+	const H = topo + h + (leg.altura ? leg.altura + 12 * k : 0) + rodape;
 	const fontes = await fontesEmbutidas(familias);
 	const data = new Date().toLocaleDateString('pt-BR');
 	const linhaRodape = [
@@ -255,6 +336,7 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 			: '',
 		imagem ? `<image href="${imagem}" x="${margem}" y="${topo}" width="${w}" height="${h}"/>` : '',
 		new XMLSerializer().serializeToString(clone),
+		leg.svg,
 		`<text x="${margem}" y="${H - margem}" font-family="${escapar(fonteTexto)}" font-size="${11 * k}" fill="${suave}">${escapar(linhaRodape)}</text>`,
 		'</svg>'
 	].join('\n');

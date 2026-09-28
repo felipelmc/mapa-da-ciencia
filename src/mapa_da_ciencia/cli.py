@@ -17,11 +17,13 @@ from typing import Annotated
 import typer
 from rich.columns import Columns
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from mapa_da_ciencia import __version__
 from mapa_da_ciencia.armazenamento import ARQUIVO as ARQUIVO_DOCUMENTOS
 from mapa_da_ciencia.armazenamento import cobertura
+from mapa_da_ciencia.cli_portugues import GrupoEmPortugues
 from mapa_da_ciencia.coleta import interpretar_anos
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.diagnostico import DICAS_OLLAMA, diagnosticar
@@ -40,6 +42,7 @@ app = typer.Typer(
     add_completion=False,
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
+    cls=GrupoEmPortugues,  # ajuda e erros de uso em português
 )
 console = Console()
 
@@ -55,7 +58,8 @@ def _erros_amigaveis() -> Iterator[None]:
     try:
         yield
     except (ErroConfig, ErroFonte, ErroProvedor) as e:
-        console.print(f"[bold red]Erro:[/] {e}")
+        # a mensagem sai como texto: um exemplo entre colchetes ("[openalex:A1, openalex:A2]") não é marcação do Rich
+        console.print(f"[bold red]Erro:[/] {escape(str(e))}")
         raise typer.Exit(1) from e
 
 
@@ -135,17 +139,32 @@ def status(projeto: OpcaoProjeto = Path(".")) -> None:
         f"rótulos [bold]{m.rotulos.modelo}[/]"
     )
 
+    from mapa_da_ciencia.manifesto import estados_das_etapas
+
     tabela = Table("Etapa", "Estado", "Última execução", "Duração", "Resultado")
     etapas = status_das_etapas(p)
+    estados = estados_das_etapas(p)  # o mesmo cálculo da linha de metrô do painel
+    rotulos = {
+        "pendente": "[dim]pendente[/]",
+        "em_dia": "[green]em dia[/]",
+        "incompleta": "[yellow]incompleta[/]",
+        "desatualizada": "[yellow]desatualizada[/]",
+    }
     for etapa, manifesto in etapas.items():
+        estado = estados[etapa]["estado"] if etapa in estados else ("em_dia" if manifesto else "pendente")
+        amostra = estados.get(etapa, {}).get("amostra")
         if manifesto is None:
-            tabela.add_row(etapa, "[dim]pendente[/]", "", "", "")
+            resultado = f"{num(amostra['codificados'], 0)} de {num(amostra['n'], 0)} codificados" if amostra else ""
+            tabela.add_row(etapa, rotulos[estado], "", "", resultado)
             continue
         quando = datetime.fromisoformat(manifesto["fim"]).astimezone().strftime("%d/%m/%Y %H:%M")
         # a primeira contagem é a principal da etapa; as demais aparecem nos detalhes de cada uma
         principal = next(iter(manifesto["contagens"].items()), None)
         resultado = f"{num(principal[1], 0)} {principal[0]}" if principal else ""
-        tabela.add_row(etapa, "[green]concluída[/]", quando, f"{num(manifesto['duracao_s'], 0)} s", resultado)
+        rotulo = rotulos[estado]
+        if mudou := estados.get(etapa, {}).get("mudou"):
+            rotulo += f" [dim](mudou {escape(' e '.join(mudou))})[/]"
+        tabela.add_row(etapa, rotulo, quando, f"{num(manifesto['duracao_s'], 0)} s", resultado)
     console.print(tabela)
     _mostrar_corpus(p, etapas.get("coleta"))
 
@@ -213,7 +232,7 @@ def _mostrar_topicos(p: Projeto) -> None:
 
 def _mostrar_classificacao_status(p: Projeto) -> None:
     from mapa_da_ciencia.classificacao.pipeline import classificacao_em_dia
-    from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado
+    from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado, rotulo_a_parte
 
     cfg = p.config.modelos.classificacao
     r = Resultado.ler(p.dados / PASTA, cfg.modelo, p.codebook.hash())
@@ -233,11 +252,37 @@ def _mostrar_classificacao_status(p: Projeto) -> None:
         + (f"; evidência literal em {num(100 * literal, 0)}%" if literal is not None else "")
         + "."
     )
-    if em_dia is False:
+    so_falhas = bool(r.falhas) and r.classificados + len(r.falhas) >= r.documentos  # nada mais ficou de fora
+    if em_dia is False and not (so_falhas and _mesmo_corpus(p, r.assinatura)):
         console.print(
             "[yellow]A classificação está incompleta ou é de antes da última coleta.[/] Rode "
             "[bold]mapa classificar[/] para completá-la."
         )
+    if r.falhas:
+        console.print(
+            f"[yellow]{num(len(r.falhas), 0)} documento(s) sem resposta válida nas duas tentativas[/] (por exemplo "
+            f"{', '.join(r.falhas[:3])}). Com temperatura 0 e semente fixa, a falha tende a se repetir: veja "
+            "“Documentos que falham sempre” no guia Classificar os resumos."
+        )
+    a_parte = Resultado.ler(p.dados / PASTA, cfg.modelo, p.codebook.hash(), a_parte=True)
+    if a_parte is not None:
+        o_que = (
+            "Uma rodada parcial da mesma versão"
+            if rotulo_a_parte(a_parte, r) == "rodada parcial"
+            else "Uma versão nova"
+        )
+        console.print(
+            f"[yellow]{o_que} ({a_parte.modelo}) está à parte e não entrou nesta[/]: "
+            f"{num(a_parte.classificados, 0)} de {num(a_parte.documentos, 0)} documentos, "
+            f"{num(len(a_parte.falhas), 0)} sem resposta válida. `mapa validar metricas` compara as duas na amostra."
+        )
+
+
+def _mesmo_corpus(p: Projeto, assinatura: str) -> bool:
+    from mapa_da_ciencia.armazenamento import ler_documentos
+    from mapa_da_ciencia.topicos.resultado import assinatura_corpus
+
+    return assinatura == assinatura_corpus([d.id for d in ler_documentos(p.dados / ARQUIVO_DOCUMENTOS)])
 
 
 def _mostrar_geografia(p: Projeto) -> None:
@@ -276,12 +321,15 @@ def _mostrar_redes(p: Projeto) -> None:
         f"componente tem {num(met.get('maior_componente', 0), 0)}"
     )
     if c.get("instituicoes"):
-        texto += f"; {num(c['instituicoes'], 0)} instituições colaborando"
+        texto += f"; {num(c['instituicoes'], 0)} instituições ligadas a outra"
     if r.cobertura_citacoes:
         texto += f"; {num(c['citacoes_internas'], 0)} citações dentro do corpus"
     console.print(texto + ".")
     if redes_em_dia(p) is False:
-        console.print("[yellow]As redes são de antes das últimas mudanças.[/] Rode [bold]mapa redes[/].")
+        from mapa_da_ciencia.redes.pipeline import o_que_mudou
+
+        mudou = " e ".join(o_que_mudou(p)) or "as entradas"
+        console.print(f"[yellow]As redes estão desatualizadas[/] (mudou {escape(mudou)}). Rode [bold]mapa redes[/].")
 
 
 def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
@@ -364,11 +412,35 @@ def diagnostico(
     console.print("\n[bold green]Tudo pronto.[/]")
 
 
-def _porta_livre(porta: int) -> bool:
+def _problema_da_porta(porta: int) -> str | None:
+    """`None` se o painel pode usar a porta; senão, o motivo, em português.
+
+    Além de ver se alguém já escuta nela, tenta ocupá-la como o uvicorn (e a solta em seguida): assim o erro sai
+    antes de o painel anunciar o endereço, e não em inglês, depois dele.
+    """
+    import errno
     import socket
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(("127.0.0.1", porta)) != 0
+        if s.connect_ex(("127.0.0.1", porta)) == 0:
+            return f"a porta {porta} já está em uso"
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # como o uvicorn
+        try:
+            s.bind(("127.0.0.1", porta))
+        except OSError as e:
+            if e.errno == errno.EADDRINUSE:
+                return f"a porta {porta} já está em uso"
+            if e.errno == errno.EACCES:
+                return f"sem permissão para usar a porta {porta} (as abaixo de 1024 costumam ser reservadas)"
+            return f"não foi possível usar a porta {porta} ({e.strerror})"
+    return None
+
+
+def _porta_sugerida(porta: int) -> int | None:
+    """A primeira porta livre depois de `porta` (e acima de 1024), para sugerir no erro."""
+    inicio = max(porta + 1, 1025)
+    return next((p for p in range(inicio, min(inicio + 50, 65536)) if _problema_da_porta(p) is None), None)
 
 
 @app.command()
@@ -407,7 +479,7 @@ def painel(
     exemplo: Annotated[
         bool, typer.Option("--exemplo", help="Mostra o exemplo sintético, sem precisar de um projeto.")
     ] = False,
-    porta: Annotated[int, typer.Option("--porta", help="Porta local do servidor.")] = 8765,
+    porta: Annotated[int, typer.Option("--porta", min=1, max=65535, help="Porta local do servidor.")] = 8765,
     abrir: Annotated[bool, typer.Option("--abrir/--nao-abrir", help="Abre o navegador automaticamente.")] = True,
 ) -> None:
     """Abre o painel no navegador: a interface do projeto, servida só nesta máquina."""
@@ -421,8 +493,10 @@ def painel(
     from mapa_da_ciencia.contrato.exportar import escrever_dados
     from mapa_da_ciencia.servidor.app import criar_app
 
-    if not _porta_livre(porta):
-        console.print(f"[bold red]Erro:[/] a porta {porta} já está em uso. Use outra, por exemplo --porta {porta + 1}.")
+    if problema := _problema_da_porta(porta):
+        sugerida = _porta_sugerida(porta)
+        dica = f"por exemplo --porta {sugerida}" if sugerida else "com --porta"
+        console.print(f"[bold red]Erro:[/] {problema}. Use outra, {dica}.")
         raise typer.Exit(1)
     temporario = None
     with _erros_amigaveis():
@@ -695,7 +769,7 @@ def _mostrar_classificacao(p: Projeto, resumo, *, estimar: bool) -> None:
     from mapa_da_ciencia.classificacao.resultado import PASTA, ler_linhas
 
     console.print(f"\n[bold green]Classificação pronta[/]: {resumo}")
-    linhas = ler_linhas(p.dados / PASTA, resumo.modelo, p.codebook.hash())
+    linhas = ler_linhas(p.dados / PASTA, resumo.modelo, p.codebook.hash(), a_parte=resumo.a_parte)
     tabela = Table("Variável", "Mais frequentes", "Evidência literal")
     for v in p.codebook.variaveis:
         valores = Counter(linha["valor"] for linha in linhas if linha["variavel"] == v.id)
@@ -854,19 +928,14 @@ app.add_typer(juri_app, name="juri")
 
 
 @juri_app.command("votar")
-def juri_votar(
-    projeto: OpcaoProjeto = Path("."),
-    corpus: Annotated[
-        bool, typer.Option("--corpus", help="Classifica o corpus inteiro com cada membro, e não só a amostra.")
-    ] = False,
-) -> None:
+def juri_votar(projeto: OpcaoProjeto = Path(".")) -> None:
     """Rodada 1: cada membro de `juri.membros` classifica a amostra de validação (o que ainda falta)."""
     from mapa_da_ciencia.juri.votacao import votar
     from mapa_da_ciencia.progresso import ProgressoRich
 
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
-        r = votar(p, somente_amostra=not corpus, progresso=ProgressoRich(console))
+        r = votar(p, progresso=ProgressoRich(console))
     console.print(f"[bold green]Votação pronta[/]: {r}")
     if r.ja_prontos:
         console.print(f"Já tinham classificado tudo: {', '.join(r.ja_prontos)}.")
@@ -918,11 +987,8 @@ def juri_importar_respostas(
         typer.Argument(help="Arquivos de respostas; sem nenhum, todos os `juri/*.respostas.jsonl`.", exists=True),
     ] = None,
     projeto: OpcaoProjeto = Path("."),
-    supervisor: Annotated[
-        str | None, typer.Option("--supervisor", help="Nome do supervisor (padrão: juri.supervisor.nome).")
-    ] = None,
 ) -> None:
-    """Confere e guarda as respostas do supervisor, e consolida o júri."""
+    """Confere e guarda as respostas do supervisor (o de `juri.supervisor.nome`), e consolida o júri."""
     from mapa_da_ciencia.juri.pipeline import arquivos_de_respostas
     from mapa_da_ciencia.juri.supervisor import importar_respostas
 
@@ -931,7 +997,7 @@ def juri_importar_respostas(
         lista = arquivos_de_respostas(p, list(arquivos or []))
         if not lista:
             raise ErroConfig("Nenhum arquivo de respostas: passe os arquivos ou ponha-os em `juri/` do projeto.")
-        r = importar_respostas(p, lista, supervisor=supervisor)
+        r = importar_respostas(p, lista)
     console.print(f"[bold green]Respostas do supervisor[/]: {r}")
     for motivo in r.recusadas[:10]:
         console.print(f"[red]Recusada:[/] {motivo}")
@@ -997,6 +1063,11 @@ def juri_relatorio(projeto: OpcaoProjeto = Path(".")) -> None:
         destino, n = gerar(p)
         avisos = exportar(p)
     console.print(f"[bold green]Relatório do júri[/]: [bold]{destino.relative_to(p.raiz)}[/].")
+    if n.nao_deliberados:
+        console.print(
+            f"[yellow]Aviso:[/] {num(n.nao_deliberados, 0)} decisão(ões) em disputa ainda sem deliberação: rode "
+            "[bold]mapa juri deliberar[/]."
+        )
     if n.referencia is None:
         console.print("[yellow]Aviso:[/] sem codificador de referência, o relatório só tem os estágios.")
     for aviso in avisos:
@@ -1055,46 +1126,61 @@ def redes(
     revisar: Annotated[
         bool,
         typer.Option(
-            "--revisar", help="Lista os homônimos que podem ser a mesma pessoa, com um bloco para o pessoas.yaml."
+            "--revisar",
+            help="Lista as pessoas que podem ser a mesma (homônimos, grafias variantes, dois ORCIDs), com as "
+            "evidências e um bloco para o pessoas.yaml.",
         ),
     ] = False,
-    limite: Annotated[int, typer.Option("--limite", help="Quantos homônimos listar na revisão.", min=1)] = 20,
+    limite: Annotated[int, typer.Option("--limite", help="Quantos itens listar na revisão.", min=1)] = 40,
 ) -> None:
     """Redes de coautoria, de colaboração entre instituições e estados, e de citação, com as comunidades."""
     from mapa_da_ciencia.progresso import ProgressoRich
-    from mapa_da_ciencia.redes.pipeline import PASTA, gerar_redes
+    from mapa_da_ciencia.redes.pipeline import gerar_redes, redes_em_dia
 
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
-        resumo = gerar_redes(p, ProgressoRich(console))
+        # a revisão usa a última execução; só refaz as redes se elas estiverem desatualizadas
+        resumo = None if revisar and redes_em_dia(p) else gerar_redes(p, ProgressoRich(console))
     if revisar:
-        from mapa_da_ciencia.armazenamento import ler_tabela
-
-        candidatos = ler_tabela(p.dados / PASTA / "candidatos.parquet")
-        if not candidatos:
-            console.print("Nenhum homônimo a revisar.")
-            return
-        tabela = Table("Nome", "Pessoa A", "Pessoa B")
-        for c in candidatos[:limite]:
-            tabela.add_row(c["nome"], c["a"], c["b"])
-        console.print(tabela)
-        console.print(
-            "Se forem a mesma pessoa, acrescente ao [bold]pessoas.yaml[/] do projeto (e rode [bold]mapa redes[/] de "
-            "novo); se não forem, use `nao_fundir` para não vê-los mais aqui:"
-        )
-        exemplo = candidatos[0]
-        console.print(
-            f"fundir:\n  - [{exemplo['a']}, {exemplo['b']}]\nnao_fundir:\n  - [{exemplo['a']}, {exemplo['b']}]"
-        )
+        if resumo is not None:
+            for aviso in resumo.avisos:
+                console.print(f"[yellow]Aviso:[/] {escape(aviso)}")
+        _revisar_redes(p, limite)
         return
-    console.print(f"\n[bold green]Redes prontas[/]: {resumo}")
+    assert resumo is not None
+    console.print(f"\n[bold green]Redes prontas[/]: {escape(str(resumo))}")
     if resumo.candidatos:
         console.print(
-            f"{num(resumo.candidatos, 0)} par(es) de homônimos ficaram separados: [bold]mapa redes --revisar[/] "
-            "lista-os para conferir."
+            f"{num(resumo.candidatos, 0)} par(es) de homônimos ou grafias variantes ficaram separados: "
+            "[bold]mapa redes --revisar[/] lista-os, com as evidências de cada lado."
         )
     for aviso in resumo.avisos:
-        console.print(f"[yellow]Aviso:[/] {aviso}")
+        console.print(f"[yellow]Aviso:[/] {escape(aviso)}")
+
+
+def _revisar_redes(p: Projeto, limite: int) -> None:
+    from mapa_da_ciencia.redes.revisao import NOMES_DOS_TIPOS, bloco_yaml, descrever, resumo_por_tipo, revisao
+
+    r = revisao(p, limite)
+    if not r.itens:
+        console.print("\n[bold green]Nada a revisar[/]: nenhum homônimo, grafia variante ou ORCID em dúvida.")
+        return
+    tabela = Table("O quê", "Pessoa A", "Pessoa B", show_lines=True, title_justify="left")
+    tabela.title = f"Para revisar: {resumo_por_tipo(r.por_tipo)}"
+    if len(r.itens) < r.total:
+        tabela.title += f" (mostrando {num(len(r.itens), 0)} de {num(r.total, 0)}; use --limite para ver mais)"
+    for it in r.itens:
+        tabela.add_row(escape(NOMES_DOS_TIPOS.get(it.tipo, it.tipo)), escape(descrever(it.a)), escape(descrever(it.b)))
+    console.print()
+    console.print(tabela)
+    console.print(
+        "\nCopie para o [bold]pessoas.yaml[/] do projeto e decida cada par: descomente em [bold]fundir[/] os que "
+        "são a mesma pessoa e mova para [bold]nao_fundir[/] os que não são (saem da revisão). As pessoas com dois "
+        "ORCIDs só precisam de ação se forem duas pessoas: separe-as com nao_fundir e o id de uma autoria "
+        "([dim]documento#posição[/]). Depois, rode [bold]mapa redes[/] de novo:\n"
+    )
+    # sem marcação nem quebra de linha, para o bloco sair inteiro e poder ser colado como está
+    console.print(bloco_yaml(r.itens), highlight=False, markup=False, soft_wrap=True)
 
 
 @app.command()

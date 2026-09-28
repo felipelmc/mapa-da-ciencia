@@ -79,6 +79,11 @@ for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 		await expect(page.getByTestId('rede-coautoria')).toHaveAttribute('aria-pressed', 'true');
 		await expect(page.getByTestId('lide-redes')).toContainText(`${inteiro(agregados.arestas_coautoria)} pares de coautores`);
 		await expect(page.getByTestId('metricas-rede')).toContainText(`${inteiro(redes.metricas.coautoria.arestas)} pares`);
+		// o lide e a nota contam as mesmas pessoas com coautor (as desenhadas), com as métricas explicadas
+		await expect(page.getByTestId('lide-redes')).toContainText(`${inteiro(redes.metricas.coautoria.nos)} delas desenhadas`);
+		await expect(page.getByTestId('metricas-rede')).toContainText(`${inteiro(redes.metricas.coautoria.nos)} pessoas com coautor`);
+		await expect(page.getByTestId('metricas-rede')).toContainText('grupos ligados por algum caminho');
+		expect(await page.getByTestId('metricas-rede').innerText()).not.toMatch(/[\p{L}\d)]\.\p{Lu}/u);
 		await expect(page.getByTestId('rotulo-comunidade').first()).toBeVisible();
 
 		await page.getByTestId('rede-instituicoes').click();
@@ -157,10 +162,33 @@ test('a busca pelo teclado abre o cartão de uma pessoa', async ({ page }) => {
 	await expect(page.getByTestId('cartao-no').getByRole('heading', { level: 2 })).toHaveText(nome);
 	await expect(page.getByTestId('cartao-no').getByRole('heading', { level: 2 })).toBeFocused();
 	await expect(campo).toHaveAttribute('aria-expanded', 'false');
-	// Esc fecha o cartão
+	// a revista pelo nome (revistas.json), e não pela sigla interna
+	const titulos = ler('revistas.json').revistas.map((r: { titulo: string }) => r.titulo);
+	const revista = (await page.getByTestId('revista-no').first().innerText()).split(' · ')[0];
+	expect(titulos).toContain(revista);
+	// o cartão diz o que é cada número dos parceiros
+	await expect(page.getByTestId('cartao-no').locator('.parceiros .numero').first()).toContainText('peso');
+	// Esc fecha o cartão, e o foco volta para a busca (quem usa o teclado não volta ao topo da página)
+	await page.keyboard.press('Tab');
 	await page.keyboard.press('Escape');
 	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
 	await expect(page).not.toHaveURL(/no=/);
+	await expect(campo).toBeFocused();
+	// o × também devolve o foco
+	await campo.fill(nome.normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase());
+	await campo.press('Enter');
+	await page.getByRole('button', { name: 'Fechar o cartão' }).click();
+	await expect(campo).toBeFocused();
+});
+
+test('a vista leva à ajuda das redes, e as comunidades têm rótulo e lista', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	await expect(page.getByTestId('rotulo-comunidade').first()).toBeVisible();
+	await expect(page.getByTestId('lista-comunidades').getByRole('listitem')).not.toHaveCount(0);
+	await page.getByTestId('como-ler-redes').click();
+	await expect(page.getByTestId('ajuda-redes')).toBeInViewport();
+	await expect(page.getByTestId('glossario-redes')).toContainText('Modularidade');
 });
 
 test('instituições: o cartão põe a instituição no recorte', async ({ page }) => {
@@ -206,6 +234,13 @@ test('exportar o grafo: o canvas vira imagem embaixo dos rótulos, no tema do pr
 	expect(svg).toContain('>Quem escreve com quem</text>');
 	expect(svg).toMatch(/<image href="data:image\/png;base64,[A-Za-z0-9+/]{1000}/);
 	expect(svg).not.toContain('var(--');
+	// a figura se lê sozinha: a legenda (cores, faixas de peso e comunidades) vai junto, o fundo é opaco e o
+	// subtítulo não repete o período que o título do projeto já traz
+	expect(svg).toContain('>Peso da parceria no recorte:</text>');
+	expect(svg).toContain('>As maiores comunidades');
+	expect(ler('topicos.json').macrotemas.some((m: { rotulo: string }) => svg.includes(`>${m.rotulo}</text>`))).toBe(true);
+	expect(svg).not.toMatch(/<rect width="[\d.]+" height="[\d.]+" fill="(rgba\(0, 0, 0, 0\)|transparent)"/);
+	expect(svg).not.toMatch(/(\d{4}–\d{4}) · \1/);
 	const png = await baixar('PNG', 'slide');
 	expect(png.readUInt32BE(16)).toBe(1920);
 	writeFileSync(join(TELAS, 'exportado-rede-slide.png'), png);
@@ -221,6 +256,20 @@ test('estados: os arcos são os pares do gabarito, e clicar numa UF põe no reco
 	await expect(page.getByTestId('figura-estados')).toHaveAttribute('data-pronto', 'sim');
 	const arcos = page.getByTestId('arco');
 	await expect(arcos).toHaveCount(agregados.uf_pares.length);
+	// as UFs com as parcerias mais fortes têm a sigla escrita ao lado do ponto
+	await expect(page.getByTestId('sigla-uf').first()).toBeVisible();
+	// a dica de uma UF chama o exterior pelo nome (e não "EX")
+	const paresUf = agregados.uf_pares as [string, string, number, number][];
+	const parceirasDe = (k: string) =>
+		paresUf
+			.filter((p) => p[0] === k || p[1] === k)
+			.sort((p, q) => q[2] - p[2])
+			.map((p) => (p[0] === k ? p[1] : p[0]));
+	const uf = [...new Set(paresUf.flatMap((p) => [p[0], p[1]]))].find((k) => k !== 'EX' && parceirasDe(k).slice(0, 3).includes('EX'))!;
+	await page.locator(`[data-testid="uf-rede"][data-chave="${uf}"]`).focus();
+	const dica = page.locator('.dica');
+	await expect(dica).toContainText('Exterior (');
+	await expect(dica).not.toContainText('EX (');
 	// o arco mais grosso é a parceria de maior peso do gabarito, com o mesmo peso
 	const [a, b, peso] = [...agregados.uf_pares].sort((p: number[], q: number[]) => q[2] - p[2])[0];
 	const pares = await arcos.evaluateAll((els) => els.map((e) => [e.getAttribute('data-par'), Number(e.getAttribute('data-peso'))] as const));
@@ -258,12 +307,21 @@ test('citações: o cânone do gabarito, a nota da cobertura e a matriz entre ma
 	const nota = page.getByTestId('nota-cobertura');
 	await expect(nota).toContainText('sem DOI');
 	await expect(nota).toContainText(inteiro(citacoes.cobertura.com_referencias));
+	// a cobertura por referência e o aviso das resenhas (o exemplo tem uma obra que chega por uma resenha)
+	await expect(nota).toContainText(`das ${inteiro(citacoes.cobertura.referencias_listadas)} referências que a ArticleMeta lista`);
+	expect(citacoes.canone.some((o: { resenha: boolean }) => o.resenha)).toBe(true);
+	await expect(nota).toContainText('registro de uma resenha');
+	// as frases condicionais não colam na anterior ("105.763.Nesses")
+	expect(await nota.innerText()).not.toMatch(/[\p{L}\d)]\.\p{Lu}/u);
 	// a matriz é a do Python
 	const celulas = await page.getByTestId('celula-fluxo').evaluateAll((els) =>
 		els.map((e) => [Number(e.getAttribute('data-de')), Number(e.getAttribute('data-para')), Number(e.getAttribute('data-n'))])
 	);
 	expect(celulas).toHaveLength(citacoes.fluxo_macrotemas.length ** 2);
 	for (const [i, j, n] of celulas) expect(n).toBe(citacoes.fluxo_macrotemas[i][j]);
+	// as linhas são os macrotemas, na ordem de topicos.json (os ids não são contíguos: nada de "Macrotema 3")
+	const rotulos = await page.getByTestId('linha-fluxo').evaluateAll((els) => els.map((e) => e.getAttribute('data-rotulo')));
+	expect(rotulos).toEqual(ler('topicos.json').macrotemas.map((m: { rotulo: string }) => m.rotulo));
 	// com um período, só as citações com as duas pontas nele
 	await page.goto(`${url('RAIZ')}#/redes?rede=citacoes&anos=2018-2025`);
 	await esperarRedes(page, 'citacoes');
@@ -328,6 +386,55 @@ test('projeto vazio: estado vazio, sem pedir arquivos ausentes', async ({ page }
 	await expect(page.getByText('Este projeto ainda não tem redes.')).toBeVisible();
 	await expect(page.locator('code', { hasText: 'mapa redes' }).first()).toBeVisible();
 	expect(pedidos.filter((p) => p.endsWith('.json') && !p.endsWith('manifesto.json'))).toEqual([]);
+});
+
+test('redes desatualizadas: a vista diz o que rodar, em vez de "sem redes"', async ({ page }) => {
+	// o manifesto de um projeto cujas entradas mudaram depois da última `mapa redes`
+	await page.route('**/dados/manifesto.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const m = await resposta.json();
+		m.arquivos = m.arquivos.filter((a: string) => a !== 'redes' && a !== 'citacoes');
+		m.desatualizadas = ['redes'];
+		m.mudancas = { redes: ['o pessoas.yaml'] };
+		await rota.fulfill({ response: resposta, json: m });
+	});
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await expect(page.getByText('As redes deste projeto estão desatualizadas.')).toBeVisible();
+	// o que mudou, e os arquivos como desatualizados (e não "ainda não gerado")
+	await expect(page.getByTestId('redes-desatualizadas')).toContainText('Mudou o pessoas.yaml depois da última mapa redes');
+	await expect(page.getByText('redes.json').locator('..')).toContainText('desatualizado');
+	await expect(page.getByText('ainda não gerado')).toHaveCount(0);
+	await expect(page.getByText('Este projeto ainda não tem redes.')).toHaveCount(0);
+});
+
+test('site publicado sem redes: a vista some do trilho e não dá instrução de linha de comando', async ({ page }) => {
+	await page.route('**/dados/manifesto.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const m = await resposta.json();
+		m.arquivos = m.arquivos.filter((a: string) => a !== 'redes' && a !== 'citacoes');
+		m.desatualizadas = ['redes'];
+		await rota.fulfill({ response: resposta, json: m });
+	});
+	await page.goto(`${url('PUBLICADO')}#/`);
+	await expect(h1(page)).toBeVisible();
+	await expect(page.getByRole('navigation', { name: 'Seções' }).getByRole('link', { name: 'Redes' })).toHaveCount(0);
+	await page.goto(`${url('PUBLICADO')}#/redes`);
+	await expect(page.getByText('As redes não fazem parte desta publicação.')).toBeVisible();
+	await expect(page.getByRole('main')).not.toContainText('mapa redes');
+	await expect(page.getByRole('main')).not.toContainText('Rode');
+	// a Ajuda não explica uma vista que o site não tem
+	await page.goto(`${url('PUBLICADO')}#/ajuda`);
+	await expect(page.getByRole('heading', { name: 'Como ler este observatório' })).toBeVisible();
+	await expect(page.getByTestId('ajuda-redes')).toHaveCount(0);
+	await expect(page.getByTestId('atalhos-redes')).toHaveCount(0);
+});
+
+test('um recorte fora do período não quebra as séries', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes?anos=2030-2031`);
+	await expect(page.getByTestId('serie-coautoria')).toBeVisible();
+	await page.waitForTimeout(300);
+	expect(problemas).toEqual([]);
 });
 
 test('a Ajuda explica como ler as redes', async ({ page }) => {

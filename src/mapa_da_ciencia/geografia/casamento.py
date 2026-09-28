@@ -448,25 +448,50 @@ class Casamento:
     vinculos: list[Vinculo]
 
 
+_FORA_DO_SOBRENOME = {"de", "da", "do", "dos", "das", "e", "junior", "jr", "filho", "neto", "sobrinho"}
+
+
 def _sobrenomes(autor: Autor) -> set[str]:
-    base = normalizar.chave(autor.sobrenome or autor.nome or "").split()
-    return set(base) - {"de", "da", "do", "dos", "das", "e", "junior", "jr", "filho", "neto", "sobrinho"}
+    return set(normalizar.chave(autor.sobrenome or autor.nome or "").split()) - _FORA_DO_SOBRENOME
+
+
+def _partes(nome: str | None) -> list[str]:
+    return [t for t in normalizar.chave(nome).split() if t not in _FORA_DO_SOBRENOME]
+
+
+def nomes_compativeis(a: str | None, b: str | None) -> bool:
+    """Dois nomes podem ser da mesma pessoa: alguma parte de um, depois da primeira (um sobrenome ou um nome do meio),
+    aparece no outro. "Camila Penna de Castro" e "Camila Penna" são; "Juan Jesús Morales" e "Juan Martín" não (só o
+    primeiro nome em comum); "Hung Ho-Fung" e "Ho‐fung Hung" são."""
+    pa, pb = _partes(a), _partes(b)
+    return bool(set(pa[1:]) & set(pb) or set(pb[1:]) & set(pa))
+
+
+def nome_completo(autor: Autor) -> str:
+    return " ".join(x for x in (autor.nome, autor.sobrenome) if x)
 
 
 def alinhar(autores: list[Autor], autorias: list[AutoriaOpenAlex]) -> dict[int, int]:
-    """Autor da ArticleMeta → autoria do OpenAlex: pela posição quando o sobrenome confere, depois pelo sobrenome."""
+    """Autor da ArticleMeta → autoria do OpenAlex: pela posição quando o sobrenome (ou o nome, `nomes_compativeis`)
+    confere, depois pelo sobrenome ou pelo nome, se só uma autoria livre servir. Com um autor de cada lado, o par vale
+    se os nomes forem compatíveis, ou se um deles não tiver letras latinas para comparar ("Франк Руда")."""
     nomes = [set(normalizar.chave(a.nome).split()) for a in autorias]
     pares: dict[int, int] = {}
+
+    def confere(autor: Autor, j: int) -> bool:
+        return bool(_sobrenomes(autor) & nomes[j]) or nomes_compativeis(nome_completo(autor), autorias[j].nome)
+
     if len(autores) == len(autorias) == 1:
-        return {0: 0}
+        sem_comparar = not _partes(nome_completo(autores[0])) or not _partes(autorias[0].nome)
+        return {0: 0} if sem_comparar or confere(autores[0], 0) else {}
     for i, autor in enumerate(autores):
-        if i < len(autorias) and _sobrenomes(autor) & nomes[i]:
+        if i < len(autorias) and confere(autor, i):
             pares[i] = i
     livres = set(range(len(autorias))) - set(pares.values())
     for i, autor in enumerate(autores):
         if i in pares:
             continue
-        candidatas = [j for j in livres if _sobrenomes(autor) & nomes[j]]
+        candidatas = [j for j in livres if confere(autor, j)]
         if len(candidatas) == 1:
             pares[i] = candidatas[0]
             livres.discard(candidatas[0])

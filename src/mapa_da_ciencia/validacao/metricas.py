@@ -32,7 +32,7 @@ from typing import Any, Literal
 import numpy as np
 
 from ..classificacao.resultado import PASTA as PASTA_CLASSIFICACAO
-from ..classificacao.resultado import ler_linhas, resultados
+from ..classificacao.resultado import Resultado, ler_linhas, nome_do_arquivo, resultados, rotulo_a_parte
 from ..config import ErroConfig
 from ..projeto import Projeto
 from . import amostra as va
@@ -328,12 +328,19 @@ def _nome_modelo(modelo: str) -> str:
     return modelo.split("@", 1)[0].removesuffix(":latest")
 
 
+def _nome_participante(r: Resultado, principal: Resultado | None) -> str:
+    """O nome do modelo nas métricas; o resultado à parte aparece ao lado do principal, como "(versão nova)" ou,
+    quando é da mesma execução dele, "(rodada parcial)"."""
+    return _nome_modelo(r.modelo) + (f" ({rotulo_a_parte(r, principal)})" if r.a_parte else "")
+
+
 def familias_dos_participantes(projeto: Projeto) -> dict[str, str]:
     """A família de modelo de cada participante que não é uma pessoa e cuja família se conhece: os codificadores de
     `validacao.familias` e o `juri-supervisor` (a família do supervisor do júri)."""
     familias = dict(projeto.config.validacao.familias)
-    if projeto.config.juri.membros:
-        familias.setdefault("juri-supervisor", projeto.config.juri.supervisor.familia)
+    supervisor = projeto.config.juri.supervisor
+    if projeto.config.juri.membros and supervisor.e_modelo and supervisor.familia_efetiva:
+        familias.setdefault("juri-supervisor", supervisor.familia_efetiva)
     return familias
 
 
@@ -342,8 +349,10 @@ def circular(familias: dict[str, str], a: str, b: str) -> bool:
     return a in familias and familias.get(a) == familias.get(b)
 
 
-def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS) -> Validacao:
-    """As métricas da validação do projeto: a amostra guardada, as codificações e os modelos com o codebook atual."""
+def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS, versao_nova: bool = True) -> Validacao:
+    """As métricas da validação do projeto: a amostra guardada, as codificações e os modelos com o codebook atual.
+    Com `versao_nova=False` (o `validacao.json` do contrato, que vai para o site publicado), fica de fora a versão
+    à parte de um modelo, que ainda não substituiu o resultado completo."""
     amostra = va.ler(projeto)
     if amostra is None:
         raise ErroConfig("O projeto ainda não tem amostra. Rode `mapa validar amostra` primeiro.")
@@ -365,11 +374,15 @@ def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS) -> Validacao:
     principal = _nome_modelo(projeto.config.modelos.classificacao.modelo)
     evidencia_literal = {}
     modelos = []
-    for r in resultados(pasta):
-        nome = _nome_modelo(r.modelo)
-        if r.hash_codebook != hash_cb or nome in tipos:
+    todos = resultados(pasta)
+    principais = {nome_do_arquivo(r.modelo, r.hash_codebook): r for r in todos if not r.a_parte}
+    for r in todos:
+        nome = _nome_participante(r, principais.get(nome_do_arquivo(r.modelo, r.hash_codebook)))
+        if r.hash_codebook != hash_cb or nome in tipos or (r.a_parte and not versao_nova):
             continue
-        linhas = [linha for linha in ler_linhas(pasta, r.modelo, hash_cb) if linha["doc"] in na_amostra]
+        linhas = [
+            linha for linha in ler_linhas(pasta, r.modelo, hash_cb, a_parte=r.a_parte) if linha["doc"] in na_amostra
+        ]
         if not linhas:
             continue
         modelos.append(nome)

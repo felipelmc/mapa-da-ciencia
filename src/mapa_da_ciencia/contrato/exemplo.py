@@ -296,7 +296,10 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
 
     # ---- tópicos: posição no plano, cor (a mesma paleta do pipeline) e tendência
     cores_macro = cores_macrotemas(len(MACROS))
-    topicos_def = []  # (id, macro_id, rotulo, palavras, tendência, centro, cor)
+    # ids dos macrotemas não contíguos, como os do piloto depois de execuções com a identidade estável (ADR 0007):
+    # quem usar o id como índice (em vez da posição em `topicos.macrotemas`) erra aqui também
+    id_macro = [k if k < 3 else k + 2 for k in range(len(MACROS))]
+    topicos_def = []  # (id, posição do macrotema, rotulo, palavras, tendência, centro, cor)
     for mi, macro in enumerate(MACROS):
         ang = 2 * math.pi * mi / len(MACROS)
         cx, cy = 6.5 * math.cos(ang), 6.5 * math.sin(ang)
@@ -506,7 +509,7 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
         topicos.append(
             m.Topico(
                 id=tid,
-                macro_id=mi,
+                macro_id=id_macro[mi],
                 rotulo=rotulo,
                 descricao=f"Trabalhos sobre {rotulo.lower()}, com destaque para {palavras[0]} e {palavras[1]}.",
                 palavras_chave=[(p, round(1 / (k + 1), 3)) for k, p in enumerate(palavras)],
@@ -530,7 +533,7 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
         por_ano_m = Counter(d["ano"] for d in docs if d["topico"] in ids_m)
         macrotemas.append(
             m.Macrotema(
-                id=mi,
+                id=id_macro[mi],
                 rotulo=mc.rotulo,
                 cor=cores_macro[mi],
                 topicos=ids_m,
@@ -601,9 +604,9 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
             for a, issn, t in REVISTAS
         ]
     )
-    macro_do_topico = {tid: mi for tid, mi, *_ in topicos_def}
+    macro_do_topico = {tid: id_macro[mi] for tid, mi, *_ in topicos_def}
     redes, citacoes, gabarito = _redes_sinteticas(
-        random.Random(semente + 1), docs, macro_do_topico, af, insts, i_nao_identificada, len(MACROS)
+        random.Random(semente + 1), docs, macro_do_topico, af, insts, i_nao_identificada, id_macro
     )
     agregados = agregados.model_copy(update=gabarito)
     licencas = Counter(det.licenca for det in detalhes.values())
@@ -797,7 +800,8 @@ def _juri_sintetico(rng, validacao: m.Validacao, amostra: list[dict], vars_cls, 
         documentos=len(amostra),
         etapas=etapas,
         virou=virou,
-        concordancia_por_etapa={"unanime": {"n": 240, "acertos": 221}, "sem_maioria": {"n": 20, "acertos": 12}},
+        concordancia_por_etapa={"unanime": {"n": 240, "acertos": 221}, "sem_maioria": {"n": 20, "acertos": 8}},
+        concordancia_supervisor=m.ConcordanciaSupervisor(n=20, acertos=12, circular=True),
         deliberacao=deliberacao,
         auditoria=m.AuditoriaJuri(n=12, erros=1, taxa=round(1 / 12, 4), ic95=wilson(1, 12), por_variavel={}),
     )
@@ -819,23 +823,24 @@ PRENOMES = ["Ana", "Bruno", "Carla", "Diego", "Elisa", "Fábio", "Gisele", "Hugo
 SOBRENOMES = ["Almeida", "Barros", "Cardoso", "Duarte", "Esteves", "Freitas", "Gomes", "Hollanda", "Iório", "Jardim"]
 
 
-def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada, n_macros):
+def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada, ids_macros):
     """Redes fictícias sobre os documentos do exemplo: pessoas por macrotema (com alguma mistura), a colaboração
     entre as instituições das afiliações do exemplo, citações de documentos mais antigos e um cânone inventado."""
+    from mapa_da_ciencia.contrato.redes import fluxo_por_posicao
     from mapa_da_ciencia.redes.citacoes import calcular
     from mapa_da_ciencia.redes.grafos import colaboracao_por_ano, comunidades, grafo, metricas, pares_ponderados
 
     ids = [d["id"] for d in docs]
     macro_do_doc = {d["id"]: macro_do_topico.get(d["topico"], -1) for d in docs}
     pessoas = [f"{p} {s}" for s in SOBRENOMES for p in PRENOMES]  # 120 pessoas fictícias
-    grupo = {x: i % n_macros for i, x in enumerate(pessoas)}
+    grupo = {x: ids_macros[i % len(ids_macros)] for i, x in enumerate(pessoas)}
     por_macro = defaultdict(list)
     for x in pessoas:
         por_macro[grupo[x]].append(x)
     autores: dict[str, list[str]] = {}
     for d in docs:
         mi = macro_do_doc[d["id"]]
-        base = por_macro[mi if mi >= 0 else rng.randrange(n_macros)]
+        base = por_macro[mi if mi >= 0 else rng.choice(ids_macros)]
         n = rng.choices([1, 2, 3, 4], [0.45, 0.33, 0.15, 0.07])[0]
         escolhidos = rng.sample(base, min(n, len(base)))
         if n > 1 and rng.random() < 0.15:
@@ -933,13 +938,15 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
          "veiculo": "Editora Exemplo", "tipo": "book", "doi": None, "citacoes": 1000 - k}
         for k, w in enumerate(classicas)
     ]  # fmt: skip
+    # uma delas chega pelo registro de uma resenha, como muitos livros no OpenAlex
+    citadas[1] |= {"tipo": "book-review", "veiculo": "Choice Reviews Online"}
     topico_do_doc = {d["id"]: d["topico"] for d in docs}
-    c = calcular(referencias, citadas, doc_da_obra, anos, topico_do_doc, macro_do_topico)
+    # a ArticleMeta lista mais referências do que o OpenAlex resolve (no piloto, cerca do dobro)
+    resolvidas = Counter(doc_da_obra[r["obra"]] for r in referencias)
+    listadas = {d: 2 * n + 1 for d, n in resolvidas.items()}
+    c = calcular(referencias, citadas, doc_da_obra, anos, topico_do_doc, macro_do_topico, listadas=listadas)
     indice = {d: i for i, d in enumerate(ids)}
-    fluxo = [[0] * n_macros for _ in range(n_macros)]
-    for (a, b), n in c.fluxo_macrotemas.items():
-        if a >= 0 and b >= 0:
-            fluxo[a][b] = n
+    fluxo = fluxo_por_posicao(c.fluxo_macrotemas, ids_macros)
     citacoes = m.Citacoes(
         n_referencias=[c.n_referencias.get(d, 0) for d in ids],
         internas=m.ArestasCitacao(de=[indice[a] for a, _ in c.internas], para=[indice[b] for _, b in c.internas]),
@@ -954,6 +961,7 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
                 doi=o.doi,
                 n=o.n,
                 edicoes=o.edicoes,
+                resenha=o.resenha,
             )
             for o in c.canone
         ],
@@ -966,7 +974,7 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
     )
     gabarito = {
         "arestas_coautoria": len(arestas),
-        "uf_pares": [(a, b, p, n) for (a, b), (p, n) in pares_ponderados(dict(lugares)).items()],
+        "uf_pares": [(a, b, round(p, 6), n) for (a, b), (p, n) in pares_ponderados(dict(lugares)).items()],
         "canone_n": [o.n for o in c.canone],
     }
     return redes, citacoes, gabarito
@@ -974,14 +982,15 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
 
 def _desenho_do_exemplo(g) -> dict[str, tuple[float, float]]:
     """Um desenho simples e igual em qualquer máquina (o `spring_layout` muda na quarta casa entre o Mac e o Linux, e
-    o exemplo é conferido byte a byte no CI): cada componente num círculo, os componentes numa grade."""
+    o exemplo é conferido byte a byte no CI): cada componente num círculo, os componentes numa grade, do maior (em
+    cima, com o y crescendo para cima, como no desenho do pipeline) ao menor."""
     import networkx as nx
 
     componentes = sorted((sorted(c) for c in nx.connected_components(g)), key=lambda c: (-len(c), c[0]))
     lado = max(1, math.ceil(math.sqrt(len(componentes))))
     pos = {}
     for k, nos in enumerate(componentes):
-        cx, cy = (k % lado) * 2.2, (k // lado) * 2.2
+        cx, cy = (k % lado) * 2.2, -(k // lado) * 2.2
         raio = 0.2 + 0.8 * min(1.0, len(nos) / 40)
         for j, no in enumerate(nos):
             ang = 2 * math.pi * j / len(nos)

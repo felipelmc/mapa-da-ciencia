@@ -59,7 +59,7 @@ Changelog = "https://github.com/felipelmc/mapa-da-ciencia/blob/main/CHANGELOG.md
 Issues = "https://github.com/felipelmc/mapa-da-ciencia/issues"
 
 [dependency-groups]
-dev = ["pytest>=9.1", "respx>=0.23", "ruff>=0.16"]
+dev = ["anthropic>=1.8", "pytest>=9.1", "respx>=0.23", "ruff>=0.16"]  # anthropic: os testes do supervisor pela API
 docs = [
     "mkdocs>=1.6,<2",
     "mkdocs-material>=9.7",

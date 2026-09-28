@@ -132,6 +132,16 @@ class Manifesto(_Arquivo):
     execucao: ExecucaoInfo
     licencas: dict[str, int] = Field(default_factory=dict, description="Licença → número de documentos.")
     publicacao: PublicacaoInfo | None = Field(None, description="Presente só no site publicado (`mapa publicar`).")
+    desatualizadas: list[str] = Field(
+        default_factory=list,
+        description="Etapas com resultado desatualizado (as entradas mudaram depois), que por isso ficou fora destes "
+        "dados: `topicos`, `geografia`, `redes` ou `classificacao`. A interface diz o que rodar de novo.",
+    )
+    mudancas: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="Para cada etapa desatualizada, o que mudou desde a última execução, quando se sabe (nas redes: "
+        '"o pessoas.yaml", "a geografia"…).',
+    )
 
 
 # ---------------------------------------------------------------- revistas.json
@@ -574,6 +584,14 @@ class AuditoriaJuri(_Base):
     por_variavel: dict[str, tuple[int, int]] = Field(default_factory=dict, description="Variável → (erros, n).")
 
 
+class ConcordanciaSupervisor(_Base):
+    """A concordância com a referência nas decisões sem maioria que o supervisor arbitrou, com a escolha dele."""
+
+    n: int
+    acertos: int
+    circular: bool = Field(description="O supervisor e a referência são da mesma família: não é medida independente.")
+
+
 class ResumoJuri(_Base):
     """O júri de modelos locais na amostra: estágios, deliberação, concordância por estágio e auditoria."""
 
@@ -585,7 +603,12 @@ class ResumoJuri(_Base):
     etapas: dict[str, dict[str, int]] = Field(description="Variável → estágio → decisões.")
     virou: dict[str, int] = Field(default_factory=dict, description="Variável → decisões que a deliberação mudou.")
     concordancia_por_etapa: dict[str, dict[str, int]] = Field(
-        default_factory=dict, description="Estágio → {n, acertos} contra a referência."
+        default_factory=dict,
+        description="Estágio → {n, acertos} contra a referência, com a decisão do júri sem o supervisor (no estágio "
+        "`sem_maioria`, o voto do primeiro membro).",
+    )
+    concordancia_supervisor: ConcordanciaSupervisor | None = Field(
+        None, description="Nas decisões sem maioria arbitradas, a concordância com a escolha do supervisor."
     )
     deliberacao: dict[str, dict[str, int]] = Field(
         default_factory=dict,
@@ -635,7 +658,10 @@ class Agregados(_Arquivo):
 class ColunasPessoas(_Base):
     """As pessoas (autores identificados), em colunas. `x` e `y` só para quem teve coautor (o desenho da rede)."""
 
-    id: list[str] = Field(description="Id publicado (um hash curto; o site não publica ORCIDs).")
+    id: list[str] = Field(
+        description="Id publicado: um HMAC curto do id interno com o segredo do projeto (o site não publica ORCIDs "
+        "nem ids do OpenAlex, e o id não se liga a eles sem o segredo)."
+    )
     nome: list[str]
     documentos: list[int]
     grau: list[int] = Field(description="Coautores distintos.")
@@ -708,17 +734,28 @@ class Redes(_Arquivo):
 
 
 class ObraCitada(_Base):
-    """Uma obra de fora do corpus entre as mais citadas (o cânone)."""
+    """Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate)."""
 
     id: str = Field(description="Id do OpenAlex (`W…`).")
     titulo: str | None
-    ano: int | None
-    autores: list[str] = Field(description="Até três autores.")
+    ano: int | None = Field(
+        description="O ano da obra (o das referências, quando o registro do OpenAlex é uma resenha)."
+    )
+    autores: list[str] = Field(description="Até três autores, conferidos nas referências da ArticleMeta.")
     veiculo: str | None
     tipo: str | None
     doi: str | None
     n: int = Field(description="Documentos do corpus que a citam.")
-    edicoes: list[str] = Field(default_factory=list, description="Outras edições somadas a esta.")
+    edicoes: list[str] = Field(default_factory=list, description="Outros registros da mesma obra, somados a este.")
+    resenha: bool = Field(
+        False,
+        description="O registro do OpenAlex é uma resenha da obra (tipo `book-review`, Choice Reviews, ou um primeiro "
+        "autor que as referências não citam): autores e ano vêm das referências.",
+    )
+    registro_openalex: str | None = Field(
+        None,
+        description="Autores e ano do registro do OpenAlex, quando diferem dos mostrados (a conferência os mudou).",
+    )
 
 
 class ArestasCitacao(_Base):
@@ -736,12 +773,24 @@ class CitantesCanone(_Base):
 class Citacoes(_Arquivo):
     """A rede de citação pelas referências do OpenAlex e o cânone."""
 
-    n_referencias: list[int] = Field(description="Referências de cada documento no OpenAlex; -1: sem casamento.")
+    n_referencias: list[int] = Field(
+        description="Referências de cada documento resolvidas no OpenAlex (0: casado, sem nenhuma); -1: sem casamento."
+    )
     internas: ArestasCitacao
     canone: list[ObraCitada]
     canone_citantes: CitantesCanone
-    fluxo_macrotemas: list[list[int]] = Field(description="Citações internas de macrotema (linha) a macrotema.")
-    cobertura: dict[str, int] = Field(default_factory=dict)
+    fluxo_macrotemas: list[list[int]] = Field(
+        description="Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` "
+        "(pela posição, e não pelo id, que não é contíguo)."
+    )
+    cobertura: dict[str, int] = Field(
+        default_factory=dict,
+        description="Documentos (`documentos`, `com_referencias`), referências resolvidas (`referencias`) e, nos "
+        "documentos casados, as listadas na ArticleMeta (`referencias_listadas`), as resolvidas entre elas "
+        "(`referencias_resolvidas`) e a mediana por documento da fração resolvida (`resolvidas_mediana_pct`); citações "
+        "internas, anacrônicas e autorreferências; referências a obras apagadas (`a_obras_apagadas`); citantes, "
+        "resenhas e autorias corrigidas do cânone; obras sem metadados entre as mais citadas.",
+    )
 
 
 ARQUIVOS: dict[str, type[_Arquivo]] = {

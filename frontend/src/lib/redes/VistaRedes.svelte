@@ -9,7 +9,7 @@
 	import type { Aberto } from '$lib/dados/corpus';
 	import type { TabelaCitacoes, TabelaRedes } from '$lib/dados/redes';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
-	import type { Rede } from '$lib/estado/url';
+	import { rota, type Rede } from '$lib/estado/url';
 	import ModoCitacoes from './ModoCitacoes.svelte';
 	import ModoEstados from './ModoEstados.svelte';
 	import ModoGrafo from './ModoGrafo.svelte';
@@ -30,13 +30,13 @@
 	const comInstituicoes = $derived(!!redes.instituicoes && !!aberto.afiliacoes);
 </script>
 
-<svelte:head>
-	<title>Redes · mapa da ciência</title>
-</svelte:head>
 
 <div class="vista surgir">
 	<header class="cabecalho">
-		<h1>Redes</h1>
+		<div class="titulo">
+			<h1>Redes</h1>
+			<a class="como-ler" href={`${rota('/ajuda')}?secao=redes`} data-testid="como-ler-redes">Como ler as redes</a>
+		</div>
 		<div class="modos" role="group" aria-label="Rede">
 			{#each MODOS as m (m.id)}
 				<button
@@ -96,6 +96,19 @@
 	.cabecalho {
 		display: grid;
 		gap: 0.6rem;
+	}
+
+	.titulo {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.4rem 1.2rem;
+	}
+
+	.como-ler {
+		font-size: 0.9rem;
+		color: var(--acento);
+		text-underline-offset: 0.2em;
 	}
 
 	h1 {

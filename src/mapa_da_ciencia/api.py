@@ -182,7 +182,8 @@ def documentos(projeto: Projeto | str | Path = ".") -> list[Documento]:
 def conectar(projeto: Projeto | str | Path = ".") -> duckdb.DuckDBPyConnection:
     """Conexão DuckDB com as views `documentos`, `textos`, `autores`, `afiliacoes`; depois de `topicos()`,
     `atribuicoes`; depois de `geografia()`, `vinculos`, `pesos` e `instituicoes`; depois de `classificar()`,
-    `classificacoes`.
+    `classificacoes`; depois de `redes()`, `redes_pessoas`, `redes_arestas`, `redes_canone` e as outras tabelas de
+    `dados/redes/`, com o prefixo `redes_`.
 
     Use com `with` para fechar ao fim:
 
@@ -203,7 +204,8 @@ def consultar(
     """Roda uma consulta SQL sobre o corpus e devolve o resultado já materializado.
 
     Args:
-        sql: consulta sobre as views `documentos`, `textos`, `autores` e `afiliacoes`.
+        sql: consulta sobre as views de `conectar` (`documentos`, `textos`, `autores`, `afiliacoes` e as das etapas
+            que já rodaram, como `atribuicoes`, `vinculos` e `redes_canone`).
         como: `dicts` (lista de dicionários, o padrão), `tuplas`, `pandas` ou `polars`. Os dois últimos
             precisam da biblioteca instalada.
     """
@@ -298,8 +300,8 @@ def redes(projeto: Projeto | str | Path = ".", *, progresso: bool = True) -> Res
     """Gera as redes de coautoria, de instituições, de estados e de citação, como `mapa redes`, e devolve o resumo.
 
     As tabelas ficam em `dados/redes/` (`pessoas`, `autorias`, `arestas`, `comunidades`, `citacoes`, `canone`,
-    `colaboracao`), em Parquet, para ler com `consultar` (por exemplo
-    `consultar(p, "SELECT * FROM read_parquet('dados/redes/canone.parquet') LIMIT 10")`).
+    `colaboracao`), em Parquet, e viram views com o prefixo `redes_` em `conectar` e `consultar` (por exemplo
+    `consultar(p, "SELECT titulo, n FROM redes_canone ORDER BY n DESC LIMIT 10")`), de qualquer pasta.
     """
     from mapa_da_ciencia.redes.pipeline import gerar_redes
 

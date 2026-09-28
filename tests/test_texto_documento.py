@@ -91,3 +91,130 @@ def test_documento_texto_em_idioma_preferido():
     assert d.texto_em("resumos", ["pt"]) is None
     with pytest.raises(ValueError):
         Documento(id="x", fonte="articlemeta", tipo=None, ano=2024, email="a@b.c")
+
+
+@pytest.mark.parametrize(
+    "texto",
+    [
+        "Univ. X, fulana @ exemplo.br",
+        "Univ. X, fulana @exemplo.br",
+        "Univ. X, fulana@exemplo. br",
+        "Univ. X, fulana@ exemplo.com.br",
+        "Univ. X, fulana.silva@ exemplo.es",
+        "Univ. X, fulana99 @exemplo.com",
+        "Univ. X, fulana@ exemplo.ca",
+        "Univ. X, f.b.silva@exemplo. com",
+        "beltrano [at] exemplo [dot] br",
+        "ciclano {at} exemplo.br",
+        "joao (arroba) exemplo (ponto) br",
+        "maria@exemplo.com.br",
+        # domínios de país fora da lista dos perfis, nas formas que um perfil de rede social não tem
+        "Universidad de Panamá. maria@ exemplo.ac.pa",
+        "Universidade de São Tomé e Príncipe. rosa@ exemplo.st",
+        "UAB, Barcelona. fulana@ exemplo.cat",
+        "Empresa X. fulana [at] exemplo [dot] io",
+        "Univ. X. fulana (arroba) exemplo (ponto) ac (ponto) id",
+        "Univ. X. fulana@exemplo (ponto) es",
+        "UNAH, Honduras. juan.perez @exemplo.edu.hn",
+        # o arroba largo, um (ponto) que não é o último
+        "Univ. X. fulana＠exemplo.br",
+        "Univ. X. chen﹫exemplo.edu.tw",
+        "Univ. X. fulana@exemplo (ponto) ufrj.br",
+        "Univ. X. fulana@dcc.exemplo (ponto) br",
+    ],
+)
+def test_emails_com_espacos_e_disfarces(texto):
+    """As variações de e-mail que aparecem em afiliações reais (espaço em volta do @ ou depois do ponto, [at])."""
+    assert contem_email(texto)
+    assert not contem_email(remover_emails(texto)) and "exemplo" not in remover_emails(texto)
+
+
+@pytest.mark.parametrize(
+    "texto",
+    [
+        "p @ 0.05 no teste",
+        "O perfil @fulano. Em seguida",
+        "looking at data. Results",
+        "RT @usuario: texto",
+        # arrobas de rede social com ponto (Instagram, TikTok): nem o perfil nem a palavra anterior somem
+        "Analisamos o perfil @maria.silva no Instagram",
+        "a conta @camara.deputados publicou 300 posts",
+        "RT @jair.bolsonaro: texto do tweet",
+        "tweets de @lula.oficial e @bolsonaro.sp",
+        "look [at] data.table and dplyr",
+        "Recall@10. results show",
+        "entre tod@s. em seguida",
+        "@frente.pe publicou",  # sem palavra antes do @, não há endereço
+        # a linguagem neutra e as métricas com @, seguidas de ponto e de uma palavra que também é domínio de país
+        "entre tod@s. no entanto, o grupo",
+        "para tod@s. de acordo com",
+        "amig@s. com isso",
+        "alun@s. na escola",
+        "com P@10. de acordo",
+        "Recall@5. com base",
+    ],
+)
+def test_arroba_que_nao_e_email(texto):
+    assert not contem_email(texto) and remover_emails(texto) == texto
+
+
+@pytest.mark.parametrize(
+    ("texto", "limpo"),
+    [
+        # a forma ambígua "palavra @dominio.tld": um e-mail com espaço antes do @ ou um perfil de rede social que
+        # termina num domínio de topo; sai só o "@dominio.tld" (o endereço não fica reconstruível), e a palavra fica
+        ("UFRJ. fulana @exemplo.br", "UFRJ. fulana"),
+        ("Coimbra. joao @exemplo.pt", "Coimbra. joao"),
+        ("UFRJ. fulana @exemplo.br-RJ", "UFRJ. fulana -RJ"),
+        ("UFRJ. fulana ＠exemplo.br", "UFRJ. fulana"),
+        ("UNAH. juan.perez @exemplo.edu.hn", "UNAH. juan.perez"),
+        ("Analisamos o perfil @frente.pe no Instagram", "Analisamos o perfil no Instagram"),
+        ("as contas @governo.es e @camara.ms", "as contas e"),
+        ("a página @jornal.do.commercio", "a página"),
+    ],
+)
+def test_forma_ambigua_perde_so_o_dominio(texto, limpo):
+    assert contem_email(texto) and remover_emails(texto) == limpo and not contem_email(limpo)
+
+
+@pytest.mark.parametrize(
+    "texto",
+    [
+        "Univ. X, fulana@uf\u00adexemplo.br",  # o hífen suave de "&shy;"
+        "Univ. X, fulana@ufexemplo\u200b.br",  # o espaço de largura zero de "&#8203;"
+        "Univ. X, fu\u200clana@exemplo\u200d.com.br",
+        "Univ. X, fulana@exemplo\u2060.br",
+        "Univ. X, chen@exemplo．edu．tw",  # o ponto largo
+    ],
+)
+def test_email_escondido_por_caractere_invisivel_ou_ponto_largo(texto):
+    """Um endereço que aparece inteiro na tela, mas tem um caractere invisível ou o ponto largo no meio."""
+    assert contem_email(texto)
+    limpo = remover_emails(texto)
+    assert not contem_email(limpo) and "exemplo" not in limpo and limpo == "Univ. X"
+
+
+def test_texto_sem_email_nao_perde_caracteres_invisiveis():
+    """Só um texto com e-mail é normalizado: os outros ficam como estão (a chave do cache da classificação e os
+    offsets das evidências dependem do texto)."""
+    texto = "Política\u00adpública e partici\u200bpação．Fim"
+    assert remover_emails(texto) == texto
+
+
+def test_email_colado_a_outro_tambem_sai():
+    """O segundo endereço começa no meio de uma sequência sem espaço: sai numa segunda passada."""
+    for texto in ("Univ. X, fulana @ exemplo.br.joao@exemplo.org", "fulana@ exemplo.br-joao@exemplo.org; Rio"):
+        limpo = remover_emails(texto)
+        assert not contem_email(limpo) and "joao" not in limpo and "exemplo" not in limpo, limpo
+
+
+def test_detector_de_email_e_linear_em_sequencias_longas_sem_espaco():
+    """Um token enorme sem espaço (num JSON do `publicar`, num resumo mal formatado) não pode travar a varredura:
+    sem a âncora no começo da sequência, 20 mil caracteres levavam ~6 s, e o dobro, quatro vezes isso."""
+    import time
+
+    for texto in ("a" * 20_000, "a.b-" * 5_000, "x" * 20_000 + " fulana@exemplo.br"):
+        inicio = time.perf_counter()
+        achado = contem_email(texto)
+        assert time.perf_counter() - inicio < 0.5, texto[:10]
+        assert achado == texto.endswith(".br")

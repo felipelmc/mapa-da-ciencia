@@ -54,7 +54,7 @@
     },
     "ObraCitada": {
       "additionalProperties": false,
-      "description": "Uma obra de fora do corpus entre as mais citadas (o cânone).",
+      "description": "Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate).",
       "properties": {
         "ano": {
           "anyOf": [
@@ -65,10 +65,11 @@
               "type": "null"
             }
           ],
+          "description": "O ano da obra (o das referências, quando o registro do OpenAlex é uma resenha).",
           "title": "Ano"
         },
         "autores": {
-          "description": "Até três autores.",
+          "description": "Até três autores, conferidos nas referências da ArticleMeta.",
           "items": {
             "type": "string"
           },
@@ -87,7 +88,7 @@
           "title": "Doi"
         },
         "edicoes": {
-          "description": "Outras edições somadas a esta.",
+          "description": "Outros registros da mesma obra, somados a este.",
           "items": {
             "type": "string"
           },
@@ -103,6 +104,25 @@
           "description": "Documentos do corpus que a citam.",
           "title": "N",
           "type": "integer"
+        },
+        "registro_openalex": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Autores e ano do registro do OpenAlex, quando diferem dos mostrados (a conferência os mudou).",
+          "title": "Registro Openalex"
+        },
+        "resenha": {
+          "default": false,
+          "description": "O registro do OpenAlex é uma resenha da obra (tipo `book-review`, Choice Reviews, ou um primeiro autor que as referências não citam): autores e ano vêm das referências.",
+          "title": "Resenha",
+          "type": "boolean"
         },
         "tipo": {
           "anyOf": [
@@ -169,11 +189,12 @@
       "additionalProperties": {
         "type": "integer"
       },
+      "description": "Documentos (`documentos`, `com_referencias`), referências resolvidas (`referencias`) e, nos documentos casados, as listadas na ArticleMeta (`referencias_listadas`), as resolvidas entre elas (`referencias_resolvidas`) e a mediana por documento da fração resolvida (`resolvidas_mediana_pct`); citações internas, anacrônicas e autorreferências; referências a obras apagadas (`a_obras_apagadas`); citantes, resenhas e autorias corrigidas do cânone; obras sem metadados entre as mais citadas.",
       "title": "Cobertura",
       "type": "object"
     },
     "fluxo_macrotemas": {
-      "description": "Citações internas de macrotema (linha) a macrotema.",
+      "description": "Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` (pela posição, e não pelo id, que não é contíguo).",
       "items": {
         "items": {
           "type": "integer"
@@ -187,7 +208,7 @@
       "$ref": "#/$defs/ArestasCitacao"
     },
     "n_referencias": {
-      "description": "Referências de cada documento no OpenAlex; -1: sem casamento.",
+      "description": "Referências de cada documento resolvidas no OpenAlex (0: casado, sem nenhuma); -1: sem casamento.",
       "items": {
         "type": "integer"
       },

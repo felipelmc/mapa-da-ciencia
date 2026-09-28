@@ -9,7 +9,7 @@
 	import { contar, formatarInteiro, formatarPorcentagem } from '$lib/formato';
 	import Figura from '$lib/graficos/Figura.svelte';
 	import Canone, { type ObraDesenhada } from './Canone.svelte';
-	import { canoneNoRecorte, citacoesInternas, macroDoDoc, maisCitadas, type Passa } from './calculo';
+	import { canoneNoRecorte, citacoesInternas, maisCitadas, posicaoDoMacro, type Passa } from './calculo';
 	import { recomecarDebug } from './debug';
 	import MatrizFluxo from './MatrizFluxo.svelte';
 
@@ -23,25 +23,32 @@
 	const noRecorte = $derived(aberto.cubo.contar(falhas));
 	const passa = $derived<Passa>(noRecorte === t.n ? null : (d) => falhas[d] === 0);
 
-	// a matriz do Python usa o id do macrotema como linha e coluna
+	// linhas, colunas e fatias pela posição do macrotema em `topicos.macrotemas` (os ids não são contíguos)
 	const nMacros = $derived(topicos.macrotemas.length);
-	const macro = $derived(macroDoDoc(t.topico, topicos));
-	const macroDoId = $derived(new Map(topicos.macrotemas.map((m) => [m.id, m])));
-	const nomes = $derived([...Array.from({ length: nMacros }, (_, k) => macroDoId.get(k)?.rotulo ?? `Macrotema ${k}`), 'Sem tópico']);
-	const cores = $derived([...Array.from({ length: nMacros }, (_, k) => macroDoId.get(k)?.cor ?? 'var(--texto-fraco)'), 'var(--texto-fraco)']);
+	const macro = $derived(posicaoDoMacro(t.topico, topicos));
+	const nomes = $derived([...topicos.macrotemas.map((m) => m.rotulo), 'Sem tópico']);
+	const cores = $derived([...topicos.macrotemas.map((m) => m.cor), 'var(--texto-fraco)']);
 
 	// ---- o cânone
 	const lista = $derived(canoneNoRecorte(c, passa, macro, nMacros));
 	const top = $derived(maisCitadas(lista, MAIS_CITADAS));
+	/** "A", "A e B" ou "A et al.": os autores conferidos nas referências (não o resenhista do registro). */
+	const autoresDa = (k: number, semAutor: string) => {
+		const a = c.canone[k].autores;
+		return a.length === 0 ? semAutor : a.length === 1 ? a[0] : a.length === 2 ? `${a[0]} e ${a[1]}` : `${a[0]} et al.`;
+	};
 	const rotuloDa = (k: number) => {
 		const o = c.canone[k];
-		const autor = o.autores[0] ? `${o.autores[0]}${o.autores.length > 1 ? ' et al.' : ''}` : 'Autoria desconhecida';
-		return `${autor} (${o.ano ?? 's.d.'}). ${o.titulo ?? 'Sem título'}`;
+		return `${autoresDa(k, 'Autoria desconhecida')} (${o.ano ?? 's.d.'}). ${o.titulo ?? 'Sem título'}`;
 	};
 	const citacaoDa = (k: number) => {
 		const o = c.canone[k];
-		const autor = o.autores[0] ? `${o.autores[0]}${o.autores.length > 1 ? ' et al.' : ''}` : 'autoria desconhecida';
-		return `“${o.titulo ?? 'Sem título'}”, de ${autor} (${o.ano ?? 's.d.'})`;
+		return `“${o.titulo ?? 'Sem título'}”, de ${autoresDa(k, 'autoria desconhecida')} (${o.ano ?? 's.d.'})`;
+	};
+	const registroDa = (k: number) => {
+		const o = c.canone[k];
+		if (o.resenha) return `resenha${o.registro_openalex ? `: ${o.registro_openalex}` : ''}`;
+		return o.registro_openalex ?? '—';
 	};
 	const obras = $derived(top.map((o): ObraDesenhada => ({ id: c.canone[o.obra].id, rotulo: rotuloDa(o.obra), n: o.n, fatias: o.porMacro })));
 	const usados = $derived(nomes.map((_, k) => top.some((o) => o.porMacro[k] > 0)));
@@ -54,7 +61,7 @@
 	const linhasCanone = $derived(
 		top.map((o) => {
 			const obra = c.canone[o.obra];
-			return [rotuloDa(o.obra), obra.tipo ?? '—', obra.doi ?? '—', formatarInteiro(o.n), ...o.porMacro.map((v) => formatarInteiro(v))];
+			return [rotuloDa(o.obra), obra.tipo ?? '—', registroDa(o.obra), obra.doi ?? '—', formatarInteiro(o.n), ...o.porMacro.map((v) => formatarInteiro(v))];
 		})
 	);
 
@@ -112,10 +119,17 @@
 	id="canone"
 	titulo="O cânone: as obras mais citadas"
 	resumo={resumoCanone}
-	colunas={['Obra', 'Tipo', 'DOI', 'Documentos que citam', ...nomes]}
+	colunas={['Obra', 'Tipo', 'Registro do OpenAlex', 'DOI', 'Documentos que citam', ...nomes]}
 	linhas={linhasCanone}
+	dados={{
+		colunas: ['Id', 'Autores', 'Ano', 'Título', 'Tipo', 'Resenha', 'Registro do OpenAlex', 'DOI', 'Documentos que citam', ...nomes],
+		linhas: top.map((o) => {
+			const obra = c.canone[o.obra];
+			return [obra.id, obra.autores.join('; '), obra.ano, obra.titulo, obra.tipo, obra.resenha ? 1 : 0, obra.registro_openalex ?? null, obra.doi, o.n, ...o.porMacro];
+		})
+	}}
 >
-	<ul class="legenda" aria-label="Macrotema de quem cita">
+	<ul class="legenda" aria-label="Macrotema de quem cita" data-legenda>
 		{#each nomes as nome, k (k)}
 			{#if usados[k]}<li><span class="caixa" style:background={cores[k]}></span>{nome}</li>{/if}
 		{/each}
@@ -124,10 +138,16 @@
 	<p class="nota" data-testid="nota-cobertura">
 		O cânone só enxerga as referências que o OpenAlex identificou: {formatarInteiro(cob.com_referencias ?? 0)} dos
 		{formatarInteiro(cob.documentos ?? t.n)} documentos do corpus têm referências lá, somando
-		{formatarInteiro(cob.referencias ?? 0)}. Obras sem DOI ou fora do OpenAlex (muitos livros, capítulos e textos
-		antigos) ficam de fora, então a lista favorece o que tem DOI. Entram só as {formatarInteiro(c.canone.length)} obras
-		mais citadas no corpus inteiro, e aqui aparecem as {formatarInteiro(top.length)} mais citadas no recorte (até
-		{formatarInteiro(MAIS_CITADAS)}).
+		{formatarInteiro(cob.referencias ?? 0)}.{#if cob.referencias_listadas}{' '}Nesses documentos, o OpenAlex resolveu {formatarInteiro(cob.referencias_resolvidas ?? 0)} das
+			{formatarInteiro(cob.referencias_listadas)} referências que a ArticleMeta lista
+			({formatarPorcentagem((cob.referencias_resolvidas ?? 0) / cob.referencias_listadas)}; a mediana por documento é
+			{formatarInteiro(cob.resolvidas_mediana_pct ?? 0)}%).{/if}
+		Obras sem DOI ou fora do OpenAlex (muitos livros, capítulos e textos antigos) ficam de fora, então a lista favorece o
+		que tem DOI.{#if cob.resenhas_no_canone}{' '}Muitos livros chegam pelo registro de uma resenha, com o resenhista como autor: aqui, autor e ano vêm das
+			referências dos próprios artigos ({formatarInteiro(cob.resenhas_no_canone)} das
+			{formatarInteiro(c.canone.length)} obras; a tabela mostra o registro original).{/if}
+		Entram só as {formatarInteiro(c.canone.length)} obras mais citadas no corpus inteiro, e aqui aparecem as
+		{formatarInteiro(top.length)} mais citadas no recorte (até {formatarInteiro(MAIS_CITADAS)}).
 	</p>
 </Figura>
 
@@ -138,6 +158,7 @@
 	resumo={resumoFluxo}
 	colunas={['Quem cita ↓ / quem é citado →', ...nomes.slice(0, nMacros)]}
 	linhas={internas.matriz.map((linha, i) => [nomes[i], ...linha.map((v) => formatarInteiro(v))])}
+	dados={{ colunas: ['Quem cita / quem é citado', ...nomes.slice(0, nMacros)], linhas: internas.matriz.map((linha, i) => [nomes[i], ...linha]) }}
 >
 	<MatrizFluxo rotulos={nomes.slice(0, nMacros)} cores={cores.slice(0, nMacros)} matriz={internas.matriz} />
 	<p class="nota">

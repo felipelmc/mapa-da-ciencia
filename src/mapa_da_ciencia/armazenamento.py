@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -65,6 +65,7 @@ ARQUIVO = "documentos.parquet"
 ARQUIVO_INSTITUICOES = "instituicoes_openalex.parquet"  # registros das instituições do OpenAlex (coleta)
 ARQUIVO_REFERENCIAS = "referencias_openalex.parquet"  # obra do corpus → obra citada (coleta)
 ARQUIVO_CITADAS = "obras_citadas_openalex.parquet"  # as obras de fora do corpus mais citadas (coleta)
+ARQUIVO_REFERENCIAS_AM = "referencias_articlemeta.parquet"  # as referências listadas na ArticleMeta (coleta)
 
 
 def _colunas_sql() -> str:
@@ -107,8 +108,14 @@ def _linhas(con: duckdb.DuckDBPyConnection, sql: str, params: list[Any] | None =
     return [dict(zip(nomes, linha, strict=True)) for linha in cursor.fetchall()]
 
 
-def gravar_tabela(linhas: Iterable[dict[str, Any]], colunas: dict[str, str], destino: Path, ordem: str = "id") -> int:
-    """Grava uma tabela qualquer em Parquet (zstd), ordenada por `ordem`, de forma atômica. Devolve quantas linhas."""
+def gravar_tabela(
+    linhas: Iterable[dict[str, Any]], colunas: dict[str, str], destino: Path, ordem: str | Sequence[str] = "id"
+) -> int:
+    """Grava uma tabela qualquer em Parquet (zstd), ordenada por `ordem`, de forma atômica. Devolve quantas linhas.
+
+    Os empates em `ordem` se desfazem pelas outras colunas, na ordem do esquema: o DuckDB não garante a ordem das
+    linhas empatadas com várias threads (acima de ~250 mil linhas, o mesmo conteúdo dava arquivos diferentes, e a
+    assinatura das entradas das redes mudava a cada coleta)."""
     destino.parent.mkdir(parents=True, exist_ok=True)
     tmp_parquet = destino.with_name(destino.name + ".tmp")
     n = 0
@@ -127,9 +134,9 @@ def gravar_tabela(linhas: Iterable[dict[str, Any]], colunas: dict[str, str], des
             con.execute(
                 f"INSERT INTO t SELECT * FROM read_json(?, format='newline_delimited', columns={tipos})", [jsonl]
             )
-        con.execute(
-            f"COPY (SELECT * FROM t ORDER BY \"{ordem}\") TO '{tmp_parquet}' (FORMAT parquet, COMPRESSION zstd)"
-        )
+        chaves = [ordem] if isinstance(ordem, str) else list(ordem)
+        criterio = ", ".join(f'"{k}"' for k in [*chaves, *(k for k in colunas if k not in chaves)])
+        con.execute(f"COPY (SELECT * FROM t ORDER BY {criterio}) TO '{tmp_parquet}' (FORMAT parquet, COMPRESSION zstd)")
     finally:
         con.close()
         Path(jsonl).unlink(missing_ok=True)
@@ -169,7 +176,9 @@ def ler_documentos(caminho: Path) -> list[Documento]:
 def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
     """DuckDB em memória com as views do corpus: `documentos`, `textos`, `autores`, `afiliacoes`; se a etapa de
     tópicos já rodou, `atribuicoes`; se a de geografia já rodou, `vinculos`, `pesos` e `instituicoes`; se a de
-    classificação já rodou, `classificacoes`."""
+    classificação já rodou, `classificacoes`; se a das redes já rodou, `redes_pessoas`, `redes_autorias`,
+    `redes_arestas`, `redes_instituicoes`, `redes_comunidades`, `redes_citacoes`, `redes_canone`,
+    `redes_candidatos` e `redes_colaboracao`."""
     con = duckdb.connect()
     con.execute(f"CREATE VIEW documentos AS SELECT * FROM read_parquet('{caminho}')")
     con.execute(
@@ -202,6 +211,10 @@ def conectar(caminho: Path) -> duckdb.DuckDBPyConnection:
         arquivo = caminho.parent / "geografia" / f"{nome}.parquet"
         if arquivo.exists():
             con.execute(f"CREATE VIEW {nome} AS SELECT * FROM read_parquet('{arquivo}')")
+    # depois de `mapa redes`: redes_pessoas, redes_autorias, redes_arestas, redes_canone… (o caminho vem do projeto, e
+    # não da pasta atual: `read_parquet('dados/redes/…')` só funcionava de dentro do projeto)
+    for arquivo in sorted((caminho.parent / "redes").glob("*.parquet")):
+        con.execute(f"CREATE VIEW redes_{arquivo.stem} AS SELECT * FROM read_parquet('{arquivo}')")
     return con
 
 

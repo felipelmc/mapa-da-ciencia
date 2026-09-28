@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TabelaDocumentos } from '$lib/dados/documentos';
+import { normalizarBusca } from '$lib/estado/url';
 import { buscar, dobrar, indexar } from './busca';
 
 const tabela = {
@@ -20,6 +21,12 @@ describe('busca no mapa', () => {
 		expect(dobrar('Coalizões ÇÃ')).toBe('coalizoes ca');
 		expect(buscar(indice, 'coalizoes').sort()).toEqual([0]);
 		expect(buscar(indice, 'SAO PAULO')).toEqual([1]);
+	});
+
+	it('a busca do link (sem &, % e +) encontra o mesmo que o texto digitado', () => {
+		for (const texto of ['presidencialismo & coalizão', 'coalizão + agenda', 'São Paulo & eleições', '100% legislativa']) {
+			expect(buscar(indice, normalizarBusca(texto)).sort(), texto).toEqual(buscar(indice, texto).sort());
+		}
 	});
 
 	it('aceita prefixos, erros pequenos e autores, e junta os termos com E', () => {

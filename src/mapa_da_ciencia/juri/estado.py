@@ -4,8 +4,8 @@
   decisão de cada documento × variável, com o estágio) e `resumo.json`;
 - `dados/classificacao/`: três fontes sintéticas no formato de qualquer modelo (`juri-r1`, `juri` e
   `juri-supervisor`), que a validação lê como mais três participantes;
-- `estado.sqlite`: as respostas do supervisor (`juri_supervisor`) e o sorteio da auditoria (`juri_auditoria`),
-  que valem enquanto o pedido que as gerou não mudar;
+- `estado.sqlite`: as respostas do supervisor (`juri_supervisor`), que valem enquanto o pedido que as gerou não
+  mudar;
 - `<projeto>/juri/`: os pedidos ao supervisor externo e as respostas dele, em JSONL (o protocolo por arquivos).
 """
 
@@ -40,13 +40,6 @@ CREATE TABLE IF NOT EXISTS juri_supervisor (
     custo_usd       REAL,
     atualizado      TEXT NOT NULL,
     PRIMARY KEY (hash_codebook, tarefa, doc, variavel, supervisor)
-);
-CREATE TABLE IF NOT EXISTS juri_auditoria (
-    hash_codebook TEXT NOT NULL,
-    doc           TEXT NOT NULL,
-    variavel      TEXT NOT NULL,
-    ordem         INTEGER NOT NULL,
-    PRIMARY KEY (hash_codebook, doc, variavel)
 );
 """
 

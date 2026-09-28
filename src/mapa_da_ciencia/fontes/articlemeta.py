@@ -20,7 +20,7 @@ from mapa_da_ciencia.documento import Afiliacao, Autor, Documento, Texto, mais_r
 from mapa_da_ciencia.fontes import revistas
 from mapa_da_ciencia.fontes.base import Buscador
 from mapa_da_ciencia.fontes.revistas import Revista
-from mapa_da_ciencia.texto import EMAIL, limpar, normalizar_doi, normalizar_orcid, remover_emails
+from mapa_da_ciencia.texto import contem_email, limpar, normalizar_doi, normalizar_orcid, remover_emails
 
 URL = "https://articlemeta.scielo.org/api/v1"
 TAMANHO_PAGINA = 1000
@@ -235,10 +235,46 @@ def _autores(artigo: dict) -> list[Autor]:
     ]
 
 
+COLUNAS_REFERENCIAS_AM = {
+    "doc": "VARCHAR",
+    "posicao": "INTEGER",
+    "titulo": "VARCHAR",
+    "titulo_fonte": "VARCHAR",
+    "sobrenomes": "VARCHAR[]",
+    "prenomes": "VARCHAR[]",
+    "ano": "INTEGER",
+}
+
+
+def referencias_do_registro(registro: dict, doc: str) -> list[dict[str, Any]]:
+    """As referências (`citations`) de um registro da ArticleMeta, por lista branca: o título (v12: artigo ou
+    capítulo), o título da fonte (v18: o livro, ou a revista), até três autores (v10, e v16 quando a referência é a
+    obra inteira) e o ano (v64). Servem para conferir a autoria das obras mais citadas (o cânone) e para a cobertura
+    das referências; nenhum e-mail passa (os campos são limpos, e só esses entram)."""
+    saida = []
+    for k, c in enumerate(registro.get("citations") or []):
+        titulo = next((_limpo(x.get("_")) for x in c.get("v12") or [] if x.get("_")), None)
+        fonte = next((_limpo(x.get("_")) for x in c.get("v18") or [] if x.get("_")), None)
+        autores = [a for campo in ("v10", "v16") for a in c.get(campo) or [] if a.get("s") or a.get("_")][:3]
+        ano = next((x.get("_") for x in c.get("v64") or [] if str(x.get("_") or "")[:4].isdigit()), None)
+        saida.append(
+            {
+                "doc": doc,
+                "posicao": k,
+                "titulo": titulo,
+                "titulo_fonte": fonte,
+                "sobrenomes": [_limpo(a.get("s") or a.get("_")) or "" for a in autores],
+                "prenomes": [_limpo(a.get("n")) or "" for a in autores],
+                "ano": int(str(ano)[:4]) if ano else None,
+            }
+        )
+    return saida
+
+
 def _sem_emails(valor: Any) -> Any:
     """Varredura final: remove qualquer e-mail que tenha escapado da lista branca."""
     if isinstance(valor, str):
-        return remover_emails(valor) if EMAIL.search(valor) else valor
+        return remover_emails(valor) if contem_email(valor) else valor
     if isinstance(valor, dict):
         return {k: _sem_emails(v) for k, v in valor.items()}
     if isinstance(valor, list):

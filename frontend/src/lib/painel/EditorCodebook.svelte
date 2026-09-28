@@ -146,7 +146,7 @@
 
 	.suave {
 		font-size: 0.8rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.categorias {

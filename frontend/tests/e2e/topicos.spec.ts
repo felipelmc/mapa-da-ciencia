@@ -83,6 +83,18 @@ test('em alta e em queda: sem recorte, a lista é a do gabarito do Python', asyn
 	await page.screenshot({ path: join(TELAS, 'topicos-tendencias-1440x900.png'), fullPage: true });
 });
 
+test('a ajuda das tendências avisa do pico na borda do período e das marcações marginais', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(page.getByTestId('cautela-tendencias')).toContainText('primeiro ou no último ano do período');
+	await expect(page.getByTestId('cautela-tendencias')).toContainText('marginais');
+	// a nota vale para qualquer projeto: nada de números de um corpus em particular
+	await expect(page.getByTestId('cautela-tendencias')).not.toContainText(/piloto|\d+ das \d+/);
+	await page.goto(`${url('RAIZ')}#/ajuda`);
+	const ajuda = page.getByText(/pico no primeiro ou no último ano/);
+	await expect(ajuda).toBeVisible();
+	await expect(ajuda).not.toContainText(/piloto|\d+ das \d+|três das/);
+});
+
 test('com menos de 5 anos no recorte, a lista pede um período maior', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/topicos?anos=2020-2022`);
 	await expect(page.getByTestId('tendencias-poucos-anos')).toBeVisible();
@@ -106,6 +118,28 @@ test('a gaveta abre pelo link topico=, leva ao mapa com o tópico e fecha com Es
 	await expect(page.getByTestId('gaveta-topico')).toBeVisible();
 });
 
+test('fechar a gaveta com Esc devolve o foco a quem a abriu', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	const item = page.getByTestId('lista-alta').getByRole('button').first();
+	await item.focus();
+	await page.keyboard.press('Enter');
+	const gaveta = page.getByTestId('gaveta-topico');
+	await expect(gaveta.getByRole('heading', { level: 2 })).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect(gaveta).toHaveCount(0);
+	await expect(item).toBeFocused();
+});
+
+test('um link com um tópico ou macrotema que não existe avisa e o tira da URL', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos?topico=9999`);
+	await expect(page.getByRole('status').filter({ hasText: 'Este tópico não está nesta publicação' })).toBeVisible();
+	await expect(page).toHaveURL(/#\/topicos$/);
+	await expect(page.getByTestId('gaveta-topico')).toHaveCount(0);
+	await page.goto(`${url('RAIZ')}#/topicos?macro=999`);
+	await expect(page.getByRole('status').filter({ hasText: 'Este macrotema não está nesta publicação' })).toBeVisible();
+	await expect(page).toHaveURL(/#\/topicos$/);
+});
+
 test('os pequenos múltiplos por revista filtram o recorte', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/topicos`);
 	const figura = page.getByTestId('figura-por-revista');
@@ -115,6 +149,18 @@ test('os pequenos múltiplos por revista filtram o recorte', async ({ page }) =>
 	await primeira.click();
 	await expect(page).toHaveURL(new RegExp(`revistas=${id}`));
 	await expect(primeira).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('nos pequenos múltiplos, o último ano de um painel não encosta no primeiro do vizinho', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	const anos = page.getByTestId('figura-por-revista').locator('.multiplo svg .eixo text');
+	await expect(anos.first()).toBeVisible();
+	const caixas = (await anos.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()))) as DOMRect[];
+	caixas.sort((a, b) => a.y - b.y || a.x - b.x);
+	for (let k = 1; k < caixas.length; k += 1) {
+		const [a, b] = [caixas[k - 1], caixas[k]];
+		if (Math.abs(a.y - b.y) < 2) expect(a.x + a.width, 'textos do eixo encostados').toBeLessThanOrEqual(b.x - 4);
+	}
 });
 
 test('projeto vazio: estado vazio, sem pedir arquivos ausentes', async ({ page }) => {

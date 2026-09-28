@@ -81,13 +81,13 @@ mapa painel [OPÇÕES]
 Lista as revistas do SciELO Brasil, para escolher o recorte de um projeto.
 
 ```
-mapa revistas [OPÇÕES] busca
+mapa revistas [OPÇÕES] [busca]
 ```
 
 | Argumento ou opção | Descrição | Padrão |
 |---|---|---|
-| `busca` | Parte do título, acrônimo, categoria ou ISSN. | **obrigatório** |
-| `--area`, `-a` | Filtra pela grande área (ex.: humanas, saúde). | `` |
+| `busca` | Parte do título, acrônimo, categoria ou ISSN. |  |
+| `--area`, `-a` | Filtra pela grande área (ex.: humanas, saúde). |  |
 | `--yaml` | Imprime as linhas prontas para colar em `fontes.scielo.revistas`. |  |
 
 ## `mapa coletar`
@@ -152,8 +152,8 @@ mapa redes [OPÇÕES]
 | Argumento ou opção | Descrição | Padrão |
 |---|---|---|
 | `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
-| `--revisar` | Lista os homônimos que podem ser a mesma pessoa, com um bloco para o pessoas.yaml. |  |
-| `--limite` | Quantos homônimos listar na revisão. | `20` |
+| `--revisar` | Lista as pessoas que podem ser a mesma (homônimos, grafias variantes, dois ORCIDs), com as evidências e um bloco para o pessoas.yaml. |  |
+| `--limite` | Quantos itens listar na revisão. | `40` |
 
 ## `mapa geografia`
 
@@ -189,13 +189,159 @@ mapa importar [OPÇÕES] arquivos
 Validação da classificação: a amostra, as codificações e a concordância.
 
 ```
-mapa validar [OPÇÕES]
+mapa validar [OPÇÕES] COMANDO
 ```
+
+Subcomandos: `mapa validar amostra`, `mapa validar importar`, `mapa validar metricas`, `mapa validar relatorio`.
+
+## `mapa validar amostra`
+
+Sorteia a amostra de validação (uma vez) e exporta os textos para quem vai codificar.
+
+```
+mapa validar amostra [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--refazer` | Sorteia outra amostra (as codificações já feitas continuam guardadas). |  |
+| `--n` | Tamanho da amostra neste sorteio (padrão: validacao.n do mapa.yaml). |  |
+
+## `mapa validar importar`
+
+Importa as codificações de um arquivo JSONL (formato no guia "Codificar a amostra").
+
+```
+mapa validar importar [OPÇÕES] arquivo
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `arquivo` | JSONL com uma linha por documento. | **obrigatório** |
+| `--codificador`, `-c` | Nome de quem codificou. | **obrigatório** |
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--tipo` | `humano` ou `referencia` (um anotador que não é uma pessoa, como outro modelo de IA). | `humano` |
+
+## `mapa validar metricas`
+
+Concordância entre codificadores e modelos na amostra: kappa com IC 95%, PABAK e alfa, por variável.
+
+```
+mapa validar metricas [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
+## `mapa validar relatorio`
+
+Grava o relatório da validação em `validacao/`: Markdown, tabelas LaTeX e JSON.
+
+```
+mapa validar relatorio [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
 
 ## `mapa juri`
 
 Júri de modelos locais: votação, deliberação, supervisor e relatório (ver o guia "Usar o júri").
 
 ```
-mapa juri [OPÇÕES]
+mapa juri [OPÇÕES] COMANDO
 ```
+
+Subcomandos: `mapa juri votar`, `mapa juri deliberar`, `mapa juri exportar-pedidos`, `mapa juri importar-respostas`, `mapa juri supervisionar`, `mapa juri status`, `mapa juri relatorio`.
+
+## `mapa juri votar`
+
+Rodada 1: cada membro de `juri.membros` classifica a amostra de validação (o que ainda falta).
+
+```
+mapa juri votar [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
+## `mapa juri deliberar`
+
+Rodada 2: os membros que discordam reveem as respostas vendo as dos outros, anônimas.
+
+```
+mapa juri deliberar [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
+## `mapa juri exportar-pedidos`
+
+Grava em `juri/` os pedidos ao supervisor (arbitragem e auditoria), em lotes JSONL, com as instruções.
+
+```
+mapa juri exportar-pedidos [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--lote` | Pedidos por arquivo. | `20` |
+| `--todos` | Inclui os pedidos que já têm resposta. |  |
+
+## `mapa juri importar-respostas`
+
+Confere e guarda as respostas do supervisor (o de `juri.supervisor.nome`), e consolida o júri.
+
+```
+mapa juri importar-respostas [OPÇÕES] [arquivos]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `arquivos` | Arquivos de respostas; sem nenhum, todos os `juri/*.respostas.jsonl`. |  |
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
+## `mapa juri supervisionar`
+
+Supervisor pela API da Anthropic (modo `api`): envia os pedidos, com consentimento e limite de gasto.
+
+```
+mapa juri supervisionar [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--limite-gasto` | Gasto máximo em dólares (padrão: o do mapa.yaml). |  |
+| `--sim` | Envia sem perguntar (depois de mostrar a estimativa). |  |
+
+## `mapa juri status`
+
+Em que passo o júri está.
+
+```
+mapa juri status [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
+## `mapa juri relatorio`
+
+Grava `validacao/juri.md`: kappa de cada membro e do júri, estágios, deliberação e auditoria.
+
+```
+mapa juri relatorio [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |

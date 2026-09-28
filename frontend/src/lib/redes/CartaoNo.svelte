@@ -14,6 +14,7 @@
 	 * um abre o próprio cartão) e os documentos do nó que estão no recorte, com o link para cada um no Mapa. Numa
 	 * instituição, um botão põe (ou tira) a instituição no recorte.
 	 */
+	import { usarProjeto } from '$lib/dados/contexto';
 	import type { TabelaDocumentos } from '$lib/dados/documentos';
 	import { contar, formatarDecimal } from '$lib/formato';
 
@@ -49,10 +50,23 @@
 	} = $props();
 
 	const INICIAIS = 12;
+	// o nome da revista (de revistas.json), como no cartão do Mapa, e não a sigla interna do SciELO
+	const { revistas } = usarProjeto();
+	const nomeDaRevista = (acronimo: string) => revistas?.revistas.find((r) => r.id === acronimo)?.titulo ?? acronimo;
+
+	/** Fecha e devolve o foco a quem o tinha (senão, à busca da vista), para quem usa o teclado não voltar ao topo. */
+	function fechar() {
+		const destino = voltarPara?.isConnected ? voltarPara : document.querySelector<HTMLElement>('[data-busca-no]');
+		const tinhaFoco = !!document.activeElement?.closest('[data-testid="cartao-no"]');
+		aoFechar();
+		if (tinhaFoco || document.activeElement === document.body) destino?.focus({ preventScroll: true });
+	}
 	let todos = $state(false);
 	const ordenados = $derived([...documentos].sort((a, b) => tabela.ano[b] - tabela.ano[a] || a - b));
 	const visiveis = $derived(todos ? ordenados : ordenados.slice(0, INICIAIS));
 	let titulo_: HTMLElement;
+	// quem tinha o foco quando o cartão abriu (a busca, um parceiro…): ao fechar, o foco volta para lá
+	let voltarPara: HTMLElement | null = null;
 
 	// aberto pela busca ou por um parceiro, o foco vai para o título (quem usa o teclado sabe que o cartão mudou);
 	// aberto pelo link ou por um clique no grafo, o foco fica onde está
@@ -61,6 +75,7 @@
 		todos = false;
 		const ativo = document.activeElement;
 		if (!ativo || ativo === document.body || ativo === titulo_) return;
+		if (!ativo.closest('[data-testid="cartao-no"]')) voltarPara = ativo as HTMLElement;
 		titulo_?.focus({ preventScroll: true });
 		// na tela estreita o cartão fica embaixo do grafo: rola até ele
 		const caixa = titulo_?.getBoundingClientRect();
@@ -72,14 +87,14 @@
 	onkeydown={(e) => {
 		// Esc fecha o cartão, como no Mapa; num campo de texto, o Esc é do campo (a busca limpa com ele)
 		const alvo = e.target as HTMLElement | null;
-		if (e.key === 'Escape' && !e.defaultPrevented && !alvo?.closest('input, textarea, select')) aoFechar();
+		if (e.key === 'Escape' && !e.defaultPrevented && !alvo?.closest('input, textarea, select')) fechar();
 	}}
 />
 
 <article class="cartao" aria-labelledby="titulo-no" data-testid="cartao-no">
 	<header>
 		<p class="rotulo-miudo">{sobretitulo}</p>
-		<button class="fechar" type="button" aria-label="Fechar o cartão" onclick={aoFechar}>×</button>
+		<button class="fechar" type="button" aria-label="Fechar o cartão" onclick={fechar}>×</button>
 	</header>
 	<h2 id="titulo-no" tabindex="-1" bind:this={titulo_}>{titulo}</h2>
 	{#if comunidade}
@@ -101,7 +116,9 @@
 			{#each parceiros as p (p.i)}
 				<li>
 					<button type="button" onclick={() => aoAbrir(p.i)}>{p.nome}</button>
-					<span class="numero">{formatarDecimal(p.peso)} · {contar(p.documentos, 'doc.', 'docs.')}</span>
+					<span class="numero" title="Peso da parceria no recorte: soma de 1/(n−1) em cada documento em comum com n autores">
+						peso {formatarDecimal(p.peso)} · {contar(p.documentos, 'doc.', 'docs.')}
+					</span>
 				</li>
 			{/each}
 		</ul>
@@ -113,7 +130,7 @@
 			{#each visiveis as d (d)}
 				<li>
 					<a href={linkDoc(d)}>{tabela.titulos[d]}</a>
-					<span class="suave">{tabela.revistas[tabela.revista[d]]} · {tabela.ano[d]}</span>
+					<span class="suave" data-testid="revista-no">{nomeDaRevista(tabela.revistas[tabela.revista[d]])} · {tabela.ano[d]}</span>
 				</li>
 			{/each}
 		</ol>
@@ -153,8 +170,9 @@
 
 	.fechar {
 		flex: none;
-		width: 1.75rem;
-		height: 1.75rem;
+		/* 40 px: um alvo de toque que o dedo acha no celular */
+		width: 2.5rem;
+		height: 2.5rem;
 		font-size: 1.2rem;
 		line-height: 1;
 		color: var(--texto-suave);

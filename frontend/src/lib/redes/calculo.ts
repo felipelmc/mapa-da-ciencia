@@ -340,22 +340,28 @@ export function colaboracaoPorAno(
 
 // ---------------------------------------------------------------- citações
 
-/** O macrotema de cada documento (pelo tópico), ou −1 sem tópico. */
-export function macroDoDoc(topicoDoDoc: ArrayLike<number>, topicos: Topicos): Int32Array {
-	const macro = new Map(topicos.topicos.map((t) => [t.id, t.macro_id]));
+/**
+ * A posição do macrotema de cada documento em `topicos.macrotemas` (pelo tópico), ou −1 sem tópico. A posição, e
+ * não o id: os ids dos macrotemas são estáveis e não contíguos (no piloto, 0, 1, 2, 5, 6, 7 e 8), e a matriz do
+ * fluxo e as fatias do cânone são indexadas de 0 a n − 1, como no Python (`contrato/redes.fluxo_por_posicao`).
+ */
+export function posicaoDoMacro(topicoDoDoc: ArrayLike<number>, topicos: Topicos): Int32Array {
+	const posicao = new Map(topicos.macrotemas.map((m, k) => [m.id, k]));
+	const macro = new Map(topicos.topicos.map((t) => [t.id, posicao.get(t.macro_id) ?? -1]));
 	return Int32Array.from({ length: topicoDoDoc.length }, (_, d) => macro.get(topicoDoDoc[d]) ?? -1);
 }
 
 export interface CitacoesInternas {
 	/** Citações entre dois documentos do recorte. */
 	n: number;
-	/** Macrotema de quem cita (linha) × macrotema de quem é citado (coluna), `nMacros × nMacros`. */
+	/** Macrotema de quem cita (linha) × macrotema de quem é citado (coluna), pela posição, `nMacros × nMacros`. */
 	matriz: number[][];
 }
 
 /**
  * As citações internas visíveis no recorte: as duas pontas precisam estar nele (uma citação de um artigo de 2020 a
- * um de 2012 some com `anos=2015-2020`). A matriz usa o id do macrotema como linha e coluna, como no Python.
+ * um de 2012 some com `anos=2015-2020`). `macro`: a posição do macrotema de cada documento (`posicaoDoMacro`), que
+ * é a linha e a coluna da matriz, como no Python.
  */
 export function citacoesInternas(c: TabelaCitacoes, passa: Passa, macro: Int32Array, nMacros: number): CitacoesInternas {
 	const matriz = Array.from({ length: nMacros }, () => new Array<number>(nMacros).fill(0));
@@ -375,7 +381,7 @@ export interface ObraNoRecorte {
 	obra: number;
 	/** Documentos do recorte que citam a obra. */
 	n: number;
-	/** Os mesmos documentos por macrotema de quem cita; a última posição é "sem tópico". */
+	/** Os mesmos documentos pela posição do macrotema de quem cita; a última posição é "sem tópico". */
 	porMacro: number[];
 }
 
@@ -396,7 +402,8 @@ export function canoneNoRecorte(c: TabelaCitacoes, passa: Passa, macro: Int32Arr
 	return saida;
 }
 
-/** As `k` obras mais citadas no recorte (empates pela ordem do cânone, que é a do corpus inteiro). */
+/** As `k` obras mais citadas no recorte (empates pela posição no cânone, que vem ordenado por citantes no corpus
+ * inteiro e, no empate, pelo id). */
 export function maisCitadas(lista: ObraNoRecorte[], k = 30): ObraNoRecorte[] {
 	return lista
 		.filter((o) => o.n > 0)

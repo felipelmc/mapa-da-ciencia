@@ -33,6 +33,12 @@
 	const px = (j: number) => M.esq + (anos.length > 1 ? (j * w) / (anos.length - 1) : w / 2);
 	const py = (v: number) => M.cima + h - (v / maximo) * h;
 	const texto = (v: number) => (formato === 'porcentagem' ? formatarPorcentagem(v) : formatarDecimal(v));
+	// a janela do recorte dentro do eixo: um recorte fora do período (anos=2030-2031) não desenha faixa nenhuma
+	const faixa = $derived.by((): [number, number] | null => {
+		if (!janela || anos.length < 2) return null;
+		const [a, b] = [Math.max(0, janela[0]), Math.min(anos.length - 1, janela[1])];
+		return a <= b ? [a, b] : null;
+	});
 
 	const trechos = $derived.by(() => {
 		const saida: string[] = [];
@@ -60,14 +66,8 @@
 <div class="serie" bind:clientWidth={largura} data-testid="serie-{id}">
 	<h3>{titulo}</h3>
 	<svg width={largura} height={ALTURA} role="img" aria-label={descricao}>
-		{#if janela && anos.length > 1}
-			<rect
-				class="janela"
-				x={px(janela[0]) - 3}
-				y={M.cima - 2}
-				width={px(janela[1]) - px(janela[0]) + 6}
-				height={h + 4}
-			/>
+		{#if faixa}
+			<rect class="janela" x={px(faixa[0]) - 3} y={M.cima - 2} width={px(faixa[1]) - px(faixa[0]) + 6} height={h + 4} />
 		{/if}
 		<line class="base" x1={M.esq} x2={M.esq + w} y1={M.cima + h} y2={M.cima + h} />
 		<text class="eixo" x={M.esq - 5} y={M.cima + h} text-anchor="end">{texto(0)}</text>

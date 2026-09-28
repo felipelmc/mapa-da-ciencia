@@ -11,6 +11,7 @@
 	import { mudarFiltros } from '$lib/estado/filtros';
 	import type { Filtros } from '$lib/estado/url';
 	import { contar, formatarDecimal, formatarInteiro, formatarPorcentagem } from '$lib/formato';
+	import { numeroCru } from '$lib/exportar/figura';
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { NOME_UF } from '$lib/geografia/lugares';
 	import { malhaUF, type PropsUF, type Regiao } from '$lib/geografia/malhas';
@@ -67,7 +68,7 @@
 
 	// ---- frases
 	const nome = (k: string) => (k === EXTERIOR ? 'Exterior' : (NOME_UF[k] ?? k));
-	const curto = (k: string) => (k === EXTERIOR ? 'exterior' : k);
+	const curto = (k: string) => (k === EXTERIOR ? 'Exterior' : k);
 	const par = (a: Arco) => `${nome(a.a)} e ${nome(a.b)}`;
 	const pesoTotal = $derived(arcos.reduce((s, a) => s + a.peso, 0));
 	const comExterior = $derived(arcos.filter((a) => a.a === EXTERIOR || a.b === EXTERIOR).reduce((s, a) => s + a.peso, 0));
@@ -113,6 +114,10 @@
 	{resumo}
 	colunas={['Lugar', 'Com', 'Peso fracionário', 'Documentos']}
 	linhas={arcos.map((a) => [nome(a.a), nome(a.b), formatarDecimal(a.peso, 2), formatarInteiro(a.documentos)])}
+	dados={{
+		colunas: ['Lugar', 'Com', 'Peso fracionário', 'Documentos'],
+		linhas: arcos.map((a) => [a.a === EXTERIOR ? 'Exterior' : a.a, a.b === EXTERIOR ? 'Exterior' : a.b, numeroCru(a.peso), a.documentos])
+	}}
 	pronto={!!malha}
 >
 	<div class="mapa-e-pares">
@@ -126,7 +131,7 @@
 			</p>
 		</div>
 		<div class="pares">
-			<h3 class="rotulo-miudo">As parcerias mais fortes</h3>
+			<h3 class="rotulo-miudo">As parcerias mais fortes (peso no recorte · documentos)</h3>
 			<ol data-testid="pares-estados">
 				{#each arcos.slice(0, MAIS_FORTES) as a (`${a.a}|${a.b}`)}
 					<li>

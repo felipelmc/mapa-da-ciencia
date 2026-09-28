@@ -35,7 +35,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from ..armazenamento import ARQUIVO_INSTITUICOES, ler_tabela
-from ..config import ErroConfig
+from ..config import ErroConfig, ler_yaml
 from ..documento import Documento
 from . import normalizar
 
@@ -203,7 +203,7 @@ def ler_projeto(raiz: Path) -> Correcoes:
     if not arquivo.exists():
         return Correcoes({}, {})
     try:
-        dados = _Arquivo.model_validate(yaml.safe_load(arquivo.read_text(encoding="utf-8")) or {})
+        dados = _Arquivo.model_validate(ler_yaml(arquivo.read_text(encoding="utf-8"), arquivo.name) or {})
     except (yaml.YAMLError, ValidationError) as e:
         raise ErroConfig(
             f"{ARQUIVO_PROJETO} inválido: {e}. O formato é `apelidos: {{texto: id}}` e "

@@ -128,6 +128,7 @@ nav:
       - Ler a classificação: guias/ler-a-classificacao.md
       - Codificar a amostra: guias/codificar-a-amostra.md
       - Ler kappa e PABAK: guias/ler-kappa-e-pabak.md
+      - Usar o júri de modelos: guias/juri.md
       - Usar o painel: guias/painel.md
       - Exportar figuras: guias/exportar-figuras.md
       - Publicar o site: guias/publicar.md
@@ -150,6 +151,7 @@ nav:
       - Redes de coautoria e citação: explicacoes/redes.md
       - Classificação ancorada em evidência: explicacoes/classificacao.md
       - Desenho da validação: explicacoes/validacao.md
+      - Júri de modelos e supervisor: explicacoes/juri.md
       - Modelos locais: explicacoes/modelos-locais.md
       - Reprodutibilidade: explicacoes/reprodutibilidade.md
       - Privacidade e licenças: explicacoes/privacidade-e-licencas.md
@@ -170,5 +172,6 @@ nav:
       - "0012 · Validação e codificador de referência": decisoes/0012-validacao-e-codificador-de-referencia.md
       - "0013 · Painel: jobs, progresso ao vivo e edição": decisoes/0013-painel-jobs-sse-e-edicao.md
       - "0014 · Redes de coautoria e citação": decisoes/0014-redes-de-coautoria-e-citacao.md
+      - "0015 · Júri de modelos e supervisor": decisoes/0015-juri-de-modelos-e-supervisor.md
   - Desenvolvimento:
       - desenvolvimento/index.md

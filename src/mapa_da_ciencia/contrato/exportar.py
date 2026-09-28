@@ -156,6 +156,11 @@ def _autor_curto(doc: Documento) -> str:
     return primeiro + (f"; +{len(doc.autores) - 1}" if len(doc.autores) > 1 else "")
 
 
+def _url_segura(url: str | None) -> str | None:
+    """Só endereços http(s) viram link no cartão (um `javascript:` vindo de uma fonte externa não)."""
+    return url if url and url.lower().startswith(("http://", "https://")) else None
+
+
 def _detalhe(doc: Documento, atrib: dict[str, Any], idiomas: list[str]) -> Detalhe:
     resumo = doc.texto_em("resumos", idiomas)
     chaves = [t for t in doc.palavras_chave if t.idioma == (resumo.idioma if resumo else idiomas[0])]
@@ -164,7 +169,7 @@ def _detalhe(doc: Documento, atrib: dict[str, Any], idiomas: list[str]) -> Detal
         idioma=resumo.idioma if resumo else None,
         palavras_chave=list(dict.fromkeys(t.texto for t in (chaves or doc.palavras_chave))),
         autores=[" ".join(p for p in (a.nome, a.sobrenome) if p) for a in doc.autores],
-        url=doc.url or (f"https://doi.org/{doc.doi}" if doc.doi else None),
+        url=_url_segura(doc.url) or (f"https://doi.org/{doc.doi}" if doc.doi else None),
         licenca=doc.licenca,
         licenca_fonte=doc.licenca_fonte,
         idioma_analise=atrib["idioma_analise"],
@@ -233,15 +238,6 @@ def agregados_geograficos(afiliacoes: Afiliacoes) -> dict[str, Any]:
     }
 
 
-def _id_instituicao(linha: dict[str, Any]) -> str:
-    """Id no contrato: `ror:…` quando há ROR, `openalex:I…` sem ele, o nome dado pelo projeto às próprias."""
-    if linha["ror"]:
-        return f"ror:{linha['ror']}"
-    if linha["id"].startswith("I") and linha["id"][1:].isdigit():
-        return f"openalex:{linha['id']}"
-    return linha["id"]
-
-
 def arquivo_de_afiliacoes(
     pesos: list[dict[str, Any]], instituicoes: list[dict[str, Any]], indice_doc: dict[str, int]
 ) -> tuple[Afiliacoes, int]:
@@ -252,9 +248,11 @@ def arquivo_de_afiliacoes(
     """
     from collections import defaultdict
 
+    from mapa_da_ciencia.geografia.resultado import id_no_contrato
+
     ordem = sorted(instituicoes, key=lambda i: (-i["peso"], i["id"]))
     insts = [
-        Instituicao(id=_id_instituicao(i), nome=i["nome"], sigla=i["sigla"], uf=i["uf"], pais=i["pais"] or "")
+        Instituicao(id=id_no_contrato(i), nome=i["nome"], sigla=i["sigla"], uf=i["uf"], pais=i["pais"] or "")
         for i in ordem
     ]
     pos_inst = {i["id"]: k for k, i in enumerate(ordem)}
@@ -405,7 +403,9 @@ def _arquivos_de_topicos(
     )
 
 
-def _geografia(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[str]) -> int | None:
+def _geografia(
+    projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[str], desatualizadas: list[str]
+) -> int | None:
     """Acrescenta `afiliacoes.json` e os agregados geográficos, se a geografia estiver em dia. Devolve quantos
     documentos têm instituição identificada (ou None, sem geografia)."""
     from mapa_da_ciencia.geografia.pipeline import geografia_em_dia
@@ -419,6 +419,7 @@ def _geografia(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[st
         avisos.append(
             "A geografia é de antes da última coleta ou das últimas correções. Rode `mapa geografia` para atualizá-la."
         )
+        desatualizadas.append("geografia")
         return None
     documentos = arquivos["documentos"]
     indice_doc = {id_: i for i, id_ in enumerate(documentos.colunas.id)}  # type: ignore[attr-defined]
@@ -429,20 +430,38 @@ def _geografia(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[st
     return com_instituicao
 
 
-def _redes(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[str]) -> None:
-    """Acrescenta `redes.json` e `citacoes.json` se as redes estiverem em dia com o corpus e as entradas."""
-    from mapa_da_ciencia.contrato.redes import redes_contrato
-    from mapa_da_ciencia.redes.pipeline import redes_em_dia
+def _redes(
+    projeto: Projeto,
+    arquivos: dict[str, BaseModel],
+    avisos: list[str],
+    desatualizadas: list[str],
+    mudancas: dict[str, list[str]],
+) -> None:
+    """Acrescenta `redes.json` e `citacoes.json` se as redes estiverem em dia com o corpus e as entradas; senão, diz o
+    que mudou e marca a etapa como desatualizada no manifesto (a vista diz o que rodar, em vez de "sem redes")."""
+    from mapa_da_ciencia.contrato.redes import instituicoes_fora_de_afiliacoes, redes_contrato
+    from mapa_da_ciencia.redes.pipeline import o_que_mudou, redes_em_dia
 
     estado = redes_em_dia(projeto)
     if estado is None:
         return
     if estado is False:
-        avisos.append("As redes foram geradas antes das últimas mudanças no corpus. Rode `mapa redes`.")
+        mudancas["redes"] = o_que_mudou(projeto)
+        mudou = " e ".join(mudancas["redes"]) or "as entradas"
+        avisos.append(
+            f"As redes ficaram desatualizadas (mudou {mudou} depois da última `mapa redes`): rode `mapa redes`."
+        )
+        desatualizadas.append("redes")
         return
     documentos = arquivos["documentos"]
-    n_macros = len(arquivos["topicos"].macrotemas)
-    redes, citacoes, gabarito = redes_contrato(projeto, list(documentos.colunas.id), n_macros)
+    ids_macros = [mt.id for mt in arquivos["topicos"].macrotemas]  # type: ignore[attr-defined]
+    redes, citacoes, gabarito = redes_contrato(projeto, list(documentos.colunas.id), ids_macros)
+    if fora := instituicoes_fora_de_afiliacoes(redes, arquivos.get("afiliacoes")):  # type: ignore[arg-type]
+        avisos.append(
+            f"{len(fora)} instituição(ões) da rede sem registro em afiliacoes.json (por exemplo, {fora[0]}): a rede de "
+            "instituições ficou de fora. Rode `mapa geografia` e `mapa redes`."
+        )
+        redes = redes.model_copy(update={"instituicoes": None})
     arquivos["redes"] = redes
     if citacoes is not None:
         arquivos["citacoes"] = citacoes
@@ -464,13 +483,15 @@ def exportar(projeto: Projeto) -> list[str]:
     import shutil
 
     from mapa_da_ciencia.armazenamento import ARQUIVO, cobertura, ler_documentos
-    from mapa_da_ciencia.manifesto import ultima_execucao
+    from mapa_da_ciencia.manifesto import ultima_classificacao, ultima_execucao
     from mapa_da_ciencia.topicos.resultado import PASTA, Resultado, assinatura_corpus, ler_atribuicoes
 
     caminho = projeto.dados / ARQUIVO
     if not caminho.exists():
         return []
     avisos: list[str] = []
+    desatualizadas: list[str] = []
+    mudancas: dict[str, list[str]] = {}
     cob = cobertura(caminho)
     revistas = _revistas(caminho)
     arquivos: dict[str, BaseModel] = {"revistas": Revistas(revistas=revistas)}
@@ -484,6 +505,7 @@ def exportar(projeto: Projeto) -> list[str]:
         docs = {d.id: d for d in ler_documentos(caminho)}
         if resultado.assinatura != assinatura_corpus(list(docs)):
             avisos.append("Os tópicos foram gerados antes da última coleta. Rode `mapa topicos` para atualizá-los.")
+            desatualizadas.append("topicos")
         else:
             mais, fragmentos = _arquivos_de_topicos(
                 projeto, resultado, ler_atribuicoes(projeto.dados / PASTA), docs, [r.id for r in revistas]
@@ -492,10 +514,10 @@ def exportar(projeto: Projeto) -> list[str]:
             contagens = contagens.model_copy(update={"topicos": len(resultado.topicos)})
             modelos = {"rotulos": "nenhum (palavras-chave)", **resultado.modelos}
             sementes = {"umap": int(resultado.parametros["semente"])}
-            geo = _geografia(projeto, arquivos, avisos)
+            geo = _geografia(projeto, arquivos, avisos, desatualizadas)
             if geo is not None:
                 contagens = contagens.model_copy(update={"com_instituicao": geo})
-            _redes(projeto, arquivos, avisos)
+            _redes(projeto, arquivos, avisos, desatualizadas, mudancas)
 
     from mapa_da_ciencia.contrato.classificacao import exportar_classificacao
 
@@ -505,6 +527,10 @@ def exportar(projeto: Projeto) -> list[str]:
     )
     if "modelo" in cls:
         modelos["classificacao"] = cls["modelo"]
+    from mapa_da_ciencia.classificacao.pipeline import classificacao_em_dia
+
+    if "classificacoes" not in arquivos and classificacao_em_dia(projeto) is False:
+        desatualizadas.append("classificacao")
     manifesto = manifesto_do_projeto(
         projeto,
         api=False,
@@ -513,8 +539,8 @@ def exportar(projeto: Projeto) -> list[str]:
     )
     duracoes = {
         etapa: round(m["duracao_s"], 1)
-        for etapa in ("coleta", "embeddings", "topicos", "geografia", "classificacao")
-        if (m := ultima_execucao(projeto, etapa))
+        for etapa in ("coleta", "embeddings", "topicos", "geografia", "redes", "classificacao")
+        if (m := ultima_classificacao(projeto) if etapa == "classificacao" else ultima_execucao(projeto, etapa))
     }
     execucao = manifesto.execucao.model_copy(
         update={
@@ -524,7 +550,14 @@ def exportar(projeto: Projeto) -> list[str]:
             "hash_codebook": cls.get("hash_codebook"),
         }
     )
-    manifesto = manifesto.model_copy(update={"licencas": cob["licencas"], "execucao": execucao})
+    manifesto = manifesto.model_copy(
+        update={
+            "licencas": cob["licencas"],
+            "execucao": execucao,
+            "desatualizadas": desatualizadas,
+            "mudancas": mudancas,
+        }
+    )
 
     novo = projeto.saida / "dados.novo"
     shutil.rmtree(novo, ignore_errors=True)

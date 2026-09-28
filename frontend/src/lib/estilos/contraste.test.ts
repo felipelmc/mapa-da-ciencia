@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // Confere o contraste (WCAG 2.x) dos pares de cor usados como texto, nos dois temas.
@@ -78,4 +78,47 @@ it('usa as cores de base pedidas para cada tema', () => {
 		linha: '#dcd3c2',
 		acento: '#c2410c'
 	});
+});
+
+// ---- o uso dos tokens nos componentes
+
+const SRC = join(import.meta.dirname, '..', '..');
+
+function arquivosSvelte(pasta: string): string[] {
+	return readdirSync(pasta, { withFileTypes: true }).flatMap((e) =>
+		e.isDirectory() ? arquivosSvelte(join(pasta, e.name)) : e.name.endsWith('.svelte') ? [join(pasta, e.name)] : []
+	);
+}
+
+/** `a` sobre `b` com opacidade `p` (como `color-mix(in oklab, a p%, transparent)` sobre o fundo `b`). */
+function misturar(a: string, b: string, p: number): string {
+	const canal = (hex: string, i: number) => parseInt(hex.slice(i, i + 2), 16);
+	return `#${[1, 3, 5]
+		.map((i) => Math.round(p * canal(a, i) + (1 - p) * canal(b, i)).toString(16).padStart(2, '0'))
+		.join('')}`;
+}
+
+it('--texto-fraco só pinta o texto de itens desativados', () => {
+	// a regra do tokens.css, conferida onde o token é usado: texto que informa (créditos, notas, intervalos) usa
+	// --texto-suave, que passa no AA
+	const fora: string[] = [];
+	for (const arquivo of arquivosSvelte(SRC)) {
+		const texto = readFileSync(arquivo, 'utf8');
+		if (!texto.includes('<style')) continue;
+		for (const [, seletor, corpo] of texto.slice(texto.indexOf('<style')).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+			if (!/(^|[\s;])color:\s*var\(--texto-fraco\)/.test(corpo)) continue;
+			const partes = seletor.split(',').map((x) => x.trim());
+			if (partes.every((x) => /:disabled|\.desativado/.test(x))) continue;
+			fora.push(`${relative(SRC, arquivo)}: ${partes.join(', ')}`);
+		}
+	}
+	expect(fora).toEqual([]);
+});
+
+it('a diagonal da matriz de confusão deixa o texto com contraste AA, até na célula mais forte', () => {
+	const matriz = readFileSync(join(SRC, 'lib', 'validacao', 'MatrizConfusao.svelte'), 'utf8');
+	const p = Number(matriz.match(/td\.diagonal\s*\{[^}]*var\(--acento\) calc\(var\(--intensidade\) \* (\d+)%\)/)![1]) / 100;
+	for (const t of Object.values(TEMAS)) {
+		expect(contraste(t.texto, misturar(t.acento, t.superficie, p))).toBeGreaterThanOrEqual(4.5);
+	}
 });

@@ -1,8 +1,10 @@
 """A decisão do júri numa variável, a partir dos votos dos membros (funções puras, sem modelo nem disco).
 
 Um **voto** é a resposta de um membro: o valor, a evidência e o status da conferência da evidência. A regra é a
-maioria estrita (mais da metade dos membros), com uma condição: uma maioria só vale se ao menos um dos votos dela
-trouxer evidência que não seja `ausente` (um valor sem trecho no texto que o sustente não decide nada).
+maioria estrita (mais da metade dos membros), com uma condição: uma maioria que não é unânime só vale se ao menos um
+dos votos dela trouxer evidência que não seja `ausente` (um valor sem trecho no texto que o sustente não desempata
+nada). A unanimidade decide mesmo sem evidência: não há disputa para deliberar nem candidatos para o supervisor
+escolher, e a decisão fica com o status `ausente`, que a auditoria pode sortear.
 
 - `categorica` e `booleana`: compara o valor;
 - `multipla`: categoria a categoria (entra a que a maioria estrita escolheu; um empate numa categoria deixa sem
@@ -111,8 +113,10 @@ def agregar(variavel: Variavel, votos: list[Voto]) -> Decisao:
         if 2 * k <= n:
             return Decisao("sem_maioria", None, None, todos)
     apoio = [v for v in votos if chave(variavel, v.valor) == vencedora]
-    if not apoio or all(v.status == "ausente" for v in apoio):
+    if not apoio:
+        return Decisao("sem_maioria", None, None, todos)
+    etapa: Etapa = "unanime" if len(apoio) == n else "maioria"
+    if etapa == "maioria" and all(v.status == "ausente" for v in apoio):
         return Decisao("sem_maioria", None, None, todos)
     melhor = _melhor(apoio, ordem)
-    etapa: Etapa = "unanime" if len(apoio) == n else "maioria"
     return Decisao(etapa, melhor.valor, melhor, todos)

@@ -40,7 +40,7 @@ Com o painel aberto (`mapa painel`), vá a **Validação › Codificar a amostra
 | Tecla | O que faz |
 |---|---|
 | ++1++ a ++9++ | Escolhe a opção da variável atual e passa para a próxima. Nas booleanas, ++1++ é Sim e ++2++ é Não. Na múltipla escolha, liga ou desliga a opção. |
-| ++tab++, ++down++, ++up++ | Troca de variável. Numa variável de texto, digite a resposta e aperte ++enter++. |
+| ++down++, ++up++ | Troca de variável. Numa variável de texto, digite a resposta e aperte ++enter++. |
 | ++enter++ | Confirma a ficha (todas as variáveis respondidas) e abre a próxima. |
 | ++left++, ++right++ | Ficha anterior e próxima, sem confirmar. |
 | ++s++ | Marca a resposta como incerta. |
@@ -48,6 +48,7 @@ Com o painel aberto (`mapa painel`), vá a **Validação › Codificar a amostra
 | ++e++ | Usa o trecho selecionado no resumo (com o mouse) como evidência. |
 | ++d++ | Mostra as definições das categorias. |
 | ++question++ | Mostra a ajuda. |
+| ++tab++ | Percorre os botões da ficha e sai dela, para "Trocar de codificador" e o menu das seções. |
 
 - A codificação é **cega**: a ficha nunca mostra o que o modelo respondeu.
 - Cada pessoa tem a própria ordem na fila, sempre a mesma, e a amostra inteira passa por todas.

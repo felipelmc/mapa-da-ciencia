@@ -74,3 +74,15 @@ test('o cartão de um artigo com licença aberta continua com o resumo marcado',
 	await expect(cartao.getByTestId('resumo-marcado')).toHaveText(d.resumo!);
 	await expect(cartao.getByTestId('aviso-licenca')).toHaveCount(0);
 });
+
+test('a Ajuda do site publicado não fala de marcos, do computador de quem lê nem de codificação humana', async ({ page }) => {
+	await page.goto(`${url('PUBLICADO')}#/ajuda`);
+	await expect(h1(page)).toHaveText('Como ler este observatório');
+	await expect(page.getByText('publicados neste site')).toBeVisible();
+	await expect(page.getByText(/chega no marco/)).toHaveCount(0);
+	await expect(page.getByText(/no seu computador/)).toHaveCount(0);
+	await expect(page.getByText(/codificação humana/)).toHaveCount(0);
+	// nenhuma seção está por chegar: as Redes, a última, já têm link
+	await expect(page.getByRole('main').getByText(/^chega /)).toHaveCount(0);
+	await expect(page.getByRole('main').getByRole('link', { name: 'Redes', exact: true })).toBeVisible();
+});

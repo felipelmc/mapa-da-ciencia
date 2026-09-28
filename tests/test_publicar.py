@@ -88,6 +88,28 @@ def test_resumos_so_com_licenca_aberta(projeto, estatico, tmp_path):
     assert not (site / "sobra.txt").exists() and not (tmp_path / "site.novo").exists()
 
 
+def test_varredura_recusa_email_e_orcid(tmp_path):
+    from mapa_da_ciencia.publicar import conferir_privacidade
+
+    dados = tmp_path / "dados"
+    dados.mkdir()
+    # números de quatro em quatro dígitos que não são ORCIDs (ISSN, PID, dígito verificador errado) passam
+    parecidos = '{"issn": "0011-5258", "x": "1234-5678-9012-3456", "y": "0000-0002-1825-0098"}'
+    (dados / "revistas.json").write_text(parecidos)
+    conferir_privacidade(dados)
+    (dados / "citacoes.json").write_text('{"canone": [{"titulo": "Uma obra (0000-0002-1825-0097)"}]}')
+    with pytest.raises(ErroConfig, match=r"ORCID \(0000-0002-1825-0097\) apareceu em citacoes\.json"):
+        conferir_privacidade(dados)
+    # a URL do orcid.org (como o OpenAlex devolve) e a forma sem hífens também
+    for forma in ("https://orcid.org/0000-0002-1825-0097", "0000000218250097"):
+        (dados / "citacoes.json").write_text(f'{{"autor": "{forma}"}}')
+        with pytest.raises(ErroConfig, match=r"ORCID \(0000-0002-1825-0097\)"):
+            conferir_privacidade(dados)
+    (dados / "citacoes.json").write_text('{"nome": "fulano@exemplo.org"}')
+    with pytest.raises(ErroConfig, match="e-mail"):
+        conferir_privacidade(dados)
+
+
 def test_sem_resumos(projeto, estatico, tmp_path):
     from mapa_da_ciencia.publicar import publicar
 
@@ -154,6 +176,24 @@ def test_o_destino_so_pode_ser_uma_pasta_vazia_ou_um_site_publicado(projeto, est
     site = publicar(projeto, tmp_path / "vazia", estatico=estatico).destino
     assert (site / ".mapa-site").exists()
     publicar(projeto, site, estatico=estatico)  # um site publicado antes pode ser trocado
+
+
+def test_email_escondido_por_hifen_suave_interrompe_a_publicacao(projeto, estatico, tmp_path):
+    """A varredura final do `publicar` também vê um e-mail escondido por um hífen suave (de um "&shy;" na fonte), que
+    aparece inteiro na tela."""
+    import re
+    import shutil
+
+    from mapa_da_ciencia.publicar import publicar
+
+    raiz = shutil.copytree(projeto.raiz, tmp_path / "copia")
+    cfg = raiz / "mapa.yaml"  # o título vai para o manifesto publicado
+    titulo = "Contato fulana@uf\u00adrj.br"
+    cfg.write_text(re.sub(r"^titulo: .*$", f"titulo: {titulo}", cfg.read_text(encoding="utf-8"), flags=re.M), "utf-8")
+    copia = Projeto.abrir(raiz)
+    assert copia.config.titulo == titulo
+    with pytest.raises(ErroConfig, match="Um e-mail apareceu"):
+        publicar(copia, tmp_path / "site", estatico=estatico)
 
 
 def test_exemplo_publicado_sem_trechos_do_juri_nos_resumos_fechados():

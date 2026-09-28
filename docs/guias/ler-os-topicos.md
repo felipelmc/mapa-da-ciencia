@@ -60,4 +60,4 @@ Os pequenos múltiplos, no fim da vista, repetem o fluxo dos macrotemas para cad
 
 ## O recorte
 
-A barra no alto (período, revistas e os chips de tópicos, busca, laço e lugares) vale para toda a vista. O fluxo ignora o próprio filtro de anos e de tópicos: mostra o período inteiro, com os anos fora do recorte velados, e as faixas dos tópicos escolhidos em destaque. **Play** anima a linha do tempo ano a ano. O recorte vai junto quando você troca de vista pelo trilho: escolha uma UF na Geografia e volte aos Tópicos para ver os temas dos autores de lá.
+A barra no alto (período, revistas e os chips de tópicos, busca, laço e lugares) vale para toda a vista. O fluxo ignora o próprio filtro de anos e de tópicos: mostra o período inteiro, com os anos fora do recorte velados, e as faixas dos tópicos escolhidos em destaque. O botão **Tocar** anima a linha do tempo ano a ano. O recorte vai junto quando você troca de vista pelo trilho: escolha uma UF na Geografia e volte aos Tópicos para ver os temas dos autores de lá.

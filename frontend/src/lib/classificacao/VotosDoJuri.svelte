@@ -12,8 +12,9 @@
 <script lang="ts">
 	/**
 	 * Como o júri de modelos locais decidiu cada variável deste documento (só nos documentos da amostra de validação):
-	 * o estágio da decisão, o voto de cada membro (e a mudança na deliberação) e, quando não houve maioria, a escolha
-	 * do supervisor com a justificativa. Fica recolhido: é o bastidor da classificação, e não a classificação.
+	 * o estágio da decisão, o voto de cada membro com o trecho que ele citou (e a mudança na deliberação) e o que valeu:
+	 * a decisão do júri, a escolha do supervisor com a justificativa ou, sem maioria e sem supervisor, o voto do
+	 * primeiro membro. Fica recolhido: é o bastidor da classificação, e não a classificação.
 	 */
 	import type { CodebookContrato } from '$lib/contrato/tipos';
 
@@ -34,6 +35,8 @@
 		if (Array.isArray(x)) return x.map(rotulo).join(' + ') || 'nenhuma';
 		return x === null ? '—' : v?.tipo === 'texto' ? x : rotulo(x);
 	}
+	const mudancas = $derived(Object.values(juri).some((d) => (d.votos ?? []).some((v) => v.revisou)));
+
 	function votos(d: DecisaoJuri, membro: string) {
 		const r1 = (d.votos ?? []).find((v) => v.membro === membro && v.rodada === 1);
 		const r2 = (d.votos ?? []).find((v) => v.membro === membro && v.rodada === 2);
@@ -46,6 +49,9 @@
 		<span class="rotulo-miudo">Júri de modelos</span>
 		<span class="suave">{membros.length} membros, na amostra de validação</span>
 	</summary>
+	{#if mudancas}
+		<p class="legenda suave">A seta (→) mostra o voto mudado na deliberação.</p>
+	{/if}
 	<ul>
 		{#each ordem as id (id)}
 			{@const d = juri[id]}
@@ -58,22 +64,44 @@
 					{#each membros as membro (membro)}
 						{@const v = votos(d, membro)}
 						{#if v.r1}
+							{@const final = v.r2?.revisou ? v.r2 : v.r1}
 							<li>
 								<span class="membro">{membro}</span>
 								<span>
 									{valor(id, v.r1.valor)}
-									{#if v.r2?.revisou}<span class="mudou" title="Mudou de voto na deliberação">→ {valor(id, v.r2.valor)}</span>{/if}
+									{#if v.r2?.revisou}<span class="mudou" data-testid="mudou-na-deliberacao"
+											><span aria-hidden="true">→</span><span class="visualmente-oculto">, mudou na deliberação para</span>
+											{valor(id, v.r2.valor)}</span
+										>{/if}
+									{#if final.evidencia}<q class="trecho">{final.evidencia}</q>{/if}
 								</span>
 							</li>
 						{/if}
 					{/each}
 					{#if d.supervisor}
-						<li class="supervisor">
+						<li class="decisao supervisor">
 							<span class="membro">{d.supervisor}</span>
 							<span>
 								{valor(id, d.valor)}
 								{#if d.justificativa}<span class="nota">{d.justificativa}</span>{/if}
 							</span>
+						</li>
+					{:else if d.etapa === 'sem_maioria'}
+						<li class="decisao" data-testid="valeu-presidente">
+							<span class="membro">valeu</span>
+							<span>
+								{valor(id, d.valor_sem_supervisor)}
+								<span class="nota"
+									>{codebook?.variaveis.find((v) => v.id === id)?.tipo === 'texto'
+										? 'o voto do primeiro membro (texto livre não vai ao supervisor)'
+										: 'o voto do primeiro membro, até o supervisor decidir'}</span
+								>
+							</span>
+						</li>
+					{:else}
+						<li class="decisao">
+							<span class="membro">decisão</span>
+							<span>{valor(id, d.valor)}</span>
 						</li>
 					{/if}
 				</ul>
@@ -98,7 +126,7 @@
 
 	.suave,
 	.nota {
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	ul {
@@ -122,7 +150,7 @@
 
 	.etapa {
 		font-size: 0.72rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.etapa--sem_maioria,
@@ -144,7 +172,7 @@
 	.membro {
 		font-family: var(--fonte-mono);
 		font-size: 0.72rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 		overflow-wrap: anywhere;
 	}
 
@@ -152,7 +180,27 @@
 		color: var(--acento);
 	}
 
-	.supervisor .membro {
+	.decisao {
+		border-top: 1px dashed var(--linha);
+		padding-top: 0.1rem;
+	}
+
+	.decisao .membro {
+		color: var(--texto-suave);
+	}
+
+	.legenda {
+		margin: 0.3rem 0 0;
+		font-size: 0.72rem;
+	}
+
+	.trecho {
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		font-size: 0.72rem;
 		color: var(--texto-suave);
 	}
 

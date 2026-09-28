@@ -51,6 +51,8 @@ a interface lê.
 | `execucao` | [ExecucaoInfo](#execucaoinfo) | **obrigatório** | Dados de reprodutibilidade da última execução de cada etapa. |
 | `licencas` | mapa de texto para inteiro | vazio | Licença → número de documentos. |
 | `publicacao` | [PublicacaoInfo](#publicacaoinfo) ou vazio | vazio | Presente só no site publicado (`mapa publicar`). |
+| `desatualizadas` | lista de texto | vazio | Etapas com resultado desatualizado (as entradas mudaram depois), que por isso ficou fora destes dados: `topicos`, `geografia`, `redes` ou `classificacao`. A interface diz o que rodar de novo. |
+| `mudancas` | mapa de texto para lista de texto | vazio | Para cada etapa desatualizada, o que mudou desde a última execução, quando se sabe (nas redes: "o pessoas.yaml", "a geografia"…). |
 
 ### ProjetoInfo
 
@@ -173,7 +175,7 @@ Valores por trás dos índices das colunas categóricas.
 |---|---|---|---|
 | `revista` | lista de texto | **obrigatório** |  |
 | `idioma` | lista de texto | **obrigatório** |  |
-| `atribuicao` | lista de `"cluster"` \\| `"vizinho"` | `["cluster", "vizinho"]` |  |
+| `atribuicao` | lista de `"cluster"` \| `"vizinho"` | `["cluster", "vizinho"]` |  |
 | `cls` | mapa de texto para lista de texto | vazio |  |
 
 ## `afiliacoes.json`
@@ -250,7 +252,7 @@ O que a interface mostra ao abrir um documento: resumo, autores, licença e evid
 | `licenca_fonte` | texto | **obrigatório** |  |
 | `evidencias` | mapa de texto para [Evidencia](#evidencia) | vazio | Valor de uma variável do codebook e o trecho do resumo que o justifica. |
 | `idioma_analise` | texto ou vazio | vazio | Idioma do texto usado nos embeddings e nos tópicos. |
-| `fonte_analise` | `"resumo"` \\| `"reserva"` \\| `"so_titulo"` ou vazio | vazio | `resumo`: título e resumo no idioma de análise; `reserva`: resumo em outro idioma (não havia no de análise); `so_titulo`: o documento não tem resumo. O texto em si não é publicado. |
+| `fonte_analise` | `"resumo"` \| `"reserva"` \| `"so_titulo"` ou vazio | vazio | `resumo`: título e resumo no idioma de análise; `reserva`: resumo em outro idioma (não havia no de análise); `so_titulo`: o documento não tem resumo. O texto em si não é publicado. |
 | `juri` | mapa de texto para [DecisaoJuri](#decisaojuri) | vazio | Variável → decisão do júri (só nos documentos da amostra, com júri). |
 
 ### Evidencia
@@ -261,10 +263,10 @@ Valor de uma variável do codebook e o trecho do resumo que o justifica.
 |---|---|---|---|
 | `valor` | texto ou sim/não ou lista de texto ou vazio | **obrigatório** |  |
 | `evidencia` | texto | **obrigatório** |  |
-| `status` | `"literal"` \\| `"aproximada"` \\| `"ausente"` \\| `"dispensada"` | **obrigatório** | `literal`: o trecho está no texto; `aproximada`: quase (90% dos caracteres); `ausente`: não está; `dispensada`: vazia numa resposta sem informação. |
+| `status` | `"literal"` \| `"aproximada"` \| `"ausente"` \| `"dispensada"` | **obrigatório** | `literal`: o trecho está no texto; `aproximada`: quase (90% dos caracteres); `ausente`: não está; `dispensada`: vazia numa resposta sem informação. |
 | `inicio` | inteiro ou vazio | vazio | Posição do trecho no resumo exibido, se localizado, em pontos de código Unicode (como o Python conta; em JavaScript, converta para UTF-16). |
 | `fim` | inteiro ou vazio | vazio |  |
-| `campo` | `"titulo"` \\| `"resumo"` ou vazio | vazio | Onde o trecho foi localizado; `inicio` e `fim` são posições nesse texto. |
+| `campo` | `"titulo"` \| `"resumo"` ou vazio | vazio | Onde o trecho foi localizado; `inicio` e `fim` são posições nesse texto. |
 
 ### DecisaoJuri
 
@@ -272,7 +274,7 @@ Como o júri decidiu uma variável de um documento da amostra de validação.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `etapa` | `"unanime"` \\| `"maioria"` \\| `"deliberacao"` \\| `"sem_maioria"` | **obrigatório** |  |
+| `etapa` | `"unanime"` \| `"maioria"` \| `"deliberacao"` \| `"sem_maioria"` | **obrigatório** |  |
 | `virou` | sim/não | `false` | A deliberação mudou a decisão (outra maioria, ou antes não havia). |
 | `valor` | texto ou sim/não ou lista de texto ou vazio | **obrigatório** | A decisão final (com o supervisor, se ele decidiu). |
 | `valor_sem_supervisor` | texto ou sim/não ou lista de texto ou vazio | **obrigatório** |  |
@@ -287,10 +289,10 @@ O voto de um membro do júri numa variável, numa rodada (1: votação; 2: delib
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `membro` | texto | **obrigatório** |  |
-| `rodada` | `1` \\| `2` | **obrigatório** |  |
+| `rodada` | `1` \| `2` | **obrigatório** |  |
 | `valor` | texto ou sim/não ou lista de texto ou vazio | **obrigatório** |  |
 | `evidencia` | texto | **obrigatório** | Vazia no site publicado quando a licença do resumo não é aberta. |
-| `status` | `"literal"` \\| `"aproximada"` \\| `"ausente"` \\| `"dispensada"` | **obrigatório** |  |
+| `status` | `"literal"` \| `"aproximada"` \| `"ausente"` \| `"dispensada"` | **obrigatório** |  |
 | `revisou` | sim/não | `false` | Na rodada 2: o membro mudou de valor na deliberação. |
 
 ## `topicos.json`
@@ -340,7 +342,7 @@ Tendência da participação anual no período inteiro, sem filtros (ADR 0009): 
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `direcao` | `"alta"` \\| `"queda"` \\| `"estavel"` \\| `"insuficiente"` | **obrigatório** |  |
+| `direcao` | `"alta"` \| `"queda"` \| `"estavel"` \| `"insuficiente"` | **obrigatório** |  |
 | `inclinacao` | número ou vazio | vazio | Inclinação na escala logit, por ano. |
 | `erro_padrao` | número ou vazio | vazio | Erro-padrão da inclinação, já corrigido pela dispersão. |
 | `ic95` | par de número e número ou vazio | vazio |  |
@@ -350,7 +352,7 @@ Tendência da participação anual no período inteiro, sem filtros (ADR 0009): 
 | `pp_periodo` | número ou vazio | vazio | Variação em pontos percentuais no período. |
 | `pp_por_ano` | número ou vazio | vazio |  |
 | `anos` | par de inteiro e inteiro ou vazio | vazio |  |
-| `motivo` | `"poucos_anos"` \\| `"poucos_documentos"` \\| `"sem_variacao"` \\| `"sem_convergencia"` ou vazio | vazio | Por que não há tendência, quando é `insuficiente`. |
+| `motivo` | `"poucos_anos"` \| `"poucos_documentos"` \| `"sem_variacao"` \| `"sem_convergencia"` ou vazio | vazio | Por que não há tendência, quando é `insuficiente`. |
 
 ### Topico
 
@@ -369,7 +371,7 @@ Um tópico: rótulo e descrição escritos pelo LLM, palavras-chave, cor estáve
 | `serie` | [Serie](#serie) | **obrigatório** | Série temporal de um tópico. |
 | `por_revista` | mapa de texto para inteiro | **obrigatório** |  |
 | `representativos` | lista de texto | **obrigatório** | Ids de documentos. |
-| `rotulo_fonte` | `"llm"` \\| `"palavras"` \\| `"manual"` | `"llm"` | Quem escreveu o rótulo: o modelo de linguagem, as palavras-chave ou você (rotulos.yaml). |
+| `rotulo_fonte` | `"llm"` \| `"palavras"` \| `"manual"` | `"llm"` | Quem escreveu o rótulo: o modelo de linguagem, as palavras-chave ou você (rotulos.yaml). |
 | `n_nucleo` | inteiro ou vazio | vazio | Documentos do núcleo, que o HDBSCAN agrupou (os demais foram reatribuídos por vizinhança). |
 | `tendencia` | [Tendencia](#tendencia) ou vazio | vazio | Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel. |
 
@@ -391,7 +393,7 @@ Como a tendência é calculada. O painel lê daqui os parâmetros para recalcula
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `modelo` | `"logistica_binomial"` | `"logistica_binomial"` |  |
-| `dispersao` | `"quase"` \\| `"binomial"` | `"quase"` |  |
+| `dispersao` | `"quase"` \| `"binomial"` | `"quase"` |  |
 | `nivel` | número | `0.95` |  |
 | `z` | número | `1.959963984540054` |  |
 | `anos_minimos` | inteiro | `5` |  |
@@ -420,7 +422,7 @@ Variável do codebook.
 |---|---|---|---|
 | `id` | texto | **obrigatório** |  |
 | `rotulo` | texto | **obrigatório** |  |
-| `tipo` | `"categorica"` \\| `"multipla"` \\| `"booleana"` \\| `"texto"` | **obrigatório** |  |
+| `tipo` | `"categorica"` \| `"multipla"` \| `"booleana"` \| `"texto"` | **obrigatório** |  |
 | `pergunta` | texto | **obrigatório** |  |
 | `categorias` | lista de [CategoriaContrato](#categoriacontrato) | vazio | Categoria de uma variável, como o codebook define. |
 
@@ -550,7 +552,7 @@ Um caso em que um codificador de referência e o modelo principal discordam, par
 | `modelo` | texto | **obrigatório** |  |
 | `evidencia` | texto | **obrigatório** | Trecho que o modelo citou. |
 | `codificador` | texto | `""` |  |
-| `status` | `"literal"` \\| `"aproximada"` \\| `"ausente"` \\| `"dispensada"` ou vazio | vazio |  |
+| `status` | `"literal"` \| `"aproximada"` \| `"ausente"` \| `"dispensada"` ou vazio | vazio |  |
 | `incerto` | sim/não | `false` | O codificador marcou a resposta como incerta. |
 
 ### Participante
@@ -560,7 +562,7 @@ Quem respondeu na amostra: um codificador (`humano` ou `referencia`, que não é
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `nome` | texto | **obrigatório** |  |
-| `tipo` | `"humano"` \\| `"referencia"` \\| `"modelo"` | **obrigatório** |  |
+| `tipo` | `"humano"` \| `"referencia"` \| `"modelo"` | **obrigatório** |  |
 | `n` | inteiro | **obrigatório** | Documentos da amostra com resposta. |
 | `familia` | texto ou vazio | vazio | Família de modelo, quando se conhece (ver `circular`). |
 
@@ -592,9 +594,20 @@ O júri de modelos locais na amostra: estágios, deliberação, concordância po
 | `documentos` | inteiro | **obrigatório** |  |
 | `etapas` | mapa de texto para mapa de texto para inteiro | **obrigatório** | Variável → estágio → decisões. |
 | `virou` | mapa de texto para inteiro | vazio | Variável → decisões que a deliberação mudou. |
-| `concordancia_por_etapa` | mapa de texto para mapa de texto para inteiro | vazio | Estágio → {n, acertos} contra a referência. |
+| `concordancia_por_etapa` | mapa de texto para mapa de texto para inteiro | vazio | Estágio → {n, acertos} contra a referência, com a decisão do júri sem o supervisor (no estágio `sem_maioria`, o voto do primeiro membro). |
+| `concordancia_supervisor` | [ConcordanciaSupervisor](#concordanciasupervisor) ou vazio | vazio | Nas decisões sem maioria arbitradas, a concordância com a escolha do supervisor. |
 | `deliberacao` | mapa de texto para mapa de texto para inteiro | vazio | Membro → {votos, mudou, para_referencia, contra}: votos revistos na deliberação e a direção. |
 | `auditoria` | [AuditoriaJuri](#auditoriajuri) ou vazio | vazio | A conferência, pelo supervisor, de uma amostra das decisões unânimes do júri. |
+
+### ConcordanciaSupervisor
+
+A concordância com a referência nas decisões sem maioria que o supervisor arbitrou, com a escolha dele.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `n` | inteiro | **obrigatório** |  |
+| `acertos` | inteiro | **obrigatório** |  |
+| `circular` | sim/não | **obrigatório** | O supervisor e a referência são da mesma família: não é medida independente. |
 
 ### AuditoriaJuri
 
@@ -653,7 +666,7 @@ As pessoas (autores identificados), em colunas. `x` e `y` só para quem teve coa
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `id` | lista de texto | **obrigatório** | Id publicado (um hash curto; o site não publica ORCIDs). |
+| `id` | lista de texto | **obrigatório** | Id publicado: um HMAC curto do id interno com o segredo do projeto (o site não publica ORCIDs nem ids do OpenAlex, e o id não se liga a eles sem o segredo). |
 | `nome` | lista de texto | **obrigatório** |  |
 | `documentos` | lista de inteiro | **obrigatório** |  |
 | `grau` | lista de inteiro | **obrigatório** | Coautores distintos. |
@@ -686,7 +699,7 @@ As instituições que colaboraram com outra, com o desenho da rede (os ids são 
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `rede` | `"coautoria"` \\| `"instituicoes"` | **obrigatório** |  |
+| `rede` | `"coautoria"` \| `"instituicoes"` | **obrigatório** |  |
 | `id` | inteiro | **obrigatório** |  |
 | `n` | inteiro | **obrigatório** | Nós da comunidade. |
 | `documentos` | inteiro | **obrigatório** |  |
@@ -731,12 +744,12 @@ A rede de citação pelas referências do OpenAlex e o cânone.
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
-| `n_referencias` | lista de inteiro | **obrigatório** | Referências de cada documento no OpenAlex; -1: sem casamento. |
+| `n_referencias` | lista de inteiro | **obrigatório** | Referências de cada documento resolvidas no OpenAlex (0: casado, sem nenhuma); -1: sem casamento. |
 | `internas` | [ArestasCitacao](#arestascitacao) | **obrigatório** | Citações dentro do corpus: índices de documentos (quem cita → quem é citado). |
-| `canone` | lista de [ObraCitada](#obracitada) | **obrigatório** | Uma obra de fora do corpus entre as mais citadas (o cânone). |
+| `canone` | lista de [ObraCitada](#obracitada) | **obrigatório** | Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate). |
 | `canone_citantes` | [CitantesCanone](#citantescanone) | **obrigatório** |  |
-| `fluxo_macrotemas` | lista de lista de inteiro | **obrigatório** | Citações internas de macrotema (linha) a macrotema. |
-| `cobertura` | mapa de texto para inteiro | vazio |  |
+| `fluxo_macrotemas` | lista de lista de inteiro | **obrigatório** | Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` (pela posição, e não pelo id, que não é contíguo). |
+| `cobertura` | mapa de texto para inteiro | vazio | Documentos (`documentos`, `com_referencias`), referências resolvidas (`referencias`) e, nos documentos casados, as listadas na ArticleMeta (`referencias_listadas`), as resolvidas entre elas (`referencias_resolvidas`) e a mediana por documento da fração resolvida (`resolvidas_mediana_pct`); citações internas, anacrônicas e autorreferências; referências a obras apagadas (`a_obras_apagadas`); citantes, resenhas e autorias corrigidas do cânone; obras sem metadados entre as mais citadas. |
 
 ### ArestasCitacao
 
@@ -749,19 +762,21 @@ Citações dentro do corpus: índices de documentos (quem cita → quem é citad
 
 ### ObraCitada
 
-Uma obra de fora do corpus entre as mais citadas (o cânone).
+Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate).
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `id` | texto | **obrigatório** | Id do OpenAlex (`W…`). |
 | `titulo` | texto ou vazio | **obrigatório** |  |
-| `ano` | inteiro ou vazio | **obrigatório** |  |
-| `autores` | lista de texto | **obrigatório** | Até três autores. |
+| `ano` | inteiro ou vazio | **obrigatório** | O ano da obra (o das referências, quando o registro do OpenAlex é uma resenha). |
+| `autores` | lista de texto | **obrigatório** | Até três autores, conferidos nas referências da ArticleMeta. |
 | `veiculo` | texto ou vazio | **obrigatório** |  |
 | `tipo` | texto ou vazio | **obrigatório** |  |
 | `doi` | texto ou vazio | **obrigatório** |  |
 | `n` | inteiro | **obrigatório** | Documentos do corpus que a citam. |
-| `edicoes` | lista de texto | vazio | Outras edições somadas a esta. |
+| `edicoes` | lista de texto | vazio | Outros registros da mesma obra, somados a este. |
+| `resenha` | sim/não | `false` | O registro do OpenAlex é uma resenha da obra (tipo `book-review`, Choice Reviews, ou um primeiro autor que as referências não citam): autores e ano vêm das referências. |
+| `registro_openalex` | texto ou vazio | vazio | Autores e ano do registro do OpenAlex, quando diferem dos mostrados (a conferência os mudou). |
 
 ### CitantesCanone
 

@@ -124,6 +124,40 @@
 		return Int32Array.from(nos.naAfiliacao, (k) => (k >= 0 ? porInst[k] : 0));
 	});
 	const ativo = $derived(Uint8Array.from(docsRecorte, (n) => (n > 0 ? 1 : 0)));
+
+	// ---- componentes (pelas arestas do corpus): as duplas e os trios isolados ficam escondidos por padrão, para o
+	// desenho enquadrar o maior componente e os grupos médios, onde estão as comunidades
+	const MINIMO_VISIVEL = 4;
+	const tamanhoDoComponente = $derived.by(() => {
+		const pai = Int32Array.from({ length: nos.n }, (_, i) => i);
+		const achar = (i: number): number => {
+			while (pai[i] !== i) i = pai[i] = pai[pai[i]];
+			return i;
+		};
+		for (let k = 0; k < corpus.n; k += 1) {
+			const [a, b] = [achar(corpus.a[k]), achar(corpus.b[k])];
+			if (a !== b) pai[Math.max(a, b)] = Math.min(a, b);
+		}
+		const tamanho = new Map<number, number>();
+		for (let i = 0; i < nos.n; i += 1) tamanho.set(achar(i), (tamanho.get(achar(i)) ?? 0) + 1);
+		return Int32Array.from({ length: nos.n }, (_, i) => tamanho.get(achar(i))!);
+	});
+	// na URL (`duplas=1`), como o resto da vista: o link reproduz a tela
+	const mostrarPequenos = $derived(filtros.duplas);
+	const mostrarDuplas = (sim: boolean) => mudarFiltros({ duplas: sim }, { em });
+	const escondidos = $derived.by(() => {
+		let n = 0;
+		for (let i = 0; i < nos.n; i += 1) if (Number.isFinite(nos.x[i]) && tamanhoDoComponente[i] < MINIMO_VISIVEL) n += 1;
+		return n;
+	});
+	// um nó aberto num grupo pequeno (pela busca ou pelo link) mostra os grupos pequenos
+	$effect(() => {
+		const i = selecionado;
+		if (i !== null && tamanhoDoComponente[i] < MINIMO_VISIVEL && !untrack(() => filtros.duplas)) mostrarDuplas(true);
+	});
+	const visivel = (i: number) => mostrarPequenos || tamanhoDoComponente[i] >= MINIMO_VISIVEL;
+	const xVisivel = $derived(Float64Array.from(nos.x, (v, i) => (visivel(i) ? v : NaN)));
+	const yVisivel = $derived(Float64Array.from(nos.y, (v, i) => (visivel(i) ? v : NaN)));
 	const grauRecorte = $derived(grauDe(recorte, nos.n));
 	const forcaRecorte = $derived(forcaDe(recorte, nos.n));
 
@@ -139,24 +173,38 @@
 	};
 	const cores = $derived(Array.from(nos.comunidade, corDaComunidade));
 	const desenhados = $derived(Array.from(nos.x).filter(Number.isFinite).length);
+	const desenhadosNoRecorte = $derived.by(() => {
+		let n = 0;
+		for (let i = 0; i < nos.n; i += 1) if (ativo[i] && Number.isFinite(nos.x[i])) n += 1;
+		return n;
+	});
+	/** O rótulo da comunidade no desenho: o tópico mais frequente, curto (o rótulo inteiro fica na lista e no cartão). */
+	const rotuloCurto = (rotulo: string) => {
+		const primeiro = rotulo.split(' · ')[0];
+		return primeiro.length > 34 ? `${primeiro.slice(0, 33).trimEnd()}…` : primeiro;
+	};
 
 	// rótulos das maiores comunidades, no centro dos seus nós
 	const rotulos = $derived.by((): RotuloGrafo[] => {
 		const soma = new Map<number, [number, number, number]>();
 		for (let i = 0; i < nos.n; i += 1) {
 			const c = nos.comunidade[i];
-			if (c < 0 || !Number.isFinite(nos.x[i])) continue;
+			if (c < 0 || !Number.isFinite(xVisivel[i])) continue;
 			const [sx, sy, n] = soma.get(c) ?? [0, 0, 0];
 			soma.set(c, [sx + nos.x[i], sy + nos.y[i], n + 1]);
 		}
-		return [...nos.comunidades.values()]
+		const escolhidas = [...nos.comunidades.values()]
 			.filter((c) => (soma.get(c.id)?.[2] ?? 0) >= 3)
 			.sort((a, b) => b.n - a.n)
-			.slice(0, MAXIMO_ROTULOS)
-			.map((c) => {
-				const [sx, sy, n] = soma.get(c.id)!;
-				return { id: String(c.id), texto: c.rotulo, x: sx / n, y: sy / n };
-			});
+			.slice(0, MAXIMO_ROTULOS);
+		// duas comunidades com o mesmo primeiro tópico levam o segundo, para os rótulos não se repetirem
+		const primeiros = escolhidas.map((c) => rotuloCurto(c.rotulo));
+		return escolhidas.map((c, k) => {
+			const [sx, sy, n] = soma.get(c.id)!;
+			const repetido = primeiros.filter((t) => t === primeiros[k]).length > 1;
+			const texto = repetido ? rotuloCurto(c.rotulo.split(' · ').slice(1).join(' · ') || c.rotulo) : primeiros[k];
+			return { id: String(c.id), texto, x: sx / n, y: sy / n };
+		});
 	});
 
 	// ---- o nó aberto (pela URL)
@@ -172,6 +220,8 @@
 			return saida;
 		}
 		const alvo = nos.naAfiliacao[i];
+		// uma instituição que afiliacoes.json não conhece não tem documentos (−1 é o autor sem afiliação)
+		if (alvo < 0) return [];
 		const saida = new Set<number>();
 		for (let l = 0; l < af!.n; l += 1) if (af!.inst[l] === alvo && (!passa || passa(af!.doc[l]))) saida.add(af!.doc[l]);
 		return [...saida];
@@ -189,7 +239,7 @@
 			titulo: nos.nomes[i],
 			sobretitulo: pessoas ? 'Pessoa' : ['Instituição', nos.lugar(i)].filter(Boolean).join(' · '),
 			comunidade: comunidade
-				? comunidade.rotulo
+				? `Comunidade: ${comunidade.rotulo}`
 				: Number.isFinite(nos.x[i])
 					? 'Fora das comunidades grandes'
 					: pessoas
@@ -239,23 +289,47 @@
 			? `Cada ponto é uma pessoa, do tamanho dos documentos dela no corpus, na cor do macrotema mais comum na sua comunidade. Cada linha liga duas pessoas que assinaram juntas um documento do recorte; quanto mais forte a linha, mais peso tem a parceria.`
 			: `Cada ponto é uma instituição, do tamanho dos documentos com afiliação nela. Cada linha liga duas instituições que aparecem nas afiliações de um mesmo documento do recorte; quanto mais forte a linha, mais peso tem a colaboração.`
 	);
-	const colunas = $derived([pessoas ? 'Pessoa' : 'Instituição', 'Documentos no recorte', pessoas ? 'Coautores no recorte' : 'Parceiras no recorte', 'Peso das parcerias', 'Comunidade']);
-	const linhas = $derived(
+	// a força (a soma dos pesos 1/(n−1)) é um inteiro: os documentos do recorte em que o nó teve parceiro
+	const colunas = $derived([
+		pessoas ? 'Pessoa' : 'Instituição',
+		'Documentos no recorte',
+		pessoas ? 'Coautores no recorte' : 'Parceiras no recorte',
+		pessoas ? 'Documentos com coautor no recorte' : 'Documentos com parceira no recorte',
+		'Comunidade'
+	]);
+	const ordemDaTabela = $derived(
 		Array.from({ length: nos.n }, (_, i) => i)
 			.filter((i) => docsRecorte[i] > 0)
-			.sort((a, b) => docsRecorte[b] - docsRecorte[a] || forcaRecorte[b] - forcaRecorte[a])
-			.map((i) => [
-				nos.nomes[i],
-				formatarInteiro(docsRecorte[i]),
-				formatarInteiro(grauRecorte[i]),
-				formatarDecimal(forcaRecorte[i], 2),
-				nos.comunidades.get(nos.comunidade[i])?.rotulo ?? '—'
-			])
+			.sort((a, b) => docsRecorte[b] - docsRecorte[a] || forcaRecorte[b] - forcaRecorte[a] || a - b)
 	);
+	const comunidadeDe = (i: number) => nos.comunidades.get(nos.comunidade[i])?.rotulo ?? null;
+	const linhas = $derived(
+		ordemDaTabela.map((i) => [
+			nos.nomes[i],
+			formatarInteiro(docsRecorte[i]),
+			formatarInteiro(grauRecorte[i]),
+			formatarInteiro(Math.round(forcaRecorte[i])),
+			comunidadeDe(i) ?? '—'
+		])
+	);
+	const dados = $derived({
+		colunas: [...colunas, 'Id', 'Documentos no corpus'],
+		linhas: ordemDaTabela.map((i) => [
+			nos.nomes[i],
+			docsRecorte[i],
+			grauRecorte[i],
+			Math.round(forcaRecorte[i]),
+			comunidadeDe(i),
+			nos.ids[i],
+			nos.docsCorpus[i]
+		])
+	});
 	const macrosNaLegenda = $derived.by(() => {
 		const usados = new Set([...nos.comunidades.values()].map((c) => c.macro));
 		return aberto.topicos.macrotemas.filter((m) => usados.has(m.id));
 	});
+	/** As maiores comunidades da rede, com o rótulo inteiro, para a legenda (e para a figura exportada). */
+	const maioresComunidades = $derived([...nos.comunidades.values()].sort((a, b) => b.n - a.n || a.id - b.id).slice(0, MAXIMO_ROTULOS));
 	const faixasLegenda = [
 		`até ${formatarDecimal(LIMITES_FAIXAS[0])}`,
 		`${formatarDecimal(LIMITES_FAIXAS[0])} a ${formatarInteiro(LIMITES_FAIXAS[1])}`,
@@ -264,7 +338,7 @@
 	];
 	const metricas = $derived(r.metricas[rede] ?? null);
 	const rotuloGrafo = $derived(
-		`Rede de ${pessoas ? 'coautoria' : 'instituições'}: ${formatarInteiro(desenhados)} ${nome.nos} desenhadas, ` +
+		`Rede de ${pessoas ? 'coautoria' : 'instituições'}: ${formatarInteiro(desenhados - (mostrarPequenos ? 0 : escondidos))} ${nome.nos} desenhadas, ` +
 			`${formatarInteiro(ativos)} com documentos no recorte e ${formatarInteiro(recorte.n)} ${nome.par} nele. ` +
 			'Use a busca para abrir o cartão de um nó, ou veja os números na tabela.'
 	);
@@ -285,15 +359,19 @@
 
 <p class="lide" data-testid="lide-redes">
 	{#if pessoas}
-		{contar(noRecorte, 'documento')} no recorte, com {contar(ativos, 'pessoa')} e {formatarInteiro(recorte.n)}
+		{contar(noRecorte, 'documento')} no recorte, com {contar(ativos, 'pessoa')}, {formatarInteiro(desenhadosNoRecorte)}
+		delas desenhadas (as que têm coautor no corpus), e {formatarInteiro(recorte.n)}
 		{recorte.n === 1 ? 'par de coautores' : 'pares de coautores'}. Duas pessoas ficam ligadas quando assinam juntas um
 		documento; num artigo de n autores, cada par ganha 1/(n−1) de peso, e assim cada pessoa distribui no máximo 1 por
 		artigo.
 	{:else}
 		{contar(noRecorte, 'documento')} no recorte, com {contar(ativos, 'instituição', 'instituições')} e
 		{formatarInteiro(recorte.n)} {recorte.n === 1 ? 'par de instituições' : 'pares de instituições'}. Duas instituições
-		ficam ligadas quando aparecem juntas nas afiliações de um documento, com o mesmo peso fracionário da coautoria.
+		ficam ligadas quando aparecem juntas nas afiliações de um documento (mesmo quando é um autor só, com duas
+		afiliações), com o mesmo peso fracionário da coautoria.
 	{/if}
+	O maior grupo ligado fica em cima; embaixo, os grupos menores{#if !mostrarPequenos && escondidos}, sem as duplas e os
+		trios isolados{/if}.
 </p>
 
 <BuscaNo
@@ -304,11 +382,11 @@
 />
 
 <div class="grafo-e-lado" class:com-cartao={cartao !== null}>
-	<Figura n={noRecorte} id="grafo" titulo={pessoas ? 'Quem escreve com quem' : 'Que instituições publicam juntas'} {resumo} {colunas} {linhas}>
+	<Figura n={noRecorte} id="grafo" titulo={pessoas ? 'Quem escreve com quem' : 'Que instituições publicam juntas'} {resumo} {colunas} {linhas} {dados}>
 		<Grafo
 			bind:this={grafo}
-			x={nos.x}
-			y={nos.y}
+			x={xVisivel}
+			y={yVisivel}
 			{raio}
 			cor={cores}
 			{ativo}
@@ -322,15 +400,29 @@
 			rotulo={rotuloGrafo}
 			aoDesenhar={(ms) => ((debug.desenhado = true), (debug.msAtePrimeiroDesenho = ms))}
 		/>
+		{#if escondidos}
+			<label class="pequenos">
+				<input
+					type="checkbox"
+					checked={mostrarPequenos}
+					onchange={(e) => mostrarDuplas(e.currentTarget.checked)}
+					data-testid="mostrar-pequenos"
+				/>
+				Mostrar as duplas e os trios isolados ({contar(escondidos, pessoas ? 'pessoa' : 'instituição', pessoas ? 'pessoas' : 'instituições')})
+			</label>
+		{/if}
 		<div class="legenda" aria-label="Legenda">
-			<ul class="cores">
+			<ul class="cores" data-legenda>
 				{#each macrosNaLegenda as m (m.id)}
 					<li><span class="bolinha" style:background={m.cor}></span>{m.rotulo}</li>
 				{/each}
 				<li><span class="bolinha neutra"></span>comunidades pequenas</li>
 				<li><span class="bolinha apagada"></span>sem documentos no recorte</li>
 			</ul>
-			<ul class="faixas" aria-label="Peso das ligações no recorte">
+			<ul class="faixas" aria-label="Peso das ligações no recorte" data-legenda>
+				<li class="titulo-legenda" title="Soma de 1/(n−1) em cada documento do recorte com n autores (ou instituições)">
+					Peso da parceria no recorte:
+				</li>
 				{#each faixasLegenda as texto, k (k)}
 					<li>
 						<svg width="22" height="8" aria-hidden="true">
@@ -344,12 +436,26 @@
 					fora do recorte
 				</li>
 			</ul>
+			{#if maioresComunidades.length}
+				<ol class="comunidades" aria-label="As maiores comunidades" data-legenda data-testid="lista-comunidades">
+					<li class="titulo-legenda">As maiores comunidades (rótulo: os dois tópicos mais frequentes):</li>
+					{#each maioresComunidades as c (c.id)}
+						<li>
+							<span class="bolinha" style:background={corDaComunidade(c.id) ?? 'var(--texto-fraco)'}></span>
+							{c.rotulo} <span class="suave">({contar(c.n, nome.no, nome.nos)})</span>
+						</li>
+					{/each}
+				</ol>
+			{/if}
 		</div>
 		{#if metricas}
 			<p class="nota" data-testid="metricas-rede">
-				No corpus inteiro: {contar(metricas.nos, nome.no, nome.nos)}, {formatarInteiro(metricas.arestas)} pares,
-				{contar(metricas.componentes, 'componente')} (o maior junta {formatarPorcentagem(metricas.fracao_maior)} dos nós),
-				agrupamento {formatarDecimal(metricas.agrupamento, 2)}{#if metricas.modularidade !== null}, modularidade {formatarDecimal(metricas.modularidade, 2)}{/if}.
+				No corpus inteiro: {contar(metricas.nos, pessoas ? 'pessoa com coautor' : 'instituição com parceira', pessoas ? 'pessoas com coautor' : 'instituições com parceira')}
+				(as desenhadas), {formatarInteiro(metricas.arestas)} pares e {contar(metricas.componentes, 'componente')}
+				(grupos ligados por algum caminho; o maior junta {formatarPorcentagem(metricas.fracao_maior)} deles). Agrupamento
+				{formatarDecimal(metricas.agrupamento, 2)}: a fração de trios fechados (dois parceiros de alguém que também são
+				parceiros entre si).{#if metricas.modularidade !== null}{' '}Modularidade {formatarDecimal(metricas.modularidade, 2)}: quanto das ligações fica dentro das comunidades (de 0
+					a 1).{/if}
 				As comunidades são agrupamentos automáticos (Louvain) e levam o nome dos tópicos mais frequentes nos
 				documentos delas.
 			</p>
@@ -453,6 +559,39 @@
 		stroke: var(--texto-fraco);
 		stroke-width: 0.8;
 		opacity: 0.5;
+	}
+
+	.pequenos {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin-top: 0.5rem;
+		font-size: 0.82rem;
+		color: var(--texto-suave);
+	}
+
+	.titulo-legenda {
+		color: var(--texto);
+	}
+
+	.comunidades {
+		display: grid;
+		gap: 0.2rem;
+		margin: 0.2rem 0 0;
+		padding: 0;
+		list-style: none;
+		font-size: 0.78rem;
+		color: var(--texto-suave);
+	}
+
+	.comunidades li {
+		display: flex;
+		align-items: baseline;
+		gap: 0.35rem;
+	}
+
+	.comunidades .suave {
+		color: var(--texto-suave);
 	}
 
 	.nota {

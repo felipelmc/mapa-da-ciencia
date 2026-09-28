@@ -62,10 +62,10 @@ def _descarregar_outros(ollama: Ollama, membros: list[str], membro: str) -> None
             ollama.descarregar(outro)
 
 
-def votar(projeto: Projeto, *, somente_amostra: bool = True, progresso: Progresso | None = None) -> ResumoVotacao:
-    """Classifica com cada membro o que ainda falta (a amostra de validação, ou o corpus inteiro)."""
+def votar(projeto: Projeto, *, progresso: Progresso | None = None) -> ResumoVotacao:
+    """Classifica com cada membro o que ainda falta da amostra de validação."""
     membros = membros_do_juri(projeto)
-    textos = textos_da_amostra(projeto) if somente_amostra else va.textos_do_projeto(projeto)
+    textos = textos_da_amostra(projeto)
     ollama = Ollama()
     resumo = ResumoVotacao(membros, {}, [])
     base = projeto.config.modelos.classificacao
@@ -76,7 +76,7 @@ def votar(projeto: Projeto, *, somente_amostra: bool = True, progresso: Progress
             continue
         _descarregar_outros(ollama, membros, membro)
         feito: ResumoClassificacao = classificar(
-            projeto, OpcoesClassificacao(modelo=membro, somente_amostra=somente_amostra), progresso
+            projeto, OpcoesClassificacao(modelo=membro, somente_amostra=True), progresso
         )
         resumo.classificados[membro] = feito.novos
     return resumo

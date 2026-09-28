@@ -29,7 +29,8 @@ ARQUIVO_RESULTADO = "resultado.json"
 ARQUIVO_VINCULOS = "vinculos.parquet"
 ARQUIVO_PESOS = "pesos.parquet"
 ARQUIVO_INSTITUICOES_USADAS = "instituicoes.parquet"
-VERSAO = 1  # suba quando o casamento ou a contagem mudarem de um jeito que mude os resultados
+VERSAO = 2  # suba quando o casamento ou a contagem mudarem de um jeito que mude os resultados
+# 2: hífens tipográficos e "ı" na normalização; o alinhamento com o OpenAlex confere o nome também no caso 1:1
 
 COLUNAS_VINCULOS = {
     "doc": "VARCHAR",
@@ -113,6 +114,16 @@ class Resultado:
         if not arquivo.exists():
             return None
         return cls(**json.loads(arquivo.read_text(encoding="utf-8")))
+
+
+def id_no_contrato(linha: dict[str, Any]) -> str:
+    """Id de uma instituição de `instituicoes.parquet` no contrato: `ror:…` quando há ROR, `openalex:I…` sem ele, o
+    nome dado pelo projeto às próprias. `afiliacoes.json` e `redes.json` usam o mesmo."""
+    if linha["ror"]:
+        return f"ror:{linha['ror']}"
+    if linha["id"].startswith("I") and linha["id"][1:].isdigit():
+        return f"openalex:{linha['id']}"
+    return linha["id"]
 
 
 def ler_pesos(pasta: Path) -> list[dict[str, Any]]:

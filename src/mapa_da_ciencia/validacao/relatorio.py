@@ -241,4 +241,28 @@ def gerar(projeto: Projeto) -> tuple[Validacao, dict[str, Path]]:
     arquivos["markdown"].write_text(markdown(v, projeto=projeto.config.titulo), encoding="utf-8")
     arquivos["latex"].write_text(latex(v), encoding="utf-8")
     arquivos["json"].write_text(json.dumps(asdict(v), ensure_ascii=False, indent=1), encoding="utf-8")
+    from datetime import UTC, datetime
+
+    from ..manifesto import registrar_execucao
+    from .amostra import documentos_completos
+
+    agora = datetime.now(UTC)
+    registrar_execucao(
+        projeto,
+        "validacao",
+        inicio=agora,
+        fim=agora,
+        contagens={
+            "codificados": len(documentos_completos(projeto) & set(_docs_da_amostra(projeto))),
+            "amostra": v.amostra["n"],
+            "participantes": len(v.participantes),
+        },
+    )
     return v, arquivos
+
+
+def _docs_da_amostra(projeto: Projeto) -> list[str]:
+    from .amostra import ler
+
+    amostra = ler(projeto)
+    return amostra.docs if amostra else []
