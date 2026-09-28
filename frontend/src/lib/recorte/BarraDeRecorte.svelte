@@ -110,7 +110,7 @@
 			<LinhaDoTempo
 				limites={aberto.tabela.anos}
 				anos={filtros.anos}
-				aoMudar={(anos, passo) => mudar({ anos }, !!passo)}
+				aoMudar={(anos, substituir) => mudar({ anos }, !!substituir)}
 			/>
 			<details class="revistas">
 				<summary>

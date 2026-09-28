@@ -14,7 +14,7 @@
 	import { deNdc, paraNdc, type TabelaDocumentos } from '$lib/dados/documentos';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { tema } from '$lib/estado/tema.svelte';
-	import { CORES_POR, rota, type CorPor } from '$lib/estado/url';
+	import { CORES_POR, normalizarBusca, rota, type CorPor } from '$lib/estado/url';
 	import { formatarInteiro } from '$lib/formato';
 	import { simplificar, type Ponto } from '$lib/graficos/geometria';
 	import Nuvem, { type Anotacao, type Camera } from '$lib/graficos/Nuvem.svelte';
@@ -61,10 +61,11 @@
 	}
 	const buscados = $derived(filtros.busca ? buscar(indiceDe(tabela), filtros.busca) : null);
 	const MAX_RESULTADOS = 6;
-	// a barra do recorte pode limpar a busca: o campo acompanha
+	// o campo acompanha a URL quando ela muda por fora (a barra do recorte limpa a busca, o Voltar do navegador),
+	// mas não enquanto a pessoa digita, nem quando só difere na forma do link ("a & b" digitado, "a b" no link)
 	$effect(() => {
 		const busca = filtros.busca;
-		if (busca === '' && textoBusca !== '' && !temporizadorBusca) textoBusca = '';
+		if (!temporizadorBusca && normalizarBusca(textoBusca) !== busca) textoBusca = busca;
 	});
 
 	// ---- laço: polígono na URL em coordenadas dos dados (o cubo o converte para NDC)

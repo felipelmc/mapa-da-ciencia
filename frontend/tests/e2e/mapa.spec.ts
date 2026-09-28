@@ -8,6 +8,14 @@ const documentos = ler('documentos.json');
 const topicos = ler('topicos.json');
 const n: number = documentos.n;
 
+// palavras de 5 letras ou mais dos títulos, da presente em mais títulos à mais rara (para as buscas)
+const palavrasDe = (titulo: string) => titulo.toLowerCase().split(/[^\p{L}]+/u).filter((p) => p.length >= 5);
+const frequencia = new Map<string, number>();
+for (const t of documentos.colunas.titulo as string[]) {
+	for (const p of new Set(palavrasDe(t))) frequencia.set(p, (frequencia.get(p) ?? 0) + 1);
+}
+const porFrequencia = [...frequencia.keys()].sort((a, b) => frequencia.get(b)! - frequencia.get(a)!);
+
 for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 	test(`desenha os documentos do exemplo (${site === 'RAIZ' ? 'raiz' : 'subcaminho'})`, async ({ page }) => {
 		const problemas = vigiar(page);
@@ -231,14 +239,10 @@ test('busca com "/" e sem acentos; um resultado abre o cartão', async ({ page }
 
 test('o link de uma busca com "&" reabre a mesma busca', async ({ page }) => {
 	// duas palavras do mesmo título: a mais comum do corpus e uma rara, para "a & b" achar menos que "a"
-	const palavras = (t: string) => t.toLowerCase().split(/[^\p{L}]+/u).filter((p) => p.length >= 5);
-	const titulos: string[] = documentos.colunas.titulo;
-	const freq = new Map<string, number>();
-	for (const t of titulos) for (const p of new Set(palavras(t))) freq.set(p, (freq.get(p) ?? 0) + 1);
-	const [comum] = [...freq.entries()].sort((a, b) => b[1] - a[1])[0];
-	const rara = palavras(titulos.find((t) => palavras(t).includes(comum))!)
+	const comum = porFrequencia[0];
+	const rara = palavrasDe((documentos.colunas.titulo as string[]).find((t) => palavrasDe(t).includes(comum))!)
 		.filter((p) => p !== comum)
-		.sort((a, b) => freq.get(a)! - freq.get(b)!)[0];
+		.sort((a, b) => frequencia.get(a)! - frequencia.get(b)!)[0];
 	await page.goto(`${url('RAIZ')}#/mapa`);
 	await esperarMapa(page);
 	await page.getByTestId('busca-mapa').fill(`${comum} & ${rara}`);
@@ -284,15 +288,8 @@ test('a lista da busca aparece inteira ao lado da legenda, e diz quantos resulta
 	await campo.fill('xyzxyz');
 	await expect(lista).toContainText('Nada encontrado.');
 	await expect.poll(inteira).toBe(true);
-	// a palavra (de 5 letras ou mais) presente em mais títulos: dá mais de 6 resultados
-	const contagem = new Map<string, number>();
-	for (const t of documentos.colunas.titulo as string[]) {
-		for (const p of new Set(t.toLowerCase().split(/[^\p{L}]+/u).filter((p) => p.length >= 5))) {
-			contagem.set(p, (contagem.get(p) ?? 0) + 1);
-		}
-	}
-	const [comum] = [...contagem.entries()].sort((a, b) => b[1] - a[1])[0];
-	await campo.fill(comum);
+	// a palavra presente em mais títulos: dá mais de 6 resultados
+	await campo.fill(porFrequencia[0]);
 	await expect(lista.getByRole('button')).toHaveCount(6);
 	await expect(page.getByTestId('mais-resultados')).toContainText(/^6 de [\d.]+; refine a busca/);
 	await expect.poll(inteira).toBe(true);
@@ -380,6 +377,38 @@ test('play passa ano a ano pela linha do tempo', async ({ page }) => {
 	await page.getByTestId('play').click(); // pausa
 	const doAno = documentos.colunas.ano.filter((a: number) => a === primeiro + 1).length;
 	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBe(doAno);
+});
+
+test('um gesto na linha do tempo cria uma entrada só no histórico', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	const antes = await page.evaluate(() => history.length);
+	await page.getByLabel('Primeiro ano').focus();
+	for (let i = 0; i < 5; i += 1) await page.keyboard.press('ArrowRight');
+	const primeiro = Math.min(...documentos.colunas.ano);
+	await expect(page).toHaveURL(new RegExp(`anos=${primeiro + 5}-`));
+	expect(await page.evaluate(() => history.length)).toBe(antes + 1);
+	// Voltar desfaz o gesto inteiro
+	await page.goBack();
+	await expect(page).toHaveURL(/#\/mapa$/);
+});
+
+test('Voltar leva o campo de busca junto com a URL', async ({ page }) => {
+	const [a, b] = porFrequencia;
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	const campo = page.getByTestId('busca-mapa');
+	await campo.fill(a);
+	await expect(page).toHaveURL(new RegExp(`busca=${a}`));
+	await page.getByLabel('Primeiro ano').focus();
+	await page.keyboard.press('ArrowRight'); // uma entrada nova no histórico
+	await expect(page).toHaveURL(/anos=/);
+	await campo.fill(b);
+	await expect(page).toHaveURL(new RegExp(`busca=${b}`));
+	await page.goBack();
+	await expect(page).toHaveURL(new RegExp(`busca=${a}$`));
+	await expect(campo).toHaveValue(a);
+	await expect(page.getByTestId('barra-recorte').getByText(`Busca: “${a}”`)).toBeVisible();
 });
 
 test('"?" abre os atalhos na Ajuda', async ({ page }) => {
