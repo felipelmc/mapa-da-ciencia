@@ -29,7 +29,8 @@ as referências já resolvidas (`referenced_works`), a 1 crédito por 100 obras.
 3. **Comunidades por Louvain** (networkx, resolução 1, semente 7), rotuladas pelos dois tópicos mais frequentes dos
    artigos delas, **sem nome de pessoa**. Dependência nova: `networkx` (BSD-3, Python puro, cerca de 2 MB, importado
    só dentro das funções das redes). igraph e graph-tool ficaram de fora pela licença e pelos binários.
-4. **Desenho no Python, fixo:** `spring_layout` por componente, com semente, empacotado em [-1, 1]. O navegador não
+4. **Desenho no Python, fixo** (por comunidades desde a 2.1.0, veja o adendo): `spring_layout` por componente, com
+   semente, empacotado em [-1, 1]. O navegador não
    recalcula o desenho: filtrar o recorte esmaece nós e arestas, e o mapa mental do leitor não muda a cada filtro.
    O exemplo sintético do contrato usa um desenho determinístico mais simples, porque o `spring_layout` varia na
    quarta casa decimal entre plataformas, e o exemplo é conferido byte a byte no CI.
@@ -122,3 +123,35 @@ homônimos que ficaram separados, 7 são a mesma pessoa, e vão para a revisão 
 - `mapa redes` é uma etapa nova (`ETAPAS`), rápida e sem modelo.
 - A coleta faz cerca de 1 requisição a cada 100 artigos a mais, só na primeira vez.
 - O cânone é enviesado para obras indexadas no OpenAlex (ver "Limitações e vieses").
+
+## Adendo (2.1.0): o desenho por comunidades
+
+Na 2.0.0, o maior componente saía de um `spring_layout` só, com os parâmetros padrão. No piloto, isso fazia um núcleo
+denso: numa área de 1250 × 840 px (a do grafo numa tela de 1920 × 1080, com a interface da 2.1.0), 57% das pessoas
+desenhadas encostavam em outra (74% na área menor da 2.0.0), e o maior componente ocupava só 27% do desenho, com os
+grupos menores numa faixa embaixo. O autor pediu grafos "mais espaçados".
+
+Comparamos cinco desenhos no piloto, com métricas na vista inicial (os raios da vista, os componentes de 2 e 3 nós
+escondidos, como por padrão): o atual; o `spring_layout` com mais distância e mais iterações; o `forceatlas2_layout`
+do networkx, com e sem o modo linlog; e um desenho por comunidades. Um avaliador independente, que não sabia qual
+desenho era qual, escolheu pelas imagens e pelas métricas o mesmo que elas apontavam:
+
+- **O maior componente por comunidades.** Cada comunidade do Louvain (a partição inteira) é desenhada à parte, num
+  disco; os discos são arrumados por um `spring_layout` do grafo das comunidades (o peso entre duas é a soma das
+  arestas entre elas) e afastados até não se sobreporem, com uma gravidade fraca que os mantém juntos.
+- **Os componentes menores à direita do maior**, na altura dele, e depois embaixo, com a largura que deixa o desenho
+  visível perto de 1,6 : 1, a proporção de uma tela larga. As duplas e os trios ficam embaixo de tudo.
+- **Nenhum nó encostado noutro** na tela de referência (1250 × 840 px): um relaxamento dentro de cada componente afasta
+  os nós pelos raios que a vista desenha (`raios_na_vista`).
+
+| Piloto, tela de 1250 × 840 px | Coautoria, 2.0.0 | Coautoria, 2.1.0 | Instituições, 2.0.0 | Instituições, 2.1.0 |
+|---|---|---|---|---|
+| Nós encostados em outro | 57% | 0% | 29% | 0% |
+| Distância ao vizinho mais próximo (mediana) | 5,9 px | 9,3 px | 10,1 px | 16,1 px |
+| Vizinhos mais próximos da mesma comunidade (dos 5) | 62% | 97% | 35% | 97% |
+| Área do desenho ocupada pelo maior componente | 27% | 60% | 49% | 66% |
+
+Na coautoria, o vizinho mais próximo de uma pessoa no desenho é um coautor dela em 83% dos casos (38% na 2.0.0). O
+desenho leva 1,5 s no piloto e continua reprodutível. A separação entre as comunidades vem em parte da construção:
+**o vão entre dois grupos não é uma medida**, como a distância em geral (veja "Como ler as redes").
+

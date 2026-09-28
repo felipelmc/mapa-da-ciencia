@@ -370,7 +370,7 @@
 		ficam ligadas quando aparecem juntas nas afiliações de um documento (mesmo quando é um autor só, com duas
 		afiliações), com o mesmo peso fracionário da coautoria.
 	{/if}
-	O maior grupo ligado fica em cima; embaixo, os grupos menores{#if !mostrarPequenos && escondidos}, sem as duplas e os
+	O maior grupo ligado fica à esquerda, com cada comunidade num espaço próprio; à direita e embaixo, os grupos menores{#if !mostrarPequenos && escondidos}, sem as duplas e os
 		trios isolados{/if}.
 </p>
 

@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Mudado
+
+- **O desenho das redes de coautoria e de instituições** (`mapa redes`, adendo do ADR 0014): no maior componente, cada comunidade ganha um espaço próprio, e as comunidades muito ligadas ficam vizinhas; os componentes menores vêm à direita e embaixo do maior, e nenhum nó encosta noutro numa tela de computador. No piloto, os nós encostados caem de 57% para 0%, e o maior componente passa de 27% para 60% do desenho. As redes de um projeto ficam desatualizadas até a próxima `mapa redes`.
+
 ### Corrigido
 
 - a vista Validação voltou a abrir no site publicado e no painel com o júri: com seis modelos, dois pares com diferença significativa (McNemar) na mesma variável repetiam a chave da lista, e a página ficava parada em "Carregando a validação…". O exemplo do contrato agora tem vários pares por variável, como o piloto.

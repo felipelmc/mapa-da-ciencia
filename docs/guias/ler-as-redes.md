@@ -15,7 +15,8 @@ fracionário: dois autores que escreveram vários artigos a dois têm uma linha 
 - **O que não dá:** importância ou qualidade. Mais coautores não é mais relevância, e a rede só vê o que está no
   corpus.
 
-O maior grupo ligado (o componente principal, onde estão as comunidades) fica em cima; embaixo, os grupos menores. As
+O maior grupo ligado (o componente principal, onde estão as comunidades, cada uma num espaço próprio) fica à esquerda;
+à direita e embaixo, os grupos menores. As
 duplas e os trios isolados ficam escondidos, para o desenho enquadrar o resto: "Mostrar as duplas e os trios
 isolados" os traz de volta (a escolha vai para o link, com `duplas=1`, e o desenho se reenquadra). A lista embaixo do desenho dá o rótulo inteiro das maiores comunidades (no desenho sai
 só o primeiro tópico).
