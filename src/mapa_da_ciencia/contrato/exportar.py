@@ -156,6 +156,11 @@ def _autor_curto(doc: Documento) -> str:
     return primeiro + (f"; +{len(doc.autores) - 1}" if len(doc.autores) > 1 else "")
 
 
+def _url_segura(url: str | None) -> str | None:
+    """Só endereços http(s) viram link no cartão (um `javascript:` vindo de uma fonte externa não)."""
+    return url if url and url.lower().startswith(("http://", "https://")) else None
+
+
 def _detalhe(doc: Documento, atrib: dict[str, Any], idiomas: list[str]) -> Detalhe:
     resumo = doc.texto_em("resumos", idiomas)
     chaves = [t for t in doc.palavras_chave if t.idioma == (resumo.idioma if resumo else idiomas[0])]
@@ -164,7 +169,7 @@ def _detalhe(doc: Documento, atrib: dict[str, Any], idiomas: list[str]) -> Detal
         idioma=resumo.idioma if resumo else None,
         palavras_chave=list(dict.fromkeys(t.texto for t in (chaves or doc.palavras_chave))),
         autores=[" ".join(p for p in (a.nome, a.sobrenome) if p) for a in doc.autores],
-        url=doc.url or (f"https://doi.org/{doc.doi}" if doc.doi else None),
+        url=_url_segura(doc.url) or (f"https://doi.org/{doc.doi}" if doc.doi else None),
         licenca=doc.licenca,
         licenca_fonte=doc.licenca_fonte,
         idioma_analise=atrib["idioma_analise"],

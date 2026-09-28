@@ -247,3 +247,11 @@ def test_classificacao_e_validacao_no_contrato(projeto, tmp_path):
     # as divergências de pessoas não saem no contrato; as da referência, sim
     assert {d.codificador for d in val.divergencias} == {"claude-opus"} and len(val.divergencias) == 4
     assert not any(EMAIL.search(a.read_text(encoding="utf-8")) for a in (p.saida / "dados").rglob("*.json"))
+
+
+def test_so_links_http_viram_url_do_detalhe():
+    from mapa_da_ciencia.contrato.exportar import _url_segura
+
+    assert _url_segura("javascript:alert(1)") is None and _url_segura("JAVASCRIPT:x") is None
+    assert _url_segura("https://www.scielo.br/j/op/a/x") == "https://www.scielo.br/j/op/a/x"
+    assert _url_segura(None) is None
