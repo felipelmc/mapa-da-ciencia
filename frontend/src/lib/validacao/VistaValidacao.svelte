@@ -65,6 +65,9 @@
 		return v?.categorias?.find((c) => c.valor === valor)?.rotulo ?? valor.replaceAll('_', ' ');
 	}
 	const quem = (nome: string) => (tipo(nome) === 'referencia' ? `${nome} (referência)` : nome);
+	// kappa nulo: numa variável de texto livre ele não se aplica; nas outras, as respostas não variaram
+	const semKappa = (id: string) =>
+		variaveis.get(id.split(':')[0])?.tipo === 'texto' ? 'não se aplica (texto livre)' : 'indefinido (sem variação)';
 
 	// ---- frases e tabelas
 	const comKappa = $derived(doPar.filter((m) => m.kappa !== null));
@@ -172,7 +175,7 @@
 							<td class="num">{m.concordancia === null ? '—' : formatarPorcentagem(m.concordancia)}</td>
 							<td class="kappa">
 								{#if m.kappa === null}
-									<span class="suave">— sem variação</span>
+									<span class="suave">{semKappa(m.variavel)}</span>
 								{:else}
 									<span class="barra-kappa" class:fraco={m.kappa < KAPPA_FRACO}>
 										<span style:width="{Math.max(0, m.kappa) * 100}%"></span>
