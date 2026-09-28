@@ -68,6 +68,10 @@ export type Modo = (typeof MODOS)[number];
 export const CRUZAR = ['macrotema', 'topico', 'revista'] as const;
 export type Cruzar = (typeof CRUZAR)[number];
 
+/** As redes da vista Redes: pessoas, instituições, estados e citações. */
+export const REDES = ['coautoria', 'instituicoes', 'estados', 'citacoes'] as const;
+export type Rede = (typeof REDES)[number];
+
 /**
  * Laço desenhado no mapa: polígono em coordenadas dos dados (as do UMAP, que não dependem da tela), com a
  * versão do mapa em que foi desenhado. Um link de um mapa já regenerado ainda abre, mas com aviso.
@@ -121,6 +125,10 @@ export interface Filtros {
 	variavel: string | null;
 	/** Com o que a vista Classificação cruza a variável. */
 	cruzar: Cruzar;
+	/** A rede mostrada na vista Redes. */
+	rede: Rede;
+	/** Nó aberto no cartão da vista Redes: o id publicado de uma pessoa ou o id de uma instituição. */
+	no: string | null;
 }
 
 export const FILTROS_PADRAO: Readonly<Filtros> = Object.freeze({
@@ -139,7 +147,9 @@ export const FILTROS_PADRAO: Readonly<Filtros> = Object.freeze({
 	macro: null,
 	topico: null,
 	variavel: null,
-	cruzar: 'macrotema'
+	cruzar: 'macrotema',
+	rede: 'coautoria',
+	no: null
 });
 
 /** Ordem fixa dos parâmetros na URL (as chaves novas entram sem mudar a posição das antigas). */
@@ -159,6 +169,8 @@ const ORDEM: (keyof Filtros)[] = [
 	'topico',
 	'variavel',
 	'cruzar',
+	'rede',
+	'no',
 	'doc'
 ];
 
@@ -243,7 +255,9 @@ export function normalizarFiltros(parcial: Partial<Filtros> = {}): Filtros {
 		macro: inteiroOuNulo(f.macro),
 		topico: inteiroOuNulo(f.topico),
 		variavel: f.variavel && /^[a-z0-9_]{1,40}$/.test(f.variavel) ? f.variavel : null,
-		cruzar: (CRUZAR as readonly string[]).includes(f.cruzar) ? f.cruzar : FILTROS_PADRAO.cruzar
+		cruzar: (CRUZAR as readonly string[]).includes(f.cruzar) ? f.cruzar : FILTROS_PADRAO.cruzar,
+		rede: (REDES as readonly string[]).includes(f.rede) ? f.rede : FILTROS_PADRAO.rede,
+		no: f.no && /^[\w:.-]{1,64}$/.test(f.no) ? f.no : null
 	};
 }
 
@@ -268,7 +282,9 @@ export function lerFiltros(params: URLSearchParams): Filtros {
 		macro: lerInteiro(params.get('macro')),
 		topico: lerInteiro(params.get('topico')),
 		variavel: params.get('variavel'),
-		cruzar: (params.get('cruzar') ?? FILTROS_PADRAO.cruzar) as Cruzar
+		cruzar: (params.get('cruzar') ?? FILTROS_PADRAO.cruzar) as Cruzar,
+		rede: (params.get('rede') ?? FILTROS_PADRAO.rede) as Rede,
+		no: params.get('no')
 	});
 }
 
@@ -291,7 +307,9 @@ export function escreverFiltros(parcial: Partial<Filtros>): URLSearchParams {
 		macro: f.macro === null ? null : String(f.macro),
 		topico: f.topico === null ? null : String(f.topico),
 		variavel: f.variavel,
-		cruzar: f.cruzar === FILTROS_PADRAO.cruzar ? null : f.cruzar
+		cruzar: f.cruzar === FILTROS_PADRAO.cruzar ? null : f.cruzar,
+		rede: f.rede === FILTROS_PADRAO.rede ? null : f.rede,
+		no: f.no
 	};
 	const busca = new URLSearchParams();
 	for (const chave of ORDEM) {

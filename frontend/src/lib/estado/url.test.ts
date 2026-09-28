@@ -195,6 +195,18 @@ describe('recorte e parâmetros das vistas do M4', () => {
 		expect(escreverFiltros(lerFiltros(new URLSearchParams('cruzar=macrotema'))).toString()).toBe('');
 	});
 
+	it('a rede e o nó da vista Redes vão antes do documento, e o nó só aceita ids simples', () => {
+		const f = lerFiltros(new URLSearchParams('doc=S1&no=ror:036rp1748&rede=instituicoes&cruzar=revista'));
+		expect([f.rede, f.no]).toEqual(['instituicoes', 'ror:036rp1748']);
+		expect(escreverFiltros(f).toString()).toBe('cruzar=revista&rede=instituicoes&no=ror%3A036rp1748&doc=S1');
+		const invalido = lerFiltros(new URLSearchParams('rede=teia&no=a b'));
+		expect([invalido.rede, invalido.no]).toEqual(['coautoria', null]);
+		// a coautoria é o padrão e não vai para o link
+		expect(escreverFiltros(lerFiltros(new URLSearchParams('rede=coautoria&no=p0001'))).toString()).toBe('no=p0001');
+		// e nenhuma das duas faz parte do recorte que o trilho leva
+		expect(escreverFiltros(recorteDe(f)).toString()).toBe('');
+	});
+
 	it('o recorte leva só as chaves compartilhadas', () => {
 		const f = lerFiltros(new URLSearchParams('anos=2015-2020&uf=SP&cor=ano&vista=0.1,0.2,2&doc=S1&modo=absoluto&topico=4'));
 		expect(escreverFiltros(recorteDe(f)).toString()).toBe('anos=2015-2020&uf=SP');

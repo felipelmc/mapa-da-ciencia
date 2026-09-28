@@ -159,6 +159,8 @@ As redes (`redes.json` e `citacoes.json`, gerados pelo `mapa redes`) chegam com 
 | `macro` | `3` (macrotema aberto na vista Tópicos) | nenhum |
 | `vista` | `0.12,-0.3,2.5` (câmera do mapa: centro e zoom) | a câmera inicial |
 | `topico` | `12` (gaveta do tópico; não confundir com `topicos`, que filtra) | nenhum |
+| `rede` | `instituicoes`, `estados`, `citacoes` (vista Redes) | `coautoria` |
+| `no` | `p0001` ou `ror:036rp1748` (pessoa ou instituição aberta no cartão da vista Redes) | nenhum |
 | `doc` | `exemplo:00042` | nenhum |
 
 O **recorte** (`CHAVES_RECORTE`: `anos`, `revistas`, `topicos`, `busca`, `laco`, `uf`, `pais`, `inst`) é o que as vistas de análise compartilham: o trilho o leva de uma seção a outra (seções com `recorte: true` em `secoes.ts`). Os demais parâmetros são de cada vista e ficam para trás.
