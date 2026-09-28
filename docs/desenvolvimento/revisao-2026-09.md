@@ -134,7 +134,9 @@ Antes do merge, três agentes novos revisaram o resultado: o código (aprovado c
 corrigidos, como o enquadramento do nó que deixava de funcionar depois de um clique no nó já aberto), o desenho das
 redes (aprovado com ressalvas: o auditor recalculou as métricas do zero, confirmou que só as coordenadas mudaram e
 mostrou que a frase "as comunidades muito ligadas ficam vizinhas" não valia, o que levou a um ajuste do arranjo e a
-números em vez da frase) e o uso, nas várias telas.
+números em vez da frase) e o uso, em 200 cargas de 375 a 2560 px, nos dois temas (aprovado com ressalvas: os três
+pedidos atendidos no computador, e 17 achados, entre eles dois altos que as mudanças criaram no celular, como os
+rótulos das comunidades, que tomavam o toque dos nós embaixo deles; os altos e os médios foram corrigidos).
 
 Ficaram para depois, registrados: a cor dos nós por comunidade (hoje é a do macrotema, e várias comunidades dividem
 a mesma cor); o cartão do documento, que cobre parte do mapa numa tela de 1440 px; o kappa de uma pessoa, que conta
