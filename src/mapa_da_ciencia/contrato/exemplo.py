@@ -823,7 +823,6 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
     """Redes fictícias sobre os documentos do exemplo: pessoas por macrotema (com alguma mistura), a colaboração
     entre as instituições das afiliações do exemplo, citações de documentos mais antigos e um cânone inventado."""
     from mapa_da_ciencia.redes.citacoes import calcular
-    from mapa_da_ciencia.redes.desenho import desenhar
     from mapa_da_ciencia.redes.grafos import colaboracao_por_ano, comunidades, grafo, metricas, pares_ponderados
 
     ids = [d["id"] for d in docs]
@@ -845,7 +844,7 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
     arestas = pares_ponderados(autores)
     g = grafo(arestas)
     com, particao = comunidades(g, "coautoria")
-    pos = desenhar(g)
+    pos = _desenho_do_exemplo(g)
     ordem = sorted(pessoas)
     pos_de = {x: i for i, x in enumerate(ordem)}
     grau = Counter(x for par in arestas for x in par)
@@ -863,7 +862,7 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
     arestas_i = pares_ponderados(inst_do_doc)
     gi = grafo(arestas_i)
     com_i, particao_i = comunidades(gi, "instituicoes")
-    pos_i = desenhar(gi)
+    pos_i = _desenho_do_exemplo(gi)
     grau_i = Counter(x for par in arestas_i for x in par)
     comunidades_c = []
     for rede, rotulos, membros_de in (("coautoria", com, autores), ("instituicoes", com_i, inst_do_doc)):
@@ -971,3 +970,25 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
         "canone_n": [o.n for o in c.canone],
     }
     return redes, citacoes, gabarito
+
+
+def _desenho_do_exemplo(g) -> dict[str, tuple[float, float]]:
+    """Um desenho simples e igual em qualquer máquina (o `spring_layout` muda na quarta casa entre o Mac e o Linux, e
+    o exemplo é conferido byte a byte no CI): cada componente num círculo, os componentes numa grade."""
+    import networkx as nx
+
+    componentes = sorted((sorted(c) for c in nx.connected_components(g)), key=lambda c: (-len(c), c[0]))
+    lado = max(1, math.ceil(math.sqrt(len(componentes))))
+    pos = {}
+    for k, nos in enumerate(componentes):
+        cx, cy = (k % lado) * 2.2, (k // lado) * 2.2
+        raio = 0.2 + 0.8 * min(1.0, len(nos) / 40)
+        for j, no in enumerate(nos):
+            ang = 2 * math.pi * j / len(nos)
+            pos[no] = (cx + raio * math.cos(ang), cy + raio * math.sin(ang))
+    if not pos:
+        return {}
+    xs, ys = [x for x, _ in pos.values()], [y for _, y in pos.values()]
+    mx, my = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+    meia = max(max(xs) - min(xs), max(ys) - min(ys), 1e-9) / 2
+    return {no: (round((x - mx) / meia, 3), round((y - my) / meia, 3)) for no, (x, y) in pos.items()}
