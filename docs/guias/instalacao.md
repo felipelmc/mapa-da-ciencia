@@ -40,6 +40,8 @@ Os modelos precisam caber na memória. O `mapa` sugere um perfil a partir da mem
 | `padrao` | 16 a 32 GB (e a T4 do Colab) | `qwen3-embedding:0.6b` | `qwen3.5:9b` | `qwen3.5:9b` | ~7 GB |
 | `forte` | 32 GB ou mais | `qwen3-embedding:0.6b` | `qwen3.5:9b` | `gemma4:26b` | ~24 GB |
 
+As métricas publicadas do piloto são do `qwen3.5:9b`. O `qwen3.5:4b` do perfil `leve` ainda não passou pela validação ([adendo ao ADR 0005](../decisoes/0005-modelo-de-classificacao.md#adendo-2026-09-28-versao-101-o-perfil-leve)): a validação do seu projeto mede a concordância do modelo que você usar.
+
 Baixe os modelos do seu perfil. No perfil `padrao`:
 
 ```bash

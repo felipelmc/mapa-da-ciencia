@@ -20,6 +20,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - as limitações do método, nas explicações e no ADR 0007: a classificação lê o resumo em inglês quando falta o em português (18% do piloto); cerca de 25 "resumos" do piloto são fragmentos da fonte e passam pela coleta; o ARI é 0,89 no núcleo e 0,78 com os reatribuídos (não 0,79), e o maior tópico chega a 4,9% do corpus com eles; os erros medidos da geografia vêm de textos raspados pelo OpenAlex e das travas, e não de nomes parecidos; "modelos maiores concordariam mais" vira hipótese.
 - os 84% de concordância no período analisado, na validação e no ADR 0012, vêm com a nota de que 115 dos 168 acertos são "não se aplica" nos dois (entre os 85 artigos com algum período, 62%; a presença do período tem kappa 0,85).
 - a tendência dos tópicos, no ADR 0009, nos tópicos e no guia "Ler os tópicos": um dossiê no primeiro ou no último ano do período filtrado ainda pode aparecer como tendência, e três dos 13 tópicos marcados no piloto são marginais (somem com o quantil t ou com um ano a menos); o ADR dizia que todos tinham mudança sustentada.
+- o perfil `leve` classifica com o `qwen3.5:4b`, que ainda não passou pela validação: um adendo ao ADR 0005 registra a escolha, e o guia de instalação e as limitações avisam.
 
 ## [1.0.1] - 2026-09-27
 

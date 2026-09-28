@@ -31,7 +31,7 @@ O `mapa-da-ciencia` descreve uma literatura a partir de títulos, resumos e afil
 
 ## Classificação e validação
 
-- **Modelos pequenos.** O modelo padrão (`qwen3.5:9b`) roda num notebook com 16 GB de memória. Modelos maiores podem concordar mais com uma leitura humana, ao preço do hardware; a comparação entre modelos (McNemar) mede isso no seu corpus.
+- **Modelos pequenos.** O modelo padrão (`qwen3.5:9b`) roda num notebook com 16 GB de memória. Modelos maiores podem concordar mais com uma leitura humana, ao preço do hardware; a comparação entre modelos (McNemar) mede isso no seu corpus. As métricas do piloto são do `qwen3.5:9b`; o `qwen3.5:4b` do perfil `leve` ainda não passou pela validação, e a do seu projeto mede o modelo que você usar.
 - **A evidência mostra de onde, não se está certo.** O modelo cita o trecho que justifica a resposta, e a conferência diz se o trecho está mesmo no resumo (93,4% literal no piloto). Uma evidência literal com a categoria errada continua errada. Veja [Classificação ancorada em evidência](classificacao.md).
 - **A referência do piloto não é uma pessoa.** No piloto, a amostra de 200 artigos foi codificada às cegas por outro modelo (Claude), como codificador de referência. O kappa mede a concordância com essa leitura, não com um especialista; ele varia de 0,37 (técnica de pesquisa) a 0,93 (Brasil como caso). Uma codificação humana da mesma amostra é o próximo passo, e o painel tem a vista para isso. Veja [Desenho da validação](validacao.md).
 - **Uma rodada, um codebook.** As métricas valem para o codebook de exemplo, como ele está. Mudar uma definição pede classificar e medir de novo.
