@@ -64,7 +64,8 @@ class Projeto:
     raiz: Path
     _config: ConfigProjeto | None = field(default=None, repr=False)
     _codebook: Codebook | None = field(default=None, repr=False)
-    _lidos: dict[str, int | None] = field(default_factory=dict, repr=False)  # arquivo → mtime da última leitura
+    # arquivo → (mtime, tamanho) da última leitura que deu certo
+    _lidos: dict[str, tuple[int, int] | None] = field(default_factory=dict, repr=False)
 
     # ------------------------------------------------------------ localizar e criar
     @classmethod
@@ -123,27 +124,31 @@ class Projeto:
         return projeto
 
     # ------------------------------------------------------------ conteúdo
-    def _mudou(self, nome: str, atual: object) -> bool:
-        """O arquivo mudou no disco desde a última leitura? (O painel fica aberto enquanto a pessoa edita o
-        `mapa.yaml` ou o `codebook.yaml`; sem isso, as etapas rodariam com a versão antiga.)"""
-        arquivo = self.raiz / nome
-        mtime = arquivo.stat().st_mtime_ns if arquivo.exists() else None
-        if atual is not None and self._lidos.get(nome) == mtime:
-            return False
-        self._lidos[nome] = mtime
-        return True
+    def _assinatura(self, nome: str) -> tuple[int, int] | None:
+        try:
+            st = (self.raiz / nome).stat()
+        except FileNotFoundError:
+            return None
+        return st.st_mtime_ns, st.st_size
 
     @property
     def config(self) -> ConfigProjeto:
-        if self._mudou(ARQUIVO_CONFIG, self._config):
+        # relido quando muda no disco: o painel fica aberto enquanto a pessoa edita o `mapa.yaml`, e as etapas não
+        # podem rodar com a versão antiga. A assinatura só é guardada depois de uma leitura que deu certo: com um erro
+        # no arquivo, toda leitura repete o erro até ele ser corrigido (e não volta à versão anterior em silêncio)
+        assinatura = self._assinatura(ARQUIVO_CONFIG)
+        if self._config is None or self._lidos.get(ARQUIVO_CONFIG) != assinatura:
             self._config = carregar_config(self.raiz / ARQUIVO_CONFIG)
-        return self._config  # type: ignore[return-value]
+            self._lidos[ARQUIVO_CONFIG] = assinatura
+        return self._config
 
     @property
     def codebook(self) -> Codebook:
-        if self._mudou(ARQUIVO_CODEBOOK, self._codebook):
+        assinatura = self._assinatura(ARQUIVO_CODEBOOK)  # como em `config`
+        if self._codebook is None or self._lidos.get(ARQUIVO_CODEBOOK) != assinatura:
             self._codebook = carregar_codebook(self.raiz / ARQUIVO_CODEBOOK)
-        return self._codebook  # type: ignore[return-value]
+            self._lidos[ARQUIVO_CODEBOOK] = assinatura
+        return self._codebook
 
     # ------------------------------------------------------------ caminhos
     @property
