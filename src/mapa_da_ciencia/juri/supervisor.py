@@ -106,6 +106,8 @@ def pedidos(projeto: Projeto, *, todos: bool = False) -> tuple[list[dict], list[
     for d in decisoes:
         if d.etapa != "sem_maioria" or d.variavel.tipo not in DELIBERAVEIS or (d.supervisor and not todos):
             continue
+        if not d.deliberada:
+            continue
         texto = textos.get(d.doc)
         if texto is None:
             continue
@@ -156,7 +158,11 @@ def pedidos(projeto: Projeto, *, todos: bool = False) -> tuple[list[dict], list[
 
 def exportar_pedidos(projeto: Projeto, *, lote: int = 20, todos: bool = False) -> Pedidos:
     """Grava os pedidos em lotes JSONL e as instruções, para um supervisor externo."""
-    consolidar(projeto)
+    if (resumo := consolidar(projeto)).nao_deliberados:
+        raise ErroConfig(
+            f"{resumo.nao_deliberados} decisão(ões) em disputa ainda não passaram pela deliberação: rode "
+            "`mapa juri deliberar` antes de pedir ao supervisor."
+        )
     arbitragem, auditoria = pedidos(projeto, todos=todos)
     pasta = pasta_pedidos(projeto)
     pasta.mkdir(exist_ok=True)

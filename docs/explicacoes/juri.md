@@ -68,6 +68,7 @@ supervisor é um modelo da Anthropic chamado pela API: aí os títulos e resumos
   acertar**. A auditoria estima o erro entre os unânimes.
 - A deliberação pode levar à conformidade (um modelo muda só porque os outros dois concordam). O relatório conta as
   mudanças na direção da referência e contra ela.
-- No piloto, o júri roda só na amostra de validação (200 documentos). No corpus inteiro, o custo cresce com o número
-  de membros (`mapa juri votar --corpus`).
+- O júri roda na amostra de validação (200 documentos, no piloto), que é onde há referência para medir o ganho.
+  Levá-lo ao corpus inteiro (uma classificação completa por membro, a deliberação e o supervisor em milhares de
+  documentos) fica para uma versão futura.
 - Os números do piloto e a comparação entre os membros estão no [ADR 0015](../decisoes/0015-juri-de-modelos-e-supervisor.md).

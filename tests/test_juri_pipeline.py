@@ -228,3 +228,31 @@ def test_supervisor_pela_api_com_consentimento_e_limite(projeto):
 
     r = supervisionar(p, limite_gasto=5, confirmar=True, cliente=ClienteFalso())
     assert ler_resumo(p).pendentes_supervisor == 0 and auditoria(p).n == 3
+
+
+def test_antes_de_deliberar_nada_e_rotulado_como_deliberacao(projeto):
+    from mapa_da_ciencia.config import ErroConfig
+    from mapa_da_ciencia.juri.consolidar import consolidar
+
+    votar(projeto)
+    n = len(va.ler(projeto).docs)
+    resumo = consolidar(projeto)
+    assert resumo.etapas["subarea"]["maioria"] == n and resumo.etapas["subarea"]["deliberacao"] == 0
+    assert resumo.nao_deliberados == 2 * n  # abordagem e subarea, em todos os documentos
+    assert resumo.pendentes_supervisor == 0  # nada vai ao supervisor antes da deliberação
+    assert estado(projeto).proximo == "mapa juri deliberar"
+    with pytest.raises(ErroConfig, match="deliberar"):
+        exportar_pedidos(projeto)
+    _, resumo = deliberar_juri(projeto)
+    assert resumo.nao_deliberados == 0 and resumo.etapas["subarea"]["deliberacao"] == n
+
+
+def test_o_juri_fica_na_amostra_mesmo_com_o_corpus_classificado(projeto):
+    from mapa_da_ciencia.classificacao.pipeline import OpcoesClassificacao, classificar
+
+    for membro in MEMBROS:
+        classificar(projeto, OpcoesClassificacao(modelo=membro))
+    n = len(va.ler(projeto).docs)
+    d, resumo = deliberar_juri(projeto)
+    assert d.documentos == n and resumo.documentos == n
+    assert resumo.pendentes_supervisor == n and resumo.nao_deliberados == 0

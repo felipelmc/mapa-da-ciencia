@@ -832,19 +832,14 @@ app.add_typer(juri_app, name="juri")
 
 
 @juri_app.command("votar")
-def juri_votar(
-    projeto: OpcaoProjeto = Path("."),
-    corpus: Annotated[
-        bool, typer.Option("--corpus", help="Classifica o corpus inteiro com cada membro, e não só a amostra.")
-    ] = False,
-) -> None:
+def juri_votar(projeto: OpcaoProjeto = Path(".")) -> None:
     """Rodada 1: cada membro de `juri.membros` classifica a amostra de validação (o que ainda falta)."""
     from mapa_da_ciencia.juri.votacao import votar
     from mapa_da_ciencia.progresso import ProgressoRich
 
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
-        r = votar(p, somente_amostra=not corpus, progresso=ProgressoRich(console))
+        r = votar(p, progresso=ProgressoRich(console))
     console.print(f"[bold green]Votação pronta[/]: {r}")
     if r.ja_prontos:
         console.print(f"Já tinham classificado tudo: {', '.join(r.ja_prontos)}.")
