@@ -97,6 +97,17 @@ def test_erro_de_valor_invalido_e_de_argumento_faltando_em_portugues():
     assert "Falta o argumento 'pasta'." in r.output
 
 
+def test_argumentos_a_mais_e_tipos_das_opcoes_em_portugues():
+    r = runner.invoke(app, ["novo", "a", "b", "c"])
+    assert "Got unexpected" not in r.output
+    assert "Argumentos a mais: b c" in r.output
+    r = runner.invoke(app, ["validar", "amostra", "-h"])
+    for ingles in ("<path>", "<int range>"):
+        assert ingles not in r.output
+    for portugues in ("<caminho>", "<inteiro>"):
+        assert portugues in r.output
+
+
 def test_ajuda_em_portugues():
     r = runner.invoke(app, ["novo", "-h"])
     assert r.exit_code == 0

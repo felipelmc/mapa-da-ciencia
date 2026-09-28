@@ -5,12 +5,13 @@ trocar sem reescrever a CLI fica aqui:
 
 - os títulos e marcas da ajuda (Argumentos, Opções, Comandos, `[padrão: …]`, `[obrigatório]`), que o Typer lê de
   constantes de `typer.rich_utils`, e a linha "Veja 'mapa … -h' para a ajuda." dos erros;
-- a linha `Uso:` (com `[OPÇÕES]` e `COMANDO [ARGS]...`) e o texto da opção `-h`, pelo contexto e pelo formatador
-  de cada comando;
+- a linha `Uso:` (com `[OPÇÕES]` e `COMANDO [ARGS]...`), o texto da opção `-h` e o tipo de cada opção
+  (`<caminho>`, `<texto>`, `<inteiro>`), pelo contexto, pelo formatador e pelo `metavar` de cada comando;
 - as mensagens dos erros de uso mais comuns (opção ou comando inexistente, valor inválido, opção ou argumento
   faltando), traduzidas quando passam pelo grupo principal (`GrupoEmPortugues`), antes de o Typer mostrá-las.
 
-Uma mensagem que não esteja na lista continua em inglês.
+Uma mensagem que não esteja na lista continua em inglês, e o tipo dos argumentos posicionais também (`pasta
+<path>`): neles, o `metavar` trocaria o nome do argumento, e não o tipo.
 """
 
 from __future__ import annotations
@@ -21,9 +22,20 @@ from typing import Any
 from typer import rich_utils
 from typer._click import Command, Context, HelpFormatter
 from typer._click.exceptions import UsageError
-from typer.core import TyperGroup
+from typer.core import TyperGroup, TyperOption
 
 AJUDA = "Mostra esta ajuda e sai."
+
+# o tipo que a ajuda mostra ao lado de cada opção (`<path>`, `<int range>`…), pelo nome do tipo no Click
+_METAVARS = {
+    "path": "<caminho>",
+    "file": "<arquivo>",
+    "str": "<texto>",
+    "int": "<inteiro>",
+    "int range": "<inteiro>",
+    "float": "<número>",
+    "float range": "<número>",
+}
 
 rich_utils.ARGUMENTS_PANEL_TITLE = "Argumentos"
 rich_utils.OPTIONS_PANEL_TITLE = "Opções"
@@ -61,7 +73,7 @@ _MENSAGENS: list[tuple[re.Pattern[str], Any]] = [
     (re.compile(r"Missing argument (.+)\."), r"Falta o argumento \1."),
     (re.compile(r"Missing parameter"), "Falta o parâmetro"),
     (re.compile(r"Missing command\."), "Falta o comando."),
-    (re.compile(r"Got unexpected extra arguments? \((.+)\)"), r"Argumentos a mais: \1"),
+    (re.compile(r"Got unexpected extra argument(?:s|\(s\))? \((.+)\)"), r"Argumentos a mais: \1"),
     (re.compile(r"Option (.+?) requires an argument\."), r"A opção \1 precisa de um valor."),
     (re.compile(r"Option (.+?) requires (\d+) arguments\."), r"A opção \1 precisa de \2 valores."),
     (re.compile(r"Option (.+?) does not take a value\."), r"A opção \1 não aceita valor."),
@@ -109,6 +121,9 @@ def _em_portugues(comando: Command) -> None:
         return opcao
 
     comando.get_help_option = get_help_option  # type: ignore[method-assign]
+    for param in comando.params:
+        if isinstance(param, TyperOption) and param.metavar is None and not param.is_flag:
+            param.metavar = _METAVARS.get(param.type.name)
     for sub in getattr(comando, "commands", {}).values():
         _em_portugues(sub)
 
