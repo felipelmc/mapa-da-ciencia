@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { MediaQuery } from 'svelte/reactivity';
 	import type { ProjetoAberto } from '$lib/dados/contexto';
 	import { filtrosDaPagina } from '$lib/estado/filtros';
 	import { escreverFiltros, recorteDe, rota } from '$lib/estado/url';
@@ -15,9 +16,19 @@
 	// as vistas de análise recebem o recorte atual (anos, revistas, tópicos, laço, lugares); as outras, não
 	const recorte = $derived(escreverFiltros(recorteDe(filtrosDaPagina())));
 	const destino = (s: Secao) => rota(s.caminho, s.recorte ? recorte : undefined);
+
+	// Na tela estreita, o trilho é uma barra fixa embaixo, e a casca desconta a altura dela (`--altura-trilho`):
+	// o mapa e os painéis sobre ele terminam onde a barra começa. A altura muda com a letra e a área segura.
+	const estreita = new MediaQuery('(max-width: 820px)');
+	let altura = $state(0);
+	$effect(() => {
+		const estilo = document.documentElement.style;
+		if (estreita.current && altura) estilo.setProperty('--altura-trilho', `${altura}px`);
+		else estilo.removeProperty('--altura-trilho');
+	});
 </script>
 
-<aside class="lateral transicao-tema">
+<aside class="lateral transicao-tema" bind:offsetHeight={altura}>
 	<a class="marca" href={rota('/')}>
 		<svg class="marca-astro" viewBox="0 0 24 24" aria-hidden="true">
 			<circle cx="12" cy="12" r="10.5" />

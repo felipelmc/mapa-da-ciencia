@@ -15,6 +15,7 @@
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { tema } from '$lib/estado/tema.svelte';
 	import { CORES_POR, rota, type CorPor } from '$lib/estado/url';
+	import { formatarInteiro } from '$lib/formato';
 	import { simplificar, type Ponto } from '$lib/graficos/geometria';
 	import Nuvem, { type Anotacao, type Camera } from '$lib/graficos/Nuvem.svelte';
 	import Rotulos, { type Caixa, type ItemRotulo } from '$lib/graficos/Rotulos.svelte';
@@ -59,6 +60,7 @@
 		}, 250);
 	}
 	const buscados = $derived(filtros.busca ? buscar(indiceDe(tabela), filtros.busca) : null);
+	const MAX_RESULTADOS = 6;
 	// a barra do recorte pode limpar a busca: o campo acompanha
 	$effect(() => {
 		const busca = filtros.busca;
@@ -251,12 +253,17 @@
 			</label>
 			{#if buscados}
 				<ol class="resultados" data-testid="resultados-busca">
-					{#each buscados.slice(0, 6) as i (i)}
+					{#each buscados.slice(0, MAX_RESULTADOS) as i (i)}
 						<li><button type="button" onclick={() => abrir(i)}>{tabela.titulos[i]}</button></li>
 					{:else}
 						<li class="suave">Nada encontrado.</li>
 					{/each}
 				</ol>
+				{#if buscados.length > MAX_RESULTADOS}
+					<p class="suave" data-testid="mais-resultados">
+						{MAX_RESULTADOS} de {formatarInteiro(buscados.length)}; refine a busca para ver os outros.
+					</p>
+				{/if}
 			{/if}
 			<div class="acoes">
 				<button type="button" class="botao" aria-pressed={modoLaco} data-testid="botao-laco" onclick={() => (modoLaco = !modoLaco)}>
@@ -449,7 +456,10 @@
 		border-radius: 0.25rem;
 	}
 
+	/* a lista não encolhe: sem isso, a legenda (com dezenas de tópicos) ficava com quase todo o painel, e os
+	   resultados (e o "Nada encontrado.") com poucos pixels */
 	.resultados {
+		flex-shrink: 0;
 		margin: 0;
 		padding-left: 1.1rem;
 		max-height: 9rem;
@@ -511,10 +521,20 @@
 			height: 55%;
 		}
 
+		/* no celular, o painel rola por inteiro: a legenda não fica espremida em poucos pixels */
 		.painel {
 			top: auto;
 			bottom: 1rem;
 			max-height: 40%;
+			overflow-y: auto;
+		}
+
+		.painel > :global(*) {
+			flex-shrink: 0;
+		}
+
+		.legenda {
+			overflow: visible;
 		}
 	}
 </style>

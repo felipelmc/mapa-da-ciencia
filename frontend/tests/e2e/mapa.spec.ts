@@ -229,6 +229,53 @@ test('busca com "/" e sem acentos; um resultado abre o cartão', async ({ page }
 	expect(problemas).toEqual([]);
 });
 
+test('a lista da busca aparece inteira ao lado da legenda, e diz quantos resultados ficaram de fora', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	const campo = page.getByTestId('busca-mapa');
+	const lista = page.getByTestId('resultados-busca');
+	// a lista mostra tudo o que tem, até o próprio limite (9rem, com rolagem)
+	const inteira = () => lista.evaluate((e) => e.clientHeight >= Math.min(e.scrollHeight, 144) - 1);
+	await campo.fill('xyzxyz');
+	await expect(lista).toContainText('Nada encontrado.');
+	await expect.poll(inteira).toBe(true);
+	// a palavra (de 5 letras ou mais) presente em mais títulos: dá mais de 6 resultados
+	const contagem = new Map<string, number>();
+	for (const t of documentos.colunas.titulo as string[]) {
+		for (const p of new Set(t.toLowerCase().split(/[^\p{L}]+/u).filter((p) => p.length >= 5))) {
+			contagem.set(p, (contagem.get(p) ?? 0) + 1);
+		}
+	}
+	const [comum] = [...contagem.entries()].sort((a, b) => b[1] - a[1])[0];
+	await campo.fill(comum);
+	await expect(lista.getByRole('button')).toHaveCount(6);
+	await expect(page.getByTestId('mais-resultados')).toContainText(/^6 de [\d.]+; refine a busca/);
+	await expect.poll(inteira).toBe(true);
+});
+
+test.describe('no celular', () => {
+	test.use({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+
+	test('o painel e o cartão terminam acima da barra de navegação, e a legenda inteira é alcançável', async ({ page }) => {
+		await page.goto(`${url('RAIZ')}#/mapa`);
+		await esperarMapa(page);
+		const topoDaBarra = (await page.locator('aside.lateral').boundingBox())!.y;
+		const fim = async (seletor: string) => {
+			const caixa = (await page.locator(seletor).boundingBox())!;
+			return caixa.y + caixa.height;
+		};
+		expect(await fim('aside.painel')).toBeLessThanOrEqual(topoDaBarra + 0.5);
+		// o último item da legenda (que antes ficava atrás da barra) recebe o toque
+		await page.getByTestId('legenda-mapa').getByRole('button').last().click({ timeout: 5000 });
+		await expect(page).toHaveURL(/topicos=/);
+
+		await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(ids[0])}`);
+		await esperarMapa(page);
+		await expect(page.getByTestId('cartao-documento')).toBeVisible();
+		expect(await fim('.lado')).toBeLessThanOrEqual(topoDaBarra + 0.5);
+	});
+});
+
 test('o laço fica no link e reproduz os mesmos documentos', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/mapa`);
 	await esperarMapa(page);
