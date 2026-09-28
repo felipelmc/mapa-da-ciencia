@@ -305,6 +305,7 @@ def classificar(
             "somente_amostra": opcoes.somente_amostra,
             # False quando o resultado completo anterior foi mantido: esta execução não é a dos dados
             "gravado": gravou,
+            "execucao": execucao,  # a mesma do resultado: o status escolhe por ela (`manifesto.ultima_classificacao`)
         },
         hash_codebook=resultado.hash_codebook,  # o do começo da etapa, mesmo que o arquivo mude no meio dela
     )

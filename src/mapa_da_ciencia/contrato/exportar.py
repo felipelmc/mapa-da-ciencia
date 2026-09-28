@@ -449,7 +449,7 @@ def exportar(projeto: Projeto) -> list[str]:
     import shutil
 
     from mapa_da_ciencia.armazenamento import ARQUIVO, cobertura, ler_documentos
-    from mapa_da_ciencia.manifesto import da_classificacao_principal, ultima_execucao
+    from mapa_da_ciencia.manifesto import ultima_classificacao, ultima_execucao
     from mapa_da_ciencia.topicos.resultado import PASTA, Resultado, assinatura_corpus, ler_atribuicoes
 
     caminho = projeto.dados / ARQUIVO
@@ -498,11 +498,7 @@ def exportar(projeto: Projeto) -> list[str]:
     duracoes = {
         etapa: round(m["duracao_s"], 1)
         for etapa in ("coleta", "embeddings", "topicos", "geografia", "classificacao")
-        if (
-            m := ultima_execucao(
-                projeto, etapa, da_classificacao_principal(projeto) if etapa == "classificacao" else None
-            )
-        )
+        if (m := ultima_classificacao(projeto) if etapa == "classificacao" else ultima_execucao(projeto, etapa))
     }
     execucao = manifesto.execucao.model_copy(
         update={

@@ -11,13 +11,13 @@ import hashlib
 import json
 import platform
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from mapa_da_ciencia import __version__
-from mapa_da_ciencia.projeto import ARQUIVO_CONFIG, ETAPAS, Projeto
+from mapa_da_ciencia.projeto import ARQUIVO_CODEBOOK, ARQUIVO_CONFIG, ETAPAS, Projeto
 
 
 def _hash_arquivo(caminho: Path) -> str | None:
@@ -64,15 +64,17 @@ def registrar_execucao(
     return arquivo
 
 
+def _manifestos(projeto: Projeto, etapa: str) -> Iterator[dict[str, Any]]:
+    """Os manifestos da etapa, do mais recente ao mais antigo."""
+    for arquivo in sorted(projeto.execucoes.glob(f"*-{etapa}.json"), reverse=True):
+        yield json.loads(arquivo.read_text(encoding="utf-8"))
+
+
 def ultima_execucao(
     projeto: Projeto, etapa: str, filtro: Callable[[dict[str, Any]], bool] | None = None
 ) -> dict[str, Any] | None:
     """O manifesto mais recente da etapa (que passe no `filtro`, se houver), ou `None` se ela nunca rodou."""
-    for arquivo in sorted(projeto.execucoes.glob(f"*-{etapa}.json"), reverse=True):
-        m = json.loads(arquivo.read_text(encoding="utf-8"))
-        if filtro is None or filtro(m):
-            return m
-    return None
+    return next((m for m in _manifestos(projeto, etapa) if filtro is None or filtro(m)), None)
 
 
 def da_classificacao_principal(projeto: Projeto) -> Callable[[dict[str, Any]], bool]:
@@ -89,11 +91,30 @@ def da_classificacao_principal(projeto: Projeto) -> Callable[[dict[str, Any]], b
     return filtro
 
 
+def ultima_classificacao(projeto: Projeto) -> dict[str, Any] | None:
+    """O manifesto da execução que gerou o resultado principal da classificação (o que o painel e o status mostram):
+    o mais recente com a mesma execução do resultado (`parametros.execucao`) e que o gravou, de preferência uma rodada
+    que não foi só a amostra (a duração e as contagens da rodada completa). Sem essa marca (manifestos ou resultados
+    anteriores a ela), vale o filtro `da_classificacao_principal`."""
+    from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado
+
+    if (projeto.raiz / ARQUIVO_CODEBOOK).exists():
+        cfg = projeto.config.modelos.classificacao
+        r = Resultado.ler(projeto.dados / PASTA, cfg.modelo, projeto.codebook.hash())
+        if r is not None and r.execucao:
+            dessa = [
+                m
+                for m in _manifestos(projeto, "classificacao")
+                if (m.get("parametros") or {}).get("execucao") == r.execucao and m["parametros"].get("gravado", True)
+            ]
+            if dessa:
+                return next((m for m in dessa if not m["parametros"].get("somente_amostra")), dessa[0])
+    return ultima_execucao(projeto, "classificacao", da_classificacao_principal(projeto))
+
+
 def status_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any] | None]:
     return {
-        etapa: ultima_execucao(
-            projeto, etapa, da_classificacao_principal(projeto) if etapa == "classificacao" else None
-        )
+        etapa: ultima_classificacao(projeto) if etapa == "classificacao" else ultima_execucao(projeto, etapa)
         for etapa in ETAPAS
     }
 

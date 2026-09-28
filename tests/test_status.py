@@ -106,3 +106,32 @@ def test_erro_de_anos_nao_perde_o_que_esta_entre_colchetes(tmp_path, anos, esper
     arq.write_text(re.sub(r"anos: \[2010, 2020\]", f"anos: {anos}", arq.read_text(encoding="utf-8")), encoding="utf-8")
     r = runner.invoke(app, ["status", "-P", str(p.raiz)], env=ENV)
     assert r.exit_code == 1 and esperado in " ".join(r.output.split()), r.output
+
+
+def test_o_status_mostra_a_execucao_que_gerou_o_resultado(projeto, apis_falsas):
+    """O manifesto mostrado (no status, no painel e na duração publicada) é o da execução do resultado principal:
+    um --somente-amostra que gravou o principal conta; um que só repetiu a rodada completa não toma o lugar dela."""
+    from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado
+    from mapa_da_ciencia.manifesto import estados_das_etapas, ultima_classificacao
+
+    def dados():
+        return Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
+
+    mapa.classificar(projeto, limite=12, progresso=False)  # parcial, versão 1
+    va.sortear(projeto)
+    time.sleep(1.05)
+    apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)  # grava o principal: o anterior era parcial
+    m = ultima_classificacao(projeto)
+    assert dados().modelo.endswith("@novo00000000") and m["modelos"]["classificacao"] == dados().modelo
+    assert estados_das_etapas(projeto)["classificacao"]["ultima"]["contagens"]["classificados"] == dados().classificados
+    exportar(projeto)
+    publicado = json.loads((projeto.saida / "dados" / "manifesto.json").read_text(encoding="utf-8"))
+    assert publicado["execucao"]["duracao_s"]["classificacao"] == round(m["duracao_s"], 1)
+
+    time.sleep(1.05)
+    completa = mapa.classificar(projeto, progresso=False)  # a rodada completa da mesma versão
+    time.sleep(1.05)
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)  # só a amostra, tudo do cache
+    m = ultima_classificacao(projeto)
+    assert not m["parametros"]["somente_amostra"] and m["contagens"]["novos"] == completa.novos > 0
