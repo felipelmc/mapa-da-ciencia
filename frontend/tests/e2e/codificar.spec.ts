@@ -79,6 +79,36 @@ test('o Tab sai da ficha (não há armadilha de teclado), e Enter num botão aci
 	await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
+test('numa múltipla escolha, a opção clicada com o mouse e depois Enter confirma a ficha (não desmarca a opção)', async ({
+	page
+}) => {
+	// o exemplo não tem variável múltipla: a fila chega com recorte_geografico como múltipla
+	await page.route('**/api/validacao/fila**', async (r) => {
+		const resposta = await r.fetch();
+		const fila = await resposta.json();
+		fila.codebook.variaveis.find((v: { id: string }) => v.id === 'recorte_geografico').tipo = 'multipla';
+		await r.fulfill({ response: resposta, json: fila });
+	});
+	await entrar(page, 'multipla');
+	const progresso = page.getByTestId('progresso');
+	await expect(progresso).toContainText('0 de 24 fichas completas');
+	// as outras variáveis pelo teclado: 1, 1, pula a múltipla, 1, 1 e o texto
+	await page.keyboard.press('1');
+	await page.keyboard.press('1');
+	await page.keyboard.press('ArrowDown');
+	await page.keyboard.press('1');
+	await page.keyboard.press('1');
+	await page.keyboard.type('2010–2020');
+	// a múltipla com o mouse
+	await page.locator('#variavel-recorte_geografico button.cabeca').click();
+	const opcao = page.locator('#variavel-recorte_geografico .opcoes button').first();
+	await opcao.click();
+	await expect(opcao).toHaveAttribute('aria-pressed', 'true');
+	await page.keyboard.press('Enter');
+	await expect(progresso).toContainText('1 de 24 fichas completas');
+	await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
 test('Enter com variáveis faltando avisa; S marca incerto; ? mostra a ajuda', async ({ page }) => {
 	await entrar(page, 'joao');
 	await page.keyboard.press('1');

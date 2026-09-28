@@ -265,7 +265,17 @@
 								{#each opcoesDe(x) as o, n (String(o.valor))}
 									{@const marcada = Array.isArray(r?.valor) ? r.valor.includes(o.valor as string) : r?.valor === o.valor}
 									<li>
-										<button type="button" aria-pressed={marcada} onclick={() => ((varIdx = i), escolherOpcao(n))}>
+										<!-- com o mouse, o foco volta à ficha: o Enter seguinte confirma (e não desmarca a opção);
+										     quem chegou ao botão pelo Tab continua com o Enter do botão -->
+										<button
+											type="button"
+											aria-pressed={marcada}
+											onclick={(ev) => {
+												varIdx = i;
+												escolherOpcao(n);
+												if (ev.detail > 0) cartao?.focus();
+											}}
+										>
 											<kbd>{n + 1}</kbd>{o.rotulo}
 										</button>
 										{#if definicoes && o.definicao}<p class="definicao">{o.definicao}</p>{/if}
