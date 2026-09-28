@@ -22,6 +22,7 @@ from ..armazenamento import ARQUIVO, ler_documentos
 from ..config import ErroConfig
 from ..contrato.exportar import exportar
 from ..formatar import num
+from ..llm.cache import chave_de
 from ..llm.ollama import Ollama
 from ..manifesto import registrar_execucao
 from ..progresso import Progresso, ProgressoNulo
@@ -30,10 +31,20 @@ from ..topicos.resultado import assinatura_corpus
 from ..validacao.amostra import ler as ler_amostra
 from .executor import Classificacao, Classificador, textos_para_classificar
 from .prompt import VERSAO_PROMPT
-from .resultado import PASTA, Resultado, resultados, valor_como_texto
+from .resultado import (
+    PASTA,
+    Resultado,
+    documentos_classificados,
+    resultados,
+    rotulo_a_parte,
+    valor_como_texto,
+)
 
 AMOSTRA_ESTIMATIVA = 5
 GRAVAR_A_CADA = 50
+# a fração dos textos que pode ficar sem resposta válida numa rodada completa que substitui o resultado completo de
+# outra execução (com no mínimo 1 documento): acima disso, a versão nova provavelmente tem um problema
+LIMITE_FALHAS = 0.02
 
 
 @dataclass
@@ -63,6 +74,7 @@ class ResumoClassificacao:
     duracao_s: float
     parcial: bool
     avisos: list[str] = field(default_factory=list)
+    a_parte: bool = False  # gravado no resultado à parte da versão nova (`Resultado.a_parte`)
 
     def __str__(self) -> str:
         literal = self.evidencia.get("literal")
@@ -138,13 +150,49 @@ def classificar(
 
     variaveis = [v.id for v in codebook.variaveis]
     k = classificador.contadores
+    parametros = (modelo_cfg.num_ctx, modelo_cfg.temperatura, modelo_cfg.semente, modelo_cfg.pensar)
+    execucao = chave_de(classificador.modelo, VERSAO_PROMPT, parametros)[:16]
+    # Duas regras protegem o resultado principal, decididas pelo que ESTA rodada fez (e não pelo que a última gravação
+    # deixou marcado nele):
+    # 1. uma rodada que cobre o corpus atual (todos os textos, do cache ou do modelo, sem --estimar, --limite ou
+    #    --somente-amostra, sem ser interrompida) e com falhas até o limite substitui o principal, seja de que execução
+    #    for, mesmo que ele tenha um documento a mais ou a menos;
+    # 2. qualquer outra rodada (inclusive a que cobre o corpus com falhas demais) nunca o diminui: grava no principal
+    #    só se não houver principal ou se todo documento classificado nele (mesmo o que saiu do corpus ou ficou
+    #    sem resumo por um tempo) continua classificado no resultado novo (a retomada da mesma execução, por
+    #    exemplo). Conta o conjunto, e não o número: uma rodada com a mesma contagem pode trocar documentos. Senão,
+    #    as respostas vão para o resultado à parte, que as métricas da validação comparam com o principal.
+    # Um modelo que devolve JSON inválido em tudo, depois de um `ollama pull`, apagaria horas de classificação, e as
+    # respostas antigas ficam no cache com a chave do digest antigo, que o Ollama não devolve mais.
+    anterior = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
+    # os documentos do principal saem do Parquet: um Parquet que ficou sem o JSON também é um principal
+    no_principal = documentos_classificados(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
+    # todos os documentos do principal, e não só os que têm texto agora: um documento que sai do corpus por uma
+    # coleta (ou fica sem resumo) e volta depois não pode perder a classificação numa rodada parcial
+    exigidos = no_principal or set()
+    rodada_completa = not (opcoes.estimar or opcoes.limite is not None or opcoes.somente_amostra)
+    limite_falhas = max(1, int(len(textos) * LIMITE_FALHAS))
+    gravou = False  # a última chamada de `gravar` gravou o resultado principal?
+    classificados_agora: set[str] = set()  # e os documentos que ela tinha
     principal = not opcoes.modelo or opcoes.modelo == cfg.modelos.classificacao.modelo
     assinatura = assinatura_corpus([d.id for d in docs])
 
     def gravar(resultados: list[Classificacao], *, parcial: bool) -> Resultado:
         """Grava o resultado com o que já foi classificado: no fim, e a cada `GRAVAR_A_CADA` documentos novos,
         com uma exportação para o painel (assim a rodada longa aparece enquanto corre)."""
+        nonlocal gravou, classificados_agora
         resultados = resultados + fora_do_alvo
+        classificados_agora = {c.doc for c in resultados}
+        # regra 1: a rodada cobre o corpus atual (chegou ao fim sem opções que o recortam, e cada texto foi
+        # classificado ou falhou nas duas tentativas) e as falhas não passam do limite
+        cobre = (
+            rodada_completa
+            and not parcial
+            and len(resultados) + len(k.falhas) >= len(textos)
+            and len(k.falhas) <= limite_falhas
+        )
+        # regra 2: qualquer outra gravação não tira documentos do principal
+        gravou = cobre or (anterior is None and no_principal is None) or exigidos <= classificados_agora
         parcial = parcial or len(resultados) < len(textos)
         linhas = [linha for c in sorted(resultados, key=lambda c: c.doc) for linha in _linhas(c, variaveis)]
         status = Counter(linha["status"] for linha in linhas if linha["status"] != "dispensada")
@@ -172,9 +220,49 @@ def classificar(
             evidencia_por_variavel=por_variavel,
             segundos_por_documento=round(statistics.median(segundos), 2) if segundos else None,
             parcial=parcial or bool(k.falhas),
+            execucao=execucao,
+            a_parte=not gravou,
         )
         resultado.gravar(projeto.dados / PASTA, linhas)
+        # gravado o principal, a versão à parte sai: ou é esta mesma (ficou repetida), ou uma que deixou de ser a mais
+        # nova (outra atualização, ou o parâmetro de volta); uma versão à parte nova toma o lugar da anterior
+        if gravou and (velha := Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash(), a_parte=True)):
+            velha.apagar(projeto.dados / PASTA)
         return resultado
+
+    def registrar(resultado: Resultado, *, interrompida: bool = False) -> None:
+        """O manifesto da execução: no fim e, se ela gravou algo, também numa interrupção (sem ele, o status mostraria
+        a execução anterior para os dados desta)."""
+        registrar_execucao(
+            projeto,
+            "classificacao",
+            inicio=inicio,
+            fim=datetime.now(UTC),
+            contagens={
+                "classificados": resultado.classificados,
+                "documentos": len(textos),
+                "novos": k.novos,
+                "chamadas": k.chamadas,
+                "falhas": len(k.falhas),
+                "sem_resumo": len(sem_resumo),
+            },
+            modelos={"classificacao": classificador.modelo},
+            parametros={
+                "num_ctx": modelo_cfg.num_ctx,
+                "temperatura": modelo_cfg.temperatura,
+                "semente": modelo_cfg.semente,
+                "pensar": modelo_cfg.pensar,
+                "concorrencia": modelo_cfg.concorrencia,
+                "versao_prompt": VERSAO_PROMPT,
+                "parcial": resultado.parcial,
+                "somente_amostra": opcoes.somente_amostra,
+                "interrompida": interrompida,
+                # False quando o resultado completo anterior foi mantido: esta execução não é a dos dados
+                "gravado": gravou,
+                "execucao": execucao,  # a do resultado: o status escolhe por ela (`manifesto.ultima_classificacao`)
+            },
+            hash_codebook=resultado.hash_codebook,  # o do começo da etapa, mesmo que o arquivo mude no meio dela
+        )
 
     resultados: list[Classificacao] = []
     try:
@@ -182,13 +270,13 @@ def classificar(
             resultados.append(c)
             if not c.do_cache and k.novos % GRAVAR_A_CADA == 0:
                 gravar(resultados, parcial=True)
-                if principal:
+                if principal and gravou:
                     with contextlib.suppress(Exception):  # o painel acompanha; uma falha aqui não para a etapa
                         exportar(projeto)
     except BaseException:
         if k.novos:  # o cache já tem tudo; o resultado parcial deixa o painel em dia com ele
             with contextlib.suppress(Exception):
-                gravar(resultados, parcial=True)
+                registrar(gravar(resultados, parcial=True), interrompida=True)
         raise
     finally:
         classificador.fim()
@@ -220,38 +308,41 @@ def classificar(
         estimativa_restante_s=estimativa,
         duracao_s=round(time.perf_counter() - t0, 2),
         parcial=resultado.parcial,
+        a_parte=resultado.a_parte,
     )
     if k.falhas:
         resumo.avisos.append(
             f"{num(len(k.falhas), 0)} documento(s) sem resposta válida depois de duas tentativas (por exemplo "
-            f"{', '.join(k.falhas[:3])}); rode a etapa de novo para tentar outra vez."
+            f"{', '.join(k.falhas[:3])}). Rodar de novo tenta outra vez, mas com temperatura 0 e semente fixa a falha "
+            "tende a se repetir: veja “Documentos que falham sempre” no guia Classificar os resumos."
         )
-    registrar_execucao(
-        projeto,
-        "classificacao",
-        inicio=inicio,
-        fim=datetime.now(UTC),
-        contagens={
-            "classificados": classificados,
-            "documentos": len(textos),
-            "novos": k.novos,
-            "chamadas": k.chamadas,
-            "falhas": len(k.falhas),
-            "sem_resumo": len(sem_resumo),
-        },
-        modelos={"classificacao": classificador.modelo},
-        parametros={
-            "num_ctx": modelo_cfg.num_ctx,
-            "temperatura": modelo_cfg.temperatura,
-            "semente": modelo_cfg.semente,
-            "pensar": modelo_cfg.pensar,
-            "concorrencia": modelo_cfg.concorrencia,
-            "versao_prompt": VERSAO_PROMPT,
-            "parcial": resultado.parcial,
-            "somente_amostra": opcoes.somente_amostra,
-        },
-    )
-    if principal:
+    if resultado.a_parte:
+        nome = modelo_cfg.modelo
+        n_anterior = anterior.classificados if anterior else len(no_principal or ())
+        rotulo = f'"{nome.removesuffix(":latest")} ({rotulo_a_parte(resultado, anterior)})"'
+        if rodada_completa and len(k.falhas) > limite_falhas:
+            motivo = (
+                f"{num(len(k.falhas), 0)} documentos ficaram sem resposta válida nesta rodada, mais que o limite para "
+                f"substituí-lo ({num(limite_falhas, 0)}, 2% dos documentos)"
+            )
+            conselho = (
+                "Confira o modelo e os parâmetros na amostra (`mapa classificar --somente-amostra`) antes de rodar "
+                "tudo de novo."
+            )
+        else:
+            fora = len(exigidos - classificados_agora)
+            motivo = (
+                f"esta rodada não cobre o corpus e deixaria sem classificação {num(fora, 0)} documento(s) que o "
+                "resultado anterior tem"
+            )
+            conselho = "Rode `mapa classificar` sem --somente-amostra, --limite ou --estimar para substituí-lo."
+        resumo.avisos.append(
+            f"O resultado anterior ({nome}, {num(n_anterior, 0)} documentos classificados) foi mantido: "
+            f"{motivo}. As respostas desta rodada ficam num resultado à parte, que `mapa validar metricas` compara "
+            f"com ele como {rotulo}. " + conselho
+        )
+    registrar(resultado)
+    if principal and gravou:  # a versão à parte não muda o contrato (ver `validacao.metricas.calcular`)
         resumo.avisos += exportar(projeto)
     return resumo
 

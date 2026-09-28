@@ -12,7 +12,6 @@ import json
 from pathlib import Path
 from typing import Annotated, Literal
 
-import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 Slug = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]*$", description="Identificador em minúsculas, sem acento.")]
@@ -348,17 +347,34 @@ def _explicar(erro: ValidationError, arquivo: Path) -> str:
             msg = "campo desconhecido (erro de digitação?)"
         elif e["type"] == "missing":
             msg = "campo obrigatório ausente"
+        elif campo == "recorte.anos" and e["type"] in ("tuple_type", "too_short", "too_long", "int_parsing"):
+            msg = "use [ano_inicial, ano_final], por exemplo [2010, 2025]"
         linhas.append(f"  - {campo}: {msg}")
     return "\n".join(linhas)
+
+
+def ler_yaml(texto: str, nome: str) -> object:
+    """Lê um YAML do projeto recusando chaves repetidas: com o leitor padrão, uma seção repetida (duas `apelidos:`,
+    por exemplo, ao colar um bloco no fim do arquivo) apagava a primeira em silêncio."""
+    from ruamel.yaml import YAML
+    from ruamel.yaml.constructor import DuplicateKeyError
+    from ruamel.yaml.error import YAMLError
+
+    try:
+        return YAML(typ="safe", pure=True).load(texto)
+    except DuplicateKeyError as e:
+        raise ErroConfig(
+            f"{nome} tem uma chave repetida ({e.problem_mark.line + 1 if e.problem_mark else '?'}ª linha): junte as "
+            "duas seções numa só, senão a primeira é perdida."
+        ) from e
+    except YAMLError as e:
+        raise ErroConfig(f"{nome} não é um YAML válido: {e}") from e
 
 
 def _ler_yaml(arquivo: Path) -> dict:
     if not arquivo.exists():
         raise ErroConfig(f"Arquivo não encontrado: {arquivo}")
-    try:
-        dados = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
-    except yaml.YAMLError as e:
-        raise ErroConfig(f"{arquivo.name} não é um YAML válido: {e}") from e
+    dados = ler_yaml(arquivo.read_text(encoding="utf-8"), arquivo.name)
     if not isinstance(dados, dict):
         raise ErroConfig(f"{arquivo.name} deveria conter um mapeamento (chave: valor) no topo.")
     return dados

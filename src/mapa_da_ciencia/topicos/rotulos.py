@@ -31,7 +31,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from mapa_da_ciencia.config import ErroConfig, ModeloLLM
+from mapa_da_ciencia.config import ErroConfig, ModeloLLM, ler_yaml
 from mapa_da_ciencia.llm.base import ErroProvedor
 from mapa_da_ciencia.llm.cache import CacheLLM, chave_de
 from mapa_da_ciencia.llm.memoria import garantir_modelo, memoria_critica
@@ -207,7 +207,7 @@ def ler_manuais(raiz: Path) -> _Manuais:
     if not arquivo.exists():
         return _Manuais()
     try:
-        return _Manuais.model_validate(yaml.safe_load(arquivo.read_text(encoding="utf-8")) or {})
+        return _Manuais.model_validate(ler_yaml(arquivo.read_text(encoding="utf-8"), arquivo.name) or {})
     except (yaml.YAMLError, ValidationError) as e:
         raise ErroConfig(
             f"{ARQUIVO_MANUAL} inválido: {e}. O formato é `topicos: {{12: {{rotulo: ..., descricao: ...}}}}`."
@@ -231,25 +231,37 @@ class Rotulador:
         self.resumo = ResumoRotulos(modelo=cfg.modelo)
         self._digest: str | None = None
         self._carregou = False
+        self._pronto = False
+
+    def _identificar(self) -> str:
+        """`nome@digest` do modelo, para a chave do cache: basta ele estar instalado (sem carregá-lo)."""
+        if self._digest is None:
+            instalado = self.ollama.instalado(self.cfg.modelo)
+            self._digest = (instalado or garantir_modelo(self.ollama, self.cfg.modelo)).digest
+            self.resumo.modelo = f"{self.cfg.modelo}@{self._digest}"
+        return self.resumo.modelo
 
     def _preparar(self) -> str:
-        if self._digest is None:
+        """Confere a memória e carrega o modelo, só antes da primeira chamada de verdade (com tudo no cache, nunca)."""
+        modelo = self._identificar()
+        if not self._pronto:
             ja_carregado = any(
                 m.nome.removesuffix(":latest") == self.cfg.modelo.removesuffix(":latest")
                 for m in self.ollama.modelos_carregados()
             )
-            self._digest = garantir_modelo(self.ollama, self.cfg.modelo).digest
+            garantir_modelo(self.ollama, self.cfg.modelo)
             self._carregou = not ja_carregado
-            self.resumo.modelo = f"{self.cfg.modelo}@{self._digest}"
-        return self.resumo.modelo
+            self._pronto = True
+        return modelo
 
     def _perguntar(self, cache: CacheLLM, sistema: str, pedido: str, vocabulario: list[str]) -> Rotulo:
-        modelo = self._preparar()
+        modelo = self._identificar()
         parametros = (self.cfg.num_ctx, self.cfg.temperatura, self.cfg.semente, self.cfg.pensar)
         chave = chave_de(VERSAO_PROMPT, sistema, pedido, modelo, parametros)
         if (guardado := cache.obter(TAREFA, chave)) is not None:
             self.resumo.do_cache += 1
             return Rotulo(guardado["rotulo"], guardado["descricao"], "llm")
+        self._preparar()
         if memoria_critica():
             raise ErroProvedor(
                 "A memória do computador acabou no meio dos rótulos. Feche programas pesados e rode de novo: "

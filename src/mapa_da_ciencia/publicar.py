@@ -28,7 +28,7 @@ from .contrato.exportar import exportar
 from .documento import pode_publicar_resumo
 from .pastas import substituir_conteudo
 from .projeto import Projeto
-from .texto import EMAIL, orcids_no_texto
+from .texto import contem_email, orcids_no_texto
 
 
 @dataclass
@@ -124,7 +124,7 @@ def conferir_privacidade(dados: Path) -> None:
     nome manual no `pessoas.yaml`…). Qualquer um deles interrompe a publicação."""
     for arq in sorted(dados.rglob("*.json")):
         texto = arq.read_text(encoding="utf-8")
-        if EMAIL.search(texto):
+        if contem_email(texto):
             raise ErroConfig(f"Um e-mail apareceu em {arq.name}; a publicação foi interrompida. Avise o projeto.")
         if orcids := orcids_no_texto(texto):
             raise ErroConfig(

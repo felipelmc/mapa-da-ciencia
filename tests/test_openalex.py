@@ -238,3 +238,14 @@ def test_referencias_e_obras_citadas(projeto, apis_falsas):
     assert "@" not in json.dumps(citadas, default=str)
     docs = ler_documentos(projeto.dados / ARQUIVO)
     assert any(a.id and a.id.startswith("A") for d in docs for a in d.autorias_openalex)
+
+
+def test_resumo_e_titulo_do_openalex_sem_emails():
+    from mapa_da_ciencia.fontes.openalex import documento_de_obra, reconstruir_resumo
+
+    indice = {"Contato:": [0], "fulana": [1], "@": [2], "exemplo.br.": [3], "Resultados": [4]}
+    assert "exemplo" not in reconstruir_resumo(indice)
+    obra = {"id": "https://openalex.org/W1", "title": "Um título fulana@exemplo.br", "publication_year": 2020,
+            "type": "article", "abstract_inverted_index": indice}  # fmt: skip
+    doc = documento_de_obra(obra, "teste")
+    assert "@" not in doc.titulos[0].texto and all("exemplo" not in r.texto for r in doc.resumos)

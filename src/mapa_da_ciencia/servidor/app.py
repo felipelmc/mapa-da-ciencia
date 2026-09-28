@@ -85,7 +85,9 @@ def criar_app(
 
     @app.middleware("http")
     async def so_desta_maquina(request: Request, seguir):
-        if so_local and request.url.path.startswith("/api/") and request.url.hostname not in HOSTS_LOCAIS:
+        # todas as rotas, e não só /api/: por DNS apontado para cá, uma página de fora leria /dados/ (com resumos que
+        # não podem ser publicados) e a interface
+        if so_local and request.url.hostname not in HOSTS_LOCAIS:
             return JSONResponse({"detail": "O painel só responde a pedidos feitos desta máquina."}, status_code=403)
         return await seguir(request)
 

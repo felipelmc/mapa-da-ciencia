@@ -24,8 +24,8 @@ from pydantic import BaseModel, Field
 
 from ..config import Codebook, ConfigProjeto, ErroConfig
 from ..llm.base import ErroProvedor
+from ..manifesto import estados_das_etapas
 from ..projeto import Projeto
-from ..situacao import estados_das_etapas
 from .jobs import Jobs, Ocupado
 from .origem import conferir_origem
 

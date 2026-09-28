@@ -58,8 +58,8 @@ Período e idiomas do corpus.
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `anos` | par de inteiro e inteiro | **obrigatório** | Primeiro e último ano de publicação, inclusive. |
-| `idioma_analise` | `"pt"` \\| `"en"` \\| `"es"` | `"en"` | Idioma dos textos usados nos embeddings e nos tópicos (ver ADR 0004). |
-| `idioma_exibicao` | `"pt"` \\| `"en"` \\| `"es"` | `"pt"` | Idioma preferido para mostrar resumos e palavras-chave. |
+| `idioma_analise` | `"pt"` \| `"en"` \| `"es"` | `"en"` | Idioma dos textos usados nos embeddings e nos tópicos (ver ADR 0004). |
+| `idioma_exibicao` | `"pt"` \| `"en"` \| `"es"` | `"pt"` | Idioma preferido para mostrar resumos e palavras-chave. |
 
 ### Modelos
 
@@ -109,7 +109,7 @@ corpus, `scripts/calibrar_topicos.py` refaz a grade.
 | `min_cluster_size` | inteiro ou vazio | vazio | Menor tópico, em documentos. Vazio: automático, 1 a cada 200 documentos (mínimo 10). |
 | `min_samples` | inteiro | `5` | Quão conservador é o HDBSCAN: maior, mais documentos ficam de fora dos tópicos. |
 | `votos_minimos` | inteiro | `3` | Um documento que o HDBSCAN deixou sem tópico vai para o tópico com mais vizinhos seus no núcleo, se forem pelo menos estes (entre os `vizinhos` − 1 mais próximos: o grafo inclui o próprio documento). Menos que isso, fica sem tópico. |
-| `selecao` | `"eom"` \\| `"leaf"` | `"leaf"` | `leaf` fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` prefere tópicos maiores, mas pode trocar um tópico grande por vários pequenos com uma mudança mínima. |
+| `selecao` | `"eom"` \| `"leaf"` | `"leaf"` | `leaf` fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` prefere tópicos maiores, mas pode trocar um tópico grande por vários pequenos com uma mudança mínima. |
 | `macrotemas` | inteiro | `7` | Quantos macrotemas, no máximo (grupos de tópicos próximos, com cores bem distintas). Com poucos tópicos são menos, para que cada macrotema reúna em média ao menos 3 tópicos. |
 | `sementes` | lista de inteiro | `[42, 7, 2024]` | A primeira gera os tópicos; as demais medem a estabilidade (ARI entre as execuções). |
 
@@ -120,7 +120,7 @@ Amostra de resumos codificados por pessoas para medir a qualidade da classifica�
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `n` | inteiro | `200` | Tamanho da amostra para codificação humana. |
-| `estratificar_por` | `"topico"` \\| `"ano"` \\| `"revista"` | `"topico"` | Garante que a amostra cubra todos os tópicos (ou anos, ou revistas). |
+| `estratificar_por` | `"topico"` \| `"ano"` \| `"revista"` | `"topico"` | Garante que a amostra cubra todos os tópicos (ou anos, ou revistas). |
 | `semente` | inteiro | `7` | Semente do sorteio da amostra. |
 | `codificadores` | lista de texto | vazio | Nomes de quem vai codificar. |
 | `familias` | mapa de texto para texto | vazio | Família de modelo de cada codificador que não é uma pessoa (por exemplo, `claude-opus: claude`). Uma comparação entre dois participantes da mesma família (o codificador de referência e o supervisor do júri, por exemplo) é marcada como circular: a concordância entre eles superestima a qualidade. |
@@ -145,10 +145,10 @@ usuário quiser; `modo: api` chama a API da Anthropic, o que envia os títulos e
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `modo` | `"arquivo"` \\| `"api"` | `"arquivo"` | `arquivo`: pedidos e respostas em JSONL, para um supervisor externo; `api`: a API da Anthropic (precisa de `ANTHROPIC_API_KEY` no `.env`, de `enviar_textos: true` e do pacote extra `anthropic`). |
+| `modo` | `"arquivo"` \| `"api"` | `"arquivo"` | `arquivo`: pedidos e respostas em JSONL, para um supervisor externo; `api`: a API da Anthropic (precisa de `ANTHROPIC_API_KEY` no `.env`, de `enviar_textos: true` e do pacote extra `anthropic`). |
 | `nome` | texto | `"supervisor"` | Nome gravado nas decisões do supervisor (minúsculas, números, - e _). |
 | `familia` | texto ou vazio | vazio | Família do modelo supervisor (por exemplo, `claude`). Se for a mesma de um codificador de referência (`validacao.familias`), a comparação entre os dois é marcada como circular. Sem família (ou com `humano`), o supervisor é tratado como uma pessoa: as escolhas dele não saem documento a documento no painel publicado. No modo `api`, o padrão é `claude`. |
 | `modelo` | texto | `"claude-opus-5-5"` | Modelo da API da Anthropic, no modo `api`. |
-| `esforco` | `"low"` \\| `"medium"` \\| `"high"` | `"medium"` | Esforço de raciocínio pedido ao modelo da API (mais esforço, mais tokens). |
+| `esforco` | `"low"` \| `"medium"` \| `"high"` | `"medium"` | Esforço de raciocínio pedido ao modelo da API (mais esforço, mais tokens). |
 | `enviar_textos` | sim/não | `false` | Consentimento para enviar títulos e resumos à API. Sem ele, o modo `api` se recusa a rodar. |
 | `limite_gasto_usd` | número | `5.0` | Gasto máximo estimado por execução, em dólares; acima dele a etapa não começa. |

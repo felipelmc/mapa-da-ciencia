@@ -33,7 +33,7 @@ Cada vez que uma etapa roda, o `mapa` grava em `execucoes/` um arquivo como `202
 }
 ```
 
-`mapa status` lê esses manifestos, e o site publicado os transforma numa página de metodologia.
+`mapa status` lê esses manifestos, e o site publicado os transforma numa página de metodologia. Na classificação, o manifesto mostrado é o da execução que gerou o resultado principal: os parâmetros de cada rodada registram a execução (`execucao`, um hash do modelo com o digest, da versão do prompt e dos parâmetros) e se ela gravou o resultado (`gravado`). Uma rodada de comparação com outro modelo, ou uma versão nova que ficou à parte, não toma o lugar da rodada completa. Uma rodada interrompida com ++ctrl+c++ também registra o seu manifesto, marcado com `interrompida`.
 
 ## 3. Hashes de configuração e codebook
 
