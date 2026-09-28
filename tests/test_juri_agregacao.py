@@ -89,3 +89,13 @@ def test_candidatos_trazem_quem_votou_e_o_melhor_voto():
 
 def test_sem_votos():
     assert agregar(CATEGORICA, []).etapa == "sem_maioria"
+
+
+def test_chave_da_deliberacao_muda_com_o_prompt_da_classificacao(monkeypatch):
+    from mapa_da_ciencia.classificacao.executor import Texto
+    from mapa_da_ciencia.juri import deliberacao
+
+    texto = Texto(doc="d1", titulo="T", resumo="R", idioma="pt")
+    antes = deliberacao.chave_deliberacao("a", "m@1", (1, 0.0, 7, False), texto, "ctx")
+    monkeypatch.setattr(deliberacao, "VERSAO_PROMPT", 999)
+    assert deliberacao.chave_deliberacao("a", "m@1", (1, 0.0, 7, False), texto, "ctx") != antes

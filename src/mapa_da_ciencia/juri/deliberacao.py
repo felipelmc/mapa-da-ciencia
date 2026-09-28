@@ -23,7 +23,7 @@ from ..armazenamento import gravar_tabela, ler_tabela
 from ..classificacao.codebook import esquema, sem_informacao, validar
 from ..classificacao.evidencia import conferir
 from ..classificacao.executor import Classificador, Texto
-from ..classificacao.prompt import assinatura, mensagem_documento, mensagem_sistema
+from ..classificacao.prompt import VERSAO_PROMPT, assinatura, mensagem_documento, mensagem_sistema
 from ..classificacao.resultado import valor_como_texto, valor_do_texto
 from ..config import Codebook, Variavel
 from ..llm.base import ErroProvedor
@@ -160,7 +160,7 @@ def deliberar(
                     texto = textos[doc]
                     disputadas = disputas_do_membro(codebook, votos[doc], membro)
                     ctx = contexto(doc, disputadas)
-                    k = chave_de(VERSAO_PROMPT_JURI, assin, modelo, parametros, texto.titulo, texto.resumo, ctx)
+                    k = chave_deliberacao(assin, modelo, parametros, texto, ctx)
                     guardado = cache.obter(TAREFA_DELIBERACAO, k)
                     if guardado is None:
                         if not pronto:
@@ -263,6 +263,12 @@ def _linhas_do_membro(
 def ler_deliberacao(projeto: Projeto, hash_codebook: str) -> list[dict[str, Any]]:
     arquivo = pasta_dados(projeto, hash_codebook) / ARQUIVO
     return ler_tabela(arquivo) if arquivo.exists() else []
+
+
+def chave_deliberacao(assin: str, modelo: str, parametros: tuple, texto: Texto, ctx: str) -> str:
+    """A chave do cache de uma deliberação: muda com o prompt do júri, com o da classificação (a conversa repete a
+    mensagem do documento), com o modelo, os parâmetros, o texto e o que o membro vê dos pares."""
+    return chave_de(VERSAO_PROMPT_JURI, VERSAO_PROMPT, assin, modelo, parametros, texto.titulo, texto.resumo, ctx)
 
 
 def votos_da_deliberacao(
