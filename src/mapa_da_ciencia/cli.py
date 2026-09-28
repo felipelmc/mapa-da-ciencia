@@ -492,13 +492,14 @@ def painel(
     from mapa_da_ciencia.contrato.exemplo import gerar_exemplo
     from mapa_da_ciencia.contrato.exportar import escrever_dados
     from mapa_da_ciencia.servidor.app import criar_app
+    from mapa_da_ciencia.servidor.trava import travar
 
     if problema := _problema_da_porta(porta):
         sugerida = _porta_sugerida(porta)
         dica = f"por exemplo --porta {sugerida}" if sugerida else "com --porta"
         console.print(f"[bold red]Erro:[/] {problema}. Use outra, {dica}.")
         raise typer.Exit(1)
-    temporario = None
+    temporario = trava = None
     with _erros_amigaveis():
         if exemplo:
             temporario = tempfile.TemporaryDirectory(prefix="mapa-exemplo-")
@@ -508,6 +509,7 @@ def painel(
             descricao = "exemplo sintético (dados fictícios)"
         else:
             p = Projeto.abrir(projeto)
+            trava = travar(p, porta)  # um painel por projeto; fica aberta enquanto o painel roda
             aplicacao = criar_app(pasta_dados=p.saida / "dados", projeto=p, api=True)
             descricao = f"projeto {p.config.nome}"
 
@@ -520,6 +522,8 @@ def painel(
     finally:
         if temporario is not None:
             temporario.cleanup()
+        if trava is not None:
+            trava.close()
 
 
 @app.command()

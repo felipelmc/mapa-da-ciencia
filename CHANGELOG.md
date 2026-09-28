@@ -18,6 +18,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Corrigido
 
+- `mapa painel`: um segundo painel no mesmo projeto não abre mais (diz o endereço do primeiro); antes, ele marcava como interrompida a etapa que o primeiro ainda rodava, e aceitava outra etapa ao mesmo tempo.
 - painel, codificação: um codificador de referência (importado, como o `claude-opus`) não abre mais na codificação, que mostrava as respostas dele e as sobrescrevia; os nomes `juri`, `juri-r1` e `juri-supervisor` ficam reservados (um codificador com um deles escondia a fonte do júri nas métricas); apagar uma resposta de texto a apaga de fato (ela voltava no reload), e uma marca antes de qualquer valor não registra um codificador sem respostas (que entrava nas métricas com n = 0).
 - painel: a escrita só é aceita de uma página do próprio painel, com a mesma porta; antes, uma página aberta em outro servidor local (outra porta) conseguia disparar uma etapa.
 - nas redes, abrir um nó com um clique não rola mais a página até o cartão (o foco só vai para o cartão quando a escolha vem do teclado); no celular, um botão leva ao cartão, que fica embaixo do grafo.
