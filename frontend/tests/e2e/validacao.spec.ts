@@ -132,3 +132,36 @@ test('sem maioria e sem supervisor, o cartão diz o que valeu; a mudança na del
 	await expect(juri.locator('q.trecho').first()).toBeVisible();
 	expect(problemas).toEqual([]);
 });
+
+for (const site of ['RAIZ', 'PUBLICADO'] as const) {
+	test(`a comparação entre modelos lista cada par significativo, mais de um por variável (${site === 'RAIZ' ? 'raiz' : 'publicado'})`, async ({ page }) => {
+		// no piloto, com o júri, são 6 modelos e 15 pares por variável: dois pares com p < 0,05 na mesma variável
+		// repetiam a chave da lista, e o Svelte parava a página em "Carregando a validação…"
+		const dados = site === 'RAIZ' ? validacao : ler('validacao.json', 'publicado');
+		const significativos = dados.comparacoes_modelos.filter((c: { p: number }) => c.p < 0.05);
+		const porVariavel = new Map<string, number>();
+		for (const c of significativos) porVariavel.set(c.variavel, (porVariavel.get(c.variavel) ?? 0) + 1);
+		expect(Math.max(...porVariavel.values())).toBeGreaterThan(1); // o exemplo cobre o caso
+		const problemas = vigiar(page);
+		await page.goto(`${url(site)}#/validacao`);
+		await expect(h1(page)).toHaveText('Validação');
+		await expect(page.getByTestId('lista-mcnemar').locator('li')).toHaveCount(significativos.length);
+		expect(problemas).toEqual([]);
+	});
+}
+
+test('um erro ao desenhar a vista vira um aviso com "Tentar de novo", e a outra rota abre normalmente', async ({ page }) => {
+	// uma métrica sem a matriz faz a vista falhar ao desenhar; sem a proteção da casca, a página ficava parada
+	await page.route('**/dados/validacao.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const dados = await resposta.json();
+		dados.metricas[0].matriz = null;
+		await rota.fulfill({ response: resposta, json: dados });
+	});
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	await expect(page.getByTestId('falha-ao-abrir')).toContainText('Não foi possível abrir a vista Validação');
+	await expect(page.getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(h1(page)).toHaveText('Tópicos');
+	await expect(page.getByTestId('falha-ao-abrir')).toHaveCount(0);
+});

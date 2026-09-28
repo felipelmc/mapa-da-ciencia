@@ -4,6 +4,11 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Corrigido
+
+- a vista Validação voltou a abrir no site publicado e no painel com o júri: com seis modelos, dois pares com diferença significativa (McNemar) na mesma variável repetiam a chave da lista, e a página ficava parada em "Carregando a validação…". O exemplo do contrato agora tem vários pares por variável, como o piloto.
+- um erro ao desenhar uma vista vira um aviso com "Tentar de novo", em vez de deixar a página parada em "Carregando…" ou em branco; a troca de seção recomeça do zero.
+
 ## [2.0.0] - 2026-09-28
 
 A versão 2.0.0 traz duas frentes novas, o **júri de modelos locais com supervisor** e as **redes de coautoria e de citação**, e o resultado de uma revisão geral do projeto por agentes independentes (veja a página [Revisão geral](docs/desenvolvimento/revisao-2026-09.md)). No piloto, o júri leva a `tecnica_principal` de kappa 0,37 a 0,61 (o melhor membro sozinho, o `gemma4:12b`, chega a 0,65), e as redes mostram a colaboração quase dobrando: artigos com mais de um autor eram 29% em 2010–2014 e são 57% em 2021–2025.

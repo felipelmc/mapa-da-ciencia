@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ErroAoAbrir from '$lib/componentes/ErroAoAbrir.svelte';
 	import PaginaDeSecao from '$lib/componentes/PaginaDeSecao.svelte';
+	import Protegida from '$lib/componentes/Protegida.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { abrirCubo, reabrirCubo, type Aberto } from '$lib/dados/corpus';
 	import type { FonteDeDados } from '$lib/dados/fonte';
@@ -35,44 +36,46 @@
 {#await dados}
 	<p class="aviso" role="status">Carregando as redes…</p>
 {:then d}
-	{#if d}
-		<VistaRedes aberto={d.aberto} redes={d.redes} citacoes={d.citacoes} />
-	{:else if publicado}
-		<PaginaDeSecao
-			comTitulo={false}
-			secao={secao('redes')}
-			vazio={{ titulo: 'As redes não fazem parte desta publicação.', sobretitulo: 'Sem redes' }}
-		>
-			<p data-testid="redes-fora-da-publicacao">
-				Este site foi publicado sem as redes de coautoria e de citação. As outras vistas mostram o corpus inteiro.
-			</p>
-		</PaginaDeSecao>
-	{:else if desatualizadas}
-		<PaginaDeSecao
-			comTitulo={false}
-			secao={secao('redes')}
-			vazio={{ titulo: 'As redes deste projeto estão desatualizadas.', sobretitulo: 'Redes desatualizadas' }}
-			desatualizados={['redes', 'citacoes']}
-		>
-			<p data-testid="redes-desatualizadas">
-				{#if mudou}Mudou {mudou}{:else}As entradas mudaram{/if} depois da última <code>mapa redes</code>, e as redes
-				antigas ficaram de fora para não misturar dados de momentos diferentes. Rode <code>mapa redes</code>{#if manifesto.api},
-					ou a etapa Redes na vista <a href={rota('/projeto')}>Projeto</a>,{/if} e recarregue esta página.
-			</p>
-		</PaginaDeSecao>
-	{:else}
-		<PaginaDeSecao
-			comTitulo={false}
-			secao={secao('redes')}
-			vazio={{ titulo: 'Este projeto ainda não tem redes.', sobretitulo: 'Sem redes' }}
-		>
-			<p>
-				Rode <code>mapa coletar</code>, <code>mapa topicos</code> e <code>mapa redes</code> (com
-				<code>mapa geografia</code> antes, para as redes de instituições e de estados){#if manifesto.api}, ou as etapas
-					na vista <a href={rota('/projeto')}>Projeto</a>{/if}. Em seguida, recarregue esta página.
-			</p>
-		</PaginaDeSecao>
-	{/if}
+	<Protegida oque="a vista Redes">
+		{#if d}
+			<VistaRedes aberto={d.aberto} redes={d.redes} citacoes={d.citacoes} />
+		{:else if publicado}
+			<PaginaDeSecao
+				comTitulo={false}
+				secao={secao('redes')}
+				vazio={{ titulo: 'As redes não fazem parte desta publicação.', sobretitulo: 'Sem redes' }}
+			>
+				<p data-testid="redes-fora-da-publicacao">
+					Este site foi publicado sem as redes de coautoria e de citação. As outras vistas mostram o corpus inteiro.
+				</p>
+			</PaginaDeSecao>
+		{:else if desatualizadas}
+			<PaginaDeSecao
+				comTitulo={false}
+				secao={secao('redes')}
+				vazio={{ titulo: 'As redes deste projeto estão desatualizadas.', sobretitulo: 'Redes desatualizadas' }}
+				desatualizados={['redes', 'citacoes']}
+			>
+				<p data-testid="redes-desatualizadas">
+					{#if mudou}Mudou {mudou}{:else}As entradas mudaram{/if} depois da última <code>mapa redes</code>, e as redes
+					antigas ficaram de fora para não misturar dados de momentos diferentes. Rode <code>mapa redes</code>{#if manifesto.api},
+						ou a etapa Redes na vista <a href={rota('/projeto')}>Projeto</a>,{/if} e recarregue esta página.
+				</p>
+			</PaginaDeSecao>
+		{:else}
+			<PaginaDeSecao
+				comTitulo={false}
+				secao={secao('redes')}
+				vazio={{ titulo: 'Este projeto ainda não tem redes.', sobretitulo: 'Sem redes' }}
+			>
+				<p>
+					Rode <code>mapa coletar</code>, <code>mapa topicos</code> e <code>mapa redes</code> (com
+					<code>mapa geografia</code> antes, para as redes de instituições e de estados){#if manifesto.api}, ou as etapas
+						na vista <a href={rota('/projeto')}>Projeto</a>{/if}. Em seguida, recarregue esta página.
+				</p>
+			</PaginaDeSecao>
+		{/if}
+	</Protegida>
 {:catch erro}
 	<ErroAoAbrir oque="as redes" {erro} {tentar} />
 {/await}

@@ -818,6 +818,23 @@ def _juri_sintetico(rng, validacao: m.Validacao, amostra: list[dict], vars_cls, 
                 x.model_copy(update={"comparacao": f"{REFERENCIA} × {nome}", "comparado": nome, "circular": circular})
             )
     validacao.modelos += ["juri", "juri-supervisor"]
+    # McNemar entre os três "modelos", como no piloto: vários pares por variável, e mais de um par significativo na
+    # mesma variável (a lista da interface não pode repetir a chave). Os acertos são fictícios e não gastam o `rng`.
+    from itertools import combinations
+
+    from mapa_da_ciencia.validacao.metricas import mcnemar_exato
+
+    for x in [x for x in validacao.metricas if x.comparado == "exemplo"]:
+        base = round((x.concordancia or 0) * x.n)
+        acertos = {"exemplo": base, "juri": min(x.n, base + 8), "juri-supervisor": min(x.n, base + 11)}
+        for a, b in combinations(acertos, 2):
+            so_a, so_b = 1, 1 + acertos[b] - acertos[a]
+            validacao.comparacoes_modelos.append(
+                m.ComparacaoModelos(
+                    variavel=x.variavel, referencia=REFERENCIA, modelo_a=a, modelo_b=b, n=x.n,
+                    acertos_a=acertos[a], acertos_b=acertos[b], p=round(mcnemar_exato(so_a, so_b), 6),
+                )
+            )  # fmt: skip
     validacao.codificadores = [
         m.Participante(nome=REFERENCIA, tipo="referencia", n=len(amostra), familia="exemplo"),
         m.Participante(nome="exemplo", tipo="modelo", n=len(amostra)),

@@ -6,6 +6,7 @@
 	import BarraDeRecorte from '$lib/recorte/BarraDeRecorte.svelte';
 	import { secoesDoTrilho } from '$lib/secoes';
 	import BarraSuperior from './BarraSuperior.svelte';
+	import Protegida from './Protegida.svelte';
 	import Trilho from './Trilho.svelte';
 
 	let { projeto, children }: { projeto: ProjetoAberto; children: Snippet } = $props();
@@ -15,7 +16,8 @@
 	definirProjeto(projeto);
 
 	const secoes = $derived(secoesDoTrilho(projeto.manifesto));
-	const secao = $derived(secoes.find((s) => s.caminho === lerHash(page.url.hash).caminho));
+	const caminho = $derived(lerHash(page.url.hash).caminho);
+	const secao = $derived(secoes.find((s) => s.caminho === caminho));
 	const telaCheia = $derived(secao?.telaCheia ?? false);
 	// a barra do recorte aparece nas vistas de análise, e só quando há documentos (projeto vazio: nenhum pedido)
 	const comRecorte = $derived(!!secao?.recorte && projeto.manifesto.arquivos.includes('documentos'));
@@ -25,7 +27,7 @@
 	// Modo apresentação (tecla P): esconde o trilho e as barras e aumenta a tipografia, para projetar. Esc sai.
 	// Não vale na codificação, que usa o teclado para responder.
 	let apresentando = $state(false);
-	const naCodificacao = $derived(lerHash(page.url.hash).caminho.startsWith('/validacao/codificar'));
+	const naCodificacao = $derived(caminho.startsWith('/validacao/codificar'));
 	function tecla(e: KeyboardEvent) {
 		const alvo = e.target as HTMLElement;
 		if (alvo.closest('input, textarea, select, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -64,7 +66,13 @@
 		<BarraDeRecorte />
 	{/if}
 	<main id="conteudo" class="conteudo" class:tela-cheia={telaCheia} tabindex="-1" bind:this={principal}>
-		{@render children()}
+		<!-- um erro ao desenhar uma vista vira o aviso com "Tentar de novo", em vez de deixar a página parada; a troca
+		     de rota recomeça do zero (o {#key}). As rotas protegem também o que desenham dentro do {#await} -->
+		{#key caminho}
+			<Protegida oque={secao ? `a vista ${secao.rotulo}` : 'esta página'}>
+				{@render children()}
+			</Protegida>
+		{/key}
 	</main>
 </div>
 

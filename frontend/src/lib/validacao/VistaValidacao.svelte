@@ -301,8 +301,8 @@
 				linhas: validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), c.referencia, c.modelo_a, c.modelo_b, c.n, c.acertos_a, c.acertos_b, c.p])
 			}}
 		>
-			<ul class="mcnemar">
-				{#each validacao.comparacoes_modelos.filter((c) => c.p < 0.05) as c (c.variavel + c.referencia)}
+			<ul class="mcnemar" data-testid="lista-mcnemar">
+				{#each validacao.comparacoes_modelos.filter((c) => c.p < 0.05) as c (`${c.variavel}|${c.referencia}|${c.modelo_a}|${c.modelo_b}`)}
 					<li>{nomeVariavel(c.variavel)} (contra {quem(c.referencia)}): {c.acertos_a > c.acertos_b ? c.modelo_a : c.modelo_b} acerta mais ({c.acertos_a} × {c.acertos_b} de {c.n}; p = {formatarDecimal(c.p, 3)}).</li>
 				{:else}
 					<li>Nenhuma diferença entre os modelos com p &lt; 0,05.</li>

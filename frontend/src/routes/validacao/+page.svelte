@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ErroAoAbrir from '$lib/componentes/ErroAoAbrir.svelte';
 	import PaginaDeSecao from '$lib/componentes/PaginaDeSecao.svelte';
+	import Protegida from '$lib/componentes/Protegida.svelte';
 	import type { Validacao } from '$lib/contrato/tipos';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { abrirCorpus } from '$lib/dados/corpus';
@@ -28,21 +29,23 @@
 {#await dados}
 	<p class="aviso" role="status">Carregando a validação…</p>
 {:then [validacao, codebook, corpus]}
-	{#if validacao && validacao.metricas.length}
-		<VistaValidacao {validacao} {codebook} tabela={corpus?.tabela ?? null} api={manifesto.api} />
-	{:else}
-		<PaginaDeSecao
-			comTitulo={false}
-			secao={secao('validacao')}
-			vazio={{ titulo: 'Este projeto ainda não tem validação.', sobretitulo: 'Sem validação' }}
-		>
-			<p>
-				Sorteie a amostra com <code>mapa validar amostra</code>, classifique-a com
-				<code>mapa classificar --somente-amostra</code> e codifique-a
-				{#if manifesto.api}(<a href={rota('/validacao/codificar')} data-testid="link-codificar">Codificar a amostra →</a>){:else}no painel local{/if}.
-			</p>
-		</PaginaDeSecao>
-	{/if}
+	<Protegida oque="a vista Validação">
+		{#if validacao && validacao.metricas.length}
+			<VistaValidacao {validacao} {codebook} tabela={corpus?.tabela ?? null} api={manifesto.api} />
+		{:else}
+			<PaginaDeSecao
+				comTitulo={false}
+				secao={secao('validacao')}
+				vazio={{ titulo: 'Este projeto ainda não tem validação.', sobretitulo: 'Sem validação' }}
+			>
+				<p>
+					Sorteie a amostra com <code>mapa validar amostra</code>, classifique-a com
+					<code>mapa classificar --somente-amostra</code> e codifique-a
+					{#if manifesto.api}(<a href={rota('/validacao/codificar')} data-testid="link-codificar">Codificar a amostra →</a>){:else}no painel local{/if}.
+				</p>
+			</PaginaDeSecao>
+		{/if}
+	</Protegida>
 {:catch erro}
 	<ErroAoAbrir oque="a validação" {erro} tentar={() => (dados = abrir())} />
 {/await}

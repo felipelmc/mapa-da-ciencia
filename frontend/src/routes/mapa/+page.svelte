@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ErroAoAbrir from '$lib/componentes/ErroAoAbrir.svelte';
 	import EstadoVazio from '$lib/componentes/EstadoVazio.svelte';
+	import Protegida from '$lib/componentes/Protegida.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { abrirCubo, reabrirCubo } from '$lib/dados/corpus';
 	import VistaMapa from '$lib/mapa/VistaMapa.svelte';
@@ -18,16 +19,18 @@
 {#await dados}
 	<p class="aviso" role="status">Carregando o mapa…</p>
 {:then d}
-	{#if d}
-		<VistaMapa tabela={d.tabela} topicos={d.topicos} cubo={d.cubo} />
-	{:else}
-		<div class="vazio">
-			<h1>Mapa</h1>
-			<EstadoVazio titulo="Este projeto ainda não tem mapa." sobretitulo="Sem tópicos">
-				<p>Rode <code>mapa coletar</code> e depois <code>mapa topicos</code>. Em seguida, recarregue esta página.</p>
-			</EstadoVazio>
-		</div>
-	{/if}
+	<Protegida oque="a vista Mapa">
+		{#if d}
+			<VistaMapa tabela={d.tabela} topicos={d.topicos} cubo={d.cubo} />
+		{:else}
+			<div class="vazio">
+				<h1>Mapa</h1>
+				<EstadoVazio titulo="Este projeto ainda não tem mapa." sobretitulo="Sem tópicos">
+					<p>Rode <code>mapa coletar</code> e depois <code>mapa topicos</code>. Em seguida, recarregue esta página.</p>
+				</EstadoVazio>
+			</div>
+		{/if}
+	</Protegida>
 {:catch erro}
 	<div class="aviso"><ErroAoAbrir oque="o mapa" {erro} tentar={() => (dados = reabrirCubo(fonte))} /></div>
 {/await}
