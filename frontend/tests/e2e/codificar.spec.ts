@@ -55,6 +55,30 @@ test('20 fichas só pelo teclado sobrevivem a um reload', async ({ page }) => {
 	expect(problemas).toEqual([]);
 });
 
+test('o Tab sai da ficha (não há armadilha de teclado), e Enter num botão aciona o botão', async ({ page }) => {
+	await entrar(page, 'tabulacao');
+	const fora = () =>
+		page.evaluate(() => {
+			const ficha = document.querySelector('[data-testid=ficha]')!;
+			return !ficha.contains(document.activeElement) && document.activeElement !== document.body;
+		});
+	let saiu = false;
+	for (let i = 0; i < 40 && !saiu; i += 1) {
+		await page.keyboard.press('Tab');
+		saiu = await fora();
+	}
+	expect(saiu).toBe(true);
+	await expect(page.getByRole('button', { name: 'Trocar de codificador' })).toBeFocused();
+	// Shift+Tab volta para dentro da ficha, e segue até sair pelo outro lado
+	await page.keyboard.press('Shift+Tab');
+	expect(await fora()).toBe(false);
+	// Enter no botão "Próxima →" vai para a ficha 2, sem tentar confirmar a ficha 1
+	await page.getByRole('button', { name: 'Próxima →' }).focus();
+	await page.keyboard.press('Enter');
+	await expect(page.getByTestId('progresso')).toContainText('ficha 2');
+	await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
 test('Enter com variáveis faltando avisa; S marca incerto; ? mostra a ajuda', async ({ page }) => {
 	await entrar(page, 'joao');
 	await page.keyboard.press('1');

@@ -4,7 +4,7 @@
 	 * resumo e o codebook, nunca a resposta de um modelo.
 	 *
 	 * Teclas (fora de um campo de texto): 1–9 escolhe a opção da variável atual (e passa para a próxima; na múltipla,
-	 * liga ou desliga); Tab, ↓ e ↑ trocam de variável; Enter confirma a ficha; ← e → trocam de ficha; S marca a
+	 * liga ou desliga); ↓ e ↑ trocam de variável; Enter confirma a ficha; ← e → trocam de ficha; S marca a
 	 * resposta como incerta; N abre a nota; E usa o trecho selecionado no resumo como evidência; D mostra as
 	 * definições; ? mostra a ajuda. Numa variável de texto, a resposta é digitada, e Enter passa adiante.
 	 *
@@ -162,8 +162,11 @@
 		}
 		if (e.metaKey || e.ctrlKey || e.altKey || !cartao) return;
 		if (alvo !== document.body && !cartao.contains(alvo) && e.key !== '?') return;
+		// num botão (chegou-se a ele pelo Tab), Enter e espaço acionam o botão, e não "confirmar a ficha"
+		if ((e.key === 'Enter' || e.key === ' ') && alvo.closest('button, a')) return;
+		// Tab fica com o navegador: percorre os botões da ficha e sai dela (para o rodapé e o trilho), senão o
+		// teclado nunca deixaria a ficha
 		const acoes: Record<string, () => void> = {
-			Tab: () => void focarVariavel(varIdx + (e.shiftKey ? -1 : 1)),
 			ArrowDown: () => void focarVariavel(varIdx + 1),
 			ArrowUp: () => void focarVariavel(varIdx - 1),
 			ArrowRight: () => void irPara(idx + 1),
@@ -303,7 +306,7 @@
 
 	<footer class="rodape">
 		<p>
-			<kbd>1</kbd>–<kbd>9</kbd> escolhe · <kbd>Tab</kbd> <kbd>↓</kbd> próxima variável · <kbd>Enter</kbd> confirma ·
+			<kbd>1</kbd>–<kbd>9</kbd> escolhe · <kbd>↓</kbd> próxima variável · <kbd>Enter</kbd> confirma ·
 			<kbd>←</kbd> <kbd>→</kbd> fichas · <kbd>S</kbd> incerto · <kbd>N</kbd> nota · <kbd>E</kbd> evidência ·
 			<kbd>D</kbd> definições · <kbd>?</kbd> ajuda
 		</p>
@@ -315,7 +318,7 @@
 			<h2 id="titulo-ajuda">Como codificar</h2>
 			<dl>
 				<dt><kbd>1</kbd>–<kbd>9</kbd></dt><dd>Escolhe a opção da variável atual e passa para a próxima. Na múltipla escolha, liga ou desliga a opção.</dd>
-				<dt><kbd>Tab</kbd> <kbd>↓</kbd> <kbd>↑</kbd></dt><dd>Troca de variável.</dd>
+				<dt><kbd>↓</kbd> <kbd>↑</kbd></dt><dd>Troca de variável.</dd>
 				<dt><kbd>Enter</kbd></dt><dd>Confirma a ficha (todas as variáveis respondidas) e abre a próxima.</dd>
 				<dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Ficha anterior e próxima, sem confirmar.</dd>
 				<dt><kbd>S</kbd></dt><dd>Marca a resposta como incerta (ou desmarca).</dd>
@@ -323,6 +326,7 @@
 				<dt><kbd>E</kbd></dt><dd>Usa o trecho selecionado no resumo como evidência.</dd>
 				<dt><kbd>D</kbd></dt><dd>Mostra ou esconde as definições das categorias.</dd>
 				<dt><kbd>Esc</kbd></dt><dd>Sai de um campo de texto ou fecha esta ajuda.</dd>
+				<dt><kbd>Tab</kbd></dt><dd>Percorre os botões da ficha e sai dela, para “Trocar de codificador” e o menu das seções.</dd>
 			</dl>
 			<p>
 				Tudo é gravado sozinho, primeiro neste navegador e depois no painel. Você pode fechar a página e voltar:
