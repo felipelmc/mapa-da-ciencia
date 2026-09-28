@@ -595,3 +595,34 @@ test('tela cheia: o grafo ocupa a tela e volta', async ({ page }) => {
 	await expect(botao).toHaveAttribute('aria-pressed', 'false');
 	expect(problemas).toEqual([]);
 });
+
+test('estados: passar o mouse numa UF acende só os arcos dela, sem filtrar', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes?rede=estados`);
+	await esperarRedes(page, 'estados');
+	const uf = page.getByTestId('uf-rede').first();
+	const sigla = (await uf.getAttribute('data-chave'))!;
+	await uf.hover();
+	const arcos = page.getByTestId('arco');
+	const total = await arcos.count();
+	const dela = await page.locator(`[data-testid="arco"][data-par^="${sigla}|"], [data-testid="arco"][data-par$="|${sigla}"]`).count();
+	await expect(page.locator('[data-testid="arco"].aceso')).toHaveCount(dela);
+	await expect(page.locator('[data-testid="arco"].apagado')).toHaveCount(total - dela);
+	await expect(page).not.toHaveURL(/uf=/);
+	expect(problemas).toEqual([]);
+});
+
+test('citações: passar o mouse numa célula acende a linha e a coluna; no cânone, a dica traz a obra', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes?rede=citacoes`);
+	await esperarRedes(page, 'citacoes');
+	const celulas = page.getByTestId('celula-fluxo');
+	const n = Math.round(Math.sqrt(await celulas.count()));
+	await page.locator('[data-testid="celula-fluxo"][data-de="1"][data-para="2"]').hover();
+	// acesas: a linha 1 e a coluna 2 (2n − 1 células); as outras, apagadas
+	await expect(page.locator('[data-testid="celula-fluxo"].apagada')).toHaveCount(n * n - (2 * n - 1));
+	const obra = page.getByTestId('obra').first();
+	await obra.hover();
+	await expect(page.getByRole('status').filter({ hasText: 'Citada por' })).toBeVisible();
+	expect(problemas).toEqual([]);
+});

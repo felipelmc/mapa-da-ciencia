@@ -7,6 +7,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 ### Adicionado
 
 - **Grafos mais interativos** na coautoria e nas instituições: passar o mouse num nó acende ele, os vizinhos e as ligações entre eles, com os nomes; uma comunidade escolhida na legenda ou no rótulo do desenho fica acesa e enquadrada, e vai para o link (`comunidade=`); "Enquadrar" leva o zoom até a vizinhança do nó aberto (e a busca e os links já abrem o nó enquadrado); os nomes aparecem com o zoom, sem se cobrirem; arrastar um nó o move na tela; clique duplo, teclado (+, −, 0 e as setas) e tela cheia. As arestas entre comunidades ficam mais fracas que as de dentro delas.
+- Nas redes de estados e de citações: passar o mouse numa UF acende só os arcos dela (sem filtrar), e o Exterior ganha dica; na matriz de citações, passar o mouse numa célula acende a linha e a coluna, e os rótulos usam a largura que sobra; no cânone, a dica traz a referência inteira e os citantes por macrotema.
 
 ### Mudado
 

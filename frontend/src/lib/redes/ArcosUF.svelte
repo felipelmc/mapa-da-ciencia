@@ -11,8 +11,9 @@
 <script lang="ts">
 	/**
 	 * A colaboração entre estados: arcos entre os centros das UFs, sobre a malha da Geografia, com a espessura pelo
-	 * peso fracionário no recorte. O exterior é um ponto no oceano, à direita. As UFs com colaboração são botões:
-	 * o clique (ou Enter) põe a UF no recorte, e os arcos dela ficam no acento.
+	 * peso fracionário no recorte (e a opacidade também, para os fracos não taparem os fortes). O exterior é um ponto no
+	 * oceano, à direita. As UFs com colaboração são botões: o clique (ou Enter) põe a UF no recorte, e os arcos dela
+	 * ficam no acento. Passar o mouse (ou o foco) numa UF acende só os arcos dela, sem filtrar nada.
 	 */
 	import { geoPath } from 'd3-geo';
 	import { formatarDecimal, formatarInteiro } from '$lib/formato';
@@ -68,6 +69,7 @@
 					...a,
 					d: `M${p[0].toFixed(1)},${p[1].toFixed(1)}Q${c[0].toFixed(1)},${c[1].toFixed(1)} ${q[0].toFixed(1)},${q[1].toFixed(1)}`,
 					largura: espessura(a.peso),
+					opacidade: 0.25 + 0.5 * Math.sqrt(a.peso / pesoMaximo),
 					destaque: selecionadas.has(a.a) || selecionadas.has(a.b)
 				};
 			})
@@ -165,7 +167,10 @@
 					d={a.d}
 					class="arco"
 					class:destaque={a.destaque}
+					class:aceso={sobre !== null && (a.a === sobre || a.b === sobre)}
+					class:apagado={sobre !== null && a.a !== sobre && a.b !== sobre}
 					style:stroke-width={a.largura}
+					style:opacity={sobre === null && !a.destaque ? a.opacidade : null}
 					data-testid="arco"
 					data-par="{a.a}|{a.b}"
 					data-peso={a.peso.toFixed(6)}
@@ -185,9 +190,23 @@
 				<text x={c[0]} y={c[1] - raio(EXTERIOR) - 7} text-anchor="middle" class="exterior">Exterior</text>
 			{/if}
 		</g>
+		{#if forca.has(EXTERIOR)}
+			<!-- o exterior não filtra (não é uma UF), mas tem a mesma dica e acende os arcos dele -->
+			{@const c = centros.get(EXTERIOR)!}
+			<circle
+				cx={c[0]}
+				cy={c[1]}
+				r={Math.max(10, raio(EXTERIOR) + 4)}
+				class="alvo-exterior"
+				aria-hidden="true"
+				data-testid="ponto-exterior"
+				onpointermove={(e) => mover(e, EXTERIOR)}
+				onpointerleave={() => ((sobre = null), (dica = null))}
+			/>
+		{/if}
 	</svg>
 	{#if dica && linhasDica.length}
-		<Dica x={dica.x} y={dica.y} linhas={linhasDica} />
+		<Dica x={dica.x} y={dica.y} linhas={linhasDica} limites={{ largura, altura }} />
 	{/if}
 </div>
 
@@ -239,6 +258,20 @@
 	.arco.destaque {
 		stroke: var(--acento);
 		opacity: 0.75;
+	}
+
+	.arco.aceso {
+		stroke: var(--acento);
+		opacity: 0.9;
+	}
+
+	.arco.apagado {
+		opacity: 0.08;
+	}
+
+	.alvo-exterior {
+		fill: transparent;
+		cursor: help;
 	}
 
 	.ponto {
