@@ -771,9 +771,11 @@
       var soma = ab.n.reduce(function (a, b) { return a + b; }, 0);
       // a mudança, mais do que os níveis: o modelo erra os níveis de algumas categorias (veja o viés abaixo)
       var caiu = d.para < d.de, razao = d.de ? d.para / d.de : 1;
+      // "pela metade" só perto da metade: 47% a 53% do valor inicial; "quase", de 53% a 56% (uma queda de 44% a 47%)
       var mudanca = !caiu ? t('subiu', 'rose')
-        : razao > 0.4 && razao <= 0.5 ? t('caiu pela metade', 'halved')
-        : razao > 0.5 && razao <= 0.6 ? t('caiu quase pela metade', 'almost halved')
+        : razao >= 0.47 && razao <= 0.53 ? t('caiu pela metade', 'halved')
+        : razao > 0.53 && razao <= 0.56 ? t('caiu quase pela metade', 'almost halved')
+        : razao >= 0.4 && razao < 0.47 ? t('caiu mais da metade', 'fell by more than half')
         : t('caiu', 'fell');
       // o viés medido na validação do piloto (claude-opus × qwen3.5:9b, amostra de 200): o modelo marca "teórica" em
       // 40% dos resumos, e a referência em 27%; por período, a queda aparece nas duas leituras
