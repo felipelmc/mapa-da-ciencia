@@ -343,8 +343,8 @@
 			</p>
 			<p class="nota" data-testid="cautela-tendencias">
 				Confira a série antes de citar: um pico no primeiro ou no último ano do período (um dossiê temático, por
-				exemplo) pode puxar a tendência, e nem toda marcação é firme (no piloto, três das 13 tendências do período
-				inteiro são marginais e somem quando se tira um só ano da série).
+				exemplo) pode puxar a tendência, e nem toda marcação é firme: algumas são marginais e somem quando se tira um
+				só ano da série.
 			</p>
 		{/if}
 	</Figura>

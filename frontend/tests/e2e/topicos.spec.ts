@@ -87,8 +87,12 @@ test('a ajuda das tendências avisa do pico na borda do período e das marcaçõ
 	await page.goto(`${url('RAIZ')}#/topicos`);
 	await expect(page.getByTestId('cautela-tendencias')).toContainText('primeiro ou no último ano do período');
 	await expect(page.getByTestId('cautela-tendencias')).toContainText('marginais');
+	// a nota vale para qualquer projeto: nada de números de um corpus em particular
+	await expect(page.getByTestId('cautela-tendencias')).not.toContainText(/piloto|\d+ das \d+/);
 	await page.goto(`${url('RAIZ')}#/ajuda`);
-	await expect(page.getByText(/pico no primeiro ou no último ano/)).toBeVisible();
+	const ajuda = page.getByText(/pico no primeiro ou no último ano/);
+	await expect(ajuda).toBeVisible();
+	await expect(ajuda).not.toContainText(/piloto|\d+ das \d+|três das/);
 });
 
 test('com menos de 5 anos no recorte, a lista pede um período maior', async ({ page }) => {
