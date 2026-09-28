@@ -351,6 +351,62 @@ def test_autoria_do_canone_conferida_nas_referencias():
     assert c["autores"] == [] and c["ano"] == 2001 and c["resenha"] and not c["autoria_das_referencias"]
 
 
+def test_autoria_e_ano_do_canone_pelas_referencias():
+    # KKV: o registro (do Choice) sem autor, e as referências trazem os três
+    kkv = {"titulo": "Designing social inquiry", "ano": 1994, "tipo": "book-review", "veiculo": "Choice Reviews Online",
+           "autores": []}  # fmt: skip
+    refs = [_ref(["KING", "KEOHANE", "VERBA"], "Designing social inquiry", 1994, ["Gary", "Robert O.", "Sidney"])] * 5
+    assert cit.conferir_autoria(kkv, refs, 5)["autores"] == ["Gary King", "Robert O. Keohane", "Sidney Verba"]
+    # referências que abreviam com "et al." não tiram os coautores do OpenAlex
+    artigo = {"titulo": "Um artigo a seis mãos", "ano": 2010, "tipo": "article",
+              "autores": ["Ana Souza", "Bruno Lima", "Carla Dias"]}  # fmt: skip
+    refs = [_ref(["SOUZA"], "Um artigo a seis mãos", 2010, ["Ana"])] * 4
+    assert cit.conferir_autoria(artigo, refs, 4)["autores"] == ["Ana Souza", "Bruno Lima", "Carla Dias"]
+    # o ano da obra, e não o do capítulo de coletânea de 2015, quando as referências concordam
+    young = {"titulo": "Inclusion and Democracy", "ano": 2015, "tipo": "book-chapter", "autores": ["Iris Marion Young"]}
+    refs = [_ref(["YOUNG"], "Inclusion and democracy", 2000, ["Iris Marion"])] * 5 + [
+        _ref(["YOUNG"], "Inclusion and democracy", 2002, ["Iris Marion"])
+    ]
+    c = cit.conferir_autoria(young, refs, 6)
+    assert (c["ano"], c["resenha"], c["autores"]) == (2000, False, ["Iris Marion Young"])
+    # Kingdon: o 1985 do registro nunca aparece; sem um ano com 30%, a primeira edição que várias referências citam
+    kingdon = {"titulo": "Agendas, Alternatives, and Public Policies", "ano": 1985, "tipo": "article",
+               "autores": ["James L. Perry", "John W. Kingdon"]}  # fmt: skip
+    anos = [1984, 1984, 1995, 1995, 2003, 2003, 2011, 2014, 2006, 1999, 1997]
+    refs = [_ref(["KINGDON"], "Agendas, alternatives, and public policies", a, ["John"]) for a in anos]
+    c = cit.conferir_autoria(kingdon, refs, 11)
+    assert (c["autores"], c["ano"], c["resenha"]) == (["John W. Kingdon"], 1984, True)
+    # "ZUCCO JR" é o mesmo Zucco do OpenAlex (o sufixo não conta como sobrenome)
+    zucco = {"titulo": "Ideology or What? Legislative Behavior", "ano": 2009, "autores": ["César Zucco"]}
+    refs = [_ref(["ZUCCO JR"], "Ideology or what? Legislative behavior", 2009, ["Cesar"])] * 4
+    assert cit.conferir_autoria(zucco, refs, 4)["autores"] == ["César Zucco"]
+    # um artigo com o ano certo no OpenAlex fica com ele
+    abranches = {
+        "titulo": "Presidencialismo de coalizão",
+        "ano": 1988,
+        "tipo": "article",
+        "autores": ["Sérgio Abranches"],
+    }
+    refs = [_ref(["ABRANCHES"], "Presidencialismo de coalizão", 1988)] * 3 + [
+        _ref(["ABRANCHES"], "Presidencialismo de coalizão", 1998)
+    ] * 2
+    assert cit.conferir_autoria(abranches, refs, 5)["ano"] == 1988
+
+
+def test_canone_sem_titulos_genericos_nem_numeracao():
+    refs = [{"obra": f"W{k}", "citada": "W91"} for k in range(3)] + [
+        {"obra": f"W{k}", "citada": "W92"} for k in range(3)
+    ]
+    citadas = [
+        {"id": "W91", "titulo": "Resumos", "autores": ["Maria Regina Soares de Lima"]},
+        {"id": "W92", "titulo": "66. Civil Society and Political Theory", "autores": ["Jean L. Cohen"], "ano": 1992},
+    ]
+    doc = {f"W{k}": f"d{k}" for k in range(3)}
+    c = cit.calcular(refs, citadas, doc, {f"d{k}": 2020 for k in range(3)}, {}, {})
+    assert [o.titulo for o in c.canone] == ["Civil Society and Political Theory"]
+    assert c.cobertura["titulos_genericos"] == 1
+
+
 def test_canone_soma_registros_da_mesma_obra_e_ignora_a_obra_apagada():
     refs = [{"obra": f"W{k}", "citada": "W91"} for k in (1, 2, 3)]
     refs += [{"obra": f"W{k}", "citada": "W92"} for k in (4, 5, 6)]
@@ -364,7 +420,7 @@ def test_canone_soma_registros_da_mesma_obra_e_ignora_a_obra_apagada():
     doc = {f"W{k}": f"d{k}" for k in range(1, 7)}
     downs = {f"d{k}": [_ref(["DOWNS"], "An economic theory of democracy", 1957, ["Anthony"])] for k in range(1, 7)}
     anos = {f"d{k}": 2020 for k in range(1, 7)}
-    listadas = {"d1": 4, "d2": 2, "d3": 2, "d4": 1, "d5": 1, "d6": 2}
+    listadas = {"d1": 4, "d2": 2, "d3": 2, "d4": 1, "d5": 1, "d6": 2, "d7": 3}  # d7: casado, nenhuma resolvida
     c = cit.calcular(refs, citadas, doc, anos, {}, {}, referencias_articlemeta=downs, listadas=listadas)
     (obra,) = c.canone
     assert (obra.n, obra.autores, obra.ano, obra.resenha) == (6, ["Anthony Downs"], 1957, True)
@@ -372,9 +428,10 @@ def test_canone_soma_registros_da_mesma_obra_e_ignora_a_obra_apagada():
     # a obra apagada não conta como referência, nem entra no cânone; a autorreferência é contada à parte
     assert c.cobertura["a_obras_apagadas"] == 2 and c.cobertura["referencias"] == 7
     assert c.cobertura["autorreferencias"] == 1 and c.n_referencias["d1"] == 1
-    # cobertura por referência: 7 resolvidas de 12 listadas; por documento, 1/4, 1/2, 2/2, 1, 1 e 1/2: mediana 75%
-    assert (c.cobertura["referencias_listadas"], c.cobertura["referencias_resolvidas"]) == (12, 7)
-    assert c.cobertura["resolvidas_mediana_pct"] == 75
+    # cobertura por referência: 7 resolvidas de 15 listadas, com o d7 (casado, nenhuma resolvida) no denominador; por
+    # documento, 1/4, 1/2, 2/2, 1, 1, 1/2 e 0: mediana 50%
+    assert (c.cobertura["referencias_listadas"], c.cobertura["referencias_resolvidas"]) == (15, 7)
+    assert c.cobertura["resolvidas_mediana_pct"] == 50
     assert c.cobertura["resenhas_no_canone"] == 1 and c.cobertura["sem_metadados"] == 0
 
 

@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import re
 import statistics
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -89,6 +90,15 @@ def _partes(nome: str) -> set[str]:
     return set(normalizar_titulo(nome).split())
 
 
+_SUFIXOS = {"jr", "junior", "filho", "neto", "sobrinho"}
+
+
+def _ultimo_sobrenome(nome: str) -> str | None:
+    """O último pedaço do sobrenome que não é um sufixo ("cheibub figueiredo" → "figueiredo"; "ZUCCO JR" → "zucco")."""
+    partes = [p for p in normalizar_titulo(nome).split() if p not in _SUFIXOS]
+    return partes[-1] if partes else None
+
+
 def _mais_comum(contagem: Counter) -> tuple[Any, int]:
     """O item mais frequente, com o empate decidido pelo menor valor (e não pela ordem de inserção, que num `set`
     muda com a semente de hash do Python e mudava o cânone de uma execução para outra)."""
@@ -100,11 +110,11 @@ def conferir_autoria(meta: dict[str, Any], referencias: list[dict[str, Any]], n_
 
     Com evidência bastante (`EVIDENCIA_MINIMA` referências e ao menos 20% dos citantes), o autor principal é o primeiro
     autor da maioria das referências, ou, num livro organizado (citado por capítulos de autores diferentes), o
-    sobrenome presente em 60% delas. Sai o autor do OpenAlex que não aparece nas referências (o resenhista), e o
-    principal vai na frente; se nenhum aparece, os autores vêm das referências. Quando o primeiro autor sai, ou o
-    registro é uma resenha, o ano é o mais citado nas referências. Devolve `autores`, `ano`, `resenha` e
-    `autoria_das_referencias`."""
-    titulo = normalizar_titulo(meta.get("titulo") or "")
+    sobrenome presente em 60% delas. Os autores são os sobrenomes que metade das referências traz, na ordem delas
+    (com o nome do OpenAlex quando ele os tem), seguidos dos outros do OpenAlex; se o primeiro autor do OpenAlex não
+    aparece nas referências (o resenhista), só ficam os do OpenAlex que elas citam. O ano segue
+    `_ano_das_referencias`. Devolve `autores`, `ano`, `resenha` e `autoria_das_referencias`."""
+    titulo = normalizar_titulo(limpar_titulo(meta.get("titulo")) or "")
     autores_oa = list(meta.get("autores") or [])
     resenha = _eh_resenha(meta)
     saida = {"autores": autores_oa, "ano": meta.get("ano"), "resenha": resenha, "autoria_das_referencias": False}
@@ -121,8 +131,7 @@ def conferir_autoria(meta: dict[str, Any], referencias: list[dict[str, Any]], n_
     if n < max(EVIDENCIA_MINIMA, 0.2 * n_citantes):
         return saida
     # o último pedaço de cada sobrenome, na ordem da referência ("cheibub figueiredo" → "figueiredo")
-    ultimos = [[p for nome in r["sobrenomes"] if (p := normalizar_titulo(nome).split()[-1:])] for r in achadas]
-    ultimos = [[x[0] for x in u] for u in ultimos]
+    ultimos = [[p for nome in r["sobrenomes"] if (p := _ultimo_sobrenome(nome))] for r in achadas]
     primeiros = Counter(u[0] for u in ultimos if u)
     todos = Counter(x for u in ultimos for x in dict.fromkeys(u))
     if primeiros and _mais_comum(primeiros)[1] >= 0.5 * n:
@@ -132,24 +141,47 @@ def conferir_autoria(meta: dict[str, Any], referencias: list[dict[str, Any]], n_
     else:
         return saida
     presentes = {x for x, k in todos.items() if k >= max(2, 0.1 * n)}
-    mantidos = [a for a in autores_oa if _partes(a) & presentes]
-    mantidos.sort(key=lambda a: principal not in _partes(a))  # o principal vai na frente
-    if not mantidos:
-        mantidos = [_das_referencias(achadas, principal)]
-        outros = Counter(x for u in ultimos for x in dict.fromkeys(u) if x != principal)
-        if outros and _mais_comum(outros)[1] >= 0.5 * n:
-            mantidos.append(_das_referencias(achadas, _mais_comum(outros)[0]))
+    # os autores da obra segundo as referências: os sobrenomes presentes em metade delas ou mais (os três de King,
+    # Keohane e Verba), na posição média em que aparecem, o principal primeiro
+    posicao = {x: statistics.mean(u.index(x) for u in ultimos if x in u) for x in todos}
+    da_obra = sorted((x for x, k in todos.items() if k >= 0.5 * n or x == principal),
+                     key=lambda x: (x != principal, posicao[x], x))  # fmt: skip
+    # do OpenAlex, ficam todos se o primeiro está nas referências (as que abreviam com "et al." não tiram ninguém);
+    # senão, só os que elas citam (sai o resenhista)
     primeiro_saiu = bool(autores_oa) and not (_partes(autores_oa[0]) & presentes)
+    base = [a for a in autores_oa if _partes(a) & presentes] if primeiro_saiu else list(autores_oa)
+    ordenados: list[str] = []
+    for x in da_obra:
+        achado = next((a for a in base if x in _partes(a) and a not in ordenados), None)
+        ordenados.append(achado or _das_referencias(achadas, x))
+    mantidos = (ordenados + [a for a in base if a not in ordenados])[:3]
     saida["autores"] = mantidos
     saida["autoria_das_referencias"] = [normalizar_titulo(a) for a in mantidos] != [
-        normalizar_titulo(a) for a in autores_oa
+        normalizar_titulo(a) for a in autores_oa[:3]
     ]
     saida["resenha"] = resenha or primeiro_saiu
-    if saida["resenha"] or not autores_oa:
-        anos = Counter(r["ano"] for r in achadas if r.get("ano"))
-        if anos and _mais_comum(anos)[1] >= 0.3 * n:
-            saida["ano"] = _mais_comum(anos)[0]
+    saida["ano"] = _ano_das_referencias(meta.get("ano"), [r["ano"] for r in achadas if r.get("ano")], saida["resenha"])
     return saida
+
+
+def _ano_das_referencias(ano_oa: int | None, anos_refs: list[int], resenha: bool) -> int | None:
+    """O ano da obra: o das referências quando a maioria concorda (a edição original de um livro que o OpenAlex casou
+    com um capítulo de coletânea de 2015, ou com uma reimpressão); quando o registro é uma resenha, ou o ano do
+    OpenAlex quase não aparece nas referências (Kingdon, 1985, que elas nunca citam), o mais citado, ou, sem um
+    mais citado claro, a primeira edição que várias citam. Senão, o do OpenAlex."""
+    if not anos_refs:
+        return ano_oa
+    n = len(anos_refs)
+    anos = Counter(anos_refs)
+    ano, vezes = _mais_comum(anos)
+    if vezes >= 0.5 * n:
+        return ano
+    if resenha or ano_oa is None or anos.get(ano_oa, 0) < 0.1 * n:
+        if vezes >= 0.3 * n:
+            return ano
+        varias = sorted(a for a, k in anos.items() if k >= max(2, 0.1 * n))
+        return varias[0] if varias else ano_oa
+    return ano_oa
 
 
 def _das_referencias(achadas: list[dict[str, Any]], sobrenome: str) -> str:
@@ -159,16 +191,33 @@ def _das_referencias(achadas: list[dict[str, Any]], sobrenome: str) -> str:
     for r in achadas:
         prenomes = list(r.get("prenomes") or [])
         for k, nome in enumerate(r["sobrenomes"]):
-            if normalizar_titulo(nome).split()[-1:] == [sobrenome]:
+            if _ultimo_sobrenome(nome) == sobrenome:
                 nomes[(prenomes[k] if k < len(prenomes) else "", nome)] += 1
     repetidos = [kv for kv in nomes.items() if kv[1] >= 2] or list(nomes.items())
     (prenome, nome), _ = max(repetidos, key=lambda kv: (len(kv[0][0].replace(".", "")), kv[1], kv[0]))
     return _nome_legivel(prenome, nome)
 
 
+_NUMERACAO = re.compile(r"^\s*\d{1,3}\s*[.)–-]\s+")
+# títulos que não são de uma obra ("Resumos", "Introdução"): registros espúrios, que ficam fora do cânone
+TITULOS_GENERICOS = frozenset(
+    {
+        "resumo", "resumos", "abstract", "abstracts", "introducao", "introduction", "apresentacao", "editorial",
+        "prefacio", "preface", "conclusao", "conclusion", "conclusoes", "resenha", "resenhas", "book reviews",
+        "reviews", "notas", "notes", "errata", "erratum", "indice", "index", "sumario", "contents", "referencias",
+        "references", "bibliografia", "bibliography", "comentarios", "comments", "entrevista", "interview",
+    }
+)  # fmt: skip
+
+
+def limpar_titulo(titulo: str | None) -> str | None:
+    """O título sem a numeração de capítulo no começo ("66. Civil Society…" → "Civil Society…")."""
+    return _NUMERACAO.sub("", titulo).strip() or titulo if titulo else titulo
+
+
 def _chave_do_titulo(titulo: str | None) -> str:
     """O título sem acentos, pontuação nem espaços ("World’s" e "World's" davam "worlds" e "world s")."""
-    return normalizar_titulo(titulo).replace(" ", "")
+    return normalizar_titulo(limpar_titulo(titulo)).replace(" ", "")
 
 
 def _mesmo_texto(a: str, b: str) -> bool:
@@ -257,7 +306,8 @@ def calcular(
             fluxo_m[(macro_do_topico[ta], macro_do_topico[tb])] += 1
 
     # cânone: cada registro conferido nas referências da ArticleMeta, e os registros da mesma obra somados
-    meta = {c["id"]: c for c in citadas if c["id"] not in OBRAS_APAGADAS}
+    genericos = {c["id"] for c in citadas if normalizar_titulo(c.get("titulo") or "") in TITULOS_GENERICOS}
+    meta = {c["id"]: c for c in citadas if c["id"] not in OBRAS_APAGADAS | genericos}
     conferidas: dict[str, dict[str, Any]] = {}
     for w, m in meta.items():
         citantes = externas.get(w, set())
@@ -273,7 +323,7 @@ def calcular(
         canone.append(
             ObraCanone(
                 id=principal,
-                titulo=m.get("titulo"),
+                titulo=limpar_titulo(m.get("titulo")),
                 ano=c["ano"],
                 autores=list(c["autores"])[:3],
                 veiculo=m.get("veiculo"),
@@ -295,9 +345,11 @@ def calcular(
     buscadas = sorted(externas, key=lambda w: (-len(externas[w]), w))[:N_BUSCADAS]
     sem_metadados = [w for w in buscadas if w not in meta and len(externas[w]) >= corte]
 
-    listadas = listadas or {}
-    com_as_duas = [d for d in n_referencias if listadas.get(d)]
-    razoes = [min(1.0, n_referencias[d] / listadas[d]) for d in com_as_duas]
+    # a cobertura por referência sobre todos os documentos casados com referências listadas na ArticleMeta, também os
+    # que não têm nenhuma resolvida (contam 0%)
+    listadas = {d: k for d, k in (listadas or {}).items() if k}
+    com_as_duas = sorted(listadas)
+    razoes = [min(1.0, n_referencias.get(d, 0) / listadas[d]) for d in com_as_duas]
     return Citacoes(
         internas=sorted(internas),
         anacronicas=anacronicas,
@@ -312,7 +364,7 @@ def calcular(
             # as referências que a ArticleMeta lista nos documentos casados com o OpenAlex, quantas delas o OpenAlex
             # resolveu, e a mediana por documento dessa fração (em pontos percentuais)
             "referencias_listadas": sum(listadas[d] for d in com_as_duas),
-            "referencias_resolvidas": sum(n_referencias[d] for d in com_as_duas),
+            "referencias_resolvidas": sum(n_referencias.get(d, 0) for d in com_as_duas),
             "resolvidas_mediana_pct": round(100 * statistics.median(razoes)) if razoes else 0,
             "internas": len(internas),
             "anacronicas": anacronicas,
@@ -322,6 +374,7 @@ def calcular(
             "resenhas_no_canone": sum(o.resenha for o in canone),
             "autoria_das_referencias": sum(o.autoria_das_referencias for o in canone),
             "sem_metadados": len(sem_metadados),
+            "titulos_genericos": len(genericos & set(externas)),
         },
         sem_metadados=sem_metadados,
     )

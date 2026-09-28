@@ -41,9 +41,10 @@ nos dados, `EX`). A espessura é o peso fracionário. Um clique numa UF filtra o
 
 - **Cânone:** as obras de fora do corpus mais citadas pelos artigos do recorte, com a cor do macrotema de quem cita.
   Lembre que o cânone só vê obras que o OpenAlex indexa (cerca de metade das referências): livros e capítulos em
-  português ficam de fora com frequência. Muitos livros chegam pelo registro de uma resenha; o autor e o ano
+  português ficam de fora com frequência. Muitos livros chegam pelo registro de uma resenha. Quando há referências
+  bastantes com o mesmo título (três ou mais, somando um quinto dos artigos que citam a obra), o autor e o ano
   mostrados são os das referências dos próprios artigos, e a coluna "Registro do OpenAlex" da tabela mostra o
-  registro original (o resenhista e o ano da resenha) quando ele difere.
+  registro original (o resenhista e o ano da resenha); com menos, ficam os do OpenAlex.
 - **Fluxo entre macrotemas:** cada célula conta as citações de artigos de um macrotema (linha) para artigos de outro
   (coluna), dentro do corpus. A diagonal é a citação dentro do próprio macrotema.
 
