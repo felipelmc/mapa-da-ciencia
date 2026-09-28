@@ -16,7 +16,7 @@ Nem todo artigo tem resumo em inglês. O texto de análise nunca junta idiomas d
 | `reserva` | Não há resumo no idioma de análise | Título e resumo em outro idioma, na ordem: português, espanhol, inglês, francês |
 | `so_titulo` | O documento não tem resumo | Só o título, de preferência no idioma de análise |
 
-A reserva funciona porque o modelo de embeddings é multilíngue: no spike M0a, 99,9% dos resumos em português encontraram a própria versão em inglês como vizinho mais próximo. No piloto de ciência política (4.275 documentos), 4.161 entram com o resumo em inglês, 96 (2,2%) como reserva e 18 (0,4%) só pelo título. A marca aparece no cartão de cada documento no mapa e nas contagens da etapa. Um documento sem título nem resumo fica fora dos tópicos.
+A reserva funciona porque o modelo de embeddings é multilíngue: no spike M0a, 99,9% dos resumos em português encontraram a própria versão em inglês como vizinho mais próximo. No piloto de ciência política (4.275 documentos), 4.159 entram com o resumo em inglês, 88 (2,1%) como reserva e 28 (0,7%) só pelo título. A marca aparece no cartão de cada documento no mapa e nas contagens da etapa. Um documento sem título nem resumo fica fora dos tópicos.
 
 ## 2. Embeddings
 
@@ -54,7 +54,7 @@ O [HDBSCAN](https://scikit-learn.org/stable/modules/clustering.html#hdbscan) pro
 - `topicos.min_samples`: quão conservador é o agrupamento. Valores maiores deixam mais documentos de fora.
 - `topicos.selecao`: `leaf`, o padrão, fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` prefere tópicos maiores, mas uma mudança pequena nos dados pode trocar um tópico grande por vários pequenos.
 
-Os padrões foram calibrados no piloto ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)): 57 tópicos, com números parecidos nas três sementes testadas e nenhum tópico acima de 3,5% do corpus.
+Os padrões foram calibrados no piloto ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)): 57 tópicos, com números parecidos nas três sementes testadas e nenhum tópico acima de 3,5% do corpus no núcleo (4,9% com os reatribuídos).
 
 Os documentos que o HDBSCAN agrupa formam o **núcleo** de cada tópico. Os demais ficam como **ruído**: não pertencem claramente a nenhuma região densa. O ruído não é um erro, e sim uma informação: são trabalhos isolados, de fronteira ou que misturam assuntos. Com menos de 50 documentos, não há tópicos: a etapa para e sugere ampliar o recorte.
 
@@ -64,7 +64,7 @@ Os documentos **só com título** nunca entram no núcleo. Textos curtos ficam p
 
 No piloto, um terço dos documentos fica como ruído, com qualquer configuração estável do agrupamento ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)). Deixá-los de fora esconderia um terço do corpus, e forçar parâmetros para reduzir o ruído cria tópicos gigantes e instáveis. O `mapa` faz outra coisa: **reatribui por vizinhança**.
 
-- Cada documento de ruído olha para os seus 15 vizinhos mais próximos (no espaço dos embeddings, não no UMAP).
+- Cada documento de ruído olha para os seus 14 vizinhos mais próximos no espaço dos embeddings, e não no UMAP (os 15 do grafo de vizinhança, que incluem o próprio documento, como o UMAP espera).
 - Os vizinhos que estão no núcleo de algum tópico votam no próprio tópico, com peso igual à similaridade.
 - O documento vai para o tópico vencedor se ele tiver ao menos 3 desses vizinhos (`topicos.votos_minimos`). Senão, fica **sem tópico**.
 
@@ -131,9 +131,10 @@ topicos:
 macrotemas:
   0:
     rotulo: Instituições e eleições
+    descricao: O funcionamento das instituições políticas e a competição eleitoral.
 ```
 
-O que está no `rotulos.yaml` tem prioridade sobre o modelo, e continua valendo nas execuções seguintes, porque o número do tópico é estável. Sem modelo de linguagem (`mapa topicos --sem-rotulos`), os rótulos são as três palavras-chave mais fortes.
+Escreva sempre a `descricao` junto com o `rotulo`: uma entrada só com o rótulo deixa o tópico (ou o macrotema) sem descrição. O que está no `rotulos.yaml` tem prioridade sobre o modelo, e continua valendo nas execuções seguintes, porque o número do tópico é estável. Sem modelo de linguagem (`mapa topicos --sem-rotulos`), os rótulos são as três palavras-chave mais fortes.
 
 ## 12. Em alta e em queda
 
@@ -144,7 +145,7 @@ Um tópico está **em alta** quando a participação dele no corpus (documentos 
 - o tópico só é marcado quando o intervalo não inclui zero; com menos de 5 anos com documentos ou menos de 10 documentos do tópico, não há tendência calculada;
 - o tamanho da mudança é dado em **pontos percentuais**: a diferença entre a participação ajustada no primeiro e no último ano.
 
-No piloto, 13 dos 57 tópicos são marcados: 7 em alta (como identificação partidária e polarização, +4,1 pontos percentuais de 2010 a 2025, e comunicação política nas redes sociais, +2,6) e 6 em queda (como modernidade e teoria social crítica, −2,0). Com 57 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço).
+No piloto, 13 dos 57 tópicos são marcados: 7 em alta (como identificação partidária e polarização, +4,1 pontos percentuais de 2010 a 2025, e comunicação política nas redes sociais, +2,5) e 6 em queda (como cobertura da imprensa e política, −2,0). Com 57 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço). Um dossiê no primeiro ou no último ano da janela (o período inteiro ou o filtrado) ainda pode aparecer como tendência: confira a série antes de citar.
 
 ## 13. Onde ficam os resultados
 

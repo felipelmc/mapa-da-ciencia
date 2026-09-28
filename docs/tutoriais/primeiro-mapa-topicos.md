@@ -168,10 +168,12 @@ Os rótulos do modelo são um ponto de partida. Se algum não descreve bem o tó
 
 ```yaml
 topicos:
-  3: {rotulo: Campanhas nas redes sociais}
+  3:
+    rotulo: Campanhas nas redes sociais
+    descricao: Campanhas eleitorais e comunicação política no Twitter e no Facebook.
 ```
 
-Rode `uv run mapa topicos` de novo: o rótulo escrito à mão tem prioridade sobre o do modelo e fica marcado como manual.
+Escreva também a descrição: uma entrada só com o rótulo deixa o tópico sem descrição. Rode `uv run mapa topicos` de novo: o rótulo escrito à mão tem prioridade sobre o do modelo e fica marcado como manual.
 
 ## O que você fez
 

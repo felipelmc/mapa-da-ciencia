@@ -40,7 +40,7 @@ Há dois caminhos. Para usar, o primeiro basta; o segundo é para quem vai mexer
     mapa --versao
     ```
 
-    A última linha mostra a versão instalada, por exemplo `mapa-da-ciencia 1.0.1`.
+    A última linha mostra a versão instalada, por exemplo `mapa-da-ciencia 1.0.1`. Se o terminal responder `command not found: mapa`, o `uv` pôs o comando numa pasta que o terminal ainda não procura (ele avisa isso no fim da instalação). Rode `uv tool update-shell`, feche o terminal e abra outro.
 
 === "Pelo código"
 

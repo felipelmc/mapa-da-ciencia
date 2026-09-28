@@ -1,6 +1,6 @@
 # Reprodutibilidade
 
-Um resultado do `mapa-da-ciencia` deve poder ser refeito, e explicado, por outra pessoa. Quatro mecanismos cuidam disso: respostas brutas guardadas, caches que só se refazem quando algo muda, manifestos de cada execução e sementes fixas. A classificação (marco M5) vai usar os mesmos mecanismos.
+Um resultado do `mapa-da-ciencia` deve poder ser refeito, e explicado, por outra pessoa. Quatro mecanismos cuidam disso: respostas brutas guardadas, caches que só se refazem quando algo muda, manifestos de cada execução e sementes fixas. A classificação usa os mesmos mecanismos (veja [Cache e retomada](classificacao.md#cache-e-retomada)).
 
 ## 1. Respostas brutas guardadas
 

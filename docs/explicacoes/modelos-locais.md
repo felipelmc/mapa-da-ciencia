@@ -31,8 +31,8 @@ Um modelo precisa caber na memória **livre** na hora de rodar, e não só na me
 
 ## Velocidade
 
-Embeddings são rápidos: os 4,2 mil resumos do piloto levam uns 5 minutos num Mac M4 Pro. A classificação é a etapa lenta: no teste do M0, cerca de 12,5 segundos por resumo no mesmo Mac, a maior parte gasta escrevendo as evidências. Isso projeta umas 14 horas para o piloto, e a meta do M5 é baixar para ~7 horas com evidências mais curtas. Chamadas simultâneas não aceleram nada numa máquina de 24 GB, porque o Ollama atende uma de cada vez. Por isso a classificação (marco M5) vai:
+Embeddings são rápidos: os 4,2 mil resumos do piloto levam uns 5 minutos num Mac M4 Pro. A classificação é a etapa lenta: no piloto, 9,6 segundos por resumo (mediana) no mesmo Mac, a maior parte gasta escrevendo as evidências, ou cerca de 12 horas para os 4.247 resumos. As evidências curtas não trouxeram as 7 horas previstas no ADR 0005 ([ADR 0011](../decisoes/0011-classificacao-ancorada-em-evidencia.md)). Chamadas simultâneas não aceleram nada numa máquina de 24 GB, porque o Ollama atende uma de cada vez. Por isso a classificação:
 
-- estimar o tempo antes de começar (`--estimar`);
-- rodar numa amostra, se você pedir (`--limite`);
-- ser **retomável**: se for interrompida, continua de onde parou, sem refazer nada.
+- estima o tempo antes de começar (`--estimar`);
+- roda numa amostra, se você pedir (`--limite` ou `--somente-amostra`);
+- é **retomável**: se for interrompida, continua de onde parou, sem refazer nada ([Cache e retomada](classificacao.md#cache-e-retomada)).
