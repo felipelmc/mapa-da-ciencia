@@ -17,6 +17,7 @@ from mapa_da_ciencia.armazenamento import (
     ler_tabela,
 )
 from mapa_da_ciencia.contrato import modelos as m
+from mapa_da_ciencia.contrato.exportar import exportar
 from mapa_da_ciencia.contrato.redes import fluxo_por_posicao, instituicoes_fora_de_afiliacoes
 from mapa_da_ciencia.documento import Afiliacao, Autor, AutoriaOpenAlex, Documento, InstituicaoOpenAlex, Texto
 from mapa_da_ciencia.fontes.openalex import COLUNAS_CITADAS, COLUNAS_REFERENCIAS
@@ -26,7 +27,7 @@ from mapa_da_ciencia.redes import citacoes as cit
 from mapa_da_ciencia.redes.desenho import desenhar
 from mapa_da_ciencia.redes.grafos import forcas, grafo, pares_ponderados
 from mapa_da_ciencia.redes.pessoas import CorrecoesPessoas, id_publicado, identificar
-from mapa_da_ciencia.redes.pipeline import gerar_redes, redes_em_dia
+from mapa_da_ciencia.redes.pipeline import gerar_redes, o_que_mudou, redes_em_dia
 from mapa_da_ciencia.segredos import segredo
 
 ORCID = re.compile(r"\d{4}-\d{4}-\d{4}-\d{3}[\dX]")
@@ -488,8 +489,29 @@ def test_redes_de_ponta_a_ponta(projeto):
     # reprodutível: de novo, o mesmo arquivo
     gerar_redes(projeto)
     assert (dados / "redes.json").read_text(encoding="utf-8") == texto
-    # uma correção no pessoas.yaml deixa as redes desatualizadas
-    (projeto.raiz / "pessoas.yaml").write_text("nomes: {}\n", encoding="utf-8")
-    assert redes_em_dia(projeto) is False
+    # refazer a geografia com as mesmas entradas não derruba as redes (a assinatura ignora os carimbos de hora), nem
+    # um comentário no pessoas.yaml
+    from mapa_da_ciencia.geografia.pipeline import gerar_geografia
+
+    gerar_geografia(projeto)
+    (projeto.raiz / "pessoas.yaml").write_text("# nada ainda\nnomes: {}\n", encoding="utf-8")
+    assert redes_em_dia(projeto) is True
+    # uma correção de verdade deixa as redes desatualizadas: o aviso e o manifesto dizem o que mudou
+    (projeto.raiz / "pessoas.yaml").write_text("nomes: {openalex:A9000000: Celso L. Amorim}\n", encoding="utf-8")
+    assert redes_em_dia(projeto) is False and o_que_mudou(projeto) == ["o pessoas.yaml"]
+    avisos = exportar(projeto)
+    manifesto = m.Manifesto.model_validate_json((dados / "manifesto.json").read_text(encoding="utf-8"))
+    assert manifesto.desatualizadas == ["redes"] and not (dados / "redes.json").exists()
+    assert any("mudou o pessoas.yaml" in a for a in avisos)
+    from typer.testing import CliRunner
+
+    from mapa_da_ciencia.cli import app
+
+    status = CliRunner().invoke(app, ["status", "-P", str(projeto.raiz)], env={"COLUMNS": "200"}).output
+    linha = next(x for x in status.splitlines() if x.strip(" │┃").startswith("redes"))
+    assert "desatualizada" in linha and "mudou o pessoas.yaml" in linha
+    (projeto.raiz / "pessoas.yaml").unlink()
+    assert redes_em_dia(projeto) is True
+    exportar(projeto)
     agregados = json.loads((dados / "agregados.json").read_text(encoding="utf-8"))
     assert agregados["arestas_coautoria"] > 0 and agregados["canone_n"] == [citacoes.canone[0].n]

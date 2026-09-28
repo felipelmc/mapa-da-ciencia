@@ -31,7 +31,7 @@ def cliente(projeto, tmp_path):
 def test_estado_das_etapas(cliente, projeto):
     e = cliente.get("/api/projeto/etapas").json()
     assert {k: v["estado"] for k, v in e.items()} == dict.fromkeys(
-        ["coleta", "topicos", "geografia", "classificacao", "validacao"], "pendente"
+        ["coleta", "topicos", "geografia", "redes", "classificacao", "validacao"], "pendente"
     )
     coletar(projeto)
     mapa.classificar(projeto, limite=3, progresso=False)

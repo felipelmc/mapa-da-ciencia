@@ -51,6 +51,7 @@ a interface lê.
 | `execucao` | [ExecucaoInfo](#execucaoinfo) | **obrigatório** | Dados de reprodutibilidade da última execução de cada etapa. |
 | `licencas` | mapa de texto para inteiro | vazio | Licença → número de documentos. |
 | `publicacao` | [PublicacaoInfo](#publicacaoinfo) ou vazio | vazio | Presente só no site publicado (`mapa publicar`). |
+| `desatualizadas` | lista de texto | vazio | Etapas com resultado desatualizado (as entradas mudaram depois), que por isso ficou fora destes dados: `topicos`, `geografia`, `redes` ou `classificacao`. A interface diz o que rodar de novo. |
 
 ### ProjetoInfo
 

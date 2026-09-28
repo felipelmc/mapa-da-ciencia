@@ -519,6 +519,10 @@ export interface Manifesto {
 	 */
 	arquivos: string[];
 	contagens: Contagens;
+	/**
+	 * Etapas com resultado desatualizado (as entradas mudaram depois), que por isso ficou fora destes dados: `topicos`, `geografia`, `redes` ou `classificacao`. A interface diz o que rodar de novo.
+	 */
+	desatualizadas?: string[];
 	execucao: ExecucaoInfo;
 	gerado_em: string;
 	/**

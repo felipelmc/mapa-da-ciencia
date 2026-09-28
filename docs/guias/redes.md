@@ -23,6 +23,12 @@ mapa redes
 A etapa leva segundos e não usa modelo de linguagem. No fim, ela diz quantas pessoas e instituições colaboram, o
 tamanho do maior componente, as comunidades e o cânone, e quantos pares de homônimos ficaram separados.
 
+As redes ficam **desatualizadas** quando o corpus, as referências, os tópicos, a geografia ou o conteúdo do
+`pessoas.yaml` mudam (refazer uma etapa com as mesmas entradas, ou um comentário no `pessoas.yaml`, não conta). Aí o
+contrato deixa as redes antigas de fora, a vista Redes diz que elas estão desatualizadas, e o `mapa status` mostra
+a etapa como desatualizada e o que mudou. Basta rodar `mapa redes` de novo (no painel, pela estação Redes da vista
+Projeto).
+
 ## Revisar os homônimos
 
 ```bash

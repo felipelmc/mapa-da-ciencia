@@ -337,6 +337,21 @@ test('projeto vazio: estado vazio, sem pedir arquivos ausentes', async ({ page }
 	expect(pedidos.filter((p) => p.endsWith('.json') && !p.endsWith('manifesto.json'))).toEqual([]);
 });
 
+test('redes desatualizadas: a vista diz o que rodar, em vez de "sem redes"', async ({ page }) => {
+	// o manifesto de um projeto cujas entradas mudaram depois da última `mapa redes`
+	await page.route('**/dados/manifesto.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const m = await resposta.json();
+		m.arquivos = m.arquivos.filter((a: string) => a !== 'redes' && a !== 'citacoes');
+		m.desatualizadas = ['redes'];
+		await rota.fulfill({ response: resposta, json: m });
+	});
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await expect(page.getByText('As redes deste projeto estão desatualizadas.')).toBeVisible();
+	await expect(page.getByTestId('redes-desatualizadas')).toContainText('mapa redes');
+	await expect(page.getByText('Este projeto ainda não tem redes.')).toHaveCount(0);
+});
+
 test('a Ajuda explica como ler as redes', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/ajuda`);
 	const secao = page.getByTestId('ajuda-redes');

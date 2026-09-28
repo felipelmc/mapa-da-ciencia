@@ -51,28 +51,58 @@ from .grafos import (
 from .pessoas import ARQUIVO_PESSOAS, identificar, ler_correcoes
 
 PASTA = "redes"
-VERSAO = 1
+VERSAO = 2  # 2: identidade revista, cânone conferido nas referências, pesos exatos, ids do contrato nas instituições
 ARQUIVO_RESULTADO = "resultado.json"
+_CARIMBOS = ("gerado_em", "duracao_s")
 
 
-def _hash_arquivo(caminho: Path, h) -> None:
-    h.update(caminho.name.encode())
-    h.update(caminho.read_bytes() if caminho.exists() else b"-")
+def _hash_arquivos(*caminhos: Path) -> str:
+    h = hashlib.sha256()
+    for caminho in caminhos:
+        h.update(caminho.name.encode())
+        h.update(caminho.read_bytes() if caminho.exists() else b"-")
+    return h.hexdigest()[:16]
 
 
-def assinatura_entradas(projeto: Projeto) -> str:
-    """Hash do que a etapa lê: o corpus, as referências, as correções de pessoas, a geografia e os tópicos."""
+def _hash_resultado(caminho: Path) -> str:
+    """O `resultado.json` de outra etapa sem os carimbos de hora: refazer a etapa com as mesmas entradas não muda."""
+    if not caminho.exists():
+        return "-"
+    dados = {k: v for k, v in json.loads(caminho.read_text(encoding="utf-8")).items() if k not in _CARIMBOS}
+    return hashlib.sha256(json.dumps(dados, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
+
+
+def _hash_correcoes(raiz: Path) -> str:
+    """O conteúdo do `pessoas.yaml` (um comentário ou a ordem das chaves não mudam as redes)."""
+    try:
+        return hashlib.sha256(ler_correcoes(raiz).model_dump_json().encode()).hexdigest()[:16]
+    except ErroConfig:
+        return _hash_arquivos(raiz / ARQUIVO_PESSOAS)
+
+
+def partes_das_entradas(projeto: Projeto) -> dict[str, str]:
+    """Um hash por entrada da etapa, com o nome que o aviso de desatualizada mostra."""
+    geo = projeto.dados / "geografia"
+    top = projeto.dados / PASTA_TOPICOS
+    return {
+        "o corpus": _hash_arquivos(projeto.dados / ARQUIVO),
+        "as referências": _hash_arquivos(
+            projeto.dados / ARQUIVO_REFERENCIAS, projeto.dados / ARQUIVO_CITADAS, projeto.dados / ARQUIVO_REFERENCIAS_AM
+        ),
+        "o pessoas.yaml": _hash_correcoes(projeto.raiz),
+        "a geografia": _hash_resultado(geo / "resultado.json")
+        + _hash_arquivos(geo / "pesos.parquet", geo / "vinculos.parquet", geo / "instituicoes.parquet"),
+        "os tópicos": _hash_resultado(top / "resultado.json") + _hash_arquivos(top / "atribuicoes.parquet"),
+    }
+
+
+def assinatura_entradas(projeto: Projeto, partes: dict[str, str] | None = None) -> str:
+    """Hash do que a etapa lê: o corpus, as referências, as correções de pessoas, a geografia e os tópicos (o
+    conteúdo, sem os carimbos de hora das outras etapas)."""
+    partes = partes if partes is not None else partes_das_entradas(projeto)
     h = hashlib.sha256(f"versao={VERSAO}".encode())
-    for caminho in (
-        projeto.dados / ARQUIVO,
-        projeto.dados / ARQUIVO_REFERENCIAS,
-        projeto.dados / ARQUIVO_CITADAS,
-        projeto.dados / ARQUIVO_REFERENCIAS_AM,
-        projeto.raiz / ARQUIVO_PESSOAS,
-        projeto.dados / "geografia" / "resultado.json",
-        projeto.dados / PASTA_TOPICOS / "resultado.json",
-    ):
-        _hash_arquivo(caminho, h)
+    for nome, valor in sorted(partes.items()):
+        h.update(f"{nome}={valor}".encode())
     return h.hexdigest()[:20]
 
 
@@ -87,6 +117,7 @@ class ResultadoRedes:
     cobertura_citacoes: dict[str, Any] | None
     parametros: dict[str, Any]
     avisos: list[str] = field(default_factory=list)
+    partes: dict[str, str] = field(default_factory=dict)  # `partes_das_entradas`, para dizer o que mudou
 
     def gravar(self, pasta: Path) -> None:
         tmp = pasta / (ARQUIVO_RESULTADO + ".tmp")
@@ -107,6 +138,19 @@ def redes_em_dia(projeto: Projeto) -> bool | None:
     if r is None:
         return None
     return r.versao == VERSAO and r.entradas == assinatura_entradas(projeto)
+
+
+def o_que_mudou(projeto: Projeto) -> list[str]:
+    """O que mudou desde a última `mapa redes` ("o pessoas.yaml", "a geografia"…); vazio se as redes estão em dia."""
+    r = ResultadoRedes.ler(projeto.dados / PASTA)
+    if r is None:
+        return []
+    if r.versao != VERSAO:
+        return ["a versão da etapa"]
+    agora = partes_das_entradas(projeto)
+    if r.entradas == assinatura_entradas(projeto, agora):
+        return []
+    return [nome for nome, valor in agora.items() if r.partes.get(nome) != valor] or ["as entradas"]
 
 
 @dataclass
@@ -397,10 +441,12 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     for nome, linhas in tabelas.items():
         ordem = next(iter(COLUNAS[nome]))
         gravar_tabela(linhas, COLUNAS[nome], pasta / f"{nome}.parquet", ordem=ordem)
+    partes = partes_das_entradas(projeto)
     resultado = ResultadoRedes(
         versao=VERSAO,
         assinatura=assinatura,
-        entradas=assinatura_entradas(projeto),
+        entradas=assinatura_entradas(projeto, partes),
+        partes=partes,
         gerado_em=datetime.now(UTC).isoformat(timespec="seconds"),
         contagens={
             "pessoas": len(pessoas),

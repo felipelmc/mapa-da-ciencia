@@ -132,6 +132,11 @@ class Manifesto(_Arquivo):
     execucao: ExecucaoInfo
     licencas: dict[str, int] = Field(default_factory=dict, description="Licença → número de documentos.")
     publicacao: PublicacaoInfo | None = Field(None, description="Presente só no site publicado (`mapa publicar`).")
+    desatualizadas: list[str] = Field(
+        default_factory=list,
+        description="Etapas com resultado desatualizado (as entradas mudaram depois), que por isso ficou fora destes "
+        "dados: `topicos`, `geografia`, `redes` ou `classificacao`. A interface diz o que rodar de novo.",
+    )
 
 
 # ---------------------------------------------------------------- revistas.json

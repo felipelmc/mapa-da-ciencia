@@ -136,17 +136,31 @@ def status(projeto: OpcaoProjeto = Path(".")) -> None:
         f"rótulos [bold]{m.rotulos.modelo}[/]"
     )
 
+    from mapa_da_ciencia.situacao import estados_das_etapas
+
     tabela = Table("Etapa", "Estado", "Última execução", "Duração", "Resultado")
     etapas = status_das_etapas(p)
+    with _erros_amigaveis():
+        estados = estados_das_etapas(p)
+    nomes = {
+        "em_dia": "[green]em dia[/]",
+        "desatualizada": "[yellow]desatualizada[/]",
+        "incompleta": "[yellow]incompleta[/]",
+        "pendente": "[dim]pendente[/]",
+    }
     for etapa, manifesto in etapas.items():
+        estado = estados.get(etapa, {}).get("estado")
         if manifesto is None:
-            tabela.add_row(etapa, "[dim]pendente[/]", "", "", "")
+            tabela.add_row(etapa, nomes.get(estado or "pendente", "[dim]pendente[/]"), "", "", "")
             continue
         quando = datetime.fromisoformat(manifesto["fim"]).astimezone().strftime("%d/%m/%Y %H:%M")
         # a primeira contagem é a principal da etapa; as demais aparecem nos detalhes de cada uma
         principal = next(iter(manifesto["contagens"].items()), None)
         resultado = f"{num(principal[1], 0)} {principal[0]}" if principal else ""
-        tabela.add_row(etapa, "[green]concluída[/]", quando, f"{num(manifesto['duracao_s'], 0)} s", resultado)
+        rotulo = nomes.get(estado, "[green]concluída[/]") if estado else "[green]concluída[/]"
+        if mudou := estados.get(etapa, {}).get("mudou"):
+            rotulo += f" [dim](mudou {escape(' e '.join(mudou))})[/]"
+        tabela.add_row(etapa, rotulo, quando, f"{num(manifesto['duracao_s'], 0)} s", resultado)
     console.print(tabela)
     _mostrar_corpus(p, etapas.get("coleta"))
 
