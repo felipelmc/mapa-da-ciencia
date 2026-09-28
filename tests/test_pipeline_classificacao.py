@@ -419,3 +419,21 @@ def test_resultado_de_uma_versao_anterior_do_pacote(projeto, apis_falsas):
         con.execute("DELETE FROM llm_cache")
     r = mapa.classificar(projeto, somente_amostra=True, progresso=False)
     assert r.a_parte and r.novos == 5 and Resultado.ler(pasta, "qwen3.5:4b", hash_cb) == antigo
+
+
+def test_gravacao_do_resultado_interrompida_nao_apaga_o_json(projeto, monkeypatch):
+    """Um processo morto no meio da gravação do Parquet (um `kill -9`, o macOS sem memória) deixa o resultado
+    anterior inteiro: o JSON não é apagado antes, e o Parquet é trocado de uma vez."""
+    import mapa_da_ciencia.classificacao.resultado as modulo
+
+    mapa.classificar(projeto, progresso=False)
+    pasta, hash_cb = projeto.dados / PASTA, projeto.codebook.hash()
+    antes = Resultado.ler(pasta, "qwen3.5:4b", hash_cb)
+
+    def morre(*args, **kwargs):
+        raise KeyboardInterrupt  # a morte do processo no meio da gravação do Parquet
+
+    monkeypatch.setattr(modulo, "gravar_tabela", morre)
+    with pytest.raises(KeyboardInterrupt):
+        antes.gravar(pasta, [])
+    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb) == antes

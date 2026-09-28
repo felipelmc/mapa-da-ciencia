@@ -86,9 +86,11 @@ class Resultado:
     a_parte: bool = False  # o resultado à parte da versão nova (ver o começo do módulo)
 
     def gravar(self, pasta: Path, linhas: list[dict[str, Any]]) -> None:
+        """Grava o Parquet e o JSON, cada um num temporário trocado de uma vez (`gravar_tabela` faz isso com o
+        Parquet), o JSON por último. Nada é apagado antes: um processo morto no meio deixa o par anterior, ou o
+        Parquet novo com o JSON anterior, e nunca um Parquet sem JSON."""
         pasta.mkdir(parents=True, exist_ok=True)
         nome = nome_do_arquivo(self.modelo, self.hash_codebook, a_parte=self.a_parte)
-        (pasta / f"{nome}.json").unlink(missing_ok=True)
         gravar_tabela(linhas, COLUNAS, pasta / f"{nome}.parquet", ordem="doc")
         tmp = pasta / f"{nome}.json.tmp"
         tmp.write_text(json.dumps(asdict(self), ensure_ascii=False, indent=1), encoding="utf-8")
