@@ -126,7 +126,7 @@
 
 	.suave,
 	.nota {
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	ul {
@@ -150,7 +150,7 @@
 
 	.etapa {
 		font-size: 0.72rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.etapa--sem_maioria,
@@ -172,7 +172,7 @@
 	.membro {
 		font-family: var(--fonte-mono);
 		font-size: 0.72rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 		overflow-wrap: anywhere;
 	}
 
