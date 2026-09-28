@@ -296,7 +296,10 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
 
     # ---- tópicos: posição no plano, cor (a mesma paleta do pipeline) e tendência
     cores_macro = cores_macrotemas(len(MACROS))
-    topicos_def = []  # (id, macro_id, rotulo, palavras, tendência, centro, cor)
+    # ids dos macrotemas não contíguos, como os do piloto depois de execuções com a identidade estável (ADR 0007):
+    # quem usar o id como índice (em vez da posição em `topicos.macrotemas`) erra aqui também
+    id_macro = [k if k < 3 else k + 2 for k in range(len(MACROS))]
+    topicos_def = []  # (id, posição do macrotema, rotulo, palavras, tendência, centro, cor)
     for mi, macro in enumerate(MACROS):
         ang = 2 * math.pi * mi / len(MACROS)
         cx, cy = 6.5 * math.cos(ang), 6.5 * math.sin(ang)
@@ -506,7 +509,7 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
         topicos.append(
             m.Topico(
                 id=tid,
-                macro_id=mi,
+                macro_id=id_macro[mi],
                 rotulo=rotulo,
                 descricao=f"Trabalhos sobre {rotulo.lower()}, com destaque para {palavras[0]} e {palavras[1]}.",
                 palavras_chave=[(p, round(1 / (k + 1), 3)) for k, p in enumerate(palavras)],
@@ -530,7 +533,7 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
         por_ano_m = Counter(d["ano"] for d in docs if d["topico"] in ids_m)
         macrotemas.append(
             m.Macrotema(
-                id=mi,
+                id=id_macro[mi],
                 rotulo=mc.rotulo,
                 cor=cores_macro[mi],
                 topicos=ids_m,
@@ -601,9 +604,9 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
             for a, issn, t in REVISTAS
         ]
     )
-    macro_do_topico = {tid: mi for tid, mi, *_ in topicos_def}
+    macro_do_topico = {tid: id_macro[mi] for tid, mi, *_ in topicos_def}
     redes, citacoes, gabarito = _redes_sinteticas(
-        random.Random(semente + 1), docs, macro_do_topico, af, insts, i_nao_identificada, len(MACROS)
+        random.Random(semente + 1), docs, macro_do_topico, af, insts, i_nao_identificada, id_macro
     )
     agregados = agregados.model_copy(update=gabarito)
     licencas = Counter(det.licenca for det in detalhes.values())
@@ -820,23 +823,24 @@ PRENOMES = ["Ana", "Bruno", "Carla", "Diego", "Elisa", "Fábio", "Gisele", "Hugo
 SOBRENOMES = ["Almeida", "Barros", "Cardoso", "Duarte", "Esteves", "Freitas", "Gomes", "Hollanda", "Iório", "Jardim"]
 
 
-def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada, n_macros):
+def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada, ids_macros):
     """Redes fictícias sobre os documentos do exemplo: pessoas por macrotema (com alguma mistura), a colaboração
     entre as instituições das afiliações do exemplo, citações de documentos mais antigos e um cânone inventado."""
+    from mapa_da_ciencia.contrato.redes import fluxo_por_posicao
     from mapa_da_ciencia.redes.citacoes import calcular
     from mapa_da_ciencia.redes.grafos import colaboracao_por_ano, comunidades, grafo, metricas, pares_ponderados
 
     ids = [d["id"] for d in docs]
     macro_do_doc = {d["id"]: macro_do_topico.get(d["topico"], -1) for d in docs}
     pessoas = [f"{p} {s}" for s in SOBRENOMES for p in PRENOMES]  # 120 pessoas fictícias
-    grupo = {x: i % n_macros for i, x in enumerate(pessoas)}
+    grupo = {x: ids_macros[i % len(ids_macros)] for i, x in enumerate(pessoas)}
     por_macro = defaultdict(list)
     for x in pessoas:
         por_macro[grupo[x]].append(x)
     autores: dict[str, list[str]] = {}
     for d in docs:
         mi = macro_do_doc[d["id"]]
-        base = por_macro[mi if mi >= 0 else rng.randrange(n_macros)]
+        base = por_macro[mi if mi >= 0 else rng.choice(ids_macros)]
         n = rng.choices([1, 2, 3, 4], [0.45, 0.33, 0.15, 0.07])[0]
         escolhidos = rng.sample(base, min(n, len(base)))
         if n > 1 and rng.random() < 0.15:
@@ -937,10 +941,7 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
     topico_do_doc = {d["id"]: d["topico"] for d in docs}
     c = calcular(referencias, citadas, doc_da_obra, anos, topico_do_doc, macro_do_topico)
     indice = {d: i for i, d in enumerate(ids)}
-    fluxo = [[0] * n_macros for _ in range(n_macros)]
-    for (a, b), n in c.fluxo_macrotemas.items():
-        if a >= 0 and b >= 0:
-            fluxo[a][b] = n
+    fluxo = fluxo_por_posicao(c.fluxo_macrotemas, ids_macros)
     citacoes = m.Citacoes(
         n_referencias=[c.n_referencias.get(d, 0) for d in ids],
         internas=m.ArestasCitacao(de=[indice[a] for a, _ in c.internas], para=[indice[b] for _, b in c.internas]),

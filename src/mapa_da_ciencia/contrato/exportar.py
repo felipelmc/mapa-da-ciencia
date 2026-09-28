@@ -434,8 +434,8 @@ def _redes(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[str]) 
         avisos.append("As redes foram geradas antes das últimas mudanças no corpus. Rode `mapa redes`.")
         return
     documentos = arquivos["documentos"]
-    n_macros = len(arquivos["topicos"].macrotemas)
-    redes, citacoes, gabarito = redes_contrato(projeto, list(documentos.colunas.id), n_macros)
+    ids_macros = [mt.id for mt in arquivos["topicos"].macrotemas]  # type: ignore[attr-defined]
+    redes, citacoes, gabarito = redes_contrato(projeto, list(documentos.colunas.id), ids_macros)
     if fora := instituicoes_fora_de_afiliacoes(redes, arquivos.get("afiliacoes")):  # type: ignore[arg-type]
         avisos.append(
             f"{len(fora)} instituição(ões) da rede sem registro em afiliacoes.json (por exemplo, {fora[0]}): a rede de "

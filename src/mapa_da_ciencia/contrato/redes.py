@@ -7,6 +7,7 @@ as pessoas têm um id publicado (um *hash*) e o nome.
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 
 from ..armazenamento import ler_tabela
@@ -23,14 +24,27 @@ def instituicoes_fora_de_afiliacoes(redes: m.Redes, afiliacoes: m.Afiliacoes | N
     return [i for i in redes.instituicoes.id if i not in conhecidos]
 
 
+def fluxo_por_posicao(fluxo: dict[tuple[int, int], int], ids_macrotemas: list[int]) -> list[list[int]]:
+    """A matriz do fluxo entre macrotemas (linha: quem cita; coluna: quem é citado) na ordem de
+    `topicos.macrotemas`. Os ids dos macrotemas são estáveis e não contíguos (ADR 0007: no piloto, 0, 1, 2, 5, 6,
+    7 e 8), então o índice é a posição, e não o id."""
+    posicao = {m: k for k, m in enumerate(ids_macrotemas)}
+    matriz = [[0] * len(ids_macrotemas) for _ in ids_macrotemas]
+    for (a, b), n in fluxo.items():
+        if a in posicao and b in posicao:
+            matriz[posicao[a]][posicao[b]] += n
+    return matriz
+
+
 def _numero(x: Any) -> float | None:
     return None if x is None else round(float(x), 4)
 
 
 def redes_contrato(
-    projeto: Projeto, ids_documentos: list[str], n_macrotemas: int
+    projeto: Projeto, ids_documentos: list[str], ids_macrotemas: list[int]
 ) -> tuple[m.Redes, m.Citacoes | None, dict[str, Any]]:
-    """Os dois arquivos e o que vai para o gabarito (`agregados`)."""
+    """Os dois arquivos e o que vai para o gabarito (`agregados`). `ids_macrotemas`: os ids na ordem de
+    `topicos.macrotemas`."""
     from ..redes.pipeline import PASTA, ResultadoRedes
 
     pasta = projeto.dados / PASTA
@@ -109,11 +123,8 @@ def redes_contrato(
             for a in ler_atribuicoes(projeto.dados / PASTA_TOPICOS)
             if a["topico"] is not None and a["topico"] >= 0
         }
-        fluxo = [[0] * n_macrotemas for _ in range(n_macrotemas)]
-        for c in internas:
-            a, b = macro_do_doc.get(c["de"], -1), macro_do_doc.get(c["para"], -1)
-            if 0 <= a < n_macrotemas and 0 <= b < n_macrotemas:
-                fluxo[a][b] += 1
+        pares = Counter((macro_do_doc.get(c["de"], -1), macro_do_doc.get(c["para"], -1)) for c in internas)
+        fluxo = fluxo_por_posicao(pares, ids_macrotemas)
         cit_doc, cit_obra = [], []
         for k, o in enumerate(canone):
             for d in o["citantes"] or []:

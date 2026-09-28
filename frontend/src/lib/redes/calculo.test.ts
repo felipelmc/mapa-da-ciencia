@@ -20,11 +20,11 @@ import {
 	faixasNoRecorte,
 	forcaDe,
 	grauDe,
-	macroDoDoc,
 	maisCitadas,
 	nomeDoLugar,
 	paresPonderados,
 	parceiros,
+	posicaoDoMacro,
 	renumerar,
 	type Passa
 } from './calculo';
@@ -40,7 +40,7 @@ const t = decodificar(documentos);
 const af = decodificarAfiliacoes(ler<Afiliacoes>('afiliacoes.json'), t.n);
 const r = decodificarRedes(brutoRedes, t.n);
 const c = decodificarCitacoes(brutoCitacoes);
-const macro = macroDoDoc(t.topico, topicos);
+const macro = posicaoDoMacro(t.topico, topicos);
 const nMacros = topicos.macrotemas.length;
 
 /** Os pares de coautores do recorte, contados de novo à moda ingênua, a partir das listas cruas do JSON. */
@@ -135,6 +135,20 @@ describe('as redes do corpus inteiro batem com o Python', () => {
 		expect(lista.map((o) => o.n)).toEqual(agregados.canone_n);
 		for (const o of lista) expect(o.porMacro.reduce((a, b) => a + b, 0)).toBe(o.n);
 		expect(maisCitadas(lista, 3).map((o) => o.obra)).toEqual([0, 1, 2]);
+	});
+
+	it('macrotemas pela posição: com ids não contíguos, nenhuma citação some e nenhum citante vira "sem tópico"', () => {
+		const ids = topicos.macrotemas.map((m) => m.id);
+		expect(Math.max(...ids)).toBeGreaterThanOrEqual(nMacros); // o exemplo tem ids não contíguos, como o piloto
+		const semTopico = (d: number) => documentos.colunas.topico[d] < 0;
+		const { matriz } = citacoesInternas(c, null, macro, nMacros);
+		const comTopico = brutoCitacoes.internas.de.filter((de, k) => !semTopico(de) && !semTopico(brutoCitacoes.internas.para[k]));
+		expect(matriz.flat().reduce((a, b) => a + b, 0)).toBe(comTopico.length);
+		expect(matriz.every((linha) => linha.some((v) => v > 0))).toBe(true); // nenhuma linha fantasma
+		const lista = canoneNoRecorte(c, null, macro, nMacros);
+		const semTopicoNoCanone = new Set<string>();
+		c.citanteDoc.forEach((d, k) => semTopico(d) && semTopicoNoCanone.add(`${d}-${c.citanteObra[k]}`));
+		expect(lista.reduce((s, o) => s + o.porMacro[nMacros], 0)).toBe(semTopicoNoCanone.size);
 	});
 
 	it('citações internas: todas no corpus inteiro, e a matriz dos macrotemas é a do Python', () => {

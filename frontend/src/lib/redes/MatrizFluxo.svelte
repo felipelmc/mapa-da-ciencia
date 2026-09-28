@@ -46,7 +46,7 @@
 		{#each matriz as linha, i (i)}
 			{@const y = TOPO + i * lado}
 			<circle cx="6" cy={y + lado / 2} r="4" style:fill={cores[i]} />
-			<text class="linha" x="16" y={y + lado / 2 + 4}>{i + 1}. {cortar(rotulos[i])}<title>{rotulos[i]}</title></text>
+			<text class="linha" x="16" y={y + lado / 2 + 4} data-testid="linha-fluxo" data-rotulo={rotulos[i]}>{i + 1}. {cortar(rotulos[i])}<title>{rotulos[i]}</title></text>
 			{#each linha as v, j (j)}
 				<g data-testid="celula-fluxo" data-de={i} data-para={j} data-n={v}>
 					<rect x={ROTULO + j * lado + 1} y={y + 1} width={lado - 2} height={lado - 2} rx="2" style:fill={cor(v)} class:diagonal={i === j} />

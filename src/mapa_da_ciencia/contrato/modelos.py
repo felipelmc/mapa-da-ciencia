@@ -753,7 +753,10 @@ class Citacoes(_Arquivo):
     internas: ArestasCitacao
     canone: list[ObraCitada]
     canone_citantes: CitantesCanone
-    fluxo_macrotemas: list[list[int]] = Field(description="Citações internas de macrotema (linha) a macrotema.")
+    fluxo_macrotemas: list[list[int]] = Field(
+        description="Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` "
+        "(pela posição, e não pelo id, que não é contíguo)."
+    )
     cobertura: dict[str, int] = Field(default_factory=dict)
 
 

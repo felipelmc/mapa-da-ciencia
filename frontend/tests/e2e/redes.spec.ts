@@ -264,6 +264,9 @@ test('citações: o cânone do gabarito, a nota da cobertura e a matriz entre ma
 	);
 	expect(celulas).toHaveLength(citacoes.fluxo_macrotemas.length ** 2);
 	for (const [i, j, n] of celulas) expect(n).toBe(citacoes.fluxo_macrotemas[i][j]);
+	// as linhas são os macrotemas, na ordem de topicos.json (os ids não são contíguos: nada de "Macrotema 3")
+	const rotulos = await page.getByTestId('linha-fluxo').evaluateAll((els) => els.map((e) => e.getAttribute('data-rotulo')));
+	expect(rotulos).toEqual(ler('topicos.json').macrotemas.map((m: { rotulo: string }) => m.rotulo));
 	// com um período, só as citações com as duas pontas nele
 	await page.goto(`${url('RAIZ')}#/redes?rede=citacoes&anos=2018-2025`);
 	await esperarRedes(page, 'citacoes');

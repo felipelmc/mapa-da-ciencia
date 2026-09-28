@@ -746,7 +746,7 @@ A rede de citação pelas referências do OpenAlex e o cânone.
 | `internas` | [ArestasCitacao](#arestascitacao) | **obrigatório** | Citações dentro do corpus: índices de documentos (quem cita → quem é citado). |
 | `canone` | lista de [ObraCitada](#obracitada) | **obrigatório** | Uma obra de fora do corpus entre as mais citadas (o cânone). |
 | `canone_citantes` | [CitantesCanone](#citantescanone) | **obrigatório** |  |
-| `fluxo_macrotemas` | lista de lista de inteiro | **obrigatório** | Citações internas de macrotema (linha) a macrotema. |
+| `fluxo_macrotemas` | lista de lista de inteiro | **obrigatório** | Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` (pela posição, e não pelo id, que não é contíguo). |
 | `cobertura` | mapa de texto para inteiro | vazio |  |
 
 ### ArestasCitacao

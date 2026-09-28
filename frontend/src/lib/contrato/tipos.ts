@@ -175,7 +175,7 @@ export interface Citacoes {
 		[k: string]: number;
 	};
 	/**
-	 * Citações internas de macrotema (linha) a macrotema.
+	 * Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` (pela posição, e não pelo id, que não é contíguo).
 	 */
 	fluxo_macrotemas: number[][];
 	internas: ArestasCitacao;

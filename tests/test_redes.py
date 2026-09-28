@@ -14,7 +14,7 @@ from mapa_da_ciencia.armazenamento import (
     gravar_tabela,
 )
 from mapa_da_ciencia.contrato import modelos as m
-from mapa_da_ciencia.contrato.redes import instituicoes_fora_de_afiliacoes
+from mapa_da_ciencia.contrato.redes import fluxo_por_posicao, instituicoes_fora_de_afiliacoes
 from mapa_da_ciencia.documento import Afiliacao, Autor, AutoriaOpenAlex, Documento, InstituicaoOpenAlex, Texto
 from mapa_da_ciencia.fontes.openalex import COLUNAS_CITADAS, COLUNAS_REFERENCIAS
 from mapa_da_ciencia.llm.perfis import PERFIS
@@ -109,6 +109,14 @@ def test_citacoes_e_canone():
     assert c.cobertura["com_referencias"] == 3
 
 
+def test_fluxo_pela_posicao_dos_macrotemas():
+    # ids não contíguos, como os do piloto: o 7 e o 8 não somem, e não aparece um "macrotema 3" vazio
+    fluxo = {(0, 7): 2, (7, 7): 5, (8, 2): 1, (5, 0): 3, (-1, 0): 4}
+    matriz = fluxo_por_posicao(fluxo, [0, 1, 2, 5, 6, 7, 8])
+    assert len(matriz) == 7 and all(len(linha) == 7 for linha in matriz) and sum(map(sum, matriz)) == 11
+    assert (matriz[0][5], matriz[5][5], matriz[6][2], matriz[3][0]) == (2, 5, 1, 3)
+
+
 @pytest.fixture(scope="module")
 def projeto(tmp_path_factory):
     import respx
@@ -195,7 +203,14 @@ def test_redes_de_ponta_a_ponta(projeto):
     # citações: dentro do corpus, sem laços; o cânone tem os citantes
     assert all(a != b for a, b in zip(citacoes.internas.de, citacoes.internas.para, strict=True))
     assert citacoes.canone[0].n == len(set(citacoes.canone_citantes.doc))
-    assert sum(map(sum, citacoes.fluxo_macrotemas)) <= len(citacoes.internas.de)
+    topicos = m.Topicos.model_validate_json((dados / "topicos.json").read_text(encoding="utf-8"))
+    com_topico = [
+        (a, b)
+        for a, b in zip(citacoes.internas.de, citacoes.internas.para, strict=True)
+        if documentos.colunas.topico[a] >= 0 and documentos.colunas.topico[b] >= 0
+    ]
+    assert len(citacoes.fluxo_macrotemas) == len(topicos.macrotemas)
+    assert sum(map(sum, citacoes.fluxo_macrotemas)) == len(com_topico)
     # nada de e-mail nem ORCID
     assert "@" not in texto and not ORCID.search(texto)
     # reprodutível: de novo, o mesmo arquivo

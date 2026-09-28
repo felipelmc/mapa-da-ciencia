@@ -9,7 +9,7 @@
 	import { contar, formatarInteiro, formatarPorcentagem } from '$lib/formato';
 	import Figura from '$lib/graficos/Figura.svelte';
 	import Canone, { type ObraDesenhada } from './Canone.svelte';
-	import { canoneNoRecorte, citacoesInternas, macroDoDoc, maisCitadas, type Passa } from './calculo';
+	import { canoneNoRecorte, citacoesInternas, maisCitadas, posicaoDoMacro, type Passa } from './calculo';
 	import { recomecarDebug } from './debug';
 	import MatrizFluxo from './MatrizFluxo.svelte';
 
@@ -23,12 +23,11 @@
 	const noRecorte = $derived(aberto.cubo.contar(falhas));
 	const passa = $derived<Passa>(noRecorte === t.n ? null : (d) => falhas[d] === 0);
 
-	// a matriz do Python usa o id do macrotema como linha e coluna
+	// linhas, colunas e fatias pela posição do macrotema em `topicos.macrotemas` (os ids não são contíguos)
 	const nMacros = $derived(topicos.macrotemas.length);
-	const macro = $derived(macroDoDoc(t.topico, topicos));
-	const macroDoId = $derived(new Map(topicos.macrotemas.map((m) => [m.id, m])));
-	const nomes = $derived([...Array.from({ length: nMacros }, (_, k) => macroDoId.get(k)?.rotulo ?? `Macrotema ${k}`), 'Sem tópico']);
-	const cores = $derived([...Array.from({ length: nMacros }, (_, k) => macroDoId.get(k)?.cor ?? 'var(--texto-fraco)'), 'var(--texto-fraco)']);
+	const macro = $derived(posicaoDoMacro(t.topico, topicos));
+	const nomes = $derived([...topicos.macrotemas.map((m) => m.rotulo), 'Sem tópico']);
+	const cores = $derived([...topicos.macrotemas.map((m) => m.cor), 'var(--texto-fraco)']);
 
 	// ---- o cânone
 	const lista = $derived(canoneNoRecorte(c, passa, macro, nMacros));

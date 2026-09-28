@@ -173,7 +173,7 @@
       "type": "object"
     },
     "fluxo_macrotemas": {
-      "description": "Citações internas de macrotema (linha) a macrotema.",
+      "description": "Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` (pela posição, e não pelo id, que não é contíguo).",
       "items": {
         "items": {
           "type": "integer"
