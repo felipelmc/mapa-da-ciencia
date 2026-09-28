@@ -147,6 +147,16 @@ code {
 	border: 0;
 }
 
+/*
+ * As vistas (Tópicos, Geografia, Classificação, Validação…) são grades de uma coluna. Com a coluna implícita
+ * (`auto`), ela cresceria até a largura mínima do filho mais largo: um gráfico que nasce com 800 px e mede a
+ * coluna com `bind:clientWidth` nunca encolheria, e a página rolaria de lado no celular. `minmax(0, 1fr)`
+ * prende a coluna à largura do conteúdo. Toda vista nova com `class="vista"` herda a regra.
+ */
+.vista {
+	grid-template-columns: minmax(0, 1fr);
+}
+
 /* Botão discreto das vistas (laço, limpar, modos); `aria-pressed` marca o que está ligado. */
 .botao {
 	font: inherit;

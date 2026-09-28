@@ -136,44 +136,46 @@
 		colunas={['Variável', 'n', 'Concordância', 'Kappa', 'IC 95%', 'PABAK', 'Alfa']}
 		linhas={linhasPar}
 	>
-		<table class="metricas" data-testid="tabela-metricas">
-			<thead>
-				<tr>
-					<th scope="col">Variável</th>
-					<th scope="col" class="num">n</th>
-					<th scope="col" class="num">Concordância</th>
-					<th scope="col" class="kappa">Kappa (IC 95%)</th>
-					<th scope="col" class="num">PABAK</th>
-					<th scope="col" class="num">Alfa</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each doPar as m (m.variavel)}
-					<tr class:escolhida={m === metrica}>
-						<th scope="row">
-							<button type="button" onclick={() => (variavelEscolhida = m.variavel)} aria-pressed={m === metrica} data-testid="linha-variavel">
-								{nomeVariavel(m.variavel)}
-							</button>
-						</th>
-						<td class="num">{formatarInteiro(m.n)}</td>
-						<td class="num">{m.concordancia === null ? '—' : formatarPorcentagem(m.concordancia)}</td>
-						<td class="kappa">
-							{#if m.kappa === null}
-								<span class="suave">— sem variação</span>
-							{:else}
-								<span class="barra-kappa" class:fraco={m.kappa < KAPPA_FRACO}>
-									<span style:width="{Math.max(0, m.kappa) * 100}%"></span>
-								</span>
-								{formatarDecimal(m.kappa, 2)}
-								{#if m.kappa_ic95}<span class="suave">({formatarDecimal(m.kappa_ic95[0], 2)} a {formatarDecimal(m.kappa_ic95[1], 2)})</span>{/if}
-							{/if}
-						</td>
-						<td class="num">{m.pabak === null ? '—' : formatarDecimal(m.pabak, 2)}</td>
-						<td class="num">{m.alfa === null ? '—' : formatarDecimal(m.alfa, 2)}</td>
+		<div class="rolagem-lateral">
+			<table class="metricas" data-testid="tabela-metricas">
+				<thead>
+					<tr>
+						<th scope="col">Variável</th>
+						<th scope="col" class="num">n</th>
+						<th scope="col" class="num">Concordância</th>
+						<th scope="col" class="kappa">Kappa (IC 95%)</th>
+						<th scope="col" class="num">PABAK</th>
+						<th scope="col" class="num">Alfa</th>
 					</tr>
-				{/each}
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					{#each doPar as m (m.variavel)}
+						<tr class:escolhida={m === metrica}>
+							<th scope="row">
+								<button type="button" onclick={() => (variavelEscolhida = m.variavel)} aria-pressed={m === metrica} data-testid="linha-variavel">
+									{nomeVariavel(m.variavel)}
+								</button>
+							</th>
+							<td class="num">{formatarInteiro(m.n)}</td>
+							<td class="num">{m.concordancia === null ? '—' : formatarPorcentagem(m.concordancia)}</td>
+							<td class="kappa">
+								{#if m.kappa === null}
+									<span class="suave">— sem variação</span>
+								{:else}
+									<span class="barra-kappa" class:fraco={m.kappa < KAPPA_FRACO}>
+										<span style:width="{Math.max(0, m.kappa) * 100}%"></span>
+									</span>
+									{formatarDecimal(m.kappa, 2)}
+									{#if m.kappa_ic95}<span class="suave">({formatarDecimal(m.kappa_ic95[0], 2)} a {formatarDecimal(m.kappa_ic95[1], 2)})</span>{/if}
+								{/if}
+							</td>
+							<td class="num">{m.pabak === null ? '—' : formatarDecimal(m.pabak, 2)}</td>
+							<td class="num">{m.alfa === null ? '—' : formatarDecimal(m.alfa, 2)}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
 	</Figura>
 
 	{#if metrica}
@@ -189,22 +191,24 @@
 				{#if metrica.por_classe?.length}
 					<div>
 						<h3>Por categoria</h3>
-						<table class="classes">
-							<thead>
-								<tr><th scope="col">Categoria</th><th scope="col" class="num">Na referência</th><th scope="col" class="num">Precisão</th><th scope="col" class="num">Revocação</th><th scope="col" class="num">F1</th></tr>
-							</thead>
-							<tbody>
-								{#each metrica.por_classe.filter((c) => c.suporte || c.precisao !== null) as c (c.rotulo)}
-									<tr>
-										<th scope="row">{rotuloValor(metrica.variavel, c.rotulo)}</th>
-										<td class="num">{formatarInteiro(c.suporte)}</td>
-										<td class="num">{c.precisao === null ? '—' : formatarDecimal(c.precisao, 2)}</td>
-										<td class="num">{c.revocacao === null ? '—' : formatarDecimal(c.revocacao, 2)}</td>
-										<td class="num">{c.f1 === null ? '—' : formatarDecimal(c.f1, 2)}</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
+						<div class="rolagem-lateral">
+							<table class="classes">
+								<thead>
+									<tr><th scope="col">Categoria</th><th scope="col" class="num">Na referência</th><th scope="col" class="num">Precisão</th><th scope="col" class="num">Revocação</th><th scope="col" class="num">F1</th></tr>
+								</thead>
+								<tbody>
+									{#each metrica.por_classe.filter((c) => c.suporte || c.precisao !== null) as c (c.rotulo)}
+										<tr>
+											<th scope="row">{rotuloValor(metrica.variavel, c.rotulo)}</th>
+											<td class="num">{formatarInteiro(c.suporte)}</td>
+											<td class="num">{c.precisao === null ? '—' : formatarDecimal(c.precisao, 2)}</td>
+											<td class="num">{c.revocacao === null ? '—' : formatarDecimal(c.revocacao, 2)}</td>
+											<td class="num">{c.f1 === null ? '—' : formatarDecimal(c.f1, 2)}</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
 						<p class="suave">Tomando {quem(ref)} como referência.</p>
 					</div>
 				{/if}
@@ -345,6 +349,12 @@
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.86rem;
+	}
+
+	/* numa tela estreita, a tabela rola dentro da própria caixa, e não a página inteira */
+	.rolagem-lateral {
+		max-width: 100%;
+		overflow-x: auto;
 	}
 
 	th,

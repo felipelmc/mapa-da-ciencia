@@ -102,4 +102,25 @@
 		border-radius: 999px;
 		cursor: pointer;
 	}
+
+	/* no celular, os dois controles dividem a largura e quebram de linha, em vez de passar da tela */
+	@media (max-width: 820px) {
+		.linha {
+			flex-wrap: wrap;
+			border-radius: 1rem;
+		}
+
+		label {
+			flex: 1 1 7rem;
+			min-width: 0;
+		}
+
+		input[type='range'] {
+			width: 100%;
+		}
+
+		.anos {
+			min-width: 0;
+		}
+	}
 </style>

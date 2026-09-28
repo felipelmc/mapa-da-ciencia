@@ -177,6 +177,7 @@
 <style>
 	.pagina {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: clamp(2rem, 4vw, 3rem);
 	}
 

@@ -1,7 +1,7 @@
 // Testes e2e da casca (M1), sobre o build servido por um estático sem reescrita.
 // Os sites e as URLs vêm de tests/e2e/preparar.ts.
 import { join } from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { escapar, esperarMapa, h1, inteiro, ler, TELAS, trilho, url, vigiar } from './comum';
 
 declare global {
@@ -226,6 +226,53 @@ test.describe('acessibilidade e casos de borda', () => {
 		await trilho(page).getByRole('link', { name: 'Tópicos', exact: true }).click();
 		await expect(h1(page)).toHaveText('Tópicos');
 	});
+});
+
+test.describe('nenhuma rota rola de lado', () => {
+	const LARGURAS = [
+		{ nome: 'celular', viewport: { width: 375, height: 812 }, isMobile: true },
+		{ nome: 'tablet', viewport: { width: 768, height: 1024 }, isMobile: false },
+		{ nome: 'notebook', viewport: { width: 1024, height: 768 }, isMobile: false }
+	];
+	const ROTAS = ['/', '/mapa', '/topicos', '/geografia', '/classificacao', '/validacao', '/ajuda', '/projeto'];
+	// quanto a página passa da largura da tela (no celular emulado, a viewport de layout se estica com o conteúdo:
+	// por isso a conta é contra a largura pedida, e não contra o clientWidth)
+	const transbordo = (page: Page, largura: number) =>
+		page.evaluate((l) => document.documentElement.scrollWidth - l, largura);
+
+	for (const l of LARGURAS) {
+		test(`${l.viewport.width} px (${l.nome})`, async ({ browser }) => {
+			for (const r of ROTAS) {
+				// um contexto novo por rota: os gráficos medem a largura na montagem
+				const contexto = await browser.newContext({
+					viewport: l.viewport,
+					isMobile: l.isMobile,
+					hasTouch: l.isMobile,
+					reducedMotion: 'reduce'
+				});
+				const page = await contexto.newPage();
+				await page.goto(`${url('RAIZ')}#${r}`);
+				await expect(h1(page)).toBeVisible();
+				if (r === '/mapa') await esperarMapa(page);
+				await expect(page.locator('[data-testid^="figura-"]:not([data-pronto])')).toHaveCount(0);
+				await expect
+					.poll(() => transbordo(page, l.viewport.width), { message: `${r} em ${l.viewport.width} px` })
+					.toBeLessThanOrEqual(0);
+				if (l.isMobile) {
+					// no celular, a barra de navegação fica na tela
+					await expect(trilho(page)).toBeInViewport();
+					if (r === '/mapa') {
+						await page.getByRole('button', { name: /^Recorte/ }).click();
+						await expect(page.getByTestId('linha-do-tempo')).toBeVisible();
+						await expect
+							.poll(() => transbordo(page, l.viewport.width), { message: 'mapa com o recorte aberto' })
+							.toBeLessThanOrEqual(0);
+					}
+				}
+				await contexto.close();
+			}
+		});
+	}
 });
 
 test.describe('projeto vazio (só o manifesto, como depois do `mapa novo`)', () => {

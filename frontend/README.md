@@ -241,7 +241,7 @@ Os testes cobrem:
 - troca de tema e memória da escolha;
 - o link de pular;
 - rota inexistente;
-- tela estreita;
+- tela estreita: nenhuma rota rola de lado a 375 px (celular emulado, com a barra de navegação na tela e o recorte do Mapa aberto), 768 e 1024 px;
 - projeto vazio, sem pedir arquivos ausentes;
 - no Mapa (`mapa.spec.ts`): o desenho dos pontos, contornos e rótulos pelo zoom, legenda, cor por revista, cartão pelo link e pelo clique, busca, laço pelo link e pelo mouse, play da linha do tempo e atalhos.
 - na Geografia (`geografia.spec.ts`): o peso de cada UF igual ao gabarito do Python, o ranking pela instituição de maior peso, o Brasil fora da escala do mundo, o clique numa UF que vai para o recorte e dali para o Mapa, o teclado, "Ver como tabela", "Mostrar mais", a cobertura por ano (o aviso dos anos com muito peso sem afiliação) e o projeto vazio.

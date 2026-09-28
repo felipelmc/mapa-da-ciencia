@@ -73,6 +73,8 @@
 	.macrotemas {
 		display: grid;
 		gap: 1.25rem;
+		/* a linha quebra pela largura da seção, não da janela: com o trilho ao lado, a janela engana */
+		container-type: inline-size;
 	}
 
 	header {
@@ -180,7 +182,8 @@
 		background: var(--cor);
 	}
 
-	@media (max-width: 820px) {
+	/* a linha inteira pede ~55rem (as colunas fixas e os espaços); abaixo disso, a série e os números descem */
+	@container (max-width: 56rem) {
 		li {
 			grid-template-columns: 1.25rem minmax(0, 1fr) auto;
 			gap: 0.35rem 0.75rem;
@@ -189,6 +192,13 @@
 		.barra,
 		.serie {
 			grid-column: 2 / -1;
+		}
+
+		/* o número de tópicos fica ao lado do nome, na coluna estreita da direita */
+		.topicos {
+			grid-column: 3;
+			grid-row: 1;
+			text-align: right;
 		}
 
 		.docs {
