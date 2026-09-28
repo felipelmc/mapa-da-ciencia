@@ -9,7 +9,6 @@
 	import type { TabelaAfiliacoes } from '$lib/dados/afiliacoes';
 	import { dobrar } from '$lib/dados/busca';
 	import type { Aberto } from '$lib/dados/corpus';
-	import { D } from '$lib/dados/cubo';
 	import type { TabelaRedes } from '$lib/dados/redes';
 	import { mudarFiltros } from '$lib/estado/filtros';
 	import { escreverFiltros, recorteDe, rota, type Filtros } from '$lib/estado/url';
@@ -22,7 +21,6 @@
 	import {
 		arestasCoautoria,
 		arestasInstituicoes,
-		colaboracaoPorAno,
 		contarNoRecorte,
 		documentosPorInstituicao,
 		faixasNoRecorte,
@@ -36,7 +34,7 @@
 	} from './calculo';
 	import { recomecarDebug } from './debug';
 	import Grafo, { TRACO_DAS_FAIXAS, type RotuloGrafo } from './Grafo.svelte';
-	import SerieAnual from './SerieAnual.svelte';
+	import Colaboracao from './Colaboracao.svelte';
 
 	let {
 		rede,
@@ -271,37 +269,6 @@
 			'Use a busca para abrir o cartão de um nó, ou veja os números na tabela.'
 	);
 
-	// ---- a colaboração por ano (sem o filtro de anos: o período inteiro, com o recorte em destaque)
-	const anos = $derived(aberto.topicos.anos);
-	const serie = $derived.by(() => {
-		const semAno: Passa = aberto.cubo.contar(falhas, D.ANO) === t.n ? null : (d) => (falhas[d] & ~D.ANO & 0xff) === 0;
-		const porAno = new Map(colaboracaoPorAno(t.ano, r, af, semAno).map((c) => [c.ano, c]));
-		return anos.map((a) => porAno.get(a) ?? null);
-	});
-	const janela = $derived(
-		filtros.anos
-			? ([Math.max(0, filtros.anos[0] - anos[0]), Math.min(anos.length - 1, filtros.anos[1] - anos[0])] as [number, number])
-			: null
-	);
-	const series = $derived(
-		pessoas
-			? [
-					{ id: 'coautoria', titulo: 'Documentos com mais de um autor', valores: serie.map((c) => c?.comCoautoria ?? null), formato: 'porcentagem' as const },
-					{ id: 'autores', titulo: 'Autores por documento', valores: serie.map((c) => c?.autoresMedio ?? null), formato: 'decimal' as const }
-				]
-			: [
-					{ id: 'instituicoes', titulo: 'Com duas ou mais instituições', valores: serie.map((c) => c?.comInstituicoes ?? null), formato: 'porcentagem' as const },
-					{ id: 'exterior', titulo: 'Com Brasil e exterior', valores: serie.map((c) => c?.comExterior ?? null), formato: 'porcentagem' as const }
-				]
-	);
-	const resumoSerie = $derived.by(() => {
-		const s = series[0];
-		const validos = s.valores.map((v, j) => [v, anos[j]] as const).filter(([v]) => v !== null) as [number, number][];
-		if (validos.length < 2) return 'Poucos anos com documentos para ver a evolução.';
-		const [[v0, a0], [v1, a1]] = [validos[0], validos.at(-1)!];
-		return `${s.titulo}: ${formatarPorcentagem(v0)} em ${a0} e ${formatarPorcentagem(v1)} em ${a1}.`;
-	});
-
 	// ---- depuração
 	let grafo = $state<ReturnType<typeof Grafo> | null>(null);
 	$effect(() => {
@@ -407,24 +374,15 @@
 				filtro={pessoas ? null : { ativo: filtros.inst.includes(nos.ids[cartao.i]), alternar: () => alternarInstituicao(nos.ids[cartao.i]) }}
 			/>
 		{/if}
-		<Figura
+		<Colaboracao
+			quais={pessoas ? ['coautoria', 'autores'] : ['instituicoes', 'exterior']}
+			{aberto}
+			redes={r}
+			afiliacoes={af}
+			{filtros}
+			{falhas}
 			n={noRecorte}
-			id="colaboracao"
-			titulo="A colaboração por ano"
-			resumo={resumoSerie}
-			colunas={['Ano', 'Documentos', ...series.map((s) => s.titulo)]}
-			linhas={anos.map((a, j) => [
-				String(a),
-				formatarInteiro(serie[j]?.documentos ?? 0),
-				...series.map((s) => (s.valores[j] === null ? '—' : s.formato === 'porcentagem' ? formatarPorcentagem(s.valores[j]!) : formatarDecimal(s.valores[j]!, 2)))
-			])}
-		>
-			<div class="series">
-				{#each series as s (s.id)}
-					<SerieAnual id={s.id} titulo={s.titulo} {anos} valores={s.valores} formato={s.formato} {janela} />
-				{/each}
-			</div>
-		</Figura>
+		/>
 	</aside>
 </div>
 
@@ -446,11 +404,6 @@
 		display: grid;
 		gap: 1rem;
 		min-width: 0;
-	}
-
-	.series {
-		display: grid;
-		gap: 0.8rem;
 	}
 
 	.legenda {

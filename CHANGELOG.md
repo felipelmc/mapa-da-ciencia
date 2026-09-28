@@ -6,6 +6,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Adicionado
 
+- a vista **Redes** no painel e no site (`#/redes`), recalculada no recorte comum: a coautoria e a colaboração entre instituições num grafo em canvas sobre o desenho do corpus inteiro (quem sai do recorte fica esmaecido; as arestas em faixas pelo peso fracionário), com zoom, busca pelo teclado e o cartão de cada nó com os documentos no recorte; os arcos da colaboração entre estados (e com o exterior) sobre o mapa das UFs; o cânone (as obras mais citadas, pelo macrotema de quem cita, com a nota da cobertura do OpenAlex) e a matriz das citações entre macrotemas; as séries da colaboração por ano. A Ajuda ganha "Como ler as redes".
 - o DOI de conceito do Zenodo ([10.5281/zenodo.22998585](https://doi.org/10.5281/zenodo.22998585), todas as versões) no `CITATION.cff`, no README (com o selo e uma seção "Como citar" com o BibTeX), na metodologia (também com o BibTeX) e no rodapé da abertura do site, que o lê do `CITATION.cff`.
 - a seção "Como citar" na abertura do site, com a referência, o BibTeX e um botão de copiar, gerados do `CITATION.cff` (`overrides/hooks.py`); um teste confere que o BibTeX do README e da metodologia é o mesmo.
 

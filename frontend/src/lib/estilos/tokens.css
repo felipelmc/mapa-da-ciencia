@@ -58,6 +58,13 @@
 	--seq-4: #b8625f;
 	--seq-5: #e8894a;
 	--seq-6: #ffc463;
+	/* números sobre cada tom da escala (a matriz das citações): claros nos tons escuros, escuros nos claros */
+	--sobre-seq-1: #eceaf4;
+	--sobre-seq-2: #eceaf4;
+	--sobre-seq-3: #eceaf4;
+	--sobre-seq-4: #000000;
+	--sobre-seq-5: #0a0e1f;
+	--sobre-seq-6: #0a0e1f;
 }
 
 :root[data-tema='prancha'] {
@@ -87,4 +94,10 @@
 	--seq-4: #c7643b;
 	--seq-5: #9c3e1f;
 	--seq-6: #5e2413;
+	--sobre-seq-1: #161a2b;
+	--sobre-seq-2: #161a2b;
+	--sobre-seq-3: #161a2b;
+	--sobre-seq-4: #000000;
+	--sobre-seq-5: #fbf8f2;
+	--sobre-seq-6: #fbf8f2;
 }

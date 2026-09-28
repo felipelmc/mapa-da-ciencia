@@ -42,6 +42,26 @@ function pares(passa: (d: number) => boolean): number {
 
 const comPosicao = redes.pessoas.x.filter((x: number | null) => x !== null).length;
 
+/** Pares distintos de lugares (UFs e `EX`) nos documentos que passam, pela regra do Python. */
+function paresDeLugares(passa: (d: number) => boolean): number {
+	const c = afiliacoes.colunas;
+	const { uf, pais } = afiliacoes.dicionarios;
+	const porDoc = new Map<number, Set<string>>();
+	c.doc.forEach((d: number, k: number) => {
+		if (!passa(d) || c.pais[k] < 0) return;
+		const lugar = pais[c.pais[k]] === 'BR' ? (c.uf[k] >= 0 ? uf[c.uf[k]] : null) : 'EX';
+		if (!lugar) return;
+		if (!porDoc.has(d)) porDoc.set(d, new Set());
+		porDoc.get(d)!.add(lugar);
+	});
+	const vistos = new Set<string>();
+	for (const lugares of porDoc.values()) {
+		const lista = [...lugares].sort();
+		for (let i = 0; i < lista.length; i += 1) for (let j = i + 1; j < lista.length; j += 1) vistos.add(`${lista[i]}|${lista[j]}`);
+	}
+	return vistos.size;
+}
+
 test.beforeEach(async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: 'reduce' });
 });
@@ -188,11 +208,88 @@ test('exportar o grafo: o canvas vira imagem embaixo dos rótulos, no tema do pr
 	expect(problemas).toEqual([]);
 });
 
-test('celular (375 px): sem rolagem horizontal nas duas redes', async ({ page }) => {
+test('estados: os arcos são os pares do gabarito, e clicar numa UF põe no recorte', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes?rede=estados`);
+	const d = await esperarRedes(page, 'estados');
+	expect(d.arestas).toBe(agregados.uf_pares.length);
+	expect(d.arestasNoRecorte).toBe(agregados.uf_pares.length);
+	await expect(page.getByTestId('figura-estados')).toHaveAttribute('data-pronto', 'sim');
+	const arcos = page.getByTestId('arco');
+	await expect(arcos).toHaveCount(agregados.uf_pares.length);
+	// o arco mais grosso é a parceria de maior peso do gabarito, com o mesmo peso
+	const [a, b, peso] = [...agregados.uf_pares].sort((p: number[], q: number[]) => q[2] - p[2])[0];
+	const pares = await arcos.evaluateAll((els) => els.map((e) => [e.getAttribute('data-par'), Number(e.getAttribute('data-peso'))] as const));
+	const maior = pares.sort((p, q) => q[1] - p[1])[0];
+	expect(maior[0]!.split('|').sort()).toEqual([a, b].sort());
+	expect(maior[1]).toBeCloseTo(peso, 5);
+	await page.getByTestId('figura-estados').getByRole('button', { name: 'Ver como tabela' }).click();
+	await expect(page.getByTestId('tabela-estados').locator('tbody tr')).toHaveCount(agregados.uf_pares.length);
+
+	await page.locator('[data-testid="uf-rede"][data-chave="SP"]').click();
+	await expect(page).toHaveURL(/uf=SP/);
+	const iSp = afiliacoes.dicionarios.uf.indexOf('SP');
+	const docsSp = new Set(afiliacoes.colunas.doc.filter((_: number, k: number) => afiliacoes.colunas.uf[k] === iSp));
+	await expect
+		.poll(() => page.evaluate(() => window.__redesDebug?.arestasNoRecorte))
+		.toBe(paresDeLugares((doc) => docsSp.has(doc)));
+	await expect(page.locator('[data-testid="uf-rede"][data-chave="SP"]')).toHaveAttribute('aria-pressed', 'true');
+	// as outras UFs continuam botões, para somar ao recorte
+	await expect(page.locator('[data-testid="uf-rede"][data-chave="RJ"]')).toHaveAttribute('aria-pressed', 'false');
+	expect(problemas).toEqual([]);
+});
+
+test('citações: o cânone do gabarito, a nota da cobertura e a matriz entre macrotemas', async ({ page }) => {
+	const problemas = vigiar(page);
+	const citacoes = ler('citacoes.json');
+	await page.goto(`${url('RAIZ')}#/redes?rede=citacoes`);
+	const d = await esperarRedes(page, 'citacoes');
+	expect(d.nos).toBe(citacoes.canone.length);
+	expect(d.arestas).toBe(citacoes.internas.de.length);
+	expect(d.arestasNoRecorte).toBe(citacoes.internas.de.length);
+	const obras = page.getByTestId('obra');
+	await expect(obras).toHaveCount(Math.min(30, agregados.canone_n.length));
+	const ns = await obras.evaluateAll((els) => els.map((e) => Number(e.getAttribute('data-n'))));
+	expect(ns).toEqual([...agregados.canone_n].sort((x: number, y: number) => y - x).slice(0, 30));
+	const nota = page.getByTestId('nota-cobertura');
+	await expect(nota).toContainText('sem DOI');
+	await expect(nota).toContainText(inteiro(citacoes.cobertura.com_referencias));
+	// a matriz é a do Python
+	const celulas = await page.getByTestId('celula-fluxo').evaluateAll((els) =>
+		els.map((e) => [Number(e.getAttribute('data-de')), Number(e.getAttribute('data-para')), Number(e.getAttribute('data-n'))])
+	);
+	expect(celulas).toHaveLength(citacoes.fluxo_macrotemas.length ** 2);
+	for (const [i, j, n] of celulas) expect(n).toBe(citacoes.fluxo_macrotemas[i][j]);
+	// com um período, só as citações com as duas pontas nele
+	await page.goto(`${url('RAIZ')}#/redes?rede=citacoes&anos=2018-2025`);
+	await esperarRedes(page, 'citacoes');
+	const dentro = (doc: number) => anoDoDoc[doc] >= 2018 && anoDoDoc[doc] <= 2025;
+	const esperadas = citacoes.internas.de.filter((de: number, k: number) => dentro(de) && dentro(citacoes.internas.para[k])).length;
+	await expect.poll(() => page.evaluate(() => window.__redesDebug?.arestasNoRecorte)).toBe(esperadas);
+	await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' });
+	await page.screenshot({ path: join(TELAS, 'redes-citacoes-prancha-1440x900.png'), fullPage: true });
+	expect(problemas).toEqual([]);
+});
+
+test('o site publicado também abre as redes', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('PUBLICADO')}#/redes`);
+	await expect(h1(page)).toHaveText('Redes');
+	const d = await esperarRedes(page, 'coautoria');
+	expect(d.nos).toBeGreaterThan(0);
+	await page.getByTestId('rede-citacoes').click();
+	await esperarRedes(page, 'citacoes');
+	await expect(page.getByTestId('obra').first()).toBeVisible();
+	expect(problemas).toEqual([]);
+});
+
+test('celular (375 px): sem rolagem horizontal em nenhuma rede', async ({ page }) => {
 	await page.setViewportSize({ width: 375, height: 812 });
 	for (const [rota, modo] of [
 		['#/redes?no=p0001', 'coautoria'],
-		['#/redes?rede=instituicoes', 'instituicoes']
+		['#/redes?rede=instituicoes', 'instituicoes'],
+		['#/redes?rede=estados', 'estados'],
+		['#/redes?rede=citacoes', 'citacoes']
 	]) {
 		await page.goto(`${url('RAIZ')}${rota}`);
 		await esperarRedes(page, modo);
@@ -227,4 +324,13 @@ test('projeto vazio: estado vazio, sem pedir arquivos ausentes', async ({ page }
 	await expect(page.getByText('Este projeto ainda não tem redes.')).toBeVisible();
 	await expect(page.locator('code', { hasText: 'mapa redes' }).first()).toBeVisible();
 	expect(pedidos.filter((p) => p.endsWith('.json') && !p.endsWith('manifesto.json'))).toEqual([]);
+});
+
+test('a Ajuda explica como ler as redes', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/ajuda`);
+	const secao = page.getByTestId('ajuda-redes');
+	await expect(secao.getByRole('heading', { name: 'Como ler as redes' })).toBeVisible();
+	await expect(secao).toContainText('1/(n−1)');
+	await expect(secao).toContainText('agrupamentos automáticos');
+	await expect(secao).toContainText('favorece o que tem DOI');
 });

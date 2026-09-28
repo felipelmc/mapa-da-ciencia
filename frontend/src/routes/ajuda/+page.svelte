@@ -130,6 +130,16 @@
 				macrotema mais comum, nunca o nome de uma pessoa. O desenho é o do corpus inteiro: o recorte não move nada,
 				só apaga quem não tem documento nele. Clique num nó, ou busque pelo nome, para ver os documentos dele.
 			</p>
+			<p>
+				Nos <strong>estados</strong>, cada arco liga duas UFs (ou uma UF e o <strong>exterior</strong>) que aparecem
+				nas afiliações do mesmo documento, com o mesmo peso fracionário; clique numa UF para pô-la no recorte.
+			</p>
+			<p>
+				O <strong>cânone</strong> são as obras de fora do corpus que os documentos mais citam. Ele só enxerga as
+				referências que o OpenAlex identificou: obras sem DOI ou fora do OpenAlex, como muitos livros e textos
+				antigos, ficam de fora, então a lista <strong>favorece o que tem DOI</strong>. A matriz das citações mostra
+				quais macrotemas citam quais, só entre documentos do recorte.
+			</p>
 		</section>
 
 		<section aria-labelledby="ajuda-links">
