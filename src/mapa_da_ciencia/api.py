@@ -440,9 +440,16 @@ class Painel:
 
 class _SemCancelamento(logging.Filter):
     """No `parar()`, as conexões ainda abertas (a página que acompanha uma etapa) são canceladas depois de 1 s: o
-    cancelamento é o esperado, e o *traceback* dele cairia na célula do notebook como um erro."""
+    cancelamento é o esperado, e o *traceback* dele cairia na célula do notebook como um erro. Só vale enquanto o
+    servidor sai; fora disso, um cancelamento é um erro como outro qualquer."""
+
+    def __init__(self, servidor: Any) -> None:
+        super().__init__()
+        self._servidor = servidor
 
     def filter(self, registro: logging.LogRecord) -> bool:
+        if not self._servidor.should_exit:
+            return True
         erro = registro.exc_info[1] if registro.exc_info else None
         while isinstance(erro, BaseExceptionGroup) and len(erro.exceptions) == 1:
             erro = erro.exceptions[0]
@@ -490,9 +497,6 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
         servidor = uvicorn.Server(
             uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning", timeout_graceful_shutdown=1)
         )
-        registro = logging.getLogger("uvicorn.error")  # depois do Config, que refaz a configuração dos logs
-        if not any(isinstance(f, _SemCancelamento) for f in registro.filters):
-            registro.addFilter(_SemCancelamento())
     except BaseException:
         if trava is not None:
             trava.close()
@@ -500,9 +504,13 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
 
     def rodar() -> None:
         # a trava vive com a thread do servidor: só é solta quando ele sai (e não quando o `Painel` é descartado)
+        registro = logging.getLogger("uvicorn.error")  # depois do Config, que refaz a configuração dos logs
+        filtro = _SemCancelamento(servidor)
+        registro.addFilter(filtro)
         try:
             servidor.run()
         finally:
+            registro.removeFilter(filtro)
             if trava is not None:
                 trava.close()
 

@@ -140,3 +140,25 @@ def test_parar_nao_espera_uma_conexao_que_nao_termina(tmp_path, monkeypatch):
     finally:
         conexao.close()
         logging.getLogger("uvicorn.error").removeHandler(guardar)
+
+
+def test_o_filtro_do_cancelamento_so_vale_enquanto_o_servidor_sai():
+    """Fora do `parar()`, um cancelamento continua no log (e um erro qualquer, sempre)."""
+    import asyncio
+    import types
+
+    from mapa_da_ciencia.api import _SemCancelamento
+
+    servidor = types.SimpleNamespace(should_exit=False)
+    filtro = _SemCancelamento(servidor)
+
+    def registro(erro: BaseException) -> logging.LogRecord:
+        return logging.LogRecord(
+            "uvicorn.error", logging.ERROR, __file__, 1, "Exception in ASGI application", None, (type(erro), erro, None)
+        )
+
+    assert filtro.filter(registro(asyncio.CancelledError()))
+    servidor.should_exit = True
+    assert not filtro.filter(registro(asyncio.CancelledError()))
+    assert not filtro.filter(registro(BaseExceptionGroup("grupo", [asyncio.CancelledError()])))
+    assert filtro.filter(registro(ValueError("de verdade")))
