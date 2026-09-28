@@ -156,12 +156,23 @@ test('o CSV sai com números crus, que o R e o pandas leem sem limpeza', async (
 	}
 });
 
-test('uma figura sem gráfico em SVG só exporta CSV', async ({ page }) => {
-	await page.goto(`${url('RAIZ')}#/classificacao`);
-	const f = page.getByTestId('figura-cruzamento');
-	await f.getByTestId('abrir-exportar').click();
-	await expect(f.getByLabel('SVG')).toBeDisabled();
-	await expect(f.getByLabel('CSV (dados)')).toBeEnabled();
+test('uma figura sem gráfico em SVG só exporta CSV, já escolhido, e o primeiro clique baixa', async ({ page }) => {
+	// o cruzamento é uma tabela; as tendências têm só sparklines (pequenas demais para exportar como gráfico)
+	for (const [rota, figura] of [
+		['/classificacao', 'cruzamento'],
+		['/topicos', 'tendencias']
+	]) {
+		await page.goto(`${url('RAIZ')}#${rota}`);
+		const f = page.getByTestId(`figura-${figura}`);
+		await f.getByTestId('abrir-exportar').click();
+		await expect(f.getByLabel('SVG')).toBeDisabled();
+		await expect(f.getByLabel('PNG')).toBeDisabled();
+		await expect(f.getByLabel('CSV (dados)')).toBeChecked();
+		const download = page.waitForEvent('download', { timeout: 5000 });
+		await f.getByTestId('baixar-figura').click();
+		expect((await download).suggestedFilename()).toMatch(/\.csv$/);
+		await expect(f.getByRole('alert')).toHaveCount(0);
+	}
 });
 
 test('modo apresentação: P esconde o trilho e as barras, Esc volta', async ({ page }) => {

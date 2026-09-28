@@ -6,7 +6,18 @@
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { filtrosDaPagina } from '$lib/estado/filtros';
 	import { formatarPeriodo } from '$lib/formato';
-	import { baixar, larguraPx, montarSvg, nomeDeArquivo, paraCsv, paraPng, PRESETS, type DadosCsv, type Formato } from './figura';
+	import {
+		baixar,
+		graficoDe,
+		larguraPx,
+		montarSvg,
+		nomeDeArquivo,
+		paraCsv,
+		paraPng,
+		PRESETS,
+		type DadosCsv,
+		type Formato
+	} from './figura';
 
 	let {
 		figura,
@@ -31,7 +42,15 @@
 	let preset = $state(PRESETS[1].id);
 	let erro = $state<string | null>(null);
 	let trabalhando = $state(false);
-	const temGrafico = $derived(!!figura?.querySelector('.grafico svg'));
+	// O mesmo critério da exportação (`graficoDe`: um SVG de 200 px ou mais, não as sparklines), medido ao abrir,
+	// porque o tamanho na tela não é reativo. Sem gráfico, o CSV já vem escolhido.
+	let temGrafico = $state(false);
+	function alternar() {
+		aberto = !aberto;
+		if (!aberto) return;
+		temGrafico = !!figura && graficoDe(figura) !== null;
+		if (!temGrafico) formato = 'csv';
+	}
 
 	function recorteEmPalavras(): string {
 		const f = filtrosDaPagina();
@@ -74,7 +93,7 @@
 </script>
 
 <div class="exportar">
-	<button type="button" class="abrir" aria-expanded={aberto} onclick={() => (aberto = !aberto)} data-testid="abrir-exportar">
+	<button type="button" class="abrir" aria-expanded={aberto} onclick={alternar} data-testid="abrir-exportar">
 		Exportar
 	</button>
 	{#if aberto}
