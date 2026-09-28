@@ -452,7 +452,7 @@
 		border: 1px dashed var(--linha-forte);
 		border-radius: 999px;
 		font-size: 0.72rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.juri {
