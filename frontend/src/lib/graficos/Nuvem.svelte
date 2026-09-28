@@ -7,6 +7,7 @@
 	 * numa fila, para um filtro não atropelar outro durante o play da linha do tempo.
 	 */
 	import { onMount } from 'svelte';
+	import { rota } from '$lib/estado/url';
 	import type criarGrafico from 'regl-scatterplot';
 	import { escalaLinear } from './escala';
 
@@ -58,6 +59,8 @@
 	let canvas: HTMLCanvasElement;
 	let grafico: Grafico | null = null; // fora do $state: o Svelte não deve observar o objeto do WebGL
 	let pronto = $state(false);
+	/** O motivo, quando o mapa não consegue desenhar (sem WebGL, por exemplo): aparece um aviso no lugar dele. */
+	let falha = $state<string | null>(null);
 	let fila: Promise<unknown> = Promise.resolve();
 	let aplicandoSelecao = false;
 
@@ -208,6 +211,7 @@
 				observador.observe(pai);
 			} catch (e) {
 				debug().erro = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+				falha = debug().erro;
 				console.error('[mapa] falha ao desenhar', e);
 			}
 		})();
@@ -270,6 +274,18 @@
 </script>
 
 <canvas bind:this={canvas} class="nuvem" class:laco={modoLaco} data-testid="canvas-mapa" aria-hidden="true"></canvas>
+{#if falha}
+	<div class="falha" role="alert" data-testid="mapa-sem-webgl">
+		<p><strong>O mapa não conseguiu desenhar neste navegador.</strong></p>
+		<p>
+			Ele usa WebGL, que parece desligado ou indisponível (numa máquina virtual, num navegador antigo ou com a
+			aceleração gráfica desativada). As outras vistas funcionam sem ele: <a href={rota('/topicos')}>Tópicos</a>,
+			<a href={rota('/classificacao')}>Classificação</a>, <a href={rota('/geografia')}>Geografia</a> e
+			<a href={rota('/redes')}>Redes</a>.
+		</p>
+		<p class="detalhe">Detalhe: {falha}</p>
+	</div>
+{/if}
 
 <style>
 	.nuvem {
@@ -285,5 +301,28 @@
 
 	.nuvem.laco {
 		cursor: crosshair;
+	}
+
+	.falha {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		align-content: center;
+		justify-items: start;
+		gap: 0.4rem;
+		max-width: 36rem;
+		margin: auto;
+		padding: 1.5rem;
+		color: var(--texto-suave);
+	}
+
+	.falha p {
+		margin: 0;
+	}
+
+	.falha .detalhe {
+		font-family: var(--fonte-mono);
+		font-size: 0.75rem;
+		color: var(--texto-fraco);
 	}
 </style>

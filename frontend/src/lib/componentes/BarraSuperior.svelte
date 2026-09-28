@@ -145,6 +145,8 @@
 
 	@media (max-width: 820px) {
 		.barra {
+			/* no celular, só a barra do recorte gruda (as duas juntas tomariam um sétimo da tela) */
+			position: static;
 			padding: 0.6rem 1rem;
 			gap: 0.75rem;
 		}

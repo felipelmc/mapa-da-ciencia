@@ -338,6 +338,10 @@
 	}
 
 	@media (max-width: 820px) {
+		.recorte {
+			top: 0;
+		}
+
 		.resumo {
 			display: block;
 			width: 100%;

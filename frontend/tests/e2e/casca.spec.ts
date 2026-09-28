@@ -525,3 +525,53 @@ test('no celular, o "Baixar" da última figura não fica embaixo da barra de nav
 	expect(caixa.x + caixa.width).toBeLessThanOrEqual(375);
 	await contexto.close();
 });
+
+test('um "%" solto no endereço não deixa a página em branco', async ({ page }) => {
+	const problemas = vigiar(page);
+	for (const [rota, titulo] of [
+		['#/mapa?busca=50%', 'Mapa'],
+		['#/topicos?busca=%FF', 'Tópicos'],
+		['#/redes?no=%ZZ', 'Redes'],
+		['#/topicos?busca=S%C3%A3o%', 'Tópicos']
+	] as const) {
+		await page.goto(`${url('RAIZ')}${rota}`);
+		await expect(h1(page), rota).toHaveText(titulo);
+	}
+	// um link bem formado com %25 abre, e recarregar também (o endereço reescrito tinha o % solto)
+	await page.goto(`${url('RAIZ')}#/topicos?busca=100%25`);
+	await expect(h1(page)).toHaveText('Tópicos');
+	await page.reload();
+	await expect(h1(page)).toHaveText('Tópicos');
+	expect(problemas.filter((p) => p.includes('URI malformed'))).toEqual([]);
+});
+
+test('sem WebGL, o mapa avisa (e aponta as outras vistas), em vez de ficar em branco', async ({ page }) => {
+	await page.addInitScript(() => {
+		const original = HTMLCanvasElement.prototype.getContext;
+		// @ts-expect-error: a assinatura sobrecarregada do getContext
+		HTMLCanvasElement.prototype.getContext = function (tipo: string, ...resto: unknown[]) {
+			return /webgl/.test(tipo) ? null : original.call(this, tipo, ...resto);
+		};
+	});
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await expect(page.getByTestId('mapa-sem-webgl')).toContainText('O mapa não conseguiu desenhar');
+	await expect(page.getByTestId('mapa-sem-webgl').getByRole('link', { name: 'Tópicos' })).toBeVisible();
+});
+
+test('no celular, o painel de exportação da primeira figura abre à vista, e só a barra do recorte gruda', async ({ browser }) => {
+	const contexto = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+	const page = await contexto.newPage();
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(h1(page)).toHaveText('Tópicos');
+	await expect(page.locator('[data-testid^="figura-"]:not([data-pronto])')).toHaveCount(0);
+	const primeiro = page.getByTestId('abrir-exportar').first();
+	await primeiro.scrollIntoViewIfNeeded();
+	await primeiro.click();
+	await expect.poll(() => clicavel(page.getByTestId('baixar-figura'))).toBe(true);
+	await page.keyboard.press('Escape');
+	// rolando, a barra do topo sai da tela e a do recorte fica no alto, sem as duas se sobreporem
+	await page.evaluate(() => scrollTo(0, 1200));
+	const topo = (await page.locator('header.barra').boundingBox())!;
+	expect(topo.y + topo.height).toBeLessThanOrEqual(1);
+	await contexto.close();
+});

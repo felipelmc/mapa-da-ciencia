@@ -186,7 +186,9 @@ code {
 	}
 
 	.surgir {
-		animation: surgir 320ms var(--curva) both;
+		/* `backwards`, e não `both`: terminada a animação, a vista não guarda um transform, que criaria um contexto de
+		   empilhamento (o painel de exportação ficava embaixo da barra do celular) e prenderia o position: fixed */
+		animation: surgir 320ms var(--curva) backwards;
 	}
 }
 
