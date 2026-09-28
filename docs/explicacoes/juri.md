@@ -65,7 +65,7 @@ supervisor é um modelo da Anthropic chamado pela API: aí os títulos e resumos
 
 ## Limitações
 
-- Três modelos locais de famílias diferentes discordam menos do que se esperaria de três pessoas: **concordar não é
+- Modelos locais (no piloto, dois Qwen e um Gemma) discordam menos do que se esperaria de três pessoas: **concordar não é
   acertar**. A auditoria estima o erro entre os unânimes.
 - A deliberação pode levar à conformidade (um modelo muda só porque os outros dois concordam). O relatório conta as
   mudanças na direção da referência e contra ela.

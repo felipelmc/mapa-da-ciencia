@@ -53,13 +53,14 @@ mínimo). O rótulo de cada comunidade são os **dois tópicos mais frequentes**
 id): uma comunidade não recebe nome de pessoa. Comunidades são um agrupamento automático, e não grupos de pesquisa
 declarados.
 
-O agregado das comunidades é estável, mas a **composição** de cada uma não é tanto: no piloto, trocar a semente do
+O agregado das comunidades é estável, mas a **composição** de cada uma não é tanto: numa cópia do piloto auditada,
+trocar a semente do
 Louvain (1 a 20) mantinha o número de comunidades numeradas (37 a 40) e a modularidade (0,956 a 0,958), mas quatro
 das dez maiores mudavam bastante de membros (Jaccard mediano de 0,40 a 0,77 com a comunidade mais parecida), e somar
 os pesos arredondados a seis casas, em vez dos exatos, renumerava as comunidades e mudava de grupo 21 das 3.021
 pessoas com coautor. Por isso os pesos são somados como frações exatas, e a semente é fixa: o mesmo projeto dá
 sempre as mesmas comunidades, mas elas são uma leitura possível, e não a única. Os dois
-tópicos do rótulo cobrem, em geral, de um quinto a metade dos artigos de uma comunidade de coautoria; nas de
+tópicos do rótulo cobrem, em geral, de um terço a pouco mais da metade dos artigos de uma comunidade de coautoria; nas de
 instituições, bem menos (as instituições grandes publicam de tudo). E a maioria das pessoas com coautor (59% no
 piloto) está em grupos menores do que o mínimo, fora das comunidades numeradas.
 
@@ -96,7 +97,7 @@ As referências vêm do OpenAlex (`referenced_works`), em lotes de 100 obras por
 
 - **O cânone e as citações se apoiam em cerca de metade das referências.** Nos artigos casados com o OpenAlex que
   listam referências na ArticleMeta (também os que não têm nenhuma resolvida), o OpenAlex resolve a mediana de 50%
-  delas por artigo (no piloto, 52% no total, e menos nos anos mais recentes); a nota do cânone traz o número do
+  delas por artigo (no piloto, 52% no total, e menos em 2025); a nota do cânone traz o número do
   projeto. Ficam de fora sobretudo livros, capítulos, teses e textos em português
   sem DOI. As referências da ArticleMeta quase nunca trazem DOI (2,2% no campo próprio e 5,3% em qualquer campo, no
   piloto; de 0,3% a 17% conforme a revista), e o casamento aproximado por título fica para uma versão futura.

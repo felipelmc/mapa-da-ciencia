@@ -55,13 +55,13 @@ três sessões novas do Claude Opus 5.5 pelo protocolo por arquivos, cada uma s�
 | `brasil_como_caso` | 0,93 | 0,95 | 0,79 | 0,95 | 0,96 (0,92–0,99) | p = 0,375 |
 | `subarea` | 0,63 | 0,74 | 0,58 | 0,66 | 0,69 (0,62–0,75) | p = 0,027 (16 × 5) |
 
-- **O júri tira a `tecnica_principal` do vermelho:** de 0,37 para 0,61, e o McNemar mostra que a diferença não é
+- **O júri leva a `tecnica_principal` de 0,37 para 0,61**, e o McNemar mostra que a diferença não é
   acaso (47 documentos que só o júri acerta, 3 que só o modelo principal acerta). Em `subarea`, 0,63 → 0,69.
 - **Mas o melhor membro sozinho vai tão bem quanto:** o `gemma4:12b` tem o kappa mais alto em quatro das cinco
   variáveis (0,65 na técnica). O júri chega perto dele sem saber de antemão qual modelo é o melhor, o que só a
   referência revela; sem referência, o júri é a aposta mais segura, e com ela vale conferir se um membro sozinho
   não basta.
-- **Deliberação:** muda a decisão em 80 das 322 decisões deliberadas. Os votos revistos vão mais para a referência
+- **Deliberação:** das 331 decisões deliberadas, 322 chegaram a uma maioria, e em 80 delas a decisão mudou. Os votos revistos vão mais para a referência
   do que contra ela no `qwen3.5:9b` (71 × 20) e no `qwen3.5:4b` (38 × 9), mas não no `gemma4:12b` (39 × 43): o membro
   mais forte às vezes cede à maioria dos outros dois, que são da mesma família (Qwen). Na técnica, os dois Qwen
   votaram juntos contra o Gemma em 39 decisões da rodada 1, e o Gemma concordava com a referência em 29 delas;

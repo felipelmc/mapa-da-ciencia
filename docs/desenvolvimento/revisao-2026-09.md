@@ -81,23 +81,24 @@ de alto para médio) e acharam dois problemas novos nos dados.
 
 ## Os incrementos da v2.0 passaram pelo mesmo processo
 
-Antes de cada merge, três validadores independentes (código, metodologia e uso) revisaram os incrementos:
+Antes de cada merge, os incrementos passaram por validadores independentes:
 
-- **Júri de modelos:** o revisor de código achou 13 problemas (entre eles, uma resposta antiga do supervisor que caía
+- **Júri de modelos:** duas revisões de código (a segunda conferiu também o relatório do piloto contra os dados). A
+  primeira achou 13 problemas (entre eles, uma resposta antiga do supervisor que caía
   sobre candidatos novos e um limite de gasto que a API podia ultrapassar); corrigidos, e a re-revisão achou mais 9,
   também corrigidos.
-- **Redes:** os três validadores reprovaram a primeira versão, e cada um achou, de forma independente, os mesmos dois
-  bugs que os testes com o exemplo sintético escondiam: os ids das instituições diferentes entre dois arquivos do
-  contrato e a matriz de fluxo que usava o id do macrotema como posição. O auditor metodológico recalculou todos os
+- **Redes:** três validadores (código, metodologia e uso). O revisor de código e o testador de uso reprovaram a
+  primeira versão, e o auditor metodológico a aprovou com ressalvas; os três acharam, cada um por conta própria, a
+  matriz de fluxo que usava o id do macrotema como posição, e dois deles os ids das instituições diferentes entre dois
+  arquivos do contrato. Os testes com o exemplo sintético escondiam os dois bugs. O auditor metodológico recalculou todos os
   números do zero, e o revisor de código recuperou 58 dos 66 ORCIDs a partir dos ids publicados das pessoas (um hash
   sem segredo). As correções passaram por mais duas rodadas dos três validadores, e a última aprovou com ressalvas
   baixas: nenhuma fusão errada de pessoas em 80 julgadas à mão.
 
 ## Uma decisão na rodada final do piloto
 
-As correções de privacidade tiraram dos textos do corpus cinco e-mails que a coleta da 1.0.1 deixava passar (nenhum
-chegou ao site publicado). Com isso, quatro resumos mudaram, e refazer os tópicos com eles mudaria o agrupamento
-inteiro (62 tópicos em vez de 57, e 27 tópicos com mais de 5 documentos de diferença): o HDBSCAN é sensível a pequenas
+A coleta com o código novo mudou quatro resumos que vêm do OpenAlex (a limpeza de texto nova tira deles uma vírgula
+final), e refazer os tópicos com eles mudaria o agrupamento inteiro (62 tópicos em vez de 57, e 27 tópicos com mais de 5 documentos de diferença): o HDBSCAN é sensível a pequenas
 mudanças na entrada. Para a 2.0.0, os tópicos do piloto continuam os da 1.0.1, calculados com os textos anteriores
 (os mesmos embeddings do cache), com os rótulos corrigidos à mão. O corpus publicado já é o novo, sem os e-mails. Um
 recálculo dos tópicos fica para quando o piloto for coletado de novo.
