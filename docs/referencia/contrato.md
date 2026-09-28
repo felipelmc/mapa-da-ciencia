@@ -590,9 +590,20 @@ O júri de modelos locais na amostra: estágios, deliberação, concordância po
 | `documentos` | inteiro | **obrigatório** |  |
 | `etapas` | mapa de texto para mapa de texto para inteiro | **obrigatório** | Variável → estágio → decisões. |
 | `virou` | mapa de texto para inteiro | vazio | Variável → decisões que a deliberação mudou. |
-| `concordancia_por_etapa` | mapa de texto para mapa de texto para inteiro | vazio | Estágio → {n, acertos} contra a referência. |
+| `concordancia_por_etapa` | mapa de texto para mapa de texto para inteiro | vazio | Estágio → {n, acertos} contra a referência, com a decisão do júri sem o supervisor (no estágio `sem_maioria`, o voto do primeiro membro). |
+| `concordancia_supervisor` | [ConcordanciaSupervisor](#concordanciasupervisor) ou vazio | vazio | Nas decisões sem maioria arbitradas, a concordância com a escolha do supervisor. |
 | `deliberacao` | mapa de texto para mapa de texto para inteiro | vazio | Membro → {votos, mudou, para_referencia, contra}: votos revistos na deliberação e a direção. |
 | `auditoria` | [AuditoriaJuri](#auditoriajuri) ou vazio | vazio | A conferência, pelo supervisor, de uma amostra das decisões unânimes do júri. |
+
+### ConcordanciaSupervisor
+
+A concordância com a referência nas decisões sem maioria que o supervisor arbitrou, com a escolha dele.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `n` | inteiro | **obrigatório** |  |
+| `acertos` | inteiro | **obrigatório** |  |
+| `circular` | sim/não | **obrigatório** | O supervisor e a referência são da mesma família: não é medida independente. |
 
 ### AuditoriaJuri
 

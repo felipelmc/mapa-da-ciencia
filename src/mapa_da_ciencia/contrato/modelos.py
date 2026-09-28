@@ -574,6 +574,14 @@ class AuditoriaJuri(_Base):
     por_variavel: dict[str, tuple[int, int]] = Field(default_factory=dict, description="Variável → (erros, n).")
 
 
+class ConcordanciaSupervisor(_Base):
+    """A concordância com a referência nas decisões sem maioria que o supervisor arbitrou, com a escolha dele."""
+
+    n: int
+    acertos: int
+    circular: bool = Field(description="O supervisor e a referência são da mesma família: não é medida independente.")
+
+
 class ResumoJuri(_Base):
     """O júri de modelos locais na amostra: estágios, deliberação, concordância por estágio e auditoria."""
 
@@ -585,7 +593,12 @@ class ResumoJuri(_Base):
     etapas: dict[str, dict[str, int]] = Field(description="Variável → estágio → decisões.")
     virou: dict[str, int] = Field(default_factory=dict, description="Variável → decisões que a deliberação mudou.")
     concordancia_por_etapa: dict[str, dict[str, int]] = Field(
-        default_factory=dict, description="Estágio → {n, acertos} contra a referência."
+        default_factory=dict,
+        description="Estágio → {n, acertos} contra a referência, com a decisão do júri sem o supervisor (no estágio "
+        "`sem_maioria`, o voto do primeiro membro).",
+    )
+    concordancia_supervisor: ConcordanciaSupervisor | None = Field(
+        None, description="Nas decisões sem maioria arbitradas, a concordância com a escolha do supervisor."
     )
     deliberacao: dict[str, dict[str, int]] = Field(
         default_factory=dict,

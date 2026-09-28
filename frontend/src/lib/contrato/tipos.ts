@@ -787,13 +787,17 @@ export interface Divergencia {
 export interface ResumoJuri {
 	auditoria?: AuditoriaJuri | null;
 	/**
-	 * Estágio → {n, acertos} contra a referência.
+	 * Estágio → {n, acertos} contra a referência, com a decisão do júri sem o supervisor (no estágio `sem_maioria`, o voto do primeiro membro).
 	 */
 	concordancia_por_etapa?: {
 		[k: string]: {
 			[k: string]: number;
 		};
 	};
+	/**
+	 * Nas decisões sem maioria arbitradas, a concordância com a escolha do supervisor.
+	 */
+	concordancia_supervisor?: ConcordanciaSupervisor | null;
 	/**
 	 * Membro → {votos, mudou, para_referencia, contra}: votos revistos na deliberação e a direção.
 	 */
@@ -846,6 +850,17 @@ export interface AuditoriaJuri {
 		[k: string]: [number, number];
 	};
 	taxa: number | null;
+}
+/**
+ * A concordância com a referência nas decisões sem maioria que o supervisor arbitrou, com a escolha dele.
+ */
+export interface ConcordanciaSupervisor {
+	acertos: number;
+	/**
+	 * O supervisor e a referência são da mesma família: não é medida independente.
+	 */
+	circular: boolean;
+	n: number;
 }
 /**
  * Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável.
