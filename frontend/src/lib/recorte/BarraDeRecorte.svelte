@@ -108,6 +108,16 @@
 		if (menuRevistas) menuRevistas.open = false;
 		revistasAberto = false;
 	}
+	// a lista nasce alinhada à esquerda do botão; perto da borda direita da tela, ela recua para caber
+	let listaRevistas = $state<HTMLUListElement>();
+	let recuo = $state(0);
+	function aoAlternarRevistas() {
+		revistasAberto = !!menuRevistas?.open;
+		if (!revistasAberto || !menuRevistas || !listaRevistas) return;
+		const inicio = menuRevistas.getBoundingClientRect().left;
+		const limite = document.documentElement.clientWidth - 8;
+		recuo = Math.max(Math.min(0, limite - (inicio + listaRevistas.offsetWidth)), 8 - inicio);
+	}
 	function teclaRevistas(e: KeyboardEvent) {
 		if (e.key !== 'Escape' || !menuRevistas?.open) return;
 		fecharRevistas();
@@ -145,11 +155,11 @@
 				anos={filtros.anos}
 				aoMudar={(anos, substituir) => mudar({ anos }, !!substituir)}
 			/>
-			<details class="revistas" bind:this={menuRevistas} ontoggle={() => (revistasAberto = !!menuRevistas?.open)}>
+			<details class="revistas" bind:this={menuRevistas} ontoggle={aoAlternarRevistas}>
 				<summary onclick={() => (revistasAberto = !menuRevistas?.open)}>
 					Revistas{filtros.revistas.length ? ` (${filtros.revistas.length})` : ''}
 				</summary>
-				<ul>
+				<ul bind:this={listaRevistas} style:left="{recuo}px">
 					{#each aberto.tabela.revistas as id (id)}
 						<li>
 							<label>
@@ -242,7 +252,8 @@
 		top: calc(100% + 0.35rem);
 		left: 0;
 		z-index: 30;
-		min-width: 18rem;
+		min-width: min(18rem, calc(100vw - 16px));
+		max-width: calc(100vw - 16px);
 		max-height: 60vh;
 		overflow: auto;
 		margin: 0;

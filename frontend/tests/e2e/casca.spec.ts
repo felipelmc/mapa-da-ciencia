@@ -322,6 +322,7 @@ test.describe('nenhuma rota rola de lado', () => {
 	const LARGURAS = [
 		{ nome: 'celular', viewport: { width: 375, height: 812 }, isMobile: true },
 		{ nome: 'tablet', viewport: { width: 768, height: 1024 }, isMobile: false },
+		{ nome: 'tablet deitado', viewport: { width: 900, height: 700 }, isMobile: false },
 		{ nome: 'notebook', viewport: { width: 1024, height: 768 }, isMobile: false }
 	];
 	const ROTAS = ['/', '/mapa', '/topicos', '/geografia', '/classificacao', '/validacao', '/ajuda', '/projeto'];
@@ -358,6 +359,18 @@ test.describe('nenhuma rota rola de lado', () => {
 							.poll(() => transbordo(page, l.viewport.width), { message: 'mapa com o recorte aberto' })
 							.toBeLessThanOrEqual(0);
 					}
+				}
+				// nas vistas com a barra do recorte, o menu das revistas aberto também cabe
+				if (await page.getByTestId('barra-recorte').count()) {
+					const menu = page.locator('details.revistas');
+					if (!(await menu.isVisible())) {
+						await page.getByTestId('barra-recorte').getByRole('button', { name: /^Recorte/ }).click();
+					}
+					await menu.locator('summary').click();
+					await expect(menu.locator('ul')).toBeVisible();
+					await expect
+						.poll(() => transbordo(page, l.viewport.width), { message: `${r} com o menu das revistas aberto` })
+						.toBeLessThanOrEqual(0);
 				}
 				await contexto.close();
 			}

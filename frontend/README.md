@@ -245,7 +245,7 @@ Os testes cobrem:
 - o link de pular;
 - rota inexistente;
 - falha passageira de rede (o "Tentar de novo" abre a vista sem recarregar) e o arquivo das afiliações indisponível (só a Geografia falha);
-- tela estreita: nenhuma rota rola de lado a 375 px (celular emulado, com a barra de navegação na tela e o recorte do Mapa aberto), 768 e 1024 px;
+- tela estreita: nenhuma rota rola de lado a 375 px (celular emulado, com a barra de navegação na tela e o recorte do Mapa aberto), 768, 900 e 1024 px, também com o menu das revistas aberto;
 - projeto vazio, sem pedir arquivos ausentes;
 - no Mapa (`mapa.spec.ts`): o desenho dos pontos, contornos e rótulos pelo zoom, legenda, cor por revista, cartão pelo link e pelo clique, busca, laço pelo link e pelo mouse, play da linha do tempo, atalhos, o canvas que acompanha a janela, o modo apresentação e o painel recolhido, a lista da busca ao lado de uma legenda longa e, no celular, o painel e o cartão acima da barra de navegação.
 - na Geografia (`geografia.spec.ts`): o peso de cada UF igual ao gabarito do Python, o ranking pela instituição de maior peso, o Brasil fora da escala do mundo, o clique numa UF que vai para o recorte e dali para o Mapa, o teclado, "Ver como tabela", "Mostrar mais", a cobertura por ano (o aviso dos anos com muito peso sem afiliação) e o projeto vazio.
