@@ -38,7 +38,16 @@ from ..topicos.resultado import Resultado as ResultadoTopicos
 from ..topicos.resultado import assinatura_corpus, ler_atribuicoes
 from . import citacoes as cit
 from .desenho import desenhar
-from .grafos import EXTERIOR, colaboracao_por_ano, comunidades, grafo, macro_dominante, metricas, pares_ponderados
+from .grafos import (
+    EXTERIOR,
+    colaboracao_por_ano,
+    comunidades,
+    forcas,
+    grafo,
+    macro_dominante,
+    metricas,
+    pares_ponderados,
+)
 from .pessoas import ARQUIVO_PESSOAS, identificar, ler_correcoes
 
 PASTA = "redes"
@@ -284,7 +293,8 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
             tops = Counter(
                 topico_do_doc[d] for d in docs_c if topico_do_doc.get(d) is not None and topico_do_doc[d] >= 0
             )
-            principais = [t for t, _ in tops.most_common(3)]
+            # os mais frequentes; no empate, o de menor id (e não a ordem em que apareceram)
+            principais = [t for t, _ in sorted(tops.items(), key=lambda kv: (-kv[1], kv[0]))[:3]]
             linhas_com.append(
                 {
                     "rede": rede,
@@ -340,10 +350,7 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     pasta = projeto.dados / PASTA
     pasta.mkdir(parents=True, exist_ok=True)
     grau = Counter(x for par in arestas_p for x in par)
-    forca: dict[str, float] = defaultdict(float)
-    for (a, b), (peso, _) in arestas_p.items():
-        forca[a] += peso
-        forca[b] += peso
+    forca = forcas(autores_do_doc)
     n_docs = Counter(p for lista in autores_do_doc.values() for p in set(lista))
     linhas_p = [
         {
@@ -353,7 +360,7 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
             "via": p.via,
             "documentos": n_docs[p.publicado],
             "grau": grau.get(p.publicado, 0),
-            "forca": round(forca.get(p.publicado, 0.0), 6),
+            "forca": float(forca.get(p.publicado, 0)),
             "comunidade": com_p.get(p.publicado, -1),
             "x": pos_p.get(p.publicado, (None, None))[0],
             "y": pos_p.get(p.publicado, (None, None))[1],
@@ -361,12 +368,9 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
         for p in pessoas
     ]
     grau_i = Counter(x for par in arestas_i for x in par)
-    forca_i: dict[str, float] = defaultdict(float)
-    for (a, b), (peso, _) in arestas_i.items():
-        forca_i[a] += peso
-        forca_i[b] += peso
+    forca_i = forcas(inst_do_doc or {})
     linhas_i = [
-        {"id": i, "grau": grau_i[i], "forca": round(forca_i[i], 6), "comunidade": com_i.get(i, -1),
+        {"id": i, "grau": grau_i[i], "forca": float(forca_i[i]), "comunidade": com_i.get(i, -1),
          "x": pos_i[i][0], "y": pos_i[i][1]}
         for i in sorted(pos_i)
     ]  # fmt: skip

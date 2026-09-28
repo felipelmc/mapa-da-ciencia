@@ -24,7 +24,7 @@ from mapa_da_ciencia.llm.perfis import PERFIS
 from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.redes import citacoes as cit
 from mapa_da_ciencia.redes.desenho import desenhar
-from mapa_da_ciencia.redes.grafos import grafo, pares_ponderados
+from mapa_da_ciencia.redes.grafos import forcas, grafo, pares_ponderados
 from mapa_da_ciencia.redes.pessoas import CorrecoesPessoas, id_publicado, identificar
 from mapa_da_ciencia.redes.pipeline import gerar_redes, redes_em_dia
 from mapa_da_ciencia.segredos import segredo
@@ -39,6 +39,11 @@ def test_pesos_fracionarios():
     assert sum(p for p, _ in arestas.values()) == pytest.approx(3 / 2 + 2 / 2 + 2 / 2)
     forca = {x: sum(p for par, (p, _) in arestas.items() if x in par) for x in "abc"}
     assert forca == {"a": 2, "b": 3, "c": 2}  # documentos com coautor de cada um
+    # pesos exatos (sem arredondar a 6 casas) e a força como a contagem inteira de documentos com parceiro
+    quatro = pares_ponderados({"d1": ["a", "b", "c", "d"]})
+    assert quatro[("a", "b")] == (1 / 3, 1) and forcas({"d1": ["a", "b", "c", "d"], "d2": ["a"]}) == dict.fromkeys(
+        "abcd", 1
+    )
 
 
 def _doc(i: str, autores: list[tuple]) -> Documento:
@@ -448,6 +453,8 @@ def test_redes_de_ponta_a_ponta(projeto):
     # cada autoria aponta para um documento e uma pessoa que existem
     n_docs, n_pessoas = len(documentos.colunas.id), len(redes.pessoas.id)
     assert all(0 <= d < n_docs for d in redes.autorias.doc) and all(0 <= x < n_pessoas for x in redes.autorias.pessoa)
+    # a força gravada é um inteiro (documentos com coautor), sem resíduo de arredondamento
+    assert all(p["forca"] == int(p["forca"]) for p in ler_tabela(projeto.dados / "redes" / "pessoas.parquet"))
     # a força de cada pessoa é o número de documentos em que ela teve coautor
     por_doc: dict[int, set[int]] = {}
     for d, x in zip(redes.autorias.doc, redes.autorias.pessoa, strict=True):

@@ -974,7 +974,7 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
     )
     gabarito = {
         "arestas_coautoria": len(arestas),
-        "uf_pares": [(a, b, p, n) for (a, b), (p, n) in pares_ponderados(dict(lugares)).items()],
+        "uf_pares": [(a, b, round(p, 6), n) for (a, b), (p, n) in pares_ponderados(dict(lugares)).items()],
         "canone_n": [o.n for o in c.canone],
     }
     return redes, citacoes, gabarito

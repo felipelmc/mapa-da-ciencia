@@ -37,8 +37,17 @@ colaboração entre **estados** também, com as UFs distintas e `EX` para qualqu
 
 As comunidades são grupos de nós mais ligados entre si do que com o resto, achados pelo algoritmo de **Louvain**
 (com semente fixa, para dar sempre o mesmo resultado). Só as grandes ganham número (8 pessoas ou 5 instituições, no
-mínimo). O rótulo de cada comunidade são os **dois tópicos mais frequentes** nos artigos dela: uma comunidade não
-recebe nome de pessoa. Comunidades são um agrupamento automático, e não grupos de pesquisa declarados.
+mínimo). O rótulo de cada comunidade são os **dois tópicos mais frequentes** nos artigos dela (no empate, o de menor
+id): uma comunidade não recebe nome de pessoa. Comunidades são um agrupamento automático, e não grupos de pesquisa
+declarados.
+
+O agregado das comunidades é estável, mas a **composição** de cada uma não é tanto: no piloto, trocar a semente do
+Louvain (1 a 20) mantinha o número de comunidades (37 a 41) e a modularidade (0,958 a 0,959), mas algumas das dez
+maiores trocavam de 30% a 45% dos membros, e usar os pesos arredondados a seis casas, em vez dos exatos, mudava a
+comunidade de um terço das pessoas. Por isso os pesos são somados como frações exatas, e a semente é fixa. Os dois
+tópicos do rótulo cobrem, em geral, de um quinto a metade dos artigos de uma comunidade de coautoria; nas de
+instituições, bem menos (as instituições grandes publicam de tudo). E a maioria das pessoas com coautor (59% no
+piloto) está em grupos menores do que o mínimo, fora das comunidades numeradas.
 
 O desenho posiciona cada componente conectado à parte (`spring_layout`, semente 7), com tamanho proporcional ao
 número de nós, e empacota os componentes do maior para o menor. **A distância no desenho não é uma medida**: dois nós
