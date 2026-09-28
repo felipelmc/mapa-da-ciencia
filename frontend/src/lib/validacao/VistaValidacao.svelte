@@ -118,6 +118,16 @@
 	const parCircular = $derived(circular(ref, comp));
 	const juri = $derived(validacao.juri ?? null);
 	const ETAPAS_JURI = { unanime: 'Unânime', maioria: 'Maioria', deliberacao: 'Na deliberação', sem_maioria: 'Sem maioria' } as const;
+	const dadosJuri = $derived({
+		colunas: ['Variável', 'Unânime', 'Maioria', 'Na deliberação', 'Sem maioria', 'Mudou na deliberação'],
+		linhas: juri
+			? Object.entries(juri.etapas).map(([v, e]) => [
+					nomeVariavel(v),
+					...(['unanime', 'maioria', 'deliberacao', 'sem_maioria'] as const).map((k) => e[k] ?? 0),
+					juri.virou?.[v] ?? 0
+				])
+			: []
+	});
 	const linhasJuri = $derived(
 		juri
 			? Object.entries(juri.etapas).map(([v, e]) => [
@@ -315,7 +325,9 @@
 				resumo={resumoJuri}
 				colunas={['Variável', 'Unânime', 'Maioria', 'Na deliberação', 'Sem maioria', 'Mudou na deliberação']}
 				linhas={linhasJuri}
+				dados={dadosJuri}
 			>
+				<div class="rolagem-lateral">
 				<table class="metricas" data-testid="tabela-juri">
 					<thead>
 						<tr>
@@ -334,6 +346,7 @@
 						{/each}
 					</tbody>
 				</table>
+				</div>
 			</Figura>
 			{#if juri.referencia && Object.keys(juri.concordancia_por_etapa ?? {}).length}
 				<p class="creditos">
@@ -444,6 +457,7 @@
 
 	.juri {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr); /* a tabela rola na própria caixa, sem alargar a página no celular */
 		gap: 0.8rem;
 	}
 
