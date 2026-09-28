@@ -308,7 +308,7 @@ def classificar(
         },
         hash_codebook=resultado.hash_codebook,  # o do começo da etapa, mesmo que o arquivo mude no meio dela
     )
-    if principal and (gravou or resultado.a_parte):  # a versão à parte entra nas métricas do painel
+    if principal and gravou:  # a versão à parte não muda o contrato (ver `validacao.metricas.calcular`)
         resumo.avisos += exportar(projeto)
     return resumo
 

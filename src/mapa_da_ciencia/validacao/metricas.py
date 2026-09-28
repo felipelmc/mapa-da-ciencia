@@ -332,8 +332,10 @@ def _nome_participante(r: Resultado) -> str:
     return _nome_modelo(r.modelo) + (" (versão nova)" if r.a_parte else "")
 
 
-def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS) -> Validacao:
-    """As métricas da validação do projeto: a amostra guardada, as codificações e os modelos com o codebook atual."""
+def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS, versao_nova: bool = True) -> Validacao:
+    """As métricas da validação do projeto: a amostra guardada, as codificações e os modelos com o codebook atual.
+    Com `versao_nova=False` (o `validacao.json` do contrato, que vai para o site publicado), fica de fora a versão
+    à parte de um modelo, que ainda não substituiu o resultado completo."""
     amostra = va.ler(projeto)
     if amostra is None:
         raise ErroConfig("O projeto ainda não tem amostra. Rode `mapa validar amostra` primeiro.")
@@ -357,7 +359,7 @@ def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS) -> Validacao:
     modelos = []
     for r in resultados(pasta):
         nome = _nome_participante(r)
-        if r.hash_codebook != hash_cb or nome in tipos:
+        if r.hash_codebook != hash_cb or nome in tipos or (r.a_parte and not versao_nova):
             continue
         linhas = [
             linha for linha in ler_linhas(pasta, r.modelo, hash_cb, a_parte=r.a_parte) if linha["doc"] in na_amostra
