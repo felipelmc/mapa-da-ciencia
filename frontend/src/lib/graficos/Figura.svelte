@@ -1,11 +1,12 @@
 <script lang="ts">
 	/**
 	 * Moldura de um gráfico: título, frase-resumo (para quem não vê o gráfico, e para todo mundo), "Ver como
-	 * tabela", que mostra os mesmos números numa tabela embaixo do gráfico, e "Exportar" (SVG, PNG ou CSV). `pronto`
-	 * vira `data-pronto`, que os testes e as capturas esperam.
+	 * tabela", que mostra os mesmos números numa tabela embaixo do gráfico, e "Exportar" (SVG, PNG ou CSV, este com
+	 * os números crus de `dados`). `pronto` vira `data-pronto`, que os testes e as capturas esperam.
 	 */
 	import type { Snippet } from 'svelte';
 	import Exportar from '$lib/exportar/Exportar.svelte';
+	import type { DadosCsv } from '$lib/exportar/figura';
 
 	let {
 		titulo,
@@ -16,6 +17,7 @@
 		id,
 		children,
 		controles,
+		dados = null,
 		n = null
 	}: {
 		titulo: string;
@@ -26,6 +28,11 @@
 		id: string;
 		children: Snippet;
 		controles?: Snippet;
+		/**
+		 * Os números crus para o CSV (sem separador de milhar, ponto decimal, proporções como fração, intervalos em
+		 * duas colunas), separados das `linhas` formatadas da tabela da tela. Toda figura com números deve passá-los.
+		 */
+		dados?: DadosCsv | null;
 		/** Documentos no recorte, para o rodapé da figura exportada. */
 		n?: number | null;
 	} = $props();
@@ -53,7 +60,7 @@
 		>
 			{tabela ? 'Esconder a tabela' : 'Ver como tabela'}
 		</button>
-		<Exportar figura={elemento} {titulo} {colunas} {linhas} {n} />
+		<Exportar figura={elemento} {titulo} {colunas} {linhas} {dados} {n} />
 	</div>
 	{#if tabela}
 		<div class="rolagem" id="tabela-{id}">

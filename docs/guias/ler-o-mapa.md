@@ -40,7 +40,7 @@ O **Mapa** do painel mostra cada documento do corpus como um ponto. Esta página
 
 Acima do mapa fica a **barra do recorte**, a mesma das vistas Tópicos e Geografia. Ela mostra e controla o que está selecionado:
 
-- a **linha do tempo**, com o intervalo de anos e o **Play**, que passa ano a ano;
+- a **linha do tempo**, com o intervalo de anos e o botão **Tocar**, que passa ano a ano;
 - as **revistas** (um menu com uma caixa para cada revista);
 - os filtros ativos como etiquetas, cada uma com um × para tirar: tópicos (um macrotema inteiro aparece pelo nome dele), a busca, o laço, UFs, países e instituições;
 - quantos documentos estão no recorte;

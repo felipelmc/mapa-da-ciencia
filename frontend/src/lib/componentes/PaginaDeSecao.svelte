@@ -16,8 +16,15 @@
 	let {
 		secao,
 		vazio,
+		comTitulo = true,
 		children
-	}: { secao: Secao; vazio?: { titulo: string; sobretitulo: string }; children?: Snippet } = $props();
+	}: {
+		secao: Secao;
+		vazio?: { titulo: string; sobretitulo: string };
+		/** `false` quando a rota já põe o `<title>` (fora do carregamento, para o anúncio da navegação). */
+		comTitulo?: boolean;
+		children?: Snippet;
+	} = $props();
 
 	const { manifesto } = usarProjeto();
 
@@ -42,7 +49,7 @@
 </script>
 
 <svelte:head>
-	<title>{secao.rotulo} · mapa da ciência</title>
+	{#if comTitulo}<title>{secao.rotulo} · mapa da ciência</title>{/if}
 </svelte:head>
 
 <div class="pagina surgir">

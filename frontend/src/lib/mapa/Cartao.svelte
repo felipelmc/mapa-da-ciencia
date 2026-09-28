@@ -36,6 +36,14 @@
 	const revista = $derived(revistas?.revistas.find((r) => r.id === acronimo)?.titulo ?? acronimo);
 	const doi = $derived(tabela.dois[indice]);
 	const vizinhos = $derived(vizinhosDe(tabela, indice));
+	// a ArticleMeta dá os endereços do SciELO em http; o site responde em https
+	const paginaSegura = (url: string) => url.replace(/^http:\/\/((www\.)?scielo\.)/, 'https://$1');
+
+	// quem abriu o cartão (um resultado da busca, por exemplo) recebe o foco de volta quando ele fecha
+	const origem = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+	$effect(() => () => {
+		if (origem?.isConnected && origem !== document.body) origem.focus();
+	});
 </script>
 
 <article class="cartao" aria-labelledby="titulo-cartao" data-testid="cartao-documento">
@@ -83,7 +91,13 @@
 			<p class="chaves">{d.palavras_chave.join(' · ')}</p>
 		{/if}
 		{#if d?.url || doi}
-			<p><a href={d?.url ?? `https://doi.org/${doi}`} target="_blank" rel="noopener">{doi ? `doi:${doi}` : 'Página do artigo'} ↗</a></p>
+			<!-- o DOI leva ao doi.org; a página do artigo (no SciELO, em geral) é outro link -->
+			<p class="links">
+				{#if doi}<a href="https://doi.org/{doi}" target="_blank" rel="noopener">doi:{doi} ↗</a>{/if}
+				{#if d?.url && d.url !== `https://doi.org/${doi}`}
+					<a href={paginaSegura(d.url)} target="_blank" rel="noopener">Página do artigo ↗</a>
+				{/if}
+			</p>
 		{/if}
 		{#if d}<p class="suave licenca">Licença: {d.licenca}</p>{/if}
 	{:catch}
@@ -101,6 +115,12 @@
 </article>
 
 <style>
+	.links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem 1rem;
+	}
+
 	.cartao {
 		display: flex;
 		flex-direction: column;

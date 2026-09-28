@@ -15,6 +15,30 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Corrigido
 
+- as vistas cabem na tela do celular, do tablet e de 1024 px: Tópicos, Geografia, Classificação, Validação e a Início rolavam de lado (a coluna das grades crescia até o gráfico mais largo), e no celular a barra de navegação saía da tela; as tabelas da Validação rolam na própria caixa, os macrotemas e as tendências se rearranjam pela largura da seção e a linha do tempo quebra de linha.
+- o mapa acompanha a janela redimensionada, o modo apresentação (++p++) e o painel recolhido; antes, o canvas ficava no tamanho do primeiro desenho, cortado ou menor que a tela.
+- no celular, o painel e o cartão do mapa terminam acima da barra de navegação (a legenda ficava espremida atrás dela), e a lista de resultados da busca aparece inteira ao lado de uma legenda longa, dizendo quantos resultados ficaram de fora.
+- a barra de navegação do celular mostra, com um degradê na borda, que há mais seções, e deixa de fora a seção ainda desativada.
+- texto que informa (créditos, notas, o intervalo do kappa, a legenda da matriz de confusão) usa `--texto-suave`, com contraste AA, e não mais `--texto-fraco`, reservado a itens desativados; a diagonal da matriz também passa no AA, e um teste varre os componentes.
+- o CSV das figuras sai com números crus (ponto decimal, sem separador de milhar, proporções como fração, intervalos em duas colunas), que o R e o pandas leem sem limpeza; antes, reaproveitava os números formatados em pt-BR da tela, e o R lia 1.095 documentos como 1,095.
+- o SVG e o PNG exportados levam o fundo do tema do preset; saíam transparentes, e no Telão e no Slide o título quase branco sumia num slide claro.
+- uma figura sem gráfico (as tendências, o cruzamento, o ranking) exporta o CSV já escolhido, e o primeiro clique em Baixar não falha mais.
+- uma falha passageira de rede não deixa as vistas quebradas até recarregar a página: elas mostram "Tentar de novo", a barra do recorte volta sozinha (também quando se segue pelo trilho), e a falha do arquivo das afiliações só afeta a Geografia.
+- o título de Tópicos, Geografia, Classificação e Validação é anunciado ao navegar (os leitores de tela ouviam o da página anterior), e ao fechar a gaveta do tópico ou o cartão do mapa o foco volta a quem os abriu.
+- um link com "&" na busca do mapa reabre a mesma busca (o SvelteKit decodifica o hash na carga, e "voto & partido" abria como "voto").
+- um gesto nos controles de ano cria uma entrada só no histórico do navegador (antes, uma por ano), e o campo de busca do mapa acompanha a URL ao voltar.
+- o chip "Laço" mostra quantos documentos há no laço, e não repete o contador do recorte.
+- um laço compartilhado não abre mais com o aviso de "versão anterior do mapa" depois de uma reexportação (classificar, geografia, publicar): a versão do mapa passa a ser um hash das coordenadas dos documentos.
+- na codificação, o ++tab++ sai da ficha (antes, trocava de variável e prendia o foco nela); ++down++ e ++up++ continuam trocando de variável.
+- a Ajuda do site publicado não diz mais que as vistas prontas "chegam no marco M3…M6", nem que os arquivos estão "no seu computador", e descreve a Validação como concordância com uma codificação de referência (de uma pessoa ou de outro modelo).
+- a nota de "Em alta e em queda" e a Ajuda avisam que um pico no primeiro ou no último ano do período (um dossiê temático) pode puxar a tendência, e que algumas marcações são marginais.
+- na tabela da Validação, o kappa de uma variável de texto livre aparece como "não se aplica", e não como "sem variação".
+- o menu "Revistas" fecha com ++esc++ e com um clique fora, e esse clique não chega mais ao mapa (abria um documento ou filtrava um macrotema sem a pessoa perceber); aberto, o menu não passa mais da borda direita da tela entre 768 e 1024 px.
+- um link com um documento, tópico ou macrotema que não existe nesta publicação avisa e tira o parâmetro do endereço, em vez de abrir a vista calado.
+- a página 404 diz "Voltar ao Início"; no cartão, o DOI leva ao doi.org e a página do artigo (em https) é outro link; a Início mostra as fontes pelo nome ("SciELO (coleção scl)"), e não pelo código; nos pequenos múltiplos por revista, os anos das pontas não se encostam mais.
+- o botão da linha do tempo se chama "Tocar", e não "Play".
+- `mapa painel --porta` aceita só portas de 1 a 65535 (uma porta fora da faixa dava traceback), tenta ocupar a porta antes de anunciar o endereço (e explica em português por que não conseguiu) e sugere a primeira porta livre.
+- a ajuda (`-h`), com os tipos das opções (`<caminho>`, `<texto>`, `<inteiro>`), e os erros de uso mais comuns da CLI ("Opção inexistente", "Comando inexistente… Você quis dizer", "Valor inválido", "Falta o argumento", "Argumentos a mais") saem em português (`cli_portugues.py`).
 - a descrição da reatribuição do ruído nos tópicos, na metodologia, no ADR 0007 e em `topicos.votos_minimos`: votam os 14 vizinhos mais próximos, porque o grafo de 15 do UMAP inclui o próprio documento (o código não muda).
 - números do piloto nas explicações e nos ADRs, conferidos com a rodada publicada: o texto de análise (4.159 com resumo em inglês, 88 em reserva, 28 só com título), a evidência literal e o tempo da classificação completa (93,4%, 9,6 s por resumo), +2,5 pontos para comunicação política nas redes sociais, 111 divergências na técnica e 16,4 s no 90º percentil da amostra.
 - as limitações do método, nas explicações e no ADR 0007: a classificação lê o resumo em inglês quando falta o em português (18% do piloto); cerca de 25 "resumos" do piloto são fragmentos da fonte e passam pela coleta; o ARI é 0,89 no núcleo e 0,78 com os reatribuídos (não 0,79), e o maior tópico chega a 4,9% do corpus com eles; os erros medidos da geografia vêm de textos raspados pelo OpenAlex e das travas, e não de nomes parecidos; "modelos maiores concordariam mais" vira hipótese.
