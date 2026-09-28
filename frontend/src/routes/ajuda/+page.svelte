@@ -19,8 +19,8 @@
 		<h1>Como ler este observatório</h1>
 		<p class="resumo">
 			O mapa da ciência mostra um corpus de artigos científicos: sobre o que falam, como foram
-			classificados e de onde vêm. Tudo o que aparece aqui sai dos arquivos gerados pelo pipeline, no
-			seu computador.
+			classificados e de onde vêm. Tudo o que aparece aqui sai dos arquivos gerados pelo
+			pipeline{manifesto.api ? ', no seu computador' : ' e publicados neste site'}.
 		</p>
 	</header>
 
@@ -36,7 +36,8 @@
 						{:else}
 							<a href={rota(s.caminho)}>{s.rotulo}</a>
 						{/if}
-						<span class="chegada">chega {s.chegada}</span>
+						<!-- só as seções que ainda não existem dizem quando chegam; as outras já estão aqui -->
+						{#if s.selo}<span class="chegada">chega {s.chegada}</span>{/if}
 					</dt>
 					<dd>{s.resumo}</dd>
 				</div>
