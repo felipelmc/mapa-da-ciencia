@@ -210,8 +210,8 @@ code {
 	}
 }
 
-/* O texto corrido das vistas na medida de leitura (64ch, de 70 a 90 caracteres por linha): especificidade zero, para qualquer
-   componente que precise de outra largura ganhar. */
+/* O texto corrido das vistas na medida de leitura (64ch, de 70 a 90 caracteres por linha). O `:where` deixa só o `p`
+   na especificidade (0,0,1): a regra de uma classe, em qualquer componente que precise de outra largura, ganha. */
 :where(main.conteudo) p {
 	max-width: var(--medida);
 }

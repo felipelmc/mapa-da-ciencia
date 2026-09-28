@@ -465,6 +465,30 @@ def test_o_desenho_nao_depende_do_hash_das_strings():
     assert len(saidas) == 1
 
 
+def test_o_desenho_nao_depende_da_ordem_nem_da_orientacao_das_arestas():
+    """O mesmo grafo, com os nós e as arestas inseridos ao contrário (e cada aresta virada), sai com o mesmo desenho.
+    Com 20 comunidades e pesos que não somam exato em ponto flutuante (1/3, 1/7…), somar os pesos entre comunidades
+    na ordem em que o networkx devolve as arestas mudava o desenho: é o que o hash das strings faz com o piloto."""
+    import networkx as nx
+
+    from mapa_da_ciencia.redes import desenho as d
+
+    rnd = random.Random(0)
+    g = nx.Graph()
+    grupos = [[f"c{c:02d}n{k}" for k in range(4)] for c in range(20)]
+    for grupo in grupos:
+        g.add_edges_from(itertools.combinations(grupo, 2), peso=1.0)
+    for _ in range(300):
+        ca, cb = rnd.sample(range(20), 2)
+        g.add_edge(rnd.choice(grupos[ca]), rnd.choice(grupos[cb]), peso=1 / rnd.choice([3, 5, 7, 9, 11]))
+    virado = nx.Graph()
+    virado.add_nodes_from(reversed(list(g.nodes)))
+    virado.add_edges_from((b, a, dados) for a, b, dados in reversed(list(g.edges(data=True))))
+    particao = [set(grupo) for grupo in grupos]
+    raios = d.raios_na_vista(dict.fromkeys(g.nodes, 1), "coautoria")
+    assert d.desenhar(g, particao, raios) == d.desenhar(virado, particao, raios)
+
+
 def test_citacoes_e_canone():
     refs = [
         {"obra": "W1", "citada": "W2"},  # interna

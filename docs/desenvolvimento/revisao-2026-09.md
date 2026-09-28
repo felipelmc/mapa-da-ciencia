@@ -138,6 +138,14 @@ números em vez da frase) e o uso, em 200 cargas de 375 a 2560 px, nos dois tema
 pedidos atendidos no computador, e 17 achados, entre eles dois altos que as mudanças criaram no celular, como os
 rótulos das comunidades, que tomavam o toque dos nós embaixo deles; os altos e os médios foram corrigidos).
 
+Uma re-revisão conferiu essas correções e reprovou a primeira tentativa: das 14 ressalvas, 6 estavam resolvidas, 6
+só em parte e 2 não, e as próprias correções criaram dois problemas. No celular, a barra do grafo passou a ficar
+acima dele, e o seletor das comunidades, com um rótulo de corpus real ("Federalismo, capacidades estatais…"),
+alargava a página para 732 px. E o cartão, que agora acompanha a rolagem, cobria "A colaboração por ano" (com o
+cartão de uma pessoa com muitos documentos, 96% da figura). O exemplo do contrato, com rótulos curtos ("Comunidade
+1") e cartões pequenos, não pegava nenhum dos dois. Corrigidos com testes que imitam os dados do piloto (rótulos
+longos por `page.route`), a re-revisão foi repetida antes do merge.
+
 Ficaram para depois, registrados: a cor dos nós por comunidade (hoje é a do macrotema, e várias comunidades dividem
 a mesma cor); o cartão do documento, que cobre parte do mapa numa tela de 1440 px; o kappa de uma pessoa, que conta
 fichas ainda não confirmadas; o editor do codebook, que acrescenta listas vazias ao YAML; o histórico das etapas, que

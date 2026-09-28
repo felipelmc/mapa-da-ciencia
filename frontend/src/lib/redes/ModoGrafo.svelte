@@ -241,7 +241,12 @@
 		escolherComunidade(null);
 	}
 	let grafoELado = $state<HTMLElement | null>(null);
-	const abrir = (i: number | null) => mudarFiltros({ no: i === null ? null : nos.ids[i] }, { em });
+	// um nó aberto por um clique no grafo não puxa o foco para o cartão, nem rola a página até ele, venha o foco de onde vier
+	let peloPonteiro = $state(false);
+	const abrir = (i: number | null, pelo: 'ponteiro' | 'teclado' | null = null) => {
+		peloPonteiro = pelo === 'ponteiro';
+		mudarFiltros({ no: i === null ? null : nos.ids[i] }, { em });
+	};
 	const documentosDo = (i: number): number[] => {
 		if (pessoas) {
 			const saida: number[] = [];
@@ -412,7 +417,7 @@
 	itens={itensBusca}
 	rotulo={pessoas ? 'Buscar uma pessoa' : 'Buscar uma instituição'}
 	dica={pessoas ? 'Nome da pessoa' : 'Nome ou sigla'}
-	aoEscolher={(id) => mudarFiltros({ no: id }, { em })}
+	aoEscolher={(id) => ((peloPonteiro = false), mudarFiltros({ no: id }, { em }))}
 />
 
 <svelte:window onkeydown={tecla} />
@@ -543,19 +548,30 @@
 				aoAbrir={(j) => abrir(j)}
 				aoFechar={() => abrir(null)}
 				filtro={pessoas ? null : { ativo: filtros.inst.includes(nos.ids[cartao.i]), alternar: () => alternarInstituicao(nos.ids[cartao.i]) }}
+				{peloPonteiro}
 			/>
+		{:else}
+			{@render colaboracao()}
 		{/if}
-		<Colaboracao
-			quais={pessoas ? ['coautoria', 'autores'] : ['instituicoes', 'exterior']}
-			{aberto}
-			redes={r}
-			afiliacoes={af}
-			{filtros}
-			{falhas}
-			n={noRecorte}
-		/>
 	</aside>
 </div>
+
+<!-- com o cartão aberto, a colaboração desce para baixo do grafo: o cartão acompanha a rolagem e a cobriria (VR-02) -->
+{#if cartao}
+	<div class="colaboracao-embaixo">{@render colaboracao()}</div>
+{/if}
+
+{#snippet colaboracao()}
+	<Colaboracao
+		quais={pessoas ? ['coautoria', 'autores'] : ['instituicoes', 'exterior']}
+		{aberto}
+		redes={r}
+		afiliacoes={af}
+		{filtros}
+		{falhas}
+		n={noRecorte}
+	/>
+{/snippet}
 
 <style>
 	.lide {
@@ -587,7 +603,13 @@
 		top: calc(var(--altura-barra, 4rem) + var(--altura-recorte, 3rem) + 0.75rem);
 		max-height: calc(100dvh - var(--altura-barra, 4rem) - var(--altura-recorte, 3rem) - 1.5rem);
 		overflow-y: auto;
-		scroll-margin-top: calc(var(--altura-recorte, 0px) + 1rem);
+		/* "Ver o cartão" o põe abaixo das barras que grudam no alto (as duas; até 820 px, só a do recorte) */
+		scroll-margin-top: calc(var(--altura-barra, 4rem) + var(--altura-recorte, 3rem) + 1rem);
+	}
+
+	.colaboracao-embaixo {
+		max-width: 60rem;
+		margin-top: 1.5rem;
 	}
 
 	/* em tela cheia, o grafo e a coluna do cartão juntos */
@@ -602,9 +624,10 @@
 		max-height: calc(100dvh - 2rem);
 	}
 
-	/* RR-02: em tela cheia, o título e o resumo da figura saem, e o grafo cabe na altura da tela */
-	.grafo-e-lado:fullscreen :global(.figura > header),
-	.grafo-e-lado:fullscreen :global(.figura > .resumo) {
+	/* em tela cheia, o título e o resumo da figura do grafo saem, e o grafo cabe na altura da tela (os da colaboração,
+	   na coluna ao lado, ficam) */
+	.grafo-e-lado:fullscreen > :global(.figura > header),
+	.grafo-e-lado:fullscreen > :global(.figura > .resumo) {
 		display: none;
 	}
 
@@ -758,6 +781,12 @@
 
 		.ir-ao-cartao {
 			display: inline-block;
+		}
+	}
+
+	@media (max-width: 820px) {
+		.lado > :global(.cartao) {
+			scroll-margin-top: calc(var(--altura-recorte, 0px) + 1rem);
 		}
 	}
 </style>

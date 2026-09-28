@@ -414,14 +414,13 @@ class Painel:
 
     url: str
     _servidor: Any = field(repr=False)
-    _trava: Any = field(default=None, repr=False)
+    _fio: Any = field(default=None, repr=False)
 
     def parar(self) -> None:
-        """Derruba o servidor do painel (e solta o projeto para outro painel)."""
+        """Derruba o servidor do painel e espera ele sair (a thread solta o projeto para outro painel ao terminar)."""
         self._servidor.should_exit = True
-        if self._trava is not None:
-            self._trava.close()
-            self._trava = None
+        if self._fio is not None:
+            self._fio.join(timeout=10)
 
     def _repr_html_(self) -> str:  # num notebook, o painel aparece como um link
         return f'<a href="{self.url}" target="_blank">Painel do mapa-da-ciencia em {self.url}</a>'
@@ -462,12 +461,21 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
     trava = travar(p, porta)  # um painel por projeto, como o `mapa painel` (um segundo não abre)
     try:
         app = criar_app(pasta_dados=p.saida / "dados", projeto=p, api=True, so_local=not colab)
+        servidor = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning"))
     except BaseException:
         if trava is not None:
             trava.close()
         raise
-    servidor = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning"))
-    fio = threading.Thread(target=servidor.run, daemon=True, name=f"mapa-painel-{porta}")
+
+    def rodar() -> None:
+        # a trava vive com a thread do servidor: só é solta quando ele sai (e não quando o `Painel` é descartado)
+        try:
+            servidor.run()
+        finally:
+            if trava is not None:
+                trava.close()
+
+    fio = threading.Thread(target=rodar, daemon=True, name=f"mapa-painel-{porta}")
     fio.start()
     for _ in range(200):
         if servidor.started or not fio.is_alive():
@@ -475,10 +483,9 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
         time.sleep(0.05)
     if not servidor.started:
         servidor.should_exit = True
-        if trava is not None:
-            trava.close()
+        fio.join(timeout=10)
         raise ErroConfig(f"O painel não subiu na porta {porta}. Tente outra, com `porta=`.")
-    aberto = Painel(f"http://127.0.0.1:{porta}/", servidor, trava)
+    aberto = Painel(f"http://127.0.0.1:{porta}/", servidor, fio)
     if colab:
         from google.colab import output  # só existe no Colab
 

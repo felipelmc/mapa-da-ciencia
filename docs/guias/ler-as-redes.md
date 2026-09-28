@@ -20,12 +20,14 @@ O maior grupo ligado (o componente principal, onde estão as comunidades, cada u
 duplas e os trios isolados ficam escondidos, para o desenho enquadrar o resto: "Mostrar as duplas e os trios
 isolados" os traz de volta (a escolha vai para o link, com `duplas=1`, e o desenho se reenquadra). A lista embaixo do
 desenho dá o rótulo inteiro das maiores comunidades; no desenho sai só um tópico, encurtado (o segundo, quando duas
-comunidades têm o mesmo primeiro).
+comunidades têm o mesmo primeiro; se o segundo também se repetir, o tamanho da comunidade vem entre parênteses, como em
+"Federalismo (92)").
 
 Passe o mouse num nó: ele, os coautores dele e as ligações entre eles acendem, o resto esmaece, e os nomes dos
 coautores aparecem. Um clique abre o cartão da pessoa, com os artigos dela no recorte e os coautores mais fortes, cada
 um com o peso da parceria no recorte e os documentos em comum; a vizinhança fica acesa, e "Enquadrar o nó" leva o zoom
-até ela. Esc (ou o ×) fecha o cartão e devolve o foco para onde ele estava. Aberto pela busca ou por um link, o nó já
+até ela. Com o cartão aberto, "A colaboração por ano" desce para baixo do grafo, e o cartão acompanha a rolagem ao lado
+dele. Esc (ou o ×) fecha o cartão e devolve o foco para onde ele estava. Aberto pela busca ou por um link, o nó já
 vem enquadrado, mesmo quando está numa dupla ou num trio escondido (que passa a aparecer).
 
 Escolha uma comunidade no seletor da barra do grafo (ou clique nela na lista da legenda) para acendê-la e
@@ -39,7 +41,8 @@ aproxima. Arrastar o fundo move o grafo; arrastar um nó o move de lugar, só na
 ("Reiniciar" devolve o desenho e o zoom). Com o grafo em foco, o teclado também serve: + e − aproximam e afastam, 0
 volta ao desenho inteiro, as setas movem e Enter abre o nó que estiver no centro. No celular, um dedo na vertical
 rola a página, um toque num nó abre o cartão (um botão leva até ele, embaixo do grafo) e dois dedos aproximam. Em
-tela cheia, o grafo e o cartão ficam juntos na tela.
+tela cheia, numa tela larga, o grafo e o cartão ficam lado a lado; numa tela mais estreita (até 1100 px), o cartão fica
+embaixo do grafo, e o botão "Ver o cartão" leva até ele.
 
 O link "Como ler as redes", ao lado do título da vista, leva à seção da Ajuda com o glossário (peso, componente,
 agrupamento, modularidade).

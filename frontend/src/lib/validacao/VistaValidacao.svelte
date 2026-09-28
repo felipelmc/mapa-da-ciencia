@@ -644,7 +644,8 @@
 		}
 
 		/* a tabela do par acompanha a rolagem ao lado do detalhe (que é longo, com as divergências) */
-		.par-e-detalhe > :first-child {
+		/* o primeiro filho é o <Figura>, de outro componente: sem o :global, a regra não o alcança */
+		.par-e-detalhe > :global(:first-child) {
 			position: sticky;
 			top: calc(var(--altura-barra, 4rem) + 1rem);
 		}

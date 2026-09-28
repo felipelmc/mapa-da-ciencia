@@ -127,6 +127,8 @@
 	}
 	function teclaRevistas(e: KeyboardEvent) {
 		if (e.key !== 'Escape' || !menuRevistas?.open) return;
+		// o Esc fica com o menu: quem ouve depois (o cartão, a comunidade das redes) não o usa de novo
+		e.preventDefault();
 		fecharRevistas();
 		menuRevistas.querySelector('summary')?.focus();
 	}

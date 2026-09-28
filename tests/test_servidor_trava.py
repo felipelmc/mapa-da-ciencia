@@ -1,6 +1,8 @@
 """Um painel por projeto: o segundo `mapa painel` no mesmo projeto não abre e aponta o primeiro."""
 
+import gc
 import sys
+import time
 
 import pytest
 
@@ -49,3 +51,42 @@ def test_o_painel_do_notebook_tambem_trava_o_projeto(tmp_path):
     finally:
         aberto.parar()
     travar(p, 8799).close()  # parado o painel, o projeto abre de novo
+
+
+def test_o_painel_do_notebook_descartado_continua_travando(tmp_path):
+    """Sem referência ao `Painel` (a célula que o abriu foi reexecutada), o servidor segue no ar, e a trava também."""
+    import mapa_da_ciencia.api as mapa
+
+    p = Projeto.criar(tmp_path / "p", modelo="vazio", perfil=PERFIS["leve"])
+    aberto = mapa.painel(p, porta=8796, colab=False)
+    servidor = aberto._servidor
+    del aberto
+    gc.collect()
+    try:
+        with pytest.raises(PainelJaAberto, match="8796"):
+            travar(p, 8795)
+    finally:
+        servidor.should_exit = True
+    for _ in range(200):  # a thread solta a trava ao sair
+        try:
+            travar(p, 8794).close()
+            break
+        except PainelJaAberto:
+            time.sleep(0.05)
+    else:
+        pytest.fail("a trava não foi solta depois que o servidor saiu")
+
+
+def test_o_painel_que_nao_sobe_solta_a_trava(tmp_path, monkeypatch):
+    import mapa_da_ciencia.api as mapa
+    from mapa_da_ciencia.servidor import app as modulo_app
+
+    p = Projeto.criar(tmp_path / "p", modelo="vazio", perfil=PERFIS["leve"])
+
+    def falha(**_):
+        raise RuntimeError("falhou ao montar")
+
+    monkeypatch.setattr(modulo_app, "criar_app", falha)
+    with pytest.raises(RuntimeError, match="falhou ao montar"):
+        mapa.painel(p, porta=8793, colab=False)
+    travar(p, 8793).close()  # o projeto não ficou preso

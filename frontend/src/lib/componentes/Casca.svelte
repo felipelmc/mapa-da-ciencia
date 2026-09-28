@@ -36,6 +36,8 @@
 			e.preventDefault();
 		} else if (e.key === 'Escape' && apresentando) {
 			apresentando = false;
+			// o Esc só sai do modo apresentação (não fecha também o cartão, nem solta a comunidade)
+			e.preventDefault();
 		}
 	}
 	$effect(() => {

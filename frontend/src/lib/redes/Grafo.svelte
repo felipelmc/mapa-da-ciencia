@@ -77,7 +77,8 @@
 		rotulos: RotuloGrafo[];
 		nomeDo: (i: number) => string;
 		dica: (i: number) => string[];
-		aoEscolher: (i: number | null) => void;
+		/** Abre (ou fecha) o cartão de um nó; `pelo` diz se a escolha veio do ponteiro (o clique) ou do teclado (Enter). */
+		aoEscolher: (i: number | null, pelo: 'ponteiro' | 'teclado') => void;
 		aoEscolherComunidade: (c: number | null) => void;
 		/** As comunidades do seletor na barra do grafo (as maiores, com o rótulo inteiro). */
 		opcoesComunidade?: { id: number; rotulo: string }[];
@@ -329,7 +330,7 @@
 	function escolher(i: number | null) {
 		// só uma mudança de nó passa pelo efeito do nó aberto (um clique no nó já aberto não muda nada)
 		escolhidoPeloGrafo = i !== null && i !== selecionado ? i : null;
-		aoEscolher(i);
+		aoEscolher(i, 'ponteiro');
 	}
 
 	// ---- tela cheia (a figura inteira do grafo, com os botões)
@@ -354,7 +355,7 @@
 			ArrowDown: () => (vista = { ...vista, dy: vista.dy - MOVER }),
 			Enter: () => {
 				const i = sobre ?? maisPertoDoCentro();
-				if (i !== null) aoEscolher(i);
+				if (i !== null) aoEscolher(i, 'teclado');
 			}
 		};
 		const acao = acoes[e.key];
@@ -809,6 +810,8 @@
 	.grafo {
 		position: relative;
 		display: grid;
+		/* a coluna não cresce com o conteúdo (a opção mais longa do seletor alargava a página no celular) */
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	/* por cima do canto de cima do grafo: continua à vista quando a página rola até ele */
@@ -839,19 +842,21 @@
 	}
 
 	.ferramentas select {
+		min-width: 0;
 		max-width: min(22rem, 100%);
 		text-overflow: ellipsis;
 	}
 
-	@media (max-width: 820px) {
+	/* sem a coluna do cartão ao lado (até 1100 px), a barra fica acima do grafo, e não sobre os nós */
+	@media (max-width: 1100px) {
 		.ferramentas {
 			position: static;
 			padding-bottom: 0.4rem;
 		}
 
 		.ferramentas select {
-			flex: 1 1 100%;
-			max-width: none;
+			flex: 1 1 14rem;
+			max-width: 100%;
 		}
 	}
 
@@ -885,6 +890,19 @@
 
 	.grafo.tela-cheia .area {
 		height: calc(100dvh - 2rem);
+	}
+
+	/* em tela cheia, com a barra acima do grafo (até 1100 px), o grafo fica com a altura que sobra embaixo dela */
+	@media (max-width: 1100px) {
+		.grafo.tela-cheia {
+			grid-template-rows: auto minmax(0, 1fr);
+			height: calc(100dvh - 2rem);
+		}
+
+		.grafo.tela-cheia .area {
+			height: auto;
+			min-height: 0;
+		}
 	}
 
 	canvas {

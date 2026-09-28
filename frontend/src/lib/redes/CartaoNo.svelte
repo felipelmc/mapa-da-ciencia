@@ -14,6 +14,7 @@
 	 * um abre o próprio cartão) e os documentos do nó que estão no recorte, com o link para cada um no Mapa. Numa
 	 * instituição, um botão põe (ou tira) a instituição no recorte.
 	 */
+	import { untrack } from 'svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import type { TabelaDocumentos } from '$lib/dados/documentos';
 	import { contar, formatarDecimal } from '$lib/formato';
@@ -31,7 +32,8 @@
 		linkDoc,
 		aoAbrir,
 		aoFechar,
-		filtro = null
+		filtro = null,
+		peloPonteiro = false
 	}: {
 		titulo: string;
 		sobretitulo: string;
@@ -47,6 +49,8 @@
 		aoAbrir: (i: number) => void;
 		aoFechar: () => void;
 		filtro?: { ativo: boolean; alternar: () => void } | null;
+		/** Aberto por um clique (ou toque) no grafo: o foco fica onde está, mesmo que esteja fora do grafo (na legenda…). */
+		peloPonteiro?: boolean;
 	} = $props();
 
 	const INICIAIS = 12;
@@ -74,7 +78,7 @@
 		void titulo;
 		todos = false;
 		const ativo = document.activeElement;
-		if (!ativo || ativo === document.body || ativo === titulo_) return;
+		if (!ativo || ativo === document.body || ativo === titulo_ || untrack(() => peloPonteiro)) return;
 		// um clique no grafo (ou no fundo da página) põe o foco na área do grafo ou no <main>: não é o teclado, e o
 		// foco não pula (nem a página rola) para o cartão; pelo teclado (Tab até o grafo e Enter), vai. A área do
 		// grafo diz como veio a última interação (`data-origem`), mesmo depois de alguém usar uma tecla e clicar

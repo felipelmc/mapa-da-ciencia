@@ -179,3 +179,11 @@ test('a comparação entre modelos diz quem acerta mais que quem, e o p pequeno 
 	await expect(itens.first()).toContainText('acerta mais que');
 	await expect(page.getByTestId('lista-mcnemar')).not.toContainText('p = 0,000');
 });
+
+test('numa tela larga, a tabela do par acompanha a rolagem ao lado do detalhe', async ({ page }) => {
+	await page.setViewportSize({ width: 1920, height: 1080 });
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	await expect(page.getByTestId('figura-concordancia')).toHaveCSS('position', 'sticky');
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await expect(page.getByTestId('figura-concordancia')).toHaveCSS('position', 'static');
+});
