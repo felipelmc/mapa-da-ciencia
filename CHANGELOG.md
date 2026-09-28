@@ -14,6 +14,20 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 - o repositório ignora as cópias que o iCloud Drive cria ("teste 2.py", "index 2.md") no git, no pytest e no MkDocs, e o CI falha se alguma entrar num commit (armadilha em `desenvolvimento`).
 
+### Corrigido
+
+- a descrição da reatribuição do ruído nos tópicos, na metodologia, no ADR 0007 e em `topicos.votos_minimos`: votam os 14 vizinhos mais próximos, porque o grafo de 15 do UMAP inclui o próprio documento (o código não muda).
+- números do piloto nas explicações e nos ADRs, conferidos com a rodada publicada: o texto de análise (4.159 com resumo em inglês, 88 em reserva, 28 só com título), a evidência literal e o tempo da classificação completa (93,4%, 9,6 s por resumo), +2,5 pontos para comunicação política nas redes sociais, 111 divergências na técnica e 16,4 s no 90º percentil da amostra.
+- as limitações do método, nas explicações e no ADR 0007: a classificação lê o resumo em inglês quando falta o em português (18% do piloto); cerca de 25 "resumos" do piloto são fragmentos da fonte e passam pela coleta; o ARI é 0,89 no núcleo e 0,78 com os reatribuídos (não 0,79), e o maior tópico chega a 4,9% do corpus com eles; os erros medidos da geografia vêm de textos raspados pelo OpenAlex e das travas, e não de nomes parecidos; "modelos maiores concordariam mais" vira hipótese.
+- os 84% de concordância no período analisado, na validação e no ADR 0012, vêm com a nota de que 115 dos 168 acertos são "não se aplica" nos dois (entre os 85 artigos com algum período, 62%; a presença do período tem kappa 0,85).
+- a tendência dos tópicos, no ADR 0009, nos tópicos e no guia "Ler os tópicos": um dossiê no primeiro ou no último ano da janela (o período inteiro ou o filtrado) ainda pode aparecer como tendência, e três dos 13 tópicos marcados no piloto são marginais (somem com o quantil t ou com um ano a menos); o ADR dizia que todos tinham mudança sustentada.
+- o perfil `leve` classifica com o `qwen3.5:4b`, que ainda não passou pela validação: um adendo ao ADR 0005 registra a escolha, e o guia de instalação e as limitações avisam.
+- a instalação pelo *wheel*: o tutorial "Seu primeiro mapa" e a API Python dizem como abrir um Python com o pacote (`uv run --no-project --with <wheel> python`), o README, "Explorar o exemplo", o guia de instalação e a solução de problemas dizem o que fazer quando o terminal não encontra o `mapa` (`uv tool update-shell`), o guia de instalação manda trocar `1.0.1` (e não `0.6.0`), e a caixa da Documentação fala da versão 1.0.
+- deslizes menores: o link das fontes para a geografia levava ao guia do painel; a calibração dos tópicos pede o código-fonte (o script não vem no *wheel*); a primeira coleta do piloto leva uns 30 minutos, e não "alguns minutos"; a escolha dos modelos cita também o ADR 0005.
+- "Modelos locais" e "Reprodutibilidade" falavam da classificação no futuro ("o marco M5 vai") e com a projeção de 14 horas do M0: agora no presente, com os 9,6 s por resumo do piloto, cerca de 12 horas para os 4.247 resumos.
+- os exemplos de `rotulos.yaml` (explicação dos tópicos, guia e parte 2 do tutorial) trazem a `descricao` e avisam que uma entrada só com o rótulo deixa o tópico sem descrição.
+- as frases das histórias da abertura, em português e em inglês: os +4,1 pontos do tópico em alta são da tendência ajustada (o gráfico mostra a participação observada); os 79% dos autores no Brasil são da produção com país conhecido, e não de toda a produção; a BPSR, só em inglês, está entre as "outras oito", em que o inglês ficou entre 14% e 20% de 2019 a 2025; a abordagem teórica caiu quase pela metade, e o cartão diz que o modelo a marca mais que a referência (40% contra 27% na validação), com a queda nas duas leituras.
+
 ## [1.0.1] - 2026-09-27
 
 A versão 1.0.1 é a primeira com DOI: o repositório passa a ser arquivado no Zenodo a cada *release*. E o pacote fica pronto para o PyPI.
@@ -41,7 +55,7 @@ A versão 1.0.0 fecha o plano do projeto. A abertura do site, "Céu que se forma
 
 ## [0.7.0] - 2026-09-27
 
-A publicação, as figuras e a oficina: o projeto vira um site estático, com os resumos só de licença Creative Commons e nenhum e-mail; cada gráfico do painel sai em SVG, PNG ou CSV no tamanho de um artigo ou de um slide; e um caderno do Colab monta um mapa do zero numa GPU gratuita. O piloto inteiro está publicado na [demo](https://felipelamarca.com/mapa-da-ciencia/demo/): os 4.247 resumos classificados pelo `qwen3.5:9b` num notebook, em cerca de 10 horas (9,6 s por resumo), com 100% de JSON válido na primeira tentativa e 93,4% das evidências copiadas literalmente do resumo.
+A publicação, as figuras e a oficina: o projeto vira um site estático, com os resumos só de licença Creative Commons e nenhum e-mail; cada gráfico do painel sai em SVG, PNG ou CSV no tamanho de um artigo ou de um slide; e um caderno do Colab monta um mapa do zero numa GPU gratuita. O piloto inteiro está publicado na [demo](https://felipelamarca.com/mapa-da-ciencia/demo/): os 4.247 resumos classificados pelo `qwen3.5:9b` num notebook, em cerca de 12 horas (9,6 s por resumo, na mediana), com 100% de JSON válido na primeira tentativa e 93,4% das evidências copiadas literalmente do título ou do resumo.
 
 ### Adicionado
 
