@@ -982,14 +982,15 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
 
 def _desenho_do_exemplo(g) -> dict[str, tuple[float, float]]:
     """Um desenho simples e igual em qualquer máquina (o `spring_layout` muda na quarta casa entre o Mac e o Linux, e
-    o exemplo é conferido byte a byte no CI): cada componente num círculo, os componentes numa grade."""
+    o exemplo é conferido byte a byte no CI): cada componente num círculo, os componentes numa grade, do maior (em
+    cima, com o y crescendo para cima, como no desenho do pipeline) ao menor."""
     import networkx as nx
 
     componentes = sorted((sorted(c) for c in nx.connected_components(g)), key=lambda c: (-len(c), c[0]))
     lado = max(1, math.ceil(math.sqrt(len(componentes))))
     pos = {}
     for k, nos in enumerate(componentes):
-        cx, cy = (k % lado) * 2.2, (k // lado) * 2.2
+        cx, cy = (k % lado) * 2.2, -(k // lado) * 2.2
         raio = 0.2 + 0.8 * min(1.0, len(nos) / 40)
         for j, no in enumerate(nos):
             ang = 2 * math.pi * j / len(nos)

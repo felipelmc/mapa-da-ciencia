@@ -67,7 +67,7 @@
 
 	// ---- frases
 	const nome = (k: string) => (k === EXTERIOR ? 'Exterior' : (NOME_UF[k] ?? k));
-	const curto = (k: string) => (k === EXTERIOR ? 'exterior' : k);
+	const curto = (k: string) => (k === EXTERIOR ? 'Exterior' : k);
 	const par = (a: Arco) => `${nome(a.a)} e ${nome(a.b)}`;
 	const pesoTotal = $derived(arcos.reduce((s, a) => s + a.peso, 0));
 	const comExterior = $derived(arcos.filter((a) => a.a === EXTERIOR || a.b === EXTERIOR).reduce((s, a) => s + a.peso, 0));
@@ -126,7 +126,7 @@
 			</p>
 		</div>
 		<div class="pares">
-			<h3 class="rotulo-miudo">As parcerias mais fortes</h3>
+			<h3 class="rotulo-miudo">As parcerias mais fortes (peso no recorte · documentos)</h3>
 			<ol data-testid="pares-estados">
 				{#each arcos.slice(0, MAIS_FORTES) as a (`${a.a}|${a.b}`)}
 					<li>

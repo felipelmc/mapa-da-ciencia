@@ -79,6 +79,11 @@ for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 		await expect(page.getByTestId('rede-coautoria')).toHaveAttribute('aria-pressed', 'true');
 		await expect(page.getByTestId('lide-redes')).toContainText(`${inteiro(agregados.arestas_coautoria)} pares de coautores`);
 		await expect(page.getByTestId('metricas-rede')).toContainText(`${inteiro(redes.metricas.coautoria.arestas)} pares`);
+		// o lide e a nota contam as mesmas pessoas com coautor (as desenhadas), com as métricas explicadas
+		await expect(page.getByTestId('lide-redes')).toContainText(`(${inteiro(redes.metricas.coautoria.nos)} com coautor no corpus`);
+		await expect(page.getByTestId('metricas-rede')).toContainText(`${inteiro(redes.metricas.coautoria.nos)} pessoas com coautor`);
+		await expect(page.getByTestId('metricas-rede')).toContainText('grupos ligados por algum caminho');
+		expect(await page.getByTestId('metricas-rede').innerText()).not.toMatch(/[\p{L}\d)]\.\p{Lu}/u);
 		await expect(page.getByTestId('rotulo-comunidade').first()).toBeVisible();
 
 		await page.getByTestId('rede-instituicoes').click();
@@ -157,10 +162,29 @@ test('a busca pelo teclado abre o cartão de uma pessoa', async ({ page }) => {
 	await expect(page.getByTestId('cartao-no').getByRole('heading', { level: 2 })).toHaveText(nome);
 	await expect(page.getByTestId('cartao-no').getByRole('heading', { level: 2 })).toBeFocused();
 	await expect(campo).toHaveAttribute('aria-expanded', 'false');
-	// Esc fecha o cartão
+	// o cartão diz o que é cada número dos parceiros
+	await expect(page.getByTestId('cartao-no').locator('.parceiros .numero').first()).toContainText('peso');
+	// Esc fecha o cartão, e o foco volta para a busca (quem usa o teclado não volta ao topo da página)
+	await page.keyboard.press('Tab');
 	await page.keyboard.press('Escape');
 	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
 	await expect(page).not.toHaveURL(/no=/);
+	await expect(campo).toBeFocused();
+	// o × também devolve o foco
+	await campo.fill(nome.normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase());
+	await campo.press('Enter');
+	await page.getByRole('button', { name: 'Fechar o cartão' }).click();
+	await expect(campo).toBeFocused();
+});
+
+test('a vista leva à ajuda das redes, e as comunidades têm rótulo e lista', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	await expect(page.getByTestId('rotulo-comunidade').first()).toBeVisible();
+	await expect(page.getByTestId('lista-comunidades').getByRole('listitem')).not.toHaveCount(0);
+	await page.getByTestId('como-ler-redes').click();
+	await expect(page.getByTestId('ajuda-redes')).toBeInViewport();
+	await expect(page.getByTestId('glossario-redes')).toContainText('Modularidade');
 });
 
 test('instituições: o cartão põe a instituição no recorte', async ({ page }) => {
@@ -206,6 +230,13 @@ test('exportar o grafo: o canvas vira imagem embaixo dos rótulos, no tema do pr
 	expect(svg).toContain('>Quem escreve com quem</text>');
 	expect(svg).toMatch(/<image href="data:image\/png;base64,[A-Za-z0-9+/]{1000}/);
 	expect(svg).not.toContain('var(--');
+	// a figura se lê sozinha: a legenda (cores, faixas de peso e comunidades) vai junto, o fundo é opaco e o
+	// subtítulo não repete o período que o título do projeto já traz
+	expect(svg).toContain('>Peso da parceria no recorte:</text>');
+	expect(svg).toContain('>As maiores comunidades');
+	expect(ler('topicos.json').macrotemas.some((m: { rotulo: string }) => svg.includes(`>${m.rotulo}</text>`))).toBe(true);
+	expect(svg).not.toMatch(/<rect width="[\d.]+" height="[\d.]+" fill="(rgba\(0, 0, 0, 0\)|transparent)"/);
+	expect(svg).not.toMatch(/(\d{4}–\d{4}) · \1/);
 	const png = await baixar('PNG', 'slide');
 	expect(png.readUInt32BE(16)).toBe(1920);
 	writeFileSync(join(TELAS, 'exportado-rede-slide.png'), png);
@@ -262,6 +293,8 @@ test('citações: o cânone do gabarito, a nota da cobertura e a matriz entre ma
 	await expect(nota).toContainText(`das ${inteiro(citacoes.cobertura.referencias_listadas)} referências que a ArticleMeta lista`);
 	expect(citacoes.canone.some((o: { resenha: boolean }) => o.resenha)).toBe(true);
 	await expect(nota).toContainText('registro de uma resenha');
+	// as frases condicionais não colam na anterior ("105.763.Nesses")
+	expect(await nota.innerText()).not.toMatch(/[\p{L}\d)]\.\p{Lu}/u);
 	// a matriz é a do Python
 	const celulas = await page.getByTestId('celula-fluxo').evaluateAll((els) =>
 		els.map((e) => [Number(e.getAttribute('data-de')), Number(e.getAttribute('data-para')), Number(e.getAttribute('data-n'))])

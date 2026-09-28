@@ -20,9 +20,12 @@ Cada gráfico do painel (e do site publicado) tem, embaixo, o botão **Exportar*
 
 Os tamanhos de artigo usam sempre o tema **Prancha**, feito para papel, mesmo que a tela esteja no Observatório. No SVG, a largura vai em milímetros: ao inserir a figura no editor de texto, ela já entra no tamanho da coluna.
 
+O fundo da figura é sempre opaco, na cor do tema, para o texto não sumir num slide escuro. As legendas das figuras das Redes (as cores dos macrotemas, o peso das ligações, as maiores comunidades, os macrotemas de quem cita no cânone) vão junto, embaixo do gráfico, e a figura se lê sozinha.
+
 ## O que não vai
 
-- Legendas e controles feitos em HTML fora do gráfico (a escala de cores dos mapas, os botões de modo) não entram no SVG nem no PNG. Descreva a escala na legenda da figura, ou use o CSV.
+- Os controles e as outras legendas feitas em HTML fora do gráfico (a escala de cores dos mapas, os botões de modo) não entram no SVG nem no PNG. Descreva a escala na legenda da figura, ou use o CSV.
+- As redes de coautoria e de instituições são desenhadas num canvas, por causa dos milhares de nós: no SVG, os nós e as linhas entram como imagem (em dobro da resolução da tela), e só os rótulos, a legenda e os textos são vetoriais.
 - Figuras que são tabelas (o cruzamento da vista Classificação, o ranking das instituições) só exportam o CSV.
 
 ## Citar

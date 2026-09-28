@@ -15,7 +15,15 @@ linhas fracas.
 - **O que não dá:** importância ou qualidade. Mais coautores não é mais relevância, e a rede só vê o que está no
   corpus.
 
-Um clique abre o cartão da pessoa, com os artigos dela no recorte.
+O maior grupo ligado (o componente principal, onde estão as comunidades) fica em cima; embaixo, os grupos menores. As
+duplas e os trios isolados ficam escondidos, para o desenho enquadrar o resto: "Mostrar as duplas e os trios
+isolados" os traz de volta. A lista embaixo do desenho dá o rótulo inteiro das maiores comunidades (no desenho sai
+só o primeiro tópico).
+
+Um clique abre o cartão da pessoa, com os artigos dela no recorte e os coautores mais fortes, cada um com o peso da
+parceria no recorte e os documentos em comum. Esc (ou o ×) fecha o cartão e devolve o foco para onde ele estava. O
+link "Como ler as redes", ao lado do título da vista, leva à seção da Ajuda com o glossário (peso, componente,
+agrupamento, modularidade).
 
 ## Instituições
 
@@ -24,8 +32,8 @@ outras vistas.
 
 ## Estados
 
-Arcos entre as UFs cujos pesquisadores escreveram juntos, e para o exterior (`EX`). A espessura é o peso fracionário.
-Um clique numa UF filtra o recorte por ela.
+Arcos entre as UFs cujos pesquisadores escreveram juntos, e para o **Exterior** (qualquer afiliação fora do Brasil;
+nos dados, `EX`). A espessura é o peso fracionário. Um clique numa UF filtra o recorte por ela.
 
 ## Citações
 

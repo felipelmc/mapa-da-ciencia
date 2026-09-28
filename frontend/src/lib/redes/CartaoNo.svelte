@@ -49,10 +49,20 @@
 	} = $props();
 
 	const INICIAIS = 12;
+
+	/** Fecha e devolve o foco a quem o tinha (senão, à busca da vista), para quem usa o teclado não voltar ao topo. */
+	function fechar() {
+		const destino = voltarPara?.isConnected ? voltarPara : document.querySelector<HTMLElement>('[data-busca-no]');
+		const tinhaFoco = !!document.activeElement?.closest('[data-testid="cartao-no"]');
+		aoFechar();
+		if (tinhaFoco || document.activeElement === document.body) destino?.focus({ preventScroll: true });
+	}
 	let todos = $state(false);
 	const ordenados = $derived([...documentos].sort((a, b) => tabela.ano[b] - tabela.ano[a] || a - b));
 	const visiveis = $derived(todos ? ordenados : ordenados.slice(0, INICIAIS));
 	let titulo_: HTMLElement;
+	// quem tinha o foco quando o cartão abriu (a busca, um parceiro…): ao fechar, o foco volta para lá
+	let voltarPara: HTMLElement | null = null;
 
 	// aberto pela busca ou por um parceiro, o foco vai para o título (quem usa o teclado sabe que o cartão mudou);
 	// aberto pelo link ou por um clique no grafo, o foco fica onde está
@@ -61,6 +71,7 @@
 		todos = false;
 		const ativo = document.activeElement;
 		if (!ativo || ativo === document.body || ativo === titulo_) return;
+		if (!ativo.closest('[data-testid="cartao-no"]')) voltarPara = ativo as HTMLElement;
 		titulo_?.focus({ preventScroll: true });
 		// na tela estreita o cartão fica embaixo do grafo: rola até ele
 		const caixa = titulo_?.getBoundingClientRect();
@@ -72,14 +83,14 @@
 	onkeydown={(e) => {
 		// Esc fecha o cartão, como no Mapa; num campo de texto, o Esc é do campo (a busca limpa com ele)
 		const alvo = e.target as HTMLElement | null;
-		if (e.key === 'Escape' && !e.defaultPrevented && !alvo?.closest('input, textarea, select')) aoFechar();
+		if (e.key === 'Escape' && !e.defaultPrevented && !alvo?.closest('input, textarea, select')) fechar();
 	}}
 />
 
 <article class="cartao" aria-labelledby="titulo-no" data-testid="cartao-no">
 	<header>
 		<p class="rotulo-miudo">{sobretitulo}</p>
-		<button class="fechar" type="button" aria-label="Fechar o cartão" onclick={aoFechar}>×</button>
+		<button class="fechar" type="button" aria-label="Fechar o cartão" onclick={fechar}>×</button>
 	</header>
 	<h2 id="titulo-no" tabindex="-1" bind:this={titulo_}>{titulo}</h2>
 	{#if comunidade}
@@ -101,7 +112,9 @@
 			{#each parceiros as p (p.i)}
 				<li>
 					<button type="button" onclick={() => aoAbrir(p.i)}>{p.nome}</button>
-					<span class="numero">{formatarDecimal(p.peso)} · {contar(p.documentos, 'doc.', 'docs.')}</span>
+					<span class="numero" title="Peso da parceria no recorte: soma de 1/(n−1) em cada documento em comum com n autores">
+						peso {formatarDecimal(p.peso)} · {contar(p.documentos, 'doc.', 'docs.')}
+					</span>
 				</li>
 			{/each}
 		</ul>

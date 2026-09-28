@@ -122,7 +122,7 @@
 	colunas={['Obra', 'Tipo', 'Registro do OpenAlex', 'DOI', 'Documentos que citam', ...nomes]}
 	linhas={linhasCanone}
 >
-	<ul class="legenda" aria-label="Macrotema de quem cita">
+	<ul class="legenda" aria-label="Macrotema de quem cita" data-legenda>
 		{#each nomes as nome, k (k)}
 			{#if usados[k]}<li><span class="caixa" style:background={cores[k]}></span>{nome}</li>{/if}
 		{/each}
@@ -131,14 +131,12 @@
 	<p class="nota" data-testid="nota-cobertura">
 		O cânone só enxerga as referências que o OpenAlex identificou: {formatarInteiro(cob.com_referencias ?? 0)} dos
 		{formatarInteiro(cob.documentos ?? t.n)} documentos do corpus têm referências lá, somando
-		{formatarInteiro(cob.referencias ?? 0)}.{#if cob.referencias_listadas}
-			Nesses documentos, o OpenAlex resolveu {formatarInteiro(cob.referencias_resolvidas ?? 0)} das
+		{formatarInteiro(cob.referencias ?? 0)}.{#if cob.referencias_listadas}{' '}Nesses documentos, o OpenAlex resolveu {formatarInteiro(cob.referencias_resolvidas ?? 0)} das
 			{formatarInteiro(cob.referencias_listadas)} referências que a ArticleMeta lista
 			({formatarPorcentagem((cob.referencias_resolvidas ?? 0) / cob.referencias_listadas)}; a mediana por documento é
 			{formatarInteiro(cob.resolvidas_mediana_pct ?? 0)}%).{/if}
 		Obras sem DOI ou fora do OpenAlex (muitos livros, capítulos e textos antigos) ficam de fora, então a lista favorece o
-		que tem DOI.{#if cob.resenhas_no_canone}
-			Muitos livros chegam pelo registro de uma resenha, com o resenhista como autor: aqui, autor e ano vêm das
+		que tem DOI.{#if cob.resenhas_no_canone}{' '}Muitos livros chegam pelo registro de uma resenha, com o resenhista como autor: aqui, autor e ano vêm das
 			referências dos próprios artigos ({formatarInteiro(cob.resenhas_no_canone)} das
 			{formatarInteiro(c.canone.length)} obras; a tabela mostra o registro original).{/if}
 		Entram só as {formatarInteiro(c.canone.length)} obras mais citadas no corpus inteiro, e aqui aparecem as

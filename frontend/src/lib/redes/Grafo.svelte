@@ -348,15 +348,18 @@
 	}
 
 	// ---- rótulos por cima
-	// na ordem recebida (as maiores comunidades primeiro); um rótulo que cobriria outro já posto fica de fora
+	// na ordem recebida (as maiores comunidades primeiro); o rótulo que passaria da borda é empurrado para dentro, e só
+	// o que cobriria outro já posto (ou cujo grupo está fora da tela) fica de fora
 	const rotulosNaTela = $derived.by(() => {
 		const postos: { x0: number; x1: number; y0: number; y1: number }[] = [];
 		const saida: (RotuloGrafo & { px: number; py: number })[] = [];
 		for (const r of rotulos) {
-			const [px, py] = [baseX(r.x) * vista.k + vista.dx, baseY(r.y) * vista.k + vista.dy];
-			const meia = r.texto.length * 3.4 + 6;
+			let [px, py] = [baseX(r.x) * vista.k + vista.dx, baseY(r.y) * vista.k + vista.dy];
+			if (px < 0 || px > largura || py < 0 || py > altura) continue;
+			const meia = Math.min(r.texto.length * 3.4 + 6, largura / 2);
+			px = Math.min(Math.max(px, meia), largura - meia);
+			py = Math.min(Math.max(py, 11), altura - 5);
 			const caixa = { x0: px - meia, x1: px + meia, y0: py - 11, y1: py + 5 };
-			if (caixa.x0 < 0 || caixa.x1 > largura || caixa.y0 < 0 || caixa.y1 > altura) continue;
 			if (postos.some((o) => caixa.x0 < o.x1 && o.x0 < caixa.x1 && caixa.y0 < o.y1 && o.y0 < caixa.y1)) continue;
 			postos.push(caixa);
 			saida.push({ ...r, px, py });

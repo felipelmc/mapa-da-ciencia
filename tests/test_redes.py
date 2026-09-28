@@ -240,6 +240,22 @@ def test_desenho_reprodutivel():
     assert all(-1 <= x <= 1 and -1 <= y <= 1 for x, y in a.values())
 
 
+def test_desenho_com_o_maior_componente_em_cima_e_em_destaque():
+    # um componente de 40 nós e 60 duplas isoladas (como o piloto: o gigante e centenas de pares)
+    grupos = {f"g{k}": [f"p{k}", f"p{k + 1}", f"p{(k * 7) % 40}"] for k in range(40)}
+    grupos |= {f"d{k}": [f"a{k}", f"b{k}"] for k in range(60)}
+    pos = desenhar(grafo(pares_ponderados(grupos)))
+    gigante = [pos[f"p{k}"] for k in range(40)]
+    pares = [pos[x] for k in range(60) for x in (f"a{k}", f"b{k}")]
+    # em cima (o y cresce para cima; a vista inverte para a tela), com a maior parte da altura
+    assert min(y for _, y in gigante) > max(y for _, y in pares)
+    ys = [y for _, y in pos.values()]
+    assert max(y for _, y in gigante) - min(y for _, y in gigante) > 0.5 * (max(ys) - min(ys))
+    # e o desenho mais largo que alto, como a vista
+    xs = [x for x, _ in pos.values()]
+    assert 1.2 < (max(xs) - min(xs)) / (max(ys) - min(ys)) < 2.2
+
+
 def test_citacoes_e_canone():
     refs = [
         {"obra": "W1", "citada": "W2"},  # interna

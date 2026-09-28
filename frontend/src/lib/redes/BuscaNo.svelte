@@ -73,6 +73,7 @@
 		id="{uid}-campo"
 		type="search"
 		role="combobox"
+		data-busca-no
 		autocomplete="off"
 		spellcheck="false"
 		placeholder={dica}
