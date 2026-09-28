@@ -12,8 +12,8 @@ _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def _texto(r) -> str:
-    """A saída sem cores nem a moldura do Rich, com os espaços juntados: no CI (`FORCE_COLOR`) o Rich colore e quebra
-    as linhas dentro do painel de erro."""
+    """A saída sem cores nem a moldura do Rich, com os espaços juntados: no GitHub Actions (`GITHUB_ACTIONS`) o Typer
+    força o terminal, e o Rich colore e quebra as linhas dentro do painel de erro."""
     return " ".join(_ANSI.sub("", r.output).replace("│", " ").split())
 
 
