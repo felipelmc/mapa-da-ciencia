@@ -20,9 +20,12 @@ as referências já resolvidas (`referenced_works`), a 1 crédito por 100 obras.
    `nao_fundir` também desfaz as fusões automáticas. Alternativa descartada: casar nomes por semelhança sem evidência
    (fundiria homônimos comuns na área, como "Silva"). O raciocínio e as medidas estão em "Identidade: o que o piloto
    mostrou", abaixo.
-2. **Pesos fracionários** (`1/(n − 1)` por par em cada artigo com `n` autores distintos), a mesma lógica da contagem
-   fracionária da geografia (ADR 0008): a força de uma pessoa é o número de artigos com coautor, e os artigos com
-   muitos autores não dominam a rede.
+2. **Pesos fracionários** (`1/(n − 1)` por par em cada artigo com `n` autores distintos): cada autor reparte 1 entre
+   os coautores de cada artigo, e o artigo soma `n/2`. A ideia é a da contagem fracionária da geografia (ADR 0008),
+   mas a unidade é o autor, e não o artigo: a força de uma pessoa é o número de artigos com coautor, e os artigos com
+   muitos autores não dominam a rede. Os pesos são somados como frações exatas (arredondá-los mudava as comunidades).
+   Na rede de instituições, a dupla afiliação de um autor só também liga as duas instituições: a rede é de
+   instituições que dividem artigos (cerca de um décimo do peso vem desses artigos, no piloto).
 3. **Comunidades por Louvain** (networkx, resolução 1, semente 7), rotuladas pelos dois tópicos mais frequentes dos
    artigos delas, **sem nome de pessoa**. Dependência nova: `networkx` (BSD-3, Python puro, cerca de 2 MB, importado
    só dentro das funções das redes). igraph e graph-tool ficaram de fora pela licença e pelos binários.

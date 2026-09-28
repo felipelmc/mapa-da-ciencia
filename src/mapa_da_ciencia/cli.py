@@ -291,12 +291,15 @@ def _mostrar_redes(p: Projeto) -> None:
         f"componente tem {num(met.get('maior_componente', 0), 0)}"
     )
     if c.get("instituicoes"):
-        texto += f"; {num(c['instituicoes'], 0)} instituições colaborando"
+        texto += f"; {num(c['instituicoes'], 0)} instituições ligadas a outra"
     if r.cobertura_citacoes:
         texto += f"; {num(c['citacoes_internas'], 0)} citações dentro do corpus"
     console.print(texto + ".")
     if redes_em_dia(p) is False:
-        console.print("[yellow]As redes são de antes das últimas mudanças.[/] Rode [bold]mapa redes[/].")
+        from mapa_da_ciencia.redes.pipeline import o_que_mudou
+
+        mudou = " e ".join(o_que_mudou(p)) or "as entradas"
+        console.print(f"[yellow]As redes estão desatualizadas[/] (mudou {escape(mudou)}). Rode [bold]mapa redes[/].")
 
 
 def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:

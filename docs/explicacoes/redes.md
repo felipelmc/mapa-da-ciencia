@@ -27,11 +27,21 @@ curto, um HMAC com o segredo do projeto (ver [Privacidade e licenças](privacida
 
 ## Pesos fracionários
 
-Como na geografia, cada documento vale 1. Num artigo com `n` autores, cada um reparte o seu 1 entre os `n − 1`
-coautores: cada par recebe `1/(n − 1)`. Assim, a **força** de uma pessoa na rede (a soma dos pesos das arestas dela)
-é o número de artigos em que ela teve coautor, e um artigo com dez autores não pesa dez vezes mais que um com dois. A
-colaboração entre **instituições** segue a mesma regra, com as instituições identificadas distintas do artigo; a
-colaboração entre **estados** também, com as UFs distintas e `EX` para qualquer vínculo no exterior.
+Na coautoria, cada **autor** vale 1 em cada artigo, e reparte esse 1 entre os `n − 1` coautores: cada par recebe
+`1/(n − 1)`. Um artigo de `n` autores soma, então, `n/2` na rede (e não 1, como na contagem fracionária da
+geografia, em que o artigo inteiro vale 1): a ideia é a mesma, repartir para que artigos com muitos autores não
+dominem, mas a unidade é o autor. Assim, a **força** de uma pessoa na rede (a soma dos pesos das arestas dela) é o
+número de artigos em que ela teve coautor, e um artigo com dez autores (45 pares de peso 1/9) não pesa mais para
+cada um do que um com dois. A colaboração entre **instituições** segue a mesma regra, com as instituições
+identificadas distintas do artigo; a colaboração entre **estados** também, com as UFs distintas e `EX` (o
+**Exterior**, na vista) para qualquer vínculo fora do Brasil.
+
+Na rede de instituições, duas instituições ficam ligadas quando aparecem juntas nas afiliações de um artigo, **mesmo
+que seja um autor só com duas afiliações**. A escolha é deliberada: uma pessoa com vínculo nas duas liga as
+instituições tanto quanto dois coautores. No piloto, esses artigos de um autor só são cerca de um décimo dos que
+têm duas ou mais instituições (e do peso da rede), e por eles a série "documentos com mais de uma instituição" pode
+passar a de coautoria em alguns anos. A rede mede instituições que dividem artigos, e não só equipes diferentes
+trabalhando juntas.
 
 ## Comunidades e desenho
 
@@ -49,9 +59,11 @@ tópicos do rótulo cobrem, em geral, de um quinto a metade dos artigos de uma c
 instituições, bem menos (as instituições grandes publicam de tudo). E a maioria das pessoas com coautor (59% no
 piloto) está em grupos menores do que o mínimo, fora das comunidades numeradas.
 
-O desenho posiciona cada componente conectado à parte (`spring_layout`, semente 7), com tamanho proporcional ao
-número de nós, e empacota os componentes do maior para o menor. **A distância no desenho não é uma medida**: dois nós
-perto estão ligados, mas dois nós longe podem estar a um passo um do outro.
+O desenho posiciona cada componente conectado à parte (`spring_layout`, semente 7), com tamanho proporcional à raiz
+do número de nós. O maior componente fica em cima, e os outros numa faixa embaixo, menores, do maior para o menor.
+**A distância no desenho não é uma medida**: nós perto costumam estar no mesmo grupo, mas muitas vezes não estão
+ligados (na primeira versão do desenho do piloto, só um terço das pessoas tinha como coautor o vizinho mais próximo),
+e dois nós longe podem estar a um passo um do outro.
 
 ## Citações e cânone
 

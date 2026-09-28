@@ -233,6 +233,20 @@ def test_id_publicado_nao_se_liga_ao_orcid():
     assert re.fullmatch(r"p[0-9a-f]{10}", publicado)
 
 
+def test_frases_da_documentacao_batem_com_as_contas():
+    docs = Path(__file__).resolve().parent.parent / "docs"
+    guia = " ".join((docs / "guias" / "ler-as-redes.md").read_text(encoding="utf-8").split())
+    explicacao = " ".join((docs / "explicacoes" / "redes.md").read_text(encoding="utf-8").split())
+    # dez autores num artigo: 45 pares de peso 1/9 (e não "dez linhas fracas")
+    dez = pares_ponderados({"d": [f"a{k}" for k in range(10)]})
+    assert len(dez) == 45 and {p for p, _ in dez.values()} == {1 / 9}
+    assert "45 linhas fracas, de peso 1/9" in guia and "45 pares de peso 1/9" in explicacao
+    # um artigo de n autores soma n/2, e não 1 ("como na geografia, cada documento vale 1")
+    assert sum(p for p, _ in dez.values()) == pytest.approx(10 / 2) and "soma, então, `n/2`" in explicacao
+    assert "Como na geografia, cada documento vale 1" not in explicacao
+    assert "dois nós perto estão ligados" not in explicacao
+
+
 def test_desenho_reprodutivel():
     arestas = pares_ponderados({f"d{k}": [f"p{k}", f"p{k + 1}", f"p{k % 3}"] for k in range(12)} | {"x": ["q", "r"]})
     a, b = desenhar(grafo(arestas)), desenhar(grafo(dict(reversed(list(arestas.items())))))
@@ -538,6 +552,7 @@ def test_redes_de_ponta_a_ponta(projeto):
     status = CliRunner().invoke(app, ["status", "-P", str(projeto.raiz)], env={"COLUMNS": "200"}).output
     linha = next(x for x in status.splitlines() if x.strip(" │┃").startswith("redes"))
     assert "desatualizada" in linha and "mudou o pessoas.yaml" in linha
+    assert "As redes estão desatualizadas (mudou o pessoas.yaml)" in status
     (projeto.raiz / "pessoas.yaml").unlink()
     assert redes_em_dia(projeto) is True
     exportar(projeto)

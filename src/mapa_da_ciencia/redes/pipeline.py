@@ -174,7 +174,7 @@ class ResumoRedes:
             f"componentes, o maior com {self.maior_componente}); {self.comunidades} comunidades"
         ]
         if self.instituicoes is not None:
-            partes.append(f"{self.instituicoes} instituições colaborando")
+            partes.append(f"{self.instituicoes} instituições ligadas a outra")
         if self.citacoes_internas is not None:
             partes.append(f"{self.citacoes_internas} citações dentro do corpus; cânone de {self.canone} obras")
         return "; ".join(partes) + "."

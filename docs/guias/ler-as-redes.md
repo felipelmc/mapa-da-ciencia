@@ -7,8 +7,8 @@ escolhidos em outra vista chegam aqui, e o que fica de fora esmaece (o desenho n
 
 Cada ponto é uma pessoa, e cada linha liga duas pessoas que escreveram juntas. O tamanho do ponto cresce com o número
 de artigos; a cor é a da comunidade (o macrotema mais frequente nos artigos dela). A espessura da linha é o peso
-fracionário: dois autores que escreveram vários artigos a dois têm uma linha forte; dez autores num único artigo, dez
-linhas fracas.
+fracionário: dois autores que escreveram vários artigos a dois têm uma linha forte; dez autores num único artigo formam
+45 linhas fracas, de peso 1/9 cada.
 
 - **O que dá para ler:** grupos que publicam juntos, pessoas que ligam grupos (pontes), o peso da colaboração ao
   longo do tempo (as séries ao lado: a fração de artigos com coautoria e o número médio de autores).
@@ -27,7 +27,9 @@ agrupamento, modularidade).
 
 ## Instituições
 
-O mesmo, com as instituições das afiliações. O cartão tem "Filtrar por esta instituição", que leva o recorte para as
+O mesmo, com as instituições das afiliações. Duas instituições ficam ligadas quando aparecem juntas nas afiliações de
+um artigo, mesmo que seja um autor só com duas afiliações: a ligação é entre instituições que dividem um artigo, e
+não só entre equipes diferentes. O cartão tem "Filtrar por esta instituição", que leva o recorte para as
 outras vistas.
 
 ## Estados
