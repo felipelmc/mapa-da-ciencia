@@ -246,9 +246,13 @@
 				<dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd></dt>
 				<dd>na busca, escolhem a pessoa ou a instituição e abrem o cartão dela</dd>
 				<dt><kbd>Esc</kbd></dt>
-				<dd>fecha o cartão</dd>
-				<dt>roda do mouse, arrastar, pinça</dt>
-				<dd>aproximam e movem o grafo; os botões + e − fazem o mesmo, e “Reiniciar” volta ao começo</dd>
+				<dd>fecha o cartão (ou solta a comunidade em destaque)</dd>
+				<dt><kbd>Ctrl</kbd> (<kbd>⌘</kbd> no Mac) + roda, pinça, clique duplo</dt>
+				<dd>aproximam o grafo (a roda sozinha rola a página; em tela cheia, também aproxima)</dd>
+				<dt>arrastar</dt>
+				<dd>no fundo, move o grafo; num nó, move o nó (só na tela: “Reiniciar” devolve o desenho)</dd>
+				<dt><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt>
+				<dd>com o grafo em foco (clique nele ou chegue com Tab): aproximam, afastam, voltam ao desenho inteiro e movem</dd>
 			</dl>
 			{/if}
 			<p>

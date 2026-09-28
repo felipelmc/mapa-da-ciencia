@@ -4,13 +4,22 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Grafos mais interativos** na coautoria e nas instituições: passar o mouse num nó acende ele, os vizinhos e as ligações entre eles, com os nomes; uma comunidade escolhida na legenda ou no rótulo do desenho fica acesa e enquadrada, e vai para o link (`comunidade=`); "Enquadrar" leva o zoom até a vizinhança do nó aberto (e a busca e os links já abrem o nó enquadrado); os nomes aparecem com o zoom, sem se cobrirem; arrastar um nó o move na tela; clique duplo, teclado (+, −, 0 e as setas) e tela cheia. As arestas entre comunidades ficam mais fracas que as de dentro delas.
+
 ### Mudado
 
 - **A área de conteúdo fica centrada e mais larga** (até 104rem, 1.664 px): numa tela larga ou em tela cheia, as vistas não ficam mais encostadas à esquerda, e as figuras crescem com a janela (o texto corrido continua na medida de leitura). O grafo das redes ocupa quase a altura da janela.
-- **O desenho das redes de coautoria e de instituições** (`mapa redes`, adendo do ADR 0014): no maior componente, cada comunidade ganha um espaço próprio, e as comunidades muito ligadas ficam vizinhas; os componentes menores vêm à direita e embaixo do maior, e nenhum nó encosta noutro numa tela de computador. No piloto, os nós encostados caem de 57% para 0%, e o maior componente passa de 27% para 60% do desenho. As redes de um projeto ficam desatualizadas até a próxima `mapa redes`.
+- Nas redes, a roda do mouse sozinha rola a página (com um aviso de como aproximar), em vez de prender quem lê no grafo; Ctrl/⌘ + roda e a pinça aproximam. No celular, um dedo na vertical rola a página.
+
+- **O desenho das redes de coautoria e de instituições** (`mapa redes`, adendo do ADR 0014): no maior componente, cada comunidade ganha um espaço próprio, e as comunidades muito ligadas ficam vizinhas; os componentes menores vêm à direita e embaixo do maior, e nenhum nó encosta noutro numa tela de computador. No piloto, os nós encostados caem de 57% para 0%, e o maior componente passa de 27% para 61% do desenho. As redes de um projeto ficam desatualizadas até a próxima `mapa redes`.
 
 ### Corrigido
 
+- nas redes, abrir um nó com um clique não rola mais a página até o cartão (o foco só vai para o cartão quando a escolha vem do teclado); no celular, um botão leva ao cartão, que fica embaixo do grafo.
+- nas redes, a dica e o nome do nó aberto não saem mais cortados nas bordas do grafo, e o texto de abertura conta as pessoas desenhadas de fato (sem as duplas e os trios escondidos).
+- o raio dos nós vai de 1 documento (o raio mínimo) ao nó com mais documentos; antes o menor nó saía bem maior que o mínimo, e os nós se sobrepunham mais.
 - a vista Validação voltou a abrir no site publicado e no painel com o júri: com seis modelos, dois pares com diferença significativa (McNemar) na mesma variável repetiam a chave da lista, e a página ficava parada em "Carregando a validação…". O exemplo do contrato agora tem vários pares por variável, como o piloto.
 - um erro ao desenhar uma vista vira um aviso com "Tentar de novo", em vez de deixar a página parada em "Carregando…" ou em branco; a troca de seção recomeça do zero.
 

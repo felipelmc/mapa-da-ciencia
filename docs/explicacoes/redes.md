@@ -68,7 +68,7 @@ O desenho posiciona cada componente conectado à parte (`spring_layout`, semente
 do número de nós. No maior componente, cada comunidade ganha um espaço próprio, e as comunidades muito ligadas entre si
 ficam vizinhas; os componentes menores vêm à direita e embaixo, do maior para o menor. Nenhum nó encosta noutro numa
 tela de computador (adendo do ADR 0014). **A distância no desenho não é uma medida**: nós perto costumam estar no
-mesmo grupo, mas nem sempre estão ligados (no piloto, 83% das pessoas têm como coautor o vizinho mais próximo), o vão
+mesmo grupo, mas nem sempre estão ligados (no piloto, 86% das pessoas têm como coautor o vizinho mais próximo), o vão
 entre duas comunidades vem em parte do próprio desenho, e dois nós longe podem estar a um passo um do outro.
 
 ## Citações e cânone

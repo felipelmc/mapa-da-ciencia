@@ -142,16 +142,17 @@ desenho era qual, escolheu pelas imagens e pelas métricas o mesmo que elas apon
 - **Os componentes menores à direita do maior**, na altura dele, e depois embaixo, com a largura que deixa o desenho
   visível perto de 1,6 : 1, a proporção de uma tela larga. As duplas e os trios ficam embaixo de tudo.
 - **Nenhum nó encostado noutro** na tela de referência (1250 × 840 px): um relaxamento dentro de cada componente afasta
-  os nós pelos raios que a vista desenha (`raios_na_vista`).
+  os nós pelos raios que a vista desenha (`raios_na_vista`). O raio vai de 1 documento (o mínimo) ao nó com mais
+  documentos (o máximo); na 2.0.0, a fórmula levava 0 documento ao mínimo, e o menor nó saía bem maior que ele.
 
-| Piloto, tela de 1250 × 840 px | Coautoria, 2.0.0 | Coautoria, 2.1.0 | Instituições, 2.0.0 | Instituições, 2.1.0 |
+| Piloto, tela de 1250 × 840 px, com os raios de cada versão | Coautoria, 2.0.0 | Coautoria, 2.1.0 | Instituições, 2.0.0 | Instituições, 2.1.0 |
 |---|---|---|---|---|
 | Nós encostados em outro | 57% | 0% | 29% | 0% |
-| Distância ao vizinho mais próximo (mediana) | 5,9 px | 9,3 px | 10,1 px | 16,1 px |
-| Vizinhos mais próximos da mesma comunidade (dos 5) | 62% | 97% | 35% | 97% |
-| Área do desenho ocupada pelo maior componente | 27% | 60% | 49% | 66% |
+| Distância ao vizinho mais próximo (mediana) | 5,9 px | 8,3 px | 10,1 px | 16,0 px |
+| Vizinhos mais próximos da mesma comunidade (dos 5) | 62% | 98% | 35% | 97% |
+| Área do desenho ocupada pelo maior componente | 27% | 61% | 49% | 66% |
 
-Na coautoria, o vizinho mais próximo de uma pessoa no desenho é um coautor dela em 83% dos casos (38% na 2.0.0). O
-desenho leva 1,5 s no piloto e continua reprodutível. A separação entre as comunidades vem em parte da construção:
+Na coautoria, o vizinho mais próximo de uma pessoa no desenho é um coautor dela em 86% dos casos (38% na 2.0.0). O
+desenho leva cerca de 1 s no piloto e continua reprodutível. A separação entre as comunidades vem em parte da construção:
 **o vão entre dois grupos não é uma medida**, como a distância em geral (veja "Como ler as redes").
 

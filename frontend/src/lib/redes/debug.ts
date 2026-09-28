@@ -25,6 +25,8 @@ export function recomecarDebug(modo: string): RedesDebug {
 		desenhado: false,
 		msAtePrimeiroDesenho: null,
 		selecionado: null,
-		posicaoNaTela: undefined
+		posicaoNaTela: undefined,
+		comunidade: null,
+		estadoDoGrafo: undefined
 	});
 }

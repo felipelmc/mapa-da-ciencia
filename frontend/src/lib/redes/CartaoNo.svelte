@@ -75,6 +75,9 @@
 		todos = false;
 		const ativo = document.activeElement;
 		if (!ativo || ativo === document.body || ativo === titulo_) return;
+		// um clique no grafo (ou no fundo da página) põe o foco na área do grafo ou no <main>: não é o teclado, e o
+		// foco não pula (nem a página rola) para o cartão; pelo teclado (Tab até o grafo e Enter), vai
+		if (ativo.id === 'conteudo' || (ativo.closest('[data-grafo]') && !ativo.matches(':focus-visible'))) return;
 		if (!ativo.closest('[data-testid="cartao-no"]')) voltarPara = ativo as HTMLElement;
 		titulo_?.focus({ preventScroll: true });
 		// na tela estreita o cartão fica embaixo do grafo: rola até ele

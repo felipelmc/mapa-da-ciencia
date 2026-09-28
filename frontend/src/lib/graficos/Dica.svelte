@@ -1,9 +1,36 @@
 <script lang="ts">
-	/** Dica flutuante de um gráfico, posicionada em pixels dentro do contêiner (que deve ser `position: relative`). */
-	let { x, y, linhas }: { x: number; y: number; linhas: string[] } = $props();
+	/**
+	 * Dica flutuante de um gráfico, posicionada em pixels dentro do contêiner (que deve ser `position: relative`).
+	 * Com `limites` (o tamanho do contêiner), a dica não sai dele: encosta na borda do lado e, sem espaço em cima,
+	 * vai para baixo do ponto.
+	 */
+	let {
+		x,
+		y,
+		linhas,
+		limites = null
+	}: { x: number; y: number; linhas: string[]; limites?: { largura: number; altura: number } | null } = $props();
+
+	let largura = $state(0);
+	let altura = $state(0);
+	const presa = $derived.by(() => {
+		if (!limites || !largura) return null;
+		const esquerda = Math.min(Math.max(x - largura / 2, 4), Math.max(4, limites.largura - largura - 4));
+		const acima = y - altura - 12;
+		const topo = acima >= 4 ? acima : Math.min(y + 14, Math.max(4, limites.altura - altura - 4));
+		return { esquerda, topo };
+	});
 </script>
 
-<div class="dica" role="status" style:left="{x}px" style:top="{y}px">
+<div
+	class="dica"
+	class:presa={!!presa}
+	role="status"
+	style:left="{presa ? presa.esquerda : x}px"
+	style:top="{presa ? presa.topo : y}px"
+	bind:offsetWidth={largura}
+	bind:offsetHeight={altura}
+>
 	{#each linhas as l, i (i)}
 		<span class:titulo={i === 0}>{l}</span>
 	{/each}
@@ -25,6 +52,11 @@
 		border: 1px solid var(--linha-forte);
 		border-radius: 0.45rem;
 		box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+	}
+
+	/* com os limites, a posição já vem calculada */
+	.dica.presa {
+		transform: none;
 	}
 
 	.titulo {

@@ -445,3 +445,153 @@ test('a Ajuda explica como ler as redes', async ({ page }) => {
 	await expect(secao).toContainText('agrupamentos automáticos');
 	await expect(secao).toContainText('favorece o que tem DOI');
 });
+
+// ---- a interação com o grafo (2.1): destaque, comunidade, arrasto, roda, teclado e tela cheia
+
+/** Os vizinhos (no corpus inteiro) de uma pessoa, pelas autorias do exemplo. */
+function vizinhosDe(p: number): Set<number> {
+	const saida = new Set<number>();
+	for (const pessoas of pessoasPorDoc(() => true).values()) if (pessoas.has(p)) for (const q of pessoas) if (q !== p) saida.add(q);
+	return saida;
+}
+const estadoDoGrafo = (page: Page) => page.evaluate(() => window.__redesDebug!.estadoDoGrafo!()!);
+/** `true` se todos os nós estão dentro da área do grafo (depois de enquadrar). */
+async function todosNaTela(page: Page, indices: number[]) {
+	const caixa = (await page.getByTestId('canvas-rede').boundingBox())!;
+	for (const i of indices) {
+		const [x, y] = (await naTela(page, redes.pessoas.id[i]))!;
+		if (x < 0 || x > caixa.width || y < 0 || y > caixa.height) return false;
+	}
+	return true;
+}
+const naTela = (page: Page, id: string) => page.evaluate((i) => window.__redesDebug!.posicaoNaTela!(i), id);
+/** A pessoa desenhada com mais coautores. */
+const central = () => {
+	const desenhadas = redes.pessoas.id.map((_: string, i: number) => i).filter((i: number) => redes.pessoas.x[i] !== null);
+	return desenhadas.sort((a: number, b: number) => redes.pessoas.grau[b] - redes.pessoas.grau[a])[0] as number;
+};
+
+test('passar o mouse num nó acende ele e os vizinhos, e escreve o nome deles', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	expect((await estadoDoGrafo(page)).destacados).toBe(0);
+	const p = central();
+	const [x, y] = (await naTela(page, redes.pessoas.id[p]))!;
+	await page.getByTestId('canvas-rede').hover({ position: { x, y } });
+	await expect.poll(async () => (await estadoDoGrafo(page)).destacados).toBe(1 + vizinhosDe(p).size);
+	const nomes = (await estadoDoGrafo(page)).nomes;
+	expect(nomes.length).toBeGreaterThan(0);
+	// só os nomes da vizinhança (a pessoa sob o mouse e os coautores dela)
+	const daVizinhanca = [p, ...vizinhosDe(p)].map((q) => redes.pessoas.nome[q]);
+	expect(nomes.filter((n: string) => !daVizinhanca.includes(n))).toEqual([]);
+	// fora do nó, o destaque some
+	await page.getByTestId('canvas-rede').hover({ position: { x: 2, y: 2 } });
+	await expect.poll(async () => (await estadoDoGrafo(page)).destacados).toBe(0);
+	expect(problemas).toEqual([]);
+});
+
+test('uma comunidade escolhida na legenda fica acesa, enquadrada e no link; "Todas" solta', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const botao = page.getByTestId('comunidade').first();
+	await botao.click();
+	await expect(page).toHaveURL(/comunidade=\d+/);
+	await expect(botao).toHaveAttribute('aria-pressed', 'true');
+	const c = Number(new URL(page.url().replace('#/', '')).searchParams.get('comunidade'));
+	const membros = redes.pessoas.id.map((_: string, i: number) => i).filter((i: number) => redes.pessoas.comunidade[i] === c && redes.pessoas.x[i] !== null);
+	await expect.poll(async () => (await estadoDoGrafo(page)).destacados).toBe(membros.length);
+	// enquadrada: o zoom mudou, e a comunidade inteira está na tela
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).not.toBe(1);
+	expect(await todosNaTela(page, membros)).toBe(true);
+	await expect(page.getByTestId('zoom-enquadrar')).toHaveText('Enquadrar a comunidade');
+	// o link reproduz a tela
+	await page.reload();
+	await esperarRedes(page, 'coautoria');
+	await expect.poll(async () => (await estadoDoGrafo(page)).destacados).toBe(membros.length);
+	await page.getByTestId('todas-comunidades').click();
+	await expect(page).not.toHaveURL(/comunidade=/);
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).toBe(1);
+	// trocar de rede solta a comunidade
+	await page.getByTestId('comunidade').first().click();
+	await page.getByTestId('rede-instituicoes').click();
+	await expect(page).not.toHaveURL(/comunidade=/);
+	expect(problemas).toEqual([]);
+});
+
+test('arrastar um nó o move sem abrir o cartão; "Reiniciar" devolve o desenho; o clique abre sem rolar a página', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const id = redes.pessoas.id[central()];
+	const canvas = page.getByTestId('canvas-rede');
+	await canvas.scrollIntoViewIfNeeded();
+	const caixa = (await canvas.boundingBox())!;
+	const [x, y] = (await naTela(page, id))!;
+	await page.mouse.move(caixa.x + x, caixa.y + y);
+	await page.mouse.down();
+	await page.mouse.move(caixa.x + x + 60, caixa.y + y + 30, { steps: 6 });
+	await page.mouse.up();
+	const [x2, y2] = (await naTela(page, id))!;
+	expect(Math.round(x2 - x)).toBe(60);
+	expect(Math.round(y2 - y)).toBe(30);
+	expect((await estadoDoGrafo(page)).movidos).toBe(1);
+	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+	await page.getByTestId('zoom-reiniciar').click();
+	await expect.poll(async () => (await estadoDoGrafo(page)).movidos).toBe(0);
+	expect(await naTela(page, id)).toEqual([x, y]);
+	// o clique abre o cartão, e a página não rola até ele
+	const rolagem = await page.evaluate(() => scrollY);
+	await canvas.click({ position: { x, y } });
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	expect(await page.evaluate(() => scrollY)).toBe(rolagem);
+	await expect(page.getByTestId('zoom-enquadrar')).toHaveText('Enquadrar o nó');
+	await page.getByTestId('zoom-enquadrar').click();
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).not.toBe(1);
+	expect(await todosNaTela(page, [central(), ...vizinhosDe(central())])).toBe(true);
+	expect(problemas).toEqual([]);
+});
+
+test('a roda sozinha rola a página (com um aviso); Ctrl + roda e o teclado aproximam', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.setViewportSize({ width: 1440, height: 700 });
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const canvas = page.getByTestId('canvas-rede');
+	await canvas.scrollIntoViewIfNeeded();
+	const caixa = (await canvas.boundingBox())!;
+	await page.mouse.move(caixa.x + caixa.width / 2, caixa.y + 40);
+	const antes = await page.evaluate(() => scrollY);
+	await page.mouse.wheel(0, 200);
+	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(antes);
+	await expect(page.getByTestId('aviso-roda')).toBeVisible();
+	expect((await estadoDoGrafo(page)).vista.k).toBe(1);
+	const caixa2 = (await canvas.boundingBox())!;
+	await page.mouse.move(caixa2.x + caixa2.width / 2, caixa2.y + 40);
+	await page.keyboard.down('Control');
+	await page.mouse.wheel(0, -300);
+	await page.keyboard.up('Control');
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).toBeGreaterThan(1);
+	// o teclado, com a área do grafo em foco: 0 volta, + aproxima
+	await page.locator('[data-grafo]').focus();
+	await page.keyboard.press('0');
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).toBe(1);
+	await page.keyboard.press('+');
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).toBeGreaterThan(1);
+	expect(problemas).toEqual([]);
+});
+
+test('tela cheia: o grafo ocupa a tela e volta', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const botao = page.getByTestId('tela-cheia');
+	test.skip((await botao.count()) === 0, 'navegador sem a API de tela cheia');
+	await botao.click();
+	await expect(botao).toHaveAttribute('aria-pressed', 'true');
+	await expect.poll(async () => (await estadoDoGrafo(page)).telaCheia).toBe(true);
+	await botao.click();
+	await expect(botao).toHaveAttribute('aria-pressed', 'false');
+	expect(problemas).toEqual([]);
+});

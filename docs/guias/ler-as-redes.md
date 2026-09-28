@@ -21,9 +21,23 @@ duplas e os trios isolados ficam escondidos, para o desenho enquadrar o resto: "
 isolados" os traz de volta (a escolha vai para o link, com `duplas=1`, e o desenho se reenquadra). A lista embaixo do desenho dá o rótulo inteiro das maiores comunidades (no desenho sai
 só o primeiro tópico).
 
-Um clique abre o cartão da pessoa, com os artigos dela no recorte e os coautores mais fortes, cada um com o peso da
-parceria no recorte e os documentos em comum. Esc (ou o ×) fecha o cartão e devolve o foco para onde ele estava. O
-link "Como ler as redes", ao lado do título da vista, leva à seção da Ajuda com o glossário (peso, componente,
+Passe o mouse num nó: ele, os coautores dele e as ligações entre eles acendem, o resto esmaece, e os nomes dos
+coautores aparecem. Um clique abre o cartão da pessoa, com os artigos dela no recorte e os coautores mais fortes, cada
+um com o peso da parceria no recorte e os documentos em comum; a vizinhança fica acesa, e "Enquadrar o nó" leva o zoom
+até ela. Esc (ou o ×) fecha o cartão e devolve o foco para onde ele estava. Aberto pela busca ou por um link, o nó já
+vem enquadrado.
+
+Clique numa comunidade (na lista da legenda ou no rótulo dela, no desenho) para acendê-la e enquadrá-la; a escolha vai
+para o link (`comunidade=`), e "Todas" solta. Com zoom, os nomes das pessoas com mais artigos aparecem, sem se
+cobrirem, e mais nomes aparecem quanto mais perto você chega.
+
+Para aproximar: Ctrl (⌘ no Mac) + roda, a pinça do trackpad ou de dois dedos, o clique duplo ou os botões + e −. A roda
+sozinha rola a página, para quem está lendo não ficar preso no grafo; em tela cheia (o botão "Tela cheia"), ela também
+aproxima. Arrastar o fundo move o grafo; arrastar um nó o move de lugar, só na sua tela, para desembaraçar um trecho
+("Reiniciar" devolve o desenho e o zoom). Com o grafo em foco, o teclado também serve: + e − aproximam e afastam, 0
+volta ao desenho inteiro e as setas movem.
+
+O link "Como ler as redes", ao lado do título da vista, leva à seção da Ajuda com o glossário (peso, componente,
 agrupamento, modularidade).
 
 ## Instituições

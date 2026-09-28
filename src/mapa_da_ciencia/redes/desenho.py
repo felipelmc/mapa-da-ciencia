@@ -264,7 +264,9 @@ def desenhar(
 
 
 def raios_na_vista(documentos: dict[str, int], rede: str) -> dict[str, float]:
-    """O raio de cada nó (px) como a vista desenha: pela raiz dos documentos do nó no corpus (`RAIO` em ModoGrafo)."""
+    """O raio de cada nó (px) como a vista desenha (`RAIO` em ModoGrafo): pela raiz dos documentos do nó no corpus, de
+    1 documento (o raio mínimo) ao nó com mais documentos (o máximo)."""
     minimo, maximo = {"coautoria": (1.8, 8.0), "instituicoes": (3.0, 14.0)}[rede]
     teto = math.sqrt(max(1, *documentos.values())) if documentos else 1.0
-    return {k: minimo + (maximo - minimo) * math.sqrt(v) / teto for k, v in documentos.items()}
+    escala = (maximo - minimo) / (teto - 1) if teto > 1 else 0.0
+    return {k: minimo + escala * max(0.0, math.sqrt(v) - 1) for k, v in documentos.items()}

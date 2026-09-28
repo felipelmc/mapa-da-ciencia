@@ -41,6 +41,10 @@ declare global {
 		selecionado: string | null;
 		/** Posição de um nó na tela (px, relativa ao canvas), pelo id, para os testes clicarem nele. */
 		posicaoNaTela?: (id: string) => [number, number] | undefined;
+		/** A comunidade em destaque na coautoria ou nas instituições. */
+		comunidade?: number | null;
+		/** O zoom, o destaque, os nós movidos e os nomes escritos no grafo. */
+		estadoDoGrafo?: () => import('$lib/redes/Grafo.svelte').EstadoGrafo | undefined;
 	}
 
 	interface Window {
