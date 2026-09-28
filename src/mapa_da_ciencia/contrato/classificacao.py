@@ -160,6 +160,7 @@ def validacao_contrato(v: Validacao, *, so_referencia: bool = True) -> m.Validac
                 matriz=m.Matriz(rotulos=x.rotulos, valores=x.matriz),
                 referencia=x.referencia,
                 comparado=x.comparado,
+                circular=x.circular,
                 por_classe=[
                     m.MetricaClasse(
                         rotulo=c.rotulo,
@@ -188,7 +189,7 @@ def validacao_contrato(v: Validacao, *, so_referencia: bool = True) -> m.Validac
             for d in v.divergencias
             if not so_referencia or tipos.get(d.codificador) == "referencia"
         ],
-        codificadores=[m.Participante(nome=p.nome, tipo=p.tipo, n=p.n) for p in v.participantes],
+        codificadores=[m.Participante(nome=p.nome, tipo=p.tipo, n=p.n, familia=p.familia) for p in v.participantes],
         modelo_principal=v.modelo_principal,
         hash_codebook=v.hash_codebook,
         comparacoes_modelos=[
@@ -206,6 +207,59 @@ def validacao_contrato(v: Validacao, *, so_referencia: bool = True) -> m.Validac
         ],
         evidencia_literal=v.evidencia_literal,
     )
+
+
+def juri_contrato(projeto: Projeto, v: Validacao) -> tuple[m.ResumoJuri | None, dict[str, dict[str, m.DecisaoJuri]]]:
+    """O resumo do júri para `validacao.json` e as decisões por documento da amostra para os detalhes."""
+    from mapa_da_ciencia.armazenamento import ler_tabela
+    from mapa_da_ciencia.classificacao.resultado import valor_do_texto
+    from mapa_da_ciencia.juri.consolidar import ler_resumo
+    from mapa_da_ciencia.juri.estado import pasta_dados
+    from mapa_da_ciencia.juri.relatorio import como_dict, numeros
+    from mapa_da_ciencia.texto import remover_emails
+
+    if not projeto.config.juri.membros or (resumo := ler_resumo(projeto)) is None:
+        return None, {}
+    cb = projeto.codebook
+    tipos = {x.id: x.tipo for x in cb.variaveis}
+    pasta = pasta_dados(projeto, cb.hash())
+    if not (pasta / "decisoes.parquet").exists():
+        return None, {}
+    numeros_juri = como_dict(numeros(projeto, resumo, v))
+    votos: dict[tuple[str, str], list[m.VotoJuri]] = {}
+    for linha in ler_tabela(pasta / "votos.parquet"):
+        tipo = tipos.get(linha["variavel"])
+        if tipo is None:
+            continue
+        votos.setdefault((linha["doc"], linha["variavel"]), []).append(
+            m.VotoJuri(
+                membro=linha["membro"],
+                rodada=linha["rodada"],
+                valor=valor_do_texto(linha["valor"], tipo),
+                evidencia=linha["evidencia"] or "",
+                status=linha["status"],
+                revisou=bool(linha["revisou"]),
+            )
+        )
+    # um supervisor que é uma pessoa é um codificador humano: as escolhas dele não saem documento a documento
+    # (como as codificações humanas da validação), só nos números agregados
+    modelo = projeto.config.juri.supervisor.e_modelo
+    por_doc: dict[str, dict[str, m.DecisaoJuri]] = {}
+    for d in ler_tabela(pasta / "decisoes.parquet"):
+        tipo = tipos.get(d["variavel"])
+        if tipo is None:
+            continue
+        justificativa = remover_emails(d["justificativa"]) if d["justificativa"] and modelo else None
+        por_doc.setdefault(d["doc"], {})[d["variavel"]] = m.DecisaoJuri(
+            etapa=d["etapa"],
+            virou=bool(d["virou"]),
+            valor=valor_do_texto(d["valor_final"] if modelo else d["valor_juri"], tipo),
+            valor_sem_supervisor=valor_do_texto(d["valor_juri"], tipo),
+            supervisor=d["supervisor"] if modelo else None,
+            justificativa=justificativa,
+            votos=votos.get((d["doc"], d["variavel"]), []),
+        )
+    return m.ResumoJuri.model_validate(numeros_juri), por_doc
 
 
 def _r(x: float | None, casas: int = 4) -> float | None:
@@ -254,5 +308,13 @@ def exportar_classificacao(
         codificadas = va.documentos_completos(projeto) & set(amostra.docs)  # fichas completas
         info["validados"] = len(codificadas)
         if v.metricas:
-            arquivos["validacao"] = validacao_contrato(v)
+            validacao = validacao_contrato(v)
+            juri, decisoes = juri_contrato(projeto, v)
+            if juri is not None:
+                validacao.juri = juri
+                for frag in fragmentos.values():
+                    for doc, detalhe in frag.documentos.items():
+                        if doc in decisoes:
+                            detalhe.juri = decisoes[doc]
+            arquivos["validacao"] = validacao
     return info

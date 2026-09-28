@@ -183,14 +183,14 @@ class VariavelMedida:
 _TRACOS = re.compile(r"\s*[-‐‑‒–—−]\s*")
 
 
-def _normalizar_texto(valor: str) -> str:
+def normalizar_texto(valor: str) -> str:
     """Sem diferença de maiúsculas, acentos, espaços e tipo de traço: "1994 - 2018" = "1994–2018"."""
     sem_acento = "".join(c for c in unicodedata.normalize("NFKD", valor) if not unicodedata.combining(c))
     return " ".join(_TRACOS.sub("–", sem_acento.casefold()).split())
 
 
 _COMPARAR: dict[str, Callable[[str], str]] = {
-    "texto": _normalizar_texto,
+    "texto": normalizar_texto,
     "multipla": lambda valor: json.dumps(sorted(json.loads(valor))),
 }
 
@@ -210,7 +210,7 @@ def variaveis_medidas(codebook) -> list[VariavelMedida]:
             for c in v.categorias:
                 saida.append(VariavelMedida(f"{v.id}:{c.valor}", v.id, ("true", "false"), _tem(c.valor)))
         else:
-            saida.append(VariavelMedida(v.id, v.id, (), _normalizar_texto))
+            saida.append(VariavelMedida(v.id, v.id, (), normalizar_texto))
     return saida
 
 
@@ -220,6 +220,7 @@ class Participante:
     nome: str
     tipo: TipoParticipante
     n: int  # documentos da amostra com resposta
+    familia: str | None = None  # família do modelo (codificador de referência ou supervisor do júri)
 
 
 @dataclass
@@ -238,6 +239,7 @@ class Metrica:
     rotulos: list[str] = field(default_factory=list)
     matriz: list[list[int]] = field(default_factory=list)
     por_classe: list[Classe] = field(default_factory=list)
+    circular: bool = False  # os dois participantes são da mesma família de modelo: limite superior, não medida
 
     @property
     def comparacao(self) -> str:
@@ -332,6 +334,21 @@ def _nome_participante(r: Resultado, principal: Resultado | None) -> str:
     return _nome_modelo(r.modelo) + (f" ({rotulo_a_parte(r, principal)})" if r.a_parte else "")
 
 
+def familias_dos_participantes(projeto: Projeto) -> dict[str, str]:
+    """A família de modelo de cada participante que não é uma pessoa e cuja família se conhece: os codificadores de
+    `validacao.familias` e o `juri-supervisor` (a família do supervisor do júri)."""
+    familias = dict(projeto.config.validacao.familias)
+    supervisor = projeto.config.juri.supervisor
+    if projeto.config.juri.membros and supervisor.e_modelo and supervisor.familia_efetiva:
+        familias.setdefault("juri-supervisor", supervisor.familia_efetiva)
+    return familias
+
+
+def circular(familias: dict[str, str], a: str, b: str) -> bool:
+    """Dois participantes da mesma família: a concordância entre eles não é uma medida independente."""
+    return a in familias and familias.get(a) == familias.get(b)
+
+
 def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS, versao_nova: bool = True) -> Validacao:
     """As métricas da validação do projeto: a amostra guardada, as codificações e os modelos com o codebook atual.
     Com `versao_nova=False` (o `validacao.json` do contrato, que vai para o site publicado), fica de fora a versão
@@ -378,8 +395,10 @@ def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS, versao_nova: boo
     modelos.sort(key=lambda m: (m != principal, m))
     codificadores = sorted((n for n, t in tipos.items() if t != "modelo"), key=lambda n: (tipos[n] != "humano", n))
 
+    familias = familias_dos_participantes(projeto)
     participantes = [
-        Participante(nome, tipos[nome], len({doc for doc, _ in respostas[nome]})) for nome in [*codificadores, *modelos]
+        Participante(nome, tipos[nome], len({doc for doc, _ in respostas[nome]}), familias.get(nome))
+        for nome in [*codificadores, *modelos]
     ]
     pares = (
         [(c, m) for c in codificadores for m in modelos]
@@ -398,9 +417,9 @@ def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS, versao_nova: boo
     for v in medidas:
         for a, b in pares:
             docs = comuns(v, a, b)
-            metricas.append(
-                medir(valores(a, v, docs), valores(b, v, docs), v, a, b, reamostras=reamostras, semente=semente)
-            )
+            m = medir(valores(a, v, docs), valores(b, v, docs), v, a, b, reamostras=reamostras, semente=semente)
+            m.circular = circular(familias, a, b)
+            metricas.append(m)
 
     comparacoes = []
     for ref in codificadores:

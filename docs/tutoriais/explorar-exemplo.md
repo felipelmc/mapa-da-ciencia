@@ -40,7 +40,7 @@ Há dois caminhos. Para usar, o primeiro basta; o segundo é para quem vai mexer
     mapa --versao
     ```
 
-    A última linha mostra a versão instalada, por exemplo `mapa-da-ciencia 1.0.1`.
+    A última linha mostra a versão instalada, por exemplo `mapa-da-ciencia 1.0.1`. Se o terminal responder `command not found: mapa`, o `uv` pôs o comando numa pasta que o terminal ainda não procura (ele avisa isso no fim da instalação). Rode `uv tool update-shell`, feche o terminal e abra outro.
 
 === "Pelo código"
 
@@ -65,7 +65,7 @@ Há dois caminhos. Para usar, o primeiro basta; o segundo é para quem vai mexer
 mapa painel --exemplo
 ```
 
-(Pelo código: `uv run mapa painel --exemplo`.) O navegador abre em `http://127.0.0.1:8765/`. A página inicial mostra os números do corpus e os sete macrotemas, cada um com sua cor. Use o trilho à esquerda para passear pelas vistas. O **Mapa** mostra os 1.500 documentos fictícios como pontos: arraste para mover, use a roda do mouse para aproximar, clique num ponto para ver o documento, e experimente a busca (<kbd>/</kbd>), o laço (<kbd>L</kbd>) e o Play da linha do tempo ([Ler o mapa](../guias/ler-o-mapa.md)). **Tópicos** mostra os assuntos no tempo, **Geografia** as UFs, os países e as instituições dos autores, e **Classificação** e **Validação**, a leitura dos resumos por um codebook e a concordância numa amostra.
+(Pelo código: `uv run mapa painel --exemplo`.) O navegador abre em `http://127.0.0.1:8765/`. A página inicial mostra os números do corpus e os sete macrotemas, cada um com sua cor. Use o trilho à esquerda para passear pelas vistas. O **Mapa** mostra os 1.500 documentos fictícios como pontos: arraste para mover, use a roda do mouse para aproximar, clique num ponto para ver o documento, e experimente a busca (<kbd>/</kbd>), o laço (<kbd>L</kbd>) e o botão Tocar da linha do tempo ([Ler o mapa](../guias/ler-o-mapa.md)). **Tópicos** mostra os assuntos no tempo, **Geografia** as UFs, os países e as instituições dos autores, e **Classificação** e **Validação**, a leitura dos resumos por um codebook e a concordância numa amostra.
 
 Para encerrar, volte ao terminal e aperte ++ctrl+c++.
 

@@ -21,7 +21,7 @@
 		{:else}
 			<p>{page.error?.message}</p>
 		{/if}
-		<p><a href={rota('/')}>Voltar para a Início</a></p>
+		<p><a href={rota('/')}>Voltar ao Início</a></p>
 	</EstadoVazio>
 </div>
 

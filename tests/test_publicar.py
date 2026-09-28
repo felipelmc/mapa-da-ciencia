@@ -1,6 +1,7 @@
 """`mapa publicar`: o site estático, com resumos só de licença aberta, api false e nenhum e-mail."""
 
 import json
+from pathlib import Path
 
 import pytest
 from corpus_sintetico import corpus_sintetico
@@ -171,3 +172,16 @@ def test_email_escondido_por_hifen_suave_interrompe_a_publicacao(projeto, estati
     assert copia.config.titulo == titulo
     with pytest.raises(ErroConfig, match="Um e-mail apareceu"):
         publicar(copia, tmp_path / "site", estatico=estatico)
+
+
+def test_exemplo_publicado_sem_trechos_do_juri_nos_resumos_fechados():
+    """Os votos do júri e a justificativa do supervisor citam o resumo: somem quando a licença não é aberta."""
+    raiz = Path(__file__).parents[1] / "contrato" / "exemplo-publicado" / "dados" / "detalhes"
+    fechados = 0
+    for arquivo in raiz.glob("*.json"):
+        for det in json.loads(arquivo.read_text(encoding="utf-8"))["documentos"].values():
+            if det.get("juri") and det["resumo"] is None:
+                fechados += 1
+                assert all(v["evidencia"] == "" for d in det["juri"].values() for v in d["votos"])
+                assert all(d["justificativa"] is None for d in det["juri"].values())
+    assert fechados > 0

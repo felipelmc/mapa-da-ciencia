@@ -33,7 +33,7 @@ A lista abaixo do fluxo mostra os tópicos cuja participação cresce ou cai de 
 Como ler com cuidado:
 
 - A regra ([ADR 0009](../decisoes/0009-tendencia-dos-topicos.md)) marca um tópico só quando o intervalo de 95% da inclinação não inclui zero, corrigido pela dispersão da série. Mesmo assim, com dezenas de tópicos testados, cerca de 1 em 20 aparece por **acaso**. A nota abaixo da lista diz quantos seriam no recorte: trate a lista como pistas para ler os artigos, não como conclusões.
-- Um **dossiê temático** faz um pico num ano só; a correção pela dispersão impede que ele vire tendência, mas uma sequência de dossiês pode virar.
+- Um **dossiê temático** faz um pico num ano só; a correção pela dispersão impede que ele vire tendência quando o pico cai no meio do período, mas não quando cai no primeiro ou no último ano da janela, e uma sequência de dossiês também pode virar. Confira a série antes de citar.
 - A tendência é recalculada com o recorte. Com o **período** da barra, a regressão usa só aqueles anos; com menos de 5 anos com documentos, a lista pede um período maior.
 
 ## A gaveta de um tópico
@@ -60,4 +60,4 @@ Os pequenos múltiplos, no fim da vista, repetem o fluxo dos macrotemas para cad
 
 ## O recorte
 
-A barra no alto (período, revistas e os chips de tópicos, busca, laço e lugares) vale para toda a vista. O fluxo ignora o próprio filtro de anos e de tópicos: mostra o período inteiro, com os anos fora do recorte velados, e as faixas dos tópicos escolhidos em destaque. **Play** anima a linha do tempo ano a ano. O recorte vai junto quando você troca de vista pelo trilho: escolha uma UF na Geografia e volte aos Tópicos para ver os temas dos autores de lá.
+A barra no alto (período, revistas e os chips de tópicos, busca, laço e lugares) vale para toda a vista. O fluxo ignora o próprio filtro de anos e de tópicos: mostra o período inteiro, com os anos fora do recorte velados, e as faixas dos tópicos escolhidos em destaque. O botão **Tocar** anima a linha do tempo ano a ano. O recorte vai junto quando você troca de vista pelo trilho: escolha uma UF na Geografia e volte aos Tópicos para ver os temas dos autores de lá.

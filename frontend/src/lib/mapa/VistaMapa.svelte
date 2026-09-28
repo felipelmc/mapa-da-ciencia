@@ -10,11 +10,13 @@
 	import { goto } from '$app/navigation';
 	import type { Topicos } from '$lib/contrato/tipos';
 	import { buscar, indiceDe } from '$lib/dados/busca';
+	import { versaoDoMapa } from '$lib/dados/corpus';
 	import type { Cubo } from '$lib/dados/cubo';
 	import { deNdc, paraNdc, type TabelaDocumentos } from '$lib/dados/documentos';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { tema } from '$lib/estado/tema.svelte';
-	import { CORES_POR, rota, type CorPor } from '$lib/estado/url';
+	import { CORES_POR, normalizarBusca, rota, type CorPor } from '$lib/estado/url';
+	import { formatarInteiro } from '$lib/formato';
 	import { simplificar, type Ponto } from '$lib/graficos/geometria';
 	import Nuvem, { type Anotacao, type Camera } from '$lib/graficos/Nuvem.svelte';
 	import Rotulos, { type Caixa, type ItemRotulo } from '$lib/graficos/Rotulos.svelte';
@@ -25,9 +27,8 @@
 	let {
 		tabela,
 		topicos,
-		cubo,
-		versaoMapa
-	}: { tabela: TabelaDocumentos; topicos: Topicos; cubo: Cubo; versaoMapa: string } = $props();
+		cubo
+	}: { tabela: TabelaDocumentos; topicos: Topicos; cubo: Cubo } = $props();
 
 	const filtros = $derived(filtrosDaPagina());
 
@@ -59,10 +60,12 @@
 		}, 250);
 	}
 	const buscados = $derived(filtros.busca ? buscar(indiceDe(tabela), filtros.busca) : null);
-	// a barra do recorte pode limpar a busca: o campo acompanha
+	const MAX_RESULTADOS = 6;
+	// o campo acompanha a URL quando ela muda por fora (a barra do recorte limpa a busca, o Voltar do navegador),
+	// mas não enquanto a pessoa digita, nem quando só difere na forma do link ("a & b" digitado, "a b" no link)
 	$effect(() => {
 		const busca = filtros.busca;
-		if (busca === '' && textoBusca !== '' && !temporizadorBusca) textoBusca = '';
+		if (!temporizadorBusca && normalizarBusca(textoBusca) !== busca) textoBusca = busca;
 	});
 
 	// ---- laço: polígono na URL em coordenadas dos dados (o cubo o converte para NDC)
@@ -70,7 +73,7 @@
 	function aoLaco(vertices: Ponto[]) {
 		modoLaco = false;
 		const pontos = simplificar(vertices).map(([x, y]) => deNdc(tabela.escala, x, y));
-		mudarFiltros({ laco: { versao: versaoMapa, pontos } });
+		mudarFiltros({ laco: { versao: versaoDoMapa(tabela), pontos } });
 	}
 
 	// o recorte inteiro (anos, revistas, tópicos, busca, laço e lugares) sai do cubo compartilhado
@@ -101,6 +104,17 @@
 	// ---- documento em destaque (cartão)
 	const destaque = $derived(filtros.doc ? (tabela.indice.get(filtros.doc) ?? null) : null);
 	const abrir = (i: number | null) => mudarFiltros({ doc: i === null ? null : tabela.ids[i] });
+	// um link antigo (de outra publicação) pode trazer um documento que não existe aqui: avisa e tira da URL
+	let avisoLink = $state<string | null>(null);
+	let apagarAviso: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		if (!filtros.doc || destaque !== null) return;
+		avisoLink = 'Este documento não está nesta publicação: o link pode ser de outra versão do mapa.';
+		clearTimeout(apagarAviso);
+		apagarAviso = setTimeout(() => (avisoLink = null), 8000);
+		mudarFiltros({ doc: null }, { substituir: true, em: '/mapa' });
+	});
+	$effect(() => () => clearTimeout(apagarAviso));
 
 	// ---- contornos (uma vez) e rótulos (a cada movimento da câmera)
 	const ZOOM_TOPICOS = 1.8; // abaixo, rótulos dos macrotemas; acima, dos tópicos
@@ -251,12 +265,17 @@
 			</label>
 			{#if buscados}
 				<ol class="resultados" data-testid="resultados-busca">
-					{#each buscados.slice(0, 6) as i (i)}
+					{#each buscados.slice(0, MAX_RESULTADOS) as i (i)}
 						<li><button type="button" onclick={() => abrir(i)}>{tabela.titulos[i]}</button></li>
 					{:else}
 						<li class="suave">Nada encontrado.</li>
 					{/each}
 				</ol>
+				{#if buscados.length > MAX_RESULTADOS}
+					<p class="suave" data-testid="mais-resultados">
+						{MAX_RESULTADOS} de {formatarInteiro(buscados.length)}; refine a busca para ver os outros.
+					</p>
+				{/if}
 			{/if}
 			<div class="acoes">
 				<button type="button" class="botao" aria-pressed={modoLaco} data-testid="botao-laco" onclick={() => (modoLaco = !modoLaco)}>
@@ -289,6 +308,10 @@
 			{/if}
 		{/if}
 	</aside>
+
+	<p class="aviso-link" role="status">
+		{#if avisoLink}<span data-testid="aviso-link">{avisoLink}</span>{/if}
+	</p>
 
 	{#if destaque !== null}
 		<div class="lado" data-sobre-o-mapa>
@@ -449,7 +472,10 @@
 		border-radius: 0.25rem;
 	}
 
+	/* a lista não encolhe: sem isso, a legenda (com dezenas de tópicos) ficava com quase todo o painel, e os
+	   resultados (e o "Nada encontrado.") com poucos pixels */
 	.resultados {
+		flex-shrink: 0;
 		margin: 0;
 		padding-left: 1.1rem;
 		max-height: 9rem;
@@ -483,6 +509,27 @@
 		width: auto;
 	}
 
+	.aviso-link {
+		position: absolute;
+		top: 1rem;
+		left: 50%;
+		transform: translateX(-50%);
+		max-width: min(28rem, calc(100% - 2rem));
+		margin: 0;
+		font-size: 0.85rem;
+		pointer-events: none;
+	}
+
+	.aviso-link span {
+		display: block;
+		padding: 0.5rem 0.8rem;
+		border: 1px solid var(--linha-forte);
+		border-radius: var(--raio);
+		background: var(--superficie-alta);
+		color: var(--texto);
+		box-shadow: var(--sombra);
+	}
+
 
 	.lado {
 		position: absolute;
@@ -511,10 +558,20 @@
 			height: 55%;
 		}
 
+		/* no celular, o painel rola por inteiro: a legenda não fica espremida em poucos pixels */
 		.painel {
 			top: auto;
 			bottom: 1rem;
 			max-height: 40%;
+			overflow-y: auto;
+		}
+
+		.painel > :global(*) {
+			flex-shrink: 0;
+		}
+
+		.legenda {
+			overflow: visible;
 		}
 	}
 </style>

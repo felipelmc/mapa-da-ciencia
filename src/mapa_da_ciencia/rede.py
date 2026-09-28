@@ -46,14 +46,15 @@ def user_agent(pasta: Path | None = None) -> str:
     return f"mapa-da-ciencia/{__version__} (+{URL_PROJETO}{contato})"
 
 
-def _ssl() -> ssl.SSLContext:
+def contexto_ssl() -> ssl.SSLContext:
+    """Os certificados do sistema operacional (ADR 0001), para todo cliente HTTP do pacote."""
     return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
 
 def cliente(*, timeout: float = 60.0, pasta: Path | None = None) -> httpx.Client:
     """Cliente síncrono para APIs externas (ArticleMeta, OpenAlex)."""
     return httpx.Client(
-        verify=_ssl(),
+        verify=contexto_ssl(),
         timeout=timeout,
         headers={"User-Agent": user_agent(pasta)},
         follow_redirects=True,
@@ -63,7 +64,7 @@ def cliente(*, timeout: float = 60.0, pasta: Path | None = None) -> httpx.Client
 def cliente_async(*, timeout: float = 60.0, pasta: Path | None = None) -> httpx.AsyncClient:
     """Cliente assíncrono para coletas com requisições simultâneas."""
     return httpx.AsyncClient(
-        verify=_ssl(),
+        verify=contexto_ssl(),
         timeout=timeout,
         headers={"User-Agent": user_agent(pasta)},
         follow_redirects=True,

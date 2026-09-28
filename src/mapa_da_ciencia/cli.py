@@ -23,6 +23,7 @@ from rich.table import Table
 from mapa_da_ciencia import __version__
 from mapa_da_ciencia.armazenamento import ARQUIVO as ARQUIVO_DOCUMENTOS
 from mapa_da_ciencia.armazenamento import cobertura
+from mapa_da_ciencia.cli_portugues import GrupoEmPortugues
 from mapa_da_ciencia.coleta import interpretar_anos
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.diagnostico import DICAS_OLLAMA, diagnosticar
@@ -41,6 +42,7 @@ app = typer.Typer(
     add_completion=False,
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
+    cls=GrupoEmPortugues,  # ajuda e erros de uso em português
 )
 console = Console()
 
@@ -381,11 +383,35 @@ def diagnostico(
     console.print("\n[bold green]Tudo pronto.[/]")
 
 
-def _porta_livre(porta: int) -> bool:
+def _problema_da_porta(porta: int) -> str | None:
+    """`None` se o painel pode usar a porta; senão, o motivo, em português.
+
+    Além de ver se alguém já escuta nela, tenta ocupá-la como o uvicorn (e a solta em seguida): assim o erro sai
+    antes de o painel anunciar o endereço, e não em inglês, depois dele.
+    """
+    import errno
     import socket
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(("127.0.0.1", porta)) != 0
+        if s.connect_ex(("127.0.0.1", porta)) == 0:
+            return f"a porta {porta} já está em uso"
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # como o uvicorn
+        try:
+            s.bind(("127.0.0.1", porta))
+        except OSError as e:
+            if e.errno == errno.EADDRINUSE:
+                return f"a porta {porta} já está em uso"
+            if e.errno == errno.EACCES:
+                return f"sem permissão para usar a porta {porta} (as abaixo de 1024 costumam ser reservadas)"
+            return f"não foi possível usar a porta {porta} ({e.strerror})"
+    return None
+
+
+def _porta_sugerida(porta: int) -> int | None:
+    """A primeira porta livre depois de `porta` (e acima de 1024), para sugerir no erro."""
+    inicio = max(porta + 1, 1025)
+    return next((p for p in range(inicio, min(inicio + 50, 65536)) if _problema_da_porta(p) is None), None)
 
 
 @app.command()
@@ -424,7 +450,7 @@ def painel(
     exemplo: Annotated[
         bool, typer.Option("--exemplo", help="Mostra o exemplo sintético, sem precisar de um projeto.")
     ] = False,
-    porta: Annotated[int, typer.Option("--porta", help="Porta local do servidor.")] = 8765,
+    porta: Annotated[int, typer.Option("--porta", min=1, max=65535, help="Porta local do servidor.")] = 8765,
     abrir: Annotated[bool, typer.Option("--abrir/--nao-abrir", help="Abre o navegador automaticamente.")] = True,
 ) -> None:
     """Abre o painel no navegador: a interface do projeto, servida só nesta máquina."""
@@ -438,8 +464,10 @@ def painel(
     from mapa_da_ciencia.contrato.exportar import escrever_dados
     from mapa_da_ciencia.servidor.app import criar_app
 
-    if not _porta_livre(porta):
-        console.print(f"[bold red]Erro:[/] a porta {porta} já está em uso. Use outra, por exemplo --porta {porta + 1}.")
+    if problema := _problema_da_porta(porta):
+        sugerida = _porta_sugerida(porta)
+        dica = f"por exemplo --porta {sugerida}" if sugerida else "com --porta"
+        console.print(f"[bold red]Erro:[/] {problema}. Use outra, {dica}.")
         raise typer.Exit(1)
     temporario = None
     with _erros_amigaveis():
@@ -861,6 +889,160 @@ def validar_relatorio(projeto: OpcaoProjeto = Path(".")) -> None:
         + ", ".join(f"[bold]{a.relative_to(p.raiz)}[/]" for a in arquivos.values())
         + "."
     )
+
+
+juri_app = typer.Typer(
+    help='Júri de modelos locais: votação, deliberação, supervisor e relatório (ver o guia "Usar o júri").',
+    no_args_is_help=True,
+)
+app.add_typer(juri_app, name="juri")
+
+
+@juri_app.command("votar")
+def juri_votar(projeto: OpcaoProjeto = Path(".")) -> None:
+    """Rodada 1: cada membro de `juri.membros` classifica a amostra de validação (o que ainda falta)."""
+    from mapa_da_ciencia.juri.votacao import votar
+    from mapa_da_ciencia.progresso import ProgressoRich
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        r = votar(p, progresso=ProgressoRich(console))
+    console.print(f"[bold green]Votação pronta[/]: {r}")
+    if r.ja_prontos:
+        console.print(f"Já tinham classificado tudo: {', '.join(r.ja_prontos)}.")
+    console.print("Próximo passo: [bold]mapa juri deliberar[/].")
+
+
+@juri_app.command("deliberar")
+def juri_deliberar(projeto: OpcaoProjeto = Path(".")) -> None:
+    """Rodada 2: os membros que discordam reveem as respostas vendo as dos outros, anônimas."""
+    from mapa_da_ciencia.juri.pipeline import deliberar_juri
+    from mapa_da_ciencia.progresso import ProgressoRich
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        d, r = deliberar_juri(p, ProgressoRich(console))
+    console.print(f"[bold green]Deliberação pronta[/]: {d}")
+    console.print(str(r))
+    if r.pendentes_supervisor:
+        console.print(
+            f"{num(r.pendentes_supervisor, 0)} decisão(ões) sem maioria: [bold]mapa juri exportar-pedidos[/] prepara "
+            "os pedidos ao supervisor."
+        )
+
+
+@juri_app.command("exportar-pedidos")
+def juri_exportar_pedidos(
+    projeto: OpcaoProjeto = Path("."),
+    lote: Annotated[int, typer.Option("--lote", min=1, help="Pedidos por arquivo.")] = 20,
+    todos: Annotated[bool, typer.Option("--todos", help="Inclui os pedidos que já têm resposta.")] = False,
+) -> None:
+    """Grava em `juri/` os pedidos ao supervisor (arbitragem e auditoria), em lotes JSONL, com as instruções."""
+    from mapa_da_ciencia.juri.supervisor import exportar_pedidos
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        r = exportar_pedidos(p, lote=lote, todos=todos)
+    console.print(f"[bold green]Pedidos ao supervisor[/]: {r}")
+    if r.arquivos:
+        console.print(
+            "Entregue ao supervisor as instruções ([bold]juri/instrucoes-supervisor.md[/]) e cada lote; as respostas "
+            "voltam como [bold]<lote>.respostas.jsonl[/] e entram com [bold]mapa juri importar-respostas[/]."
+        )
+
+
+@juri_app.command("importar-respostas")
+def juri_importar_respostas(
+    arquivos: Annotated[
+        list[Path] | None,
+        typer.Argument(help="Arquivos de respostas; sem nenhum, todos os `juri/*.respostas.jsonl`.", exists=True),
+    ] = None,
+    projeto: OpcaoProjeto = Path("."),
+) -> None:
+    """Confere e guarda as respostas do supervisor (o de `juri.supervisor.nome`), e consolida o júri."""
+    from mapa_da_ciencia.juri.pipeline import arquivos_de_respostas
+    from mapa_da_ciencia.juri.supervisor import importar_respostas
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        lista = arquivos_de_respostas(p, list(arquivos or []))
+        if not lista:
+            raise ErroConfig("Nenhum arquivo de respostas: passe os arquivos ou ponha-os em `juri/` do projeto.")
+        r = importar_respostas(p, lista)
+    console.print(f"[bold green]Respostas do supervisor[/]: {r}")
+    for motivo in r.recusadas[:10]:
+        console.print(f"[red]Recusada:[/] {motivo}")
+    if len(r.recusadas) > 10:
+        console.print(f"[red]… e mais {num(len(r.recusadas) - 10, 0)}.[/]")
+
+
+@juri_app.command("supervisionar")
+def juri_supervisionar(
+    projeto: OpcaoProjeto = Path("."),
+    limite_gasto: Annotated[
+        float | None,
+        typer.Option("--limite-gasto", min=0, help="Gasto máximo em dólares (padrão: o do mapa.yaml)."),
+    ] = None,
+    sim: Annotated[bool, typer.Option("--sim", help="Envia sem perguntar (depois de mostrar a estimativa).")] = False,
+) -> None:
+    """Supervisor pela API da Anthropic (modo `api`): envia os pedidos, com consentimento e limite de gasto."""
+    from mapa_da_ciencia.juri.supervisor import supervisionar
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        estimativa = supervisionar(p, limite_gasto=limite_gasto)
+        console.print(str(estimativa))
+        if not estimativa.pedidos:
+            return
+        if not sim and not typer.confirm(
+            f"Enviar {estimativa.pedidos} pedido(s), com títulos e resumos, para a API da Anthropic?", default=False
+        ):
+            raise typer.Exit(1)
+        r = supervisionar(p, limite_gasto=limite_gasto, confirmar=True)
+    console.print(f"[bold green]Supervisor[/]: {r}")
+    if r.importacao:
+        console.print(str(r.importacao))
+    for falha in r.falhas[:5]:
+        console.print(f"[red]Falhou:[/] {falha}")
+
+
+@juri_app.command("status")
+def juri_status(projeto: OpcaoProjeto = Path(".")) -> None:
+    """Em que passo o júri está."""
+    from mapa_da_ciencia.juri.pipeline import estado
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        e = estado(p)
+    tabela = Table("Membro", "Amostra classificada")
+    for membro, n in e.classificados.items():
+        tabela.add_row(membro, f"{num(n, 0)} de {num(e.amostra, 0)}")
+    console.print(tabela)
+    if e.resumo:
+        console.print(str(e.resumo))
+    console.print(f"Próximo passo: [bold]{e.proximo}[/].")
+
+
+@juri_app.command("relatorio")
+def juri_relatorio(projeto: OpcaoProjeto = Path(".")) -> None:
+    """Grava `validacao/juri.md`: kappa de cada membro e do júri, estágios, deliberação e auditoria."""
+    from mapa_da_ciencia.contrato.exportar import exportar
+    from mapa_da_ciencia.juri.relatorio import gerar
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        destino, n = gerar(p)
+        avisos = exportar(p)
+    console.print(f"[bold green]Relatório do júri[/]: [bold]{destino.relative_to(p.raiz)}[/].")
+    if n.nao_deliberados:
+        console.print(
+            f"[yellow]Aviso:[/] {num(n.nao_deliberados, 0)} decisão(ões) em disputa ainda sem deliberação: rode "
+            "[bold]mapa juri deliberar[/]."
+        )
+    if n.referencia is None:
+        console.print("[yellow]Aviso:[/] sem codificador de referência, o relatório só tem os estágios.")
+    for aviso in avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
 
 
 def _f(valor: float | None, casas: int = 2) -> str:

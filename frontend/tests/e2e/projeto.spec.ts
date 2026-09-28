@@ -17,7 +17,7 @@ test('no site estático, a seção vira a Metodologia, tirada do manifesto', asy
 	await page.goto(`${url('RAIZ')}#/projeto`);
 	await expect(h1(page)).toHaveText('Metodologia');
 	await expect(page.getByTestId('modelos-metodologia')).toContainText('Classificação');
-	await expect(page.getByTestId('metodologia')).toContainText('versão 1.4');
+	await expect(page.getByTestId('metodologia')).toContainText('versão 1.5');
 	await expect(page.getByRole('link', { name: 'Desenho da validação' })).toBeVisible();
 	expect(problemas).toEqual([]);
 });

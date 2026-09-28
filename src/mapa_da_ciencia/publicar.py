@@ -78,6 +78,12 @@ def filtrar_dados(pasta: Path, *, sem_resumos: bool = False, em: datetime | None
                 if e.evidencia:
                     evid_retiradas += 1
                 e.evidencia, e.inicio, e.fim, e.campo = "", None, None, None
+            for decisao in det.juri.values():  # os votos do júri citam o resumo, e o supervisor também
+                for voto in decisao.votos:
+                    if voto.evidencia:
+                        evid_retiradas += 1
+                    voto.evidencia = ""
+                decisao.justificativa = None
         _gravar(arq, frag)
 
     if (arq := pasta / "validacao.json").exists():

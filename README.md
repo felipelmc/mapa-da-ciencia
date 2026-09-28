@@ -33,7 +33,7 @@ uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/
 mapa painel --exemplo
 ```
 
-O painel abre no navegador com um exemplo **sintético** (dados fictícios). Para trabalhar no código, com a interface compilada a partir do fonte, veja [Explorar o exemplo em 5 minutos](https://felipelmc.github.io/mapa-da-ciencia/tutoriais/explorar-exemplo/).
+O painel abre no navegador com um exemplo **sintético** (dados fictícios). Se o terminal responder `command not found: mapa`, rode `uv tool update-shell`, feche o terminal e abra outro. Para trabalhar no código, com a interface compilada a partir do fonte, veja [Explorar o exemplo em 5 minutos](https://felipelmc.github.io/mapa-da-ciencia/tutoriais/explorar-exemplo/).
 
 Para mapear artigos de verdade, por exemplo os da *Opinião Pública* de 2010 a 2025 (os tópicos e a classificação pedem o [Ollama](https://felipelmc.github.io/mapa-da-ciencia/guias/instalacao/) com os modelos do perfil):
 
@@ -85,6 +85,6 @@ Sucessor do [SciELO-Summarizer](https://github.com/felipelmc/SciELO-Summarizer),
 
 All models run on your computer through [Ollama](https://ollama.com) (by default `qwen3-embedding:0.6b` and `qwen3.5:9b`, which fit in a 16 GB laptop), so no text leaves your machine and no API key is needed. Everything runs from the command line, from Python (`mapa_da_ciencia.api`) or from a local web panel, and a project can be published as a static site, with abstracts only under Creative Commons licenses.
 
-The pilot maps 4,275 political science articles from ten Brazilian journals, 2010–2025 ([live demo](https://felipelamarca.com/mapa-da-ciencia/demo/); the [project site](https://felipelamarca.com/mapa-da-ciencia/) tells its stories, in English too). The interface and the [documentation](https://felipelmc.github.io/mapa-da-ciencia/) are in Portuguese; the [methodology page](https://felipelmc.github.io/mapa-da-ciencia/explicacoes/metodologia/) summarizes the whole method with its parameters. To try it, install the wheel above and run `mapa painel --exemplo`, or open the [Colab workshop notebook](https://colab.research.google.com/github/felipelmc/mapa-da-ciencia/blob/main/notebooks/oficina_colab.ipynb).
+The pilot maps 4,275 political science articles from ten Brazilian journals, 2010–2025 ([live demo](https://felipelamarca.com/mapa-da-ciencia/demo/); the [project site](https://felipelamarca.com/mapa-da-ciencia/) tells its stories, in English too). The interface and the [documentation](https://felipelmc.github.io/mapa-da-ciencia/) are in Portuguese; the [methodology page](https://felipelmc.github.io/mapa-da-ciencia/explicacoes/metodologia/) summarizes the whole method with its parameters. To try it, install the wheel above and run `mapa painel --exemplo` (if the terminal says `command not found: mapa`, run `uv tool update-shell` and open a new terminal), or open the [Colab workshop notebook](https://colab.research.google.com/github/felipelmc/mapa-da-ciencia/blob/main/notebooks/oficina_colab.ipynb).
 
 To cite it, use the Zenodo DOI [10.5281/zenodo.22998585](https://doi.org/10.5281/zenodo.22998585) (all versions; BibTeX in [Como citar](#como-citar)). MIT licensed. An independent project, not affiliated with SciELO, OpenAlex or IBGE.

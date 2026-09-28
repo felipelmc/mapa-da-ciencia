@@ -42,6 +42,10 @@ dependencies = [
     "ruamel-yaml>=0.18",
 ]
 
+[project.optional-dependencies]
+# o supervisor do júri pela API da Anthropic (juri.supervisor.modo: api); o resto roda só com modelos locais
+anthropic = ["anthropic>=1.8"]
+
 [project.scripts]
 mapa = "mapa_da_ciencia.cli:app"
 
@@ -54,7 +58,7 @@ Changelog = "https://github.com/felipelmc/mapa-da-ciencia/blob/main/CHANGELOG.md
 Issues = "https://github.com/felipelmc/mapa-da-ciencia/issues"
 
 [dependency-groups]
-dev = ["pytest>=9.1", "respx>=0.23", "ruff>=0.16"]
+dev = ["anthropic>=1.8", "pytest>=9.1", "respx>=0.23", "ruff>=0.16"]  # anthropic: os testes do supervisor pela API
 docs = [
     "mkdocs>=1.6,<2",
     "mkdocs-material>=9.7",

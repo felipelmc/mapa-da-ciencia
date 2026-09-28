@@ -5,7 +5,7 @@
 	 * licenças e o que a publicação retirou; e os links para as explicações da documentação.
 	 */
 	import type { Manifesto } from '$lib/contrato/tipos';
-	import { formatarData, formatarDuracao, formatarInteiro, formatarPeriodo } from '$lib/formato';
+	import { formatarData, formatarDuracao, formatarInteiro, formatarPeriodo, nomeDaFonte } from '$lib/formato';
 
 	let { manifesto }: { manifesto: Manifesto } = $props();
 
@@ -19,9 +19,7 @@
 	};
 	const PAPEIS: Record<string, string> = { embeddings: 'Embeddings', classificacao: 'Classificação', rotulos: 'Rótulos dos tópicos' };
 	const fontes = $derived(
-		manifesto.recorte.fontes.map((f) =>
-			f.startsWith('scielo:') ? `SciELO (coleção ${f.slice(7)}), pela ArticleMeta` : f === 'openalex' ? 'OpenAlex' : f
-		)
+		manifesto.recorte.fontes.map((f) => (f.startsWith('scielo:') ? `${nomeDaFonte(f)}, pela ArticleMeta` : nomeDaFonte(f)))
 	);
 	const c = $derived(manifesto.contagens);
 	const e = $derived(manifesto.execucao);
@@ -162,7 +160,7 @@
 	.suave {
 		margin: 0.6rem 0 0;
 		font-size: 0.85rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.licencas,

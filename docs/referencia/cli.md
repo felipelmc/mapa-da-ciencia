@@ -232,3 +232,102 @@ mapa validar relatorio [OPÇÕES]
 | Argumento ou opção | Descrição | Padrão |
 |---|---|---|
 | `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
+## `mapa juri`
+
+Júri de modelos locais: votação, deliberação, supervisor e relatório (ver o guia "Usar o júri").
+
+```
+mapa juri [OPÇÕES] COMANDO
+```
+
+Subcomandos: `mapa juri votar`, `mapa juri deliberar`, `mapa juri exportar-pedidos`, `mapa juri importar-respostas`, `mapa juri supervisionar`, `mapa juri status`, `mapa juri relatorio`.
+
+## `mapa juri votar`
+
+Rodada 1: cada membro de `juri.membros` classifica a amostra de validação (o que ainda falta).
+
+```
+mapa juri votar [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
+## `mapa juri deliberar`
+
+Rodada 2: os membros que discordam reveem as respostas vendo as dos outros, anônimas.
+
+```
+mapa juri deliberar [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
+## `mapa juri exportar-pedidos`
+
+Grava em `juri/` os pedidos ao supervisor (arbitragem e auditoria), em lotes JSONL, com as instruções.
+
+```
+mapa juri exportar-pedidos [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--lote` | Pedidos por arquivo. | `20` |
+| `--todos` | Inclui os pedidos que já têm resposta. |  |
+
+## `mapa juri importar-respostas`
+
+Confere e guarda as respostas do supervisor (o de `juri.supervisor.nome`), e consolida o júri.
+
+```
+mapa juri importar-respostas [OPÇÕES] [arquivos]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `arquivos` | Arquivos de respostas; sem nenhum, todos os `juri/*.respostas.jsonl`. |  |
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
+## `mapa juri supervisionar`
+
+Supervisor pela API da Anthropic (modo `api`): envia os pedidos, com consentimento e limite de gasto.
+
+```
+mapa juri supervisionar [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--limite-gasto` | Gasto máximo em dólares (padrão: o do mapa.yaml). |  |
+| `--sim` | Envia sem perguntar (depois de mostrar a estimativa). |  |
+
+## `mapa juri status`
+
+Em que passo o júri está.
+
+```
+mapa juri status [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
+## `mapa juri relatorio`
+
+Grava `validacao/juri.md`: kappa de cada membro e do júri, estágios, deliberação e auditoria.
+
+```
+mapa juri relatorio [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |

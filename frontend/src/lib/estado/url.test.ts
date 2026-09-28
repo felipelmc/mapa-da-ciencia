@@ -5,6 +5,7 @@ import {
 	FILTROS_PADRAO,
 	lerFiltros,
 	lerHash,
+	normalizarBusca,
 	normalizarFiltros,
 	parametrosDoHash,
 	rota,
@@ -202,5 +203,23 @@ describe('recorte e parâmetros das vistas do M4', () => {
 		expect(temRecorte(lerFiltros(new URLSearchParams('cor=ano&doc=S1')))).toBe(false);
 		const limpo = normalizarFiltros({ ...f, ...limparRecorte() });
 		expect(escreverFiltros(limpo).toString()).toBe('cor=ano&modo=absoluto&vista=0.1%2C0.2%2C2&topico=4&doc=S1');
+	});
+});
+
+describe('busca no link', () => {
+	it('sobrevive à decodificação do hash que o SvelteKit faz na carga', () => {
+		// o SvelteKit troca o endereço por decodeURIComponent(hash) antes de a interface lê-lo
+		for (const busca of ['voto & partido', 'coalizão & governo #1 +50%', 'R&D', 'voto + partido', 'taxa %41', 'a=b']) {
+			const link = rota('/mapa', escreverFiltros({ busca }));
+			const direto = lerFiltros(lerHash(link).params);
+			const carregado = lerFiltros(lerHash(decodeURIComponent(link)).params);
+			expect(carregado.busca, busca).toBe(direto.busca);
+		}
+	});
+
+	it('troca &, % e + por espaço, sem espaços repetidos', () => {
+		expect(normalizarBusca(' voto &  partido+ 50% ')).toBe('voto partido 50');
+		expect(normalizarFiltros({ busca: 'R&D' }).busca).toBe('R D');
+		expect(normalizarFiltros({ busca: 'coalizão' }).busca).toBe('coalizão');
 	});
 });
