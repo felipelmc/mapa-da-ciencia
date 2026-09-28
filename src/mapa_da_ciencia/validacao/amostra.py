@@ -29,7 +29,7 @@ from ..classificacao.executor import Texto, textos_para_classificar
 from ..classificacao.resultado import valor_como_texto, valor_do_texto
 from ..config import ErroConfig
 from ..projeto import Projeto
-from ..texto import contem_email
+from ..texto import contem_email, remover_emails
 
 TipoCodificador = Literal["humano", "referencia"]
 PASTA_EXPORTACAO = "validacao"
@@ -215,7 +215,9 @@ def exportar(projeto: Projeto, amostra: Amostra) -> Path:
                 amostra.avisos.append(f"{doc} não está mais no corpus e ficou fora do arquivo.")
                 continue
             linha = {"doc": doc, "titulo": t.titulo, "resumo": t.resumo, "idioma": t.idioma}
-            assert not contem_email(linha), f"e-mail no texto de {doc}"
+            if contem_email(linha):  # um corpus coletado por uma versão cujo detector não via esta forma de e-mail
+                linha |= {"titulo": t.titulo and remover_emails(t.titulo), "resumo": remover_emails(t.resumo)}
+                amostra.avisos.append(f"{doc}: um e-mail no título ou no resumo ficou fora do arquivo.")
             f.write(json.dumps(linha, ensure_ascii=False) + "\n")
     return destino
 

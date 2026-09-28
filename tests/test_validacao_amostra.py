@@ -109,6 +109,35 @@ def test_exporta_so_o_texto(projeto):
     assert "@" not in arquivo.read_text(encoding="utf-8")
 
 
+def test_exporta_sem_email_e_com_arroba_de_rede_social(projeto):
+    """Um corpus coletado antes de o detector ver uma forma de e-mail: `mapa validar amostra` tira o e-mail e avisa,
+    em vez de cair; um perfil de rede social citado no resumo não é e-mail e fica."""
+    from mapa_da_ciencia.armazenamento import ARQUIVO, gravar_documentos, ler_documentos
+
+    a = va.sortear(projeto)
+    docs = ler_documentos(projeto.dados / ARQUIVO)
+    plantar = {
+        a.docs[0]: "Contato: fulana@ exemplo.com.br.",
+        a.docs[1]: "Analisamos o perfil @maria.silva no Instagram.",
+    }
+    docs = [
+        d.model_copy(
+            update={"resumos": [r.model_copy(update={"texto": f"{plantar[d.id]} {r.texto}"}) for r in d.resumos]}
+        )
+        if d.id in plantar
+        else d
+        for d in docs
+    ]
+    gravar_documentos(docs, projeto.dados / ARQUIVO)
+    r = runner.invoke(app, ["validar", "amostra", "-P", str(projeto.raiz)], env=ENV)
+    assert r.exit_code == 0, r.output
+    arquivo = projeto.raiz / "validacao" / "amostra.jsonl"
+    linhas = {x["doc"]: x for x in map(json.loads, arquivo.read_text(encoding="utf-8").splitlines())}
+    assert "fulana" not in linhas[a.docs[0]]["resumo"] and "exemplo" not in linhas[a.docs[0]]["resumo"]
+    assert linhas[a.docs[1]]["resumo"].startswith("Analisamos o perfil @maria.silva no Instagram.")
+    assert f"{a.docs[0]}: um e-mail" in " ".join(r.output.split())
+
+
 def test_importar_codificacoes(projeto, tmp_path):
     a = va.sortear(projeto)
     arquivo = tmp_path / "claude.jsonl"
