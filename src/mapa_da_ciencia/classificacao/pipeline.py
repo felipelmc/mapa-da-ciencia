@@ -159,9 +159,9 @@ def classificar(
     #    for, mesmo que ele tenha um documento a mais ou a menos;
     # 2. qualquer outra rodada (inclusive a que cobre o corpus com falhas demais) nunca o diminui: grava no principal
     #    só se não houver principal ou se todo documento classificado nele (mesmo o que saiu do corpus ou ficou
-    #    sem resumo por um tempo) continua classificado no resultado novo (a retomada da mesma execução, com o mesmo corpus e os mesmos textos). Conta o
-    #    conjunto, e não o número: uma rodada com a mesma contagem pode trocar documentos. Senão, as respostas vão para
-    #    o resultado à parte, que as métricas da validação comparam com o principal.
+    #    sem resumo por um tempo) continua classificado no resultado novo (a retomada da mesma execução, por
+    #    exemplo). Conta o conjunto, e não o número: uma rodada com a mesma contagem pode trocar documentos. Senão,
+    #    as respostas vão para o resultado à parte, que as métricas da validação comparam com o principal.
     # Um modelo que devolve JSON inválido em tudo, depois de um `ollama pull`, apagaria horas de classificação, e as
     # respostas antigas ficam no cache com a chave do digest antigo, que o Ollama não devolve mais.
     anterior = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
