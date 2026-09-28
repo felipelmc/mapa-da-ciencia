@@ -477,3 +477,13 @@ test.describe('telas largas', () => {
 		});
 	}
 });
+
+test('no celular, a seção aberta fica à vista na barra de baixo', async ({ browser }) => {
+	const contexto = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+	const page = await contexto.newPage();
+	// a última seção da barra (no painel, Projeto), que ficava fora da tela, à direita
+	await page.goto(`${url('PAINEL')}#/projeto`);
+	await expect(h1(page)).toBeVisible();
+	await expect(trilho(page).locator('[aria-current="page"]')).toBeInViewport({ ratio: 0.9 });
+	await contexto.close();
+});
