@@ -14,16 +14,14 @@ O id de cada pedido termina num pedaço da chave dos candidatos, e o índice (`p
 já exportados: uma resposta a um pedido antigo, que ficou na pasta, é reconhecida como antiga e ignorada, e nunca cai
 sobre os candidatos novos. Só valem as respostas do supervisor de `juri.supervisor.nome`.
 
-**Auditoria:** `juri.auditoria` itens (documento × variável) sorteados uma vez, com a semente da validação, entre as
-decisões unânimes das variáveis categóricas, booleanas e de múltipla escolha. A taxa de erro sai com o intervalo de
-Wilson de 95%.
+**Auditoria:** `juri.auditoria` itens (documento × variável) sorteados entre as decisões unânimes das variáveis
+categóricas, booleanas e de múltipla escolha. A taxa de erro sai com o intervalo de Wilson de 95%.
 """
 
 from __future__ import annotations
 
 import json
 import math
-import random
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -34,6 +32,7 @@ from ..classificacao.codebook import EVIDENCIA_MAXIMA, conferir_valor, sem_infor
 from ..classificacao.evidencia import conferir
 from ..classificacao.resultado import valor_como_texto, valor_do_texto
 from ..config import ErroConfig
+from ..llm.cache import chave_de
 from ..projeto import Projeto
 from .consolidar import DecisaoFinal, chave_pedido, consolidar, decidir, respostas_do_supervisor
 from .deliberacao import DELIBERAVEIS
@@ -55,24 +54,13 @@ def wilson(erros: int, n: int, z: float = 1.959964) -> tuple[float, float] | Non
 
 
 def sorteio_auditoria(projeto: Projeto, decisoes: list[DecisaoFinal]) -> list[tuple[str, str]]:
-    """Os itens da auditoria: sorteados na primeira vez e guardados; depois, sempre os mesmos."""
-    n = projeto.config.juri.auditoria
-    hash_cb = projeto.codebook.hash()
-    with conectar(projeto) as con:
-        guardados = con.execute(
-            "SELECT doc, variavel FROM juri_auditoria WHERE hash_codebook = ? ORDER BY ordem", (hash_cb,)
-        ).fetchall()
-        if guardados or n == 0:
-            return [(r["doc"], r["variavel"]) for r in guardados]
-        unanimes = sorted(
-            (d.doc, d.variavel.id) for d in decisoes if d.etapa == "unanime" and d.variavel.tipo in DELIBERAVEIS
-        )
-        itens = random.Random(projeto.config.validacao.semente).sample(unanimes, min(n, len(unanimes)))
-        con.executemany(
-            "INSERT INTO juri_auditoria (hash_codebook, doc, variavel, ordem) VALUES (?, ?, ?, ?)",
-            [(hash_cb, doc, var, i) for i, (doc, var) in enumerate(itens)],
-        )
-    return itens
+    """Os itens da auditoria: as `juri.auditoria` decisões unânimes de menor prioridade, sendo a prioridade de cada
+    item um hash da semente da validação, do documento e da variável. O sorteio é estável sem ser guardado: um item
+    continua sorteado enquanto for unânime, mudar `juri.auditoria` só acrescenta ou tira itens do fim da fila, e o que
+    deixa de ser unânime sai (a auditoria estima o erro entre os unânimes)."""
+    semente = projeto.config.validacao.semente
+    unanimes = [(d.doc, d.variavel.id) for d in decisoes if d.etapa == "unanime" and d.variavel.tipo in DELIBERAVEIS]
+    return sorted(unanimes, key=lambda item: chave_de("auditoria", semente, *item))[: projeto.config.juri.auditoria]
 
 
 def _id(tarefa: str, doc: str, variavel: str, chave: str) -> str:

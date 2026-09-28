@@ -145,3 +145,29 @@ def test_supervisor_pessoa_nao_sai_documento_a_documento(projeto):
     decisoes = [d for doc in por_doc.values() for d in doc.values() if d.etapa == "sem_maioria"]
     assert decisoes and all(d.supervisor is None and d.justificativa is None for d in decisoes)
     assert all(d.valor == d.valor_sem_supervisor for d in decisoes)
+
+
+def test_sorteio_da_auditoria_e_estavel_e_segue_a_config():
+    from types import SimpleNamespace
+
+    from mapa_da_ciencia.juri.supervisor import sorteio_auditoria
+
+    def projeto_com(n: int):
+        return SimpleNamespace(
+            config=SimpleNamespace(juri=SimpleNamespace(auditoria=n), validacao=SimpleNamespace(semente=7))
+        )
+
+    def decisao(doc: str, etapa: str = "unanime"):
+        return SimpleNamespace(doc=doc, etapa=etapa, variavel=SimpleNamespace(id="abordagem", tipo="categorica"))
+
+    decisoes = [decisao(f"d{i:02d}") for i in range(30)]
+    tres = sorteio_auditoria(projeto_com(3), decisoes)
+    assert len(tres) == 3 and tres == sorteio_auditoria(projeto_com(3), list(reversed(decisoes)))
+    cinco = sorteio_auditoria(projeto_com(5), decisoes)
+    assert cinco[:3] == tres and len(cinco) == 5  # mudar o tamanho só acrescenta no fim
+
+    # um item sorteado deixa de ser unânime: sai, e os outros continuam
+    fora = tres[0][0]
+    outras = [decisao(d.doc, "maioria") if d.doc == fora else d for d in decisoes]
+    depois = sorteio_auditoria(projeto_com(3), outras)
+    assert fora not in {doc for doc, _ in depois} and set(tres[1:]) <= set(depois)
