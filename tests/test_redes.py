@@ -1,7 +1,9 @@
 """As redes: pesos fracionários, identidade das pessoas, desenho reprodutível, citações e a etapa de ponta a ponta."""
 
 import hashlib
+import itertools
 import json
+import random
 import re
 from pathlib import Path
 
@@ -24,6 +26,7 @@ from mapa_da_ciencia.fontes.openalex import COLUNAS_CITADAS, COLUNAS_REFERENCIAS
 from mapa_da_ciencia.llm.perfis import PERFIS
 from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.redes import citacoes as cit
+from mapa_da_ciencia.redes import pessoas as mod_pessoas
 from mapa_da_ciencia.redes.desenho import desenhar
 from mapa_da_ciencia.redes.grafos import forcas, grafo, pares_ponderados
 from mapa_da_ciencia.redes.pessoas import CorrecoesPessoas, id_publicado, identificar
@@ -232,6 +235,41 @@ def test_nao_fundir_de_uma_autoria_nao_parte_o_resto():
         resto = {pessoa[(f"d{k}", 0)] for k in range(1, 6) if f"d{k}#0" != separada}
         assert len(resto) == 1 and pessoa[(separada.split("#")[0], 0)] not in resto, separada
         assert len(i.pessoas) == 2
+
+
+def test_regra_dos_nomes_nao_compara_todas_as_marias(monkeypatch):
+    """250 "Maria" de sobrenomes diferentes, sem nada em comum, não viram 31 mil comparações de nomes (cr-17)."""
+    chamadas = 0
+    original = mod_pessoas._comparaveis
+
+    def contar(a: str, b: str) -> bool:
+        nonlocal chamadas
+        chamadas += 1
+        return original(a, b)
+
+    monkeypatch.setattr(mod_pessoas, "_comparaveis", contar)
+    sobrenomes = ["".join(t).title() for t in itertools.product("bcfghjklmn", "aeiou", "rstvz")]
+    docs = [_doc(f"d{k}", [(f"Maria {s}", f"A{k}", None)]) for k, s in enumerate(sobrenomes)]
+    assert len(identificar(docs, segredo=b"t").pessoas) == 250
+    assert chamadas < 1000
+
+
+def test_pares_de_nomes_cobrem_todos_os_comparaveis():
+    """Os pares candidatos da regra 3 incluem todo par de nomes comparáveis com o mesmo primeiro nome: com iniciais,
+    com "Júnior" e com só o primeiro nome."""
+    rng = random.Random(3)
+    primeiros, partes = ["maria", "ana", "m"], ["silva", "s", "santos", "souza", "costa", "c", "junior", ""]
+    nomes = sorted(
+        {" ".join(filter(None, [rng.choice(primeiros), rng.choice(partes), rng.choice(partes)])) for _ in range(600)}
+    )
+    pares = set(mod_pessoas._pares_de_nomes({k: {n} for k, n in enumerate(nomes)}))
+    comparaveis = [
+        (a, b)
+        for a, b in itertools.combinations(range(len(nomes)), 2)
+        if nomes[a].split()[0] == nomes[b].split()[0] and mod_pessoas._comparaveis(nomes[a], nomes[b])
+    ]
+    assert len(comparaveis) > 50
+    assert [(nomes[a], nomes[b]) for a, b in comparaveis if (a, b) not in pares] == []
 
 
 def test_pessoas_yaml_com_erro_de_formato(tmp_path):

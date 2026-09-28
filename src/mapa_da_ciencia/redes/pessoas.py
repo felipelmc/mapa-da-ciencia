@@ -494,6 +494,42 @@ def _nome_exibido(contagem: Counter[str]) -> str:
     return " ".join(p.lower() if p.lower() in _PARTICULAS else p.title() for p in nome.split())
 
 
+def _pares_de_nomes(chaves: dict[int, set[str]]) -> list[tuple[int, int]]:
+    """Os pares de grupos que podem ter nomes comparáveis, sem comparar todos os de mesmo primeiro nome (o custo era
+    quadrático no tamanho do grupo "maria"): dois nomes comparáveis têm o mesmo primeiro nome e dividem outra parte
+    ("marjorie marona" e "marjorie correa marona" dividem "marona"), ou um deles traz só a inicial dela, ou um deles é
+    só o primeiro nome ("maria" ou "maria maria", que se comparam com todas as "maria"). Serve à regra 3 e aos
+    candidatos da revisão. A ordem é a de antes (primeiro nome, depois os índices), porque a união de um par pode
+    impedir a de outro."""
+    por_primeiro: dict[str, set[int]] = defaultdict(set)
+    sozinhos: dict[str, set[int]] = defaultdict(set)
+    por_parte: dict[tuple[str, str], set[int]] = defaultdict(set)
+    por_inicial: dict[tuple[str, str], set[int]] = defaultdict(set)
+    abreviados: dict[tuple[str, str], set[int]] = defaultdict(set)
+    for r, cs in chaves.items():
+        for chave in cs:
+            primeiro, *resto = chave.split()
+            por_primeiro[primeiro].add(r)
+            if set(resto) <= {primeiro}:
+                sozinhos[primeiro].add(r)
+            for t in resto:
+                por_parte[(primeiro, t)].add(r)
+                por_inicial[(primeiro, t[0])].add(r)
+                if len(t) == 1:
+                    abreviados[(primeiro, t)].add(r)
+    pares: dict[str, set[tuple[int, int]]] = defaultdict(set)
+    for (primeiro, _), grupo in por_parte.items():
+        lista = sorted(grupo)
+        pares[primeiro].update((lista[x], lista[y]) for x in range(len(lista)) for y in range(x + 1, len(lista)))
+    for (primeiro, inicial), grupo in abreviados.items():
+        for a in grupo:
+            pares[primeiro].update((min(a, b), max(a, b)) for b in por_inicial[(primeiro, inicial)] if a != b)
+    for primeiro, grupo in sozinhos.items():
+        for a in grupo:
+            pares[primeiro].update((min(a, b), max(a, b)) for b in por_primeiro[primeiro] if a != b)
+    return [par for primeiro in sorted(pares) for par in sorted(pares[primeiro])]
+
+
 def _regra_dos_nomes(autorias: list[Autoria], g: _Grupos) -> None:
     """Regra 3, até não mudar mais: pares de grupos com um nome igual ou variante e um coautor ou uma instituição em
     comum, desde que todos os nomes de um sejam comparáveis com todos os do outro."""
@@ -508,29 +544,31 @@ def _regra_dos_nomes(autorias: list[Autoria], g: _Grupos) -> None:
             docs[r].add(a.doc)
             insts[r] |= a.instituicoes
             grupos_do_doc[a.doc].add(r)
-        por_primeiro: dict[str, set[int]] = defaultdict(set)
-        for r in docs:
-            for chave in g.chaves[r]:
-                por_primeiro[chave.split()[0]].add(r)
-        for primeiro in sorted(por_primeiro):
-            lista = sorted(por_primeiro[primeiro])
-            for x in range(len(lista)):
-                for y in range(x + 1, len(lista)):
-                    ra, rb = g.achar(lista[x]), g.achar(lista[y])
-                    if ra == rb:
-                        continue
-                    ca, cb = g.chaves[ra], g.chaves[rb]
-                    if not all(_comparaveis(p, q) for p in ca for q in cb):
-                        continue
-                    coautores_a = {g.achar(h) for d in docs[ra] for h in grupos_do_doc[d]} - {ra}
-                    coautores_b = {g.achar(h) for d in docs[rb] for h in grupos_do_doc[d]} - {rb}
-                    if (coautores_a & coautores_b or insts[ra] & insts[rb]) and g.unir(ra, rb):
-                        raiz = g.achar(ra)
-                        docs[raiz] = docs[ra] | docs[rb]
-                        insts[raiz] = insts[ra] | insts[rb]
-                        for d in docs[raiz]:
-                            grupos_do_doc[d] = {g.achar(h) for h in grupos_do_doc[d]}
-                        mudou = True
+        # os coautores de cada grupo, calculados uma vez por volta (e de novo depois de uma união)
+        coautores: dict[int, set[int]] = {}
+        for x, y in _pares_de_nomes({r: g.chaves[r] for r in docs}):
+            ra, rb = g.achar(x), g.achar(y)
+            if ra == rb:
+                continue
+            ca, cb = g.chaves[ra], g.chaves[rb]
+            if not all(_comparaveis(p, q) for p in ca for q in cb):
+                continue
+            if not insts[ra] & insts[rb]:
+                for r in (ra, rb):
+                    if r not in coautores:
+                        coautores[r] = {h for d in docs[r] for h in grupos_do_doc[d]}
+                comum = ({g.achar(h) for h in coautores[ra]} - {ra}) & ({g.achar(h) for h in coautores[rb]} - {rb})
+                if not comum:
+                    continue
+            if g.unir(ra, rb):
+                raiz = g.achar(ra)
+                docs[raiz] = docs[ra] | docs[rb]
+                insts[raiz] = insts[ra] | insts[rb]
+                for d in docs[raiz]:
+                    grupos_do_doc[d] = {g.achar(h) for h in grupos_do_doc[d]}
+                for velho in (ra, rb, raiz):
+                    coautores.pop(velho, None)
+                mudou = True
 
 
 def _opcoes_de_interno(membros: list[Autoria]) -> list[tuple[str, str]]:
@@ -572,26 +610,18 @@ def _candidatos(
             b = {pessoa_da_autoria[i] for i in conhecidos.get(_normalizar_id(par[1]), ())}
             nao |= {frozenset((x, y)) for x in a for y in b if x != y}
     chaves = [{autorias[i].chave for i in p.autorias if autorias[i].chave} for p in pessoas]
-    por_primeiro: dict[str, set[int]] = defaultdict(set)
-    for k, cs in enumerate(chaves):
-        for c in cs:
-            por_primeiro[c.split()[0]].add(k)
     vistos: set[frozenset[int]] = set()
     saida: list[Candidato] = []
-    for primeiro in sorted(por_primeiro):
-        lista = sorted(por_primeiro[primeiro])
-        for x in range(len(lista)):
-            for y in range(x + 1, len(lista)):
-                a, b = lista[x], lista[y]
-                par = frozenset((a, b))
-                if par in vistos or par in nao:
-                    continue
-                if chaves[a] & chaves[b]:
-                    tipo = "homonimo"
-                elif any(variantes(p, q) for p in chaves[a] for q in chaves[b]):
-                    tipo = "variante"
-                else:
-                    continue
-                vistos.add(par)
-                saida.append(Candidato(pessoas[a].interno, pessoas[b].interno, pessoas[a].nome, tipo))
+    for a, b in _pares_de_nomes(dict(enumerate(chaves))):
+        par = frozenset((a, b))
+        if par in vistos or par in nao:
+            continue
+        if chaves[a] & chaves[b]:
+            tipo = "homonimo"
+        elif any(variantes(p, q) for p in chaves[a] for q in chaves[b]):
+            tipo = "variante"
+        else:
+            continue
+        vistos.add(par)
+        saida.append(Candidato(pessoas[a].interno, pessoas[b].interno, pessoas[a].nome, tipo))
     return sorted(saida, key=lambda c: (c.tipo != "homonimo", chave_nome(c.nome), c.a, c.b))
