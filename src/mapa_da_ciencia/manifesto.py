@@ -71,12 +71,14 @@ def ultima_execucao(
 
 def da_classificacao_principal(projeto: Projeto) -> Callable[[dict[str, Any]], bool]:
     """Filtro das execuções que contam como "a" classificação do projeto: o modelo principal, e não uma rodada de
-    comparação (`--modelo X`) nem só a amostra. Funciona também com os manifestos antigos."""
+    comparação (`--modelo X`), só a amostra nem uma rodada parcial que manteve o resultado completo anterior (a
+    execução mostrada é a dos dados). Funciona também com os manifestos antigos."""
     principal = projeto.config.modelos.classificacao.modelo.removesuffix(":latest")
 
     def filtro(m: dict[str, Any]) -> bool:
         modelo = (m.get("modelos") or {}).get("classificacao", "").split("@", 1)[0].removesuffix(":latest")
-        return modelo == principal and not (m.get("parametros") or {}).get("somente_amostra")
+        parametros = m.get("parametros") or {}
+        return modelo == principal and not parametros.get("somente_amostra") and parametros.get("gravado", True)
 
     return filtro
 

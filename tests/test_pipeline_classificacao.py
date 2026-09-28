@@ -1,5 +1,8 @@
 """A etapa de classificação de ponta a ponta: `mapa classificar`, `api.classificar`, status e a view."""
 
+import json
+import time
+
 import pytest
 from typer.testing import CliRunner
 
@@ -9,7 +12,7 @@ from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado
 from mapa_da_ciencia.cli import app
 from mapa_da_ciencia.coleta import coletar
 from mapa_da_ciencia.llm.perfis import PERFIS
-from mapa_da_ciencia.manifesto import ultima_execucao
+from mapa_da_ciencia.manifesto import da_classificacao_principal, ultima_execucao
 from mapa_da_ciencia.projeto import Projeto
 
 runner = CliRunner()
@@ -115,12 +118,49 @@ def test_rodada_parcial_de_outra_execucao_nao_troca_o_resultado_completo(projeto
     """Um --estimar depois de o modelo ser atualizado no Ollama não troca a classificação completa pelos 5 novos."""
     r = mapa.classificar(projeto, progresso=False)
     completo = r.documentos
+    time.sleep(1.05)  # o manifesto de cada execução tem o segundo no nome: o próximo não pode sobrescrever este
     apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"  # o modelo foi atualizado
     r = mapa.classificar(projeto, estimar=True, progresso=False)
     assert any("resultado completo anterior" in a for a in r.avisos)
     guardado = Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
     assert guardado.classificados == completo and not guardado.parcial
+    # o status e a duração publicada mostram a execução dos dados, e não o --estimar que não gravou
+    m = ultima_execucao(projeto, "classificacao", da_classificacao_principal(projeto))
+    assert m["modelos"]["classificacao"] == guardado.modelo and m["contagens"]["classificados"] == completo
     # a rodada completa com o modelo novo substitui
     r = mapa.classificar(projeto, progresso=False)
     guardado = Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
     assert not guardado.parcial and guardado.modelo.endswith("@novo00000000")
+
+
+def _falhar_sempre_num_documento(apis_falsas):
+    """O chat responde algo que não é JSON para um documento, nas duas tentativas (uma falha determinística, como
+    com temperatura 0 e semente fixa)."""
+    original, alvo = apis_falsas.responder_chat, []
+
+    def responder(corpo):
+        documento = next(m["content"] for m in corpo["messages"] if m["role"] == "user")
+        alvo[:] = alvo or [documento]
+        return "isto não é JSON" if documento == alvo[0] else original(corpo)
+
+    apis_falsas.responder_chat = responder
+
+
+def test_rodada_completa_com_falhas_depois_de_atualizar_o_modelo_substitui(projeto, apis_falsas):
+    """Uma rodada completa com uma falha pontual não é parcial no sentido da proteção: o resultado do modelo
+    atualizado substitui o anterior, e o manifesto, o resultado e o painel falam do mesmo modelo."""
+    r = mapa.classificar(projeto, progresso=False)
+    total = r.documentos
+    apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"  # `ollama pull` trouxe uma versão nova
+    _falhar_sempre_num_documento(apis_falsas)
+    r = mapa.classificar(projeto, progresso=False)
+    assert (r.classificados, len(r.falhas), r.parcial) == (total - 1, 1, True)
+    assert not any("resultado completo anterior" in a for a in r.avisos)
+    guardado = Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
+    assert guardado.modelo.endswith("@novo00000000") and guardado.classificados == total - 1 and guardado.parcial
+    assert classificacao_em_dia(projeto) is False  # incompleta: o documento que falhou fica para a próxima rodada
+    m = ultima_execucao(projeto, "classificacao", da_classificacao_principal(projeto))
+    assert m["modelos"]["classificacao"] == guardado.modelo and m["parametros"]["gravado"]
+    exportado = json.loads((projeto.saida / "dados" / "manifesto.json").read_text(encoding="utf-8"))
+    assert exportado["execucao"]["modelos"]["classificacao"] == guardado.modelo
+    assert exportado["contagens"]["classificados"] == total - 1

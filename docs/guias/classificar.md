@@ -39,10 +39,12 @@ Outras formas de rodar:
 A chave de cada resposta guardada inclui o texto, o codebook, o modelo (com a versão exata) e os parâmetros. Por isso:
 
 - **mudar o codebook** (uma definição, uma categoria, um exemplo) faz a próxima rodada classificar tudo de novo. O `mapa status` avisa: "a classificação é de outro codebook";
-- trocar o modelo ou atualizá-lo no Ollama também refaz tudo;
+- trocar o modelo, atualizá-lo no Ollama ou mudar os parâmetros dele (`num_ctx`, `temperatura`, `semente`, `pensar`) também refaz tudo;
 - uma coleta nova só classifica os documentos novos.
 
 Teste o codebook numa amostra (`--limite 20`) antes de rodar o corpus inteiro.
+
+Depois de atualizar o modelo ou mudar os parâmetros, o resultado completo anterior continua valendo até uma rodada completa com a versão nova terminar. Um `--estimar`, um `--limite` ou uma rodada interrompida não o substituem, e a saída avisa. A rodada completa o substitui mesmo que alguns documentos falhem nas duas tentativas: eles ficam para a próxima rodada, e o `mapa status` mostra a classificação como incompleta até lá.
 
 ## Consultar o resultado
 

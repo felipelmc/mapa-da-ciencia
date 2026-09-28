@@ -142,7 +142,9 @@ def classificar(
     parametros = (modelo_cfg.num_ctx, modelo_cfg.temperatura, modelo_cfg.semente, modelo_cfg.pensar)
     execucao = chave_de(classificador.modelo, VERSAO_PROMPT, parametros)[:16]
     # um resultado completo de outra execução (modelo atualizado, outro prompt ou outros parâmetros) não é trocado
-    # por um parcial desta (um --estimar ou --limite): só a rodada completa o substitui
+    # por um parcial desta (um --estimar ou --limite, ou uma rodada interrompida): só a rodada completa o substitui,
+    # mesmo que alguns documentos tenham falhado nas duas tentativas (com temperatura 0 e semente fixa, a falha
+    # tende a se repetir, e o resultado novo nunca chegaria)
     anterior = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
     protegido = (
         anterior is not None
@@ -150,15 +152,20 @@ def classificar(
         and (anterior.execucao or anterior.modelo) != (execucao if anterior.execucao else classificador.modelo)
     )
     avisos_gravacao: list[str] = []
+    gravou = False  # a última chamada de `gravar` gravou o resultado?
     principal = not opcoes.modelo or opcoes.modelo == cfg.modelos.classificacao.modelo
     assinatura = assinatura_corpus([d.id for d in docs])
 
     def gravar(resultados: list[Classificacao], *, parcial: bool) -> Resultado:
         """Grava o resultado com o que já foi classificado: no fim, e a cada `GRAVAR_A_CADA` documentos novos,
         com uma exportação para o painel (assim a rodada longa aparece enquanto corre)."""
+        nonlocal gravou
         resultados = resultados + fora_do_alvo
+        # cobre o corpus: a rodada chegou ao fim, e cada texto foi classificado ou falhou nas duas tentativas
+        cobre = not parcial and len(resultados) + len(k.falhas) >= len(textos)
         parcial = parcial or len(resultados) < len(textos)
-        gravar_de_fato = not (protegido and parcial)
+        gravar_de_fato = not protegido or cobre
+        gravou = gravar_de_fato
         if not gravar_de_fato and not avisos_gravacao:
             avisos_gravacao.append(
                 f"O resultado completo anterior ({anterior.modelo.split('@', 1)[0]}, de outra execução) foi mantido: "
@@ -269,10 +276,12 @@ def classificar(
             "versao_prompt": VERSAO_PROMPT,
             "parcial": resultado.parcial,
             "somente_amostra": opcoes.somente_amostra,
+            # False quando o resultado completo anterior foi mantido: esta execução não é a dos dados
+            "gravado": gravou,
         },
     )
     resumo.avisos += avisos_gravacao
-    if principal and not (protegido and resultado.parcial):
+    if principal and gravou:
         resumo.avisos += exportar(projeto)
     return resumo
 
