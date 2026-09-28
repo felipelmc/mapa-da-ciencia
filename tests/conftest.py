@@ -213,9 +213,13 @@ class ApisFalsas:
         return httpx.Response(200, json={"meta": {"count": len(achadas)}, "results": achadas})
 
     def _obras(self, request: httpx.Request) -> httpx.Response:
-        """Entende os filtros usados pelo mapa: ISSN (com |), intervalo de anos e lista de DOIs."""
-        self.chamadas["openalex"] += 1
+        """Entende os filtros usados pelo mapa: ISSN (com |), intervalo de anos, lista de DOIs e lista de ids
+        (`openalex:W1|W2`, as referências e as obras citadas)."""
         filtros = dict(f.split(":", 1) for f in request.url.params.get("filter", "").split(",") if ":" in f)
+        if "openalex" in filtros:
+            self.chamadas["openalex_obras_por_id"] += 1
+            return httpx.Response(200, json={"meta": {"count": 0}, "results": self._obras_por_id(filtros["openalex"])})
+        self.chamadas["openalex"] += 1
         obras = [o for o in self.obras if (o.get("doi") or "").lower().removeprefix("https://doi.org/")
                  not in self.fora_dos_filtros]  # fmt: skip
         if "locations.source.issn" in filtros:
@@ -235,6 +239,27 @@ class ApisFalsas:
             json={"meta": {"count": self.total_forcado or len(obras), "next_cursor": None}, "results": obras},
             headers={"x-ratelimit-remaining": "990"},
         )
+
+    def _obras_por_id(self, ids: str) -> list[dict]:
+        """Referências determinísticas: cada obra das fixtures cita as duas seguintes (em ordem de id) e três obras de
+        fora; as de fora voltam com metadados inventados (título, ano, um autor, a revista)."""
+        do_corpus = sorted(o["id"].rsplit("/", 1)[-1] for o in self.obras)
+        saida = []
+        for w in ids.split("|"):
+            if w in do_corpus:
+                i = do_corpus.index(w)
+                refs = [*do_corpus[i + 1 : i + 3], "W900000001", "W900000002", f"W9000{i % 3:05d}"]
+                saida.append({"id": f"https://openalex.org/{w}", "referenced_works": [f"https://openalex.org/{r}"
+                              for r in refs], "referenced_works_count": len(refs)})  # fmt: skip
+            elif w.startswith("W9"):
+                saida.append({
+                    "id": f"https://openalex.org/{w}", "display_name": f"Obra clássica {w[-3:]}",
+                    "publication_year": 1990, "type": "book", "language": "en", "cited_by_count": 1000,
+                    "authorships": [{"author": {"display_name": "Autora Clássica"}, "raw_affiliation_strings":
+                                     ["Univ. X, autora@exemplo.invalid"]}],
+                    "primary_location": {"source": {"display_name": "Editora Y"}},
+                })  # fmt: skip
+        return saida
 
     def _identificadores(self, request: httpx.Request) -> httpx.Response:
         self.chamadas["articlemeta"] += 1

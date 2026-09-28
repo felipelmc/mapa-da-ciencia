@@ -17,7 +17,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from mapa_da_ciencia.armazenamento import ARQUIVO, ARQUIVO_INSTITUICOES, gravar_documentos, gravar_tabela
+from mapa_da_ciencia.armazenamento import (
+    ARQUIVO,
+    ARQUIVO_CITADAS,
+    ARQUIVO_INSTITUICOES,
+    ARQUIVO_REFERENCIAS,
+    gravar_documentos,
+    gravar_tabela,
+)
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.contrato.exportar import exportar
 from mapa_da_ciencia.documento import Documento
@@ -34,10 +41,15 @@ from mapa_da_ciencia.fontes.dedup import deduplicar
 from mapa_da_ciencia.fontes.importar import FORMATOS, Identificador, Importacao, ler_arquivo
 from mapa_da_ciencia.fontes.importar import colecao_da_url as colecao_da_url
 from mapa_da_ciencia.fontes.openalex import (
+    COLUNAS_CITADAS,
     COLUNAS_INSTITUICOES,
+    COLUNAS_REFERENCIAS,
+    N_CITADAS,
+    buscar_citadas,
     buscar_instituicoes,
     buscar_obra,
     buscar_por_dois,
+    buscar_referencias,
     casar_todos,
     consultar,
     documento_de_obra,
@@ -457,6 +469,19 @@ async def coletar_async(
                 avisos.append(
                     f"Registros das instituições do OpenAlex indisponíveis ({erro}); a geografia vai usar só os nomes."
                 )
+        # referências de cada artigo e as obras de fora do corpus mais citadas: as redes de citação e o cânone
+        referencias: dict[str, list[str]] = {}
+        citadas: list[dict] = []
+        obras = {d.openalex_id for d in documentos if d.openalex_id}
+        if obras and plano.openalex and not opcoes.sem_openalex and projeto.config.fontes.openalex.referencias:
+            try:
+                api_key = variavel("OPENALEX_API_KEY", projeto.raiz)
+                referencias = await buscar_referencias(buscador, obras, api_key=api_key)
+                vezes = Counter(c for refs in referencias.values() for c in set(refs) if c not in obras)
+                mais = sorted(vezes.items(), key=lambda kv: (-kv[1], kv[0]))[:N_CITADAS]
+                citadas = await buscar_citadas(buscador, {w for w, _ in mais}, api_key=api_key)
+            except ErroFonte as erro:
+                avisos.append(f"Referências do OpenAlex indisponíveis ({erro}); as redes de citação ficam de fora.")
         contadores = buscador.contadores
 
     documentos, dedup = deduplicar(documentos)
@@ -477,6 +502,14 @@ async def coletar_async(
         )
     else:  # sem registros nesta coleta: os de uma coleta anterior não valem para o corpus novo
         (projeto.dados / ARQUIVO_INSTITUICOES).unlink(missing_ok=True)
+    no_corpus = {d.openalex_id for d in documentos if d.openalex_id}
+    if referencias:
+        linhas = [{"obra": w, "citada": c} for w, refs in sorted(referencias.items()) if w in no_corpus for c in refs]
+        gravar_tabela(linhas, COLUNAS_REFERENCIAS, projeto.dados / ARQUIVO_REFERENCIAS, ordem="obra")
+        gravar_tabela(citadas, COLUNAS_CITADAS, projeto.dados / ARQUIVO_CITADAS)
+    else:
+        (projeto.dados / ARQUIVO_REFERENCIAS).unlink(missing_ok=True)
+        (projeto.dados / ARQUIVO_CITADAS).unlink(missing_ok=True)
     progresso.fim()
 
     resumo = ResumoColeta(

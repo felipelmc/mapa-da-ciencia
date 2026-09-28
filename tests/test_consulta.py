@@ -26,7 +26,8 @@ def test_busca_por_termo_nas_revistas_do_recorte(projeto, apis_falsas):
     assert all(d.fonte == "articlemeta" and d.pid and d.casamento == "1_doi" for d in docs)
     assert all(d.origens == ["consulta:eleitoral"] for d in docs)
     assert all("eleitoral" in " ".join(t.texto.lower() for t in d.titulos) for d in docs)
-    assert resumo.creditos_openalex == 11  # uma página de busca e um lote de instituições
+    # uma página de busca, um lote de instituições, um de referências e um de obras citadas
+    assert resumo.creditos_openalex == 13
 
 
 def test_busca_ampla_demais_para_antes_de_gastar_creditos(projeto, apis_falsas):

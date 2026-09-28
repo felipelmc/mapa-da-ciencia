@@ -46,6 +46,11 @@ class FonteOpenAlex(_Base):
     """Enriquecimento (citações, licença) e busca por termo no OpenAlex."""
 
     enriquecer: bool = Field(True, description="Casar cada artigo com o OpenAlex para obter citações e licença.")
+    referencias: bool = Field(
+        True,
+        description="Buscar no OpenAlex as referências de cada artigo e os dados das obras mais citadas (as redes de "
+        "citação e o cânone): cerca de 1 crédito a cada 100 artigos, mais 5 créditos, só na primeira coleta.",
+    )
     consulta: str | None = Field(
         None,
         description="Busca por termo no título e no resumo, via OpenAlex. Com revistas no recorte, busca só nelas; "

@@ -49,7 +49,7 @@ ESQUEMA: dict[str, str] = {
     "autorias_openalex": (
         "STRUCT(nome VARCHAR, instituicoes STRUCT(id VARCHAR, ror VARCHAR, nome VARCHAR, pais VARCHAR, "
         "tipo VARCHAR, linhagem VARCHAR[])[], paises VARCHAR[], "
-        "afiliacoes STRUCT(texto VARCHAR, instituicoes VARCHAR[])[])[]"
+        "afiliacoes STRUCT(texto VARCHAR, instituicoes VARCHAR[])[], id VARCHAR, orcid VARCHAR)[]"
     ),
     "url": "VARCHAR",
     "citacoes": "INTEGER",
@@ -63,6 +63,8 @@ ESQUEMA: dict[str, str] = {
 }
 ARQUIVO = "documentos.parquet"
 ARQUIVO_INSTITUICOES = "instituicoes_openalex.parquet"  # registros das instituições do OpenAlex (coleta)
+ARQUIVO_REFERENCIAS = "referencias_openalex.parquet"  # obra do corpus → obra citada (coleta)
+ARQUIVO_CITADAS = "obras_citadas_openalex.parquet"  # as obras de fora do corpus mais citadas (coleta)
 
 
 def _colunas_sql() -> str:

@@ -88,6 +88,8 @@ class AutoriaOpenAlex(_Base):
     instituicoes: list[InstituicaoOpenAlex] = Field(default_factory=list)
     paises: list[str] = Field(default_factory=list)
     afiliacoes: list[AfiliacaoOpenAlex] = Field(default_factory=list)
+    id: str | None = Field(None, description="Id do autor no OpenAlex (`A…`): a base da identidade nas redes.")
+    orcid: str | None = None
 
 
 class Documento(_Base):
