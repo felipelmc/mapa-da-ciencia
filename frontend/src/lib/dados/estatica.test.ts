@@ -99,6 +99,8 @@ describe('FonteEstatica com um projeto vazio', () => {
 		expect(await fonte.codebook()).toBeNull();
 		expect(await fonte.classificacoes()).toBeNull();
 		expect(await fonte.validacao()).toBeNull();
+		expect(await fonte.redes()).toBeNull();
+		expect(await fonte.citacoes()).toBeNull();
 		expect(await fonte.detalhe('exemplo:00000')).toBeNull();
 		expect(await fonte.tem('topicos')).toBe(false);
 

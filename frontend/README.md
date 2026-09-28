@@ -138,6 +138,8 @@ A interface esconde o que a fonte não pode fazer. Por exemplo, a seção **Proj
 
 `src/lib/dados/corpus.ts` abre o corpus uma vez por fonte (`abrirCubo`): tabela de documentos, tópicos, afiliações (se houver) e o cubo, compartilhado pelas vistas e pela barra de recorte. A busca (`dados/busca.ts`) monta o índice uma vez (`indiceDe`).
 
+As redes (`redes.json` e `citacoes.json`, gerados pelo `mapa redes`) chegam com o corpus inteiro, mas a vista Redes as recalcula no recorte: com `anos=2015-2020`, duas pessoas que só escreveram juntas em 2012 não ficam ligadas. Por isso as autorias, as citações internas e os citantes do cânone vêm pelo índice do documento. `src/lib/dados/redes.ts` os decodifica em arrays tipados, com as pessoas de cada documento e os documentos de cada pessoa em CSR (`abrirRedes`, `abrirCitacoes`, uma vez por fonte). `src/lib/redes/calculo.ts` é puro. Ele refaz os pares com peso 1/(n−1) por documento, como o `pares_ponderados` do Python, para coautoria, instituições e UFs (com `EX` para o exterior). Também calcula a colaboração por ano, as citações internas com as duas pontas no recorte, a matriz entre macrotemas e os citantes de cada obra do cânone.
+
 ## Estado na URL
 
 `src/lib/estado/url.ts` define o formato do endereço:
@@ -211,6 +213,7 @@ Um só sistema de tokens (`src/lib/estilos/tokens.css`) com dois temas, escolhid
 | `graficos/fluxo.test.ts` | empilhamento do fluxo (proporção soma 1, absoluto soma o total, fluxo preserva as espessuras, ordem fixa entre os modos) e rótulos dentro das faixas só onde cabem |
 | `formato.test.ts` | decimais, porcentagens e pontos percentuais em pt-BR |
 | `dados/cubo.test.ts` | o filtro cruzado contra o gabarito do Python (`agregados.json`): tópico × ano × revista com e sem filtros, UFs, países e instituições fracionários, séries; 300 recortes aleatórios contra uma filtragem ingênua; exclusão de dimensões; lugares por documento; busca e laço |
+| `redes/calculo.test.ts` | as redes do corpus inteiro contra o Python: pares de coautores (`arestas_coautoria`) e grau de cada pessoa, pares e grau das instituições, pares de UFs com o exterior (`uf_pares`), a colaboração por ano, os citantes do cânone (`canone_n`) e a matriz das citações entre macrotemas; no recorte, contra uma contagem ingênua |
 | `dados/documentos.test.ts` | decodificação do `documentos.json`: NDC com a mesma escala nos dois eixos, enquadramento que resiste a ilhas, vizinhos, índice |
 | `estado/url.test.ts` | `rota()`, `lerHash()` e a ida e volta dos filtros, inclusive `laco` e `vista` |
 | `estado/sem-resolve.test.ts` | nenhum `resolve()` nem link absoluto em `src/` |
