@@ -1,13 +1,15 @@
 <script lang="ts">
+	import ErroAoAbrir from '$lib/componentes/ErroAoAbrir.svelte';
 	import PaginaDeSecao from '$lib/componentes/PaginaDeSecao.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
-	import { abrirCubo } from '$lib/dados/corpus';
+	import { abrirCubo, reabrirCubo } from '$lib/dados/corpus';
 	import VistaGeografia from '$lib/geografia/VistaGeografia.svelte';
 	import { secao } from '$lib/secoes';
 
 	const { fonte } = usarProjeto();
 	// afiliacoes.json só existe depois de `mapa geografia` (e dos tópicos); sem ele, nenhum pedido é feito
-	const dados = abrirCubo(fonte);
+	let dados = $state(abrirCubo(fonte));
+	const tentar = () => (dados = reabrirCubo(fonte));
 </script>
 
 {#await dados}
@@ -15,6 +17,8 @@
 {:then d}
 	{#if d?.afiliacoes}
 		<VistaGeografia aberto={d} afiliacoes={d.afiliacoes} />
+	{:else if d?.erroAfiliacoes}
+		<ErroAoAbrir oque="as afiliações" erro={d.erroAfiliacoes} {tentar} />
 	{:else}
 		<PaginaDeSecao
 			secao={secao('geografia')}
@@ -27,7 +31,7 @@
 		</PaginaDeSecao>
 	{/if}
 {:catch erro}
-	<p class="aviso" role="alert">Não foi possível abrir a geografia: {erro.message}</p>
+	<ErroAoAbrir oque="a geografia" {erro} {tentar} />
 {/await}
 
 <style>

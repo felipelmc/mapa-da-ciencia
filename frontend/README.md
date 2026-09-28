@@ -136,7 +136,7 @@ A interface esconde o que a fonte não pode fazer. Por exemplo, a seção **Proj
 
 `src/lib/dados/cubo.ts` responde, para o recorte da URL, quais documentos passam e quantos há por ano, tópico, revista e lugar. Cada dimensão (ano, revista, tópico, busca, laço, UF, país, instituição) tem um bit, e `falhas[i]` guarda as dimensões que o documento *não* atende. Cada vista agrega **excluindo a própria dimensão** (`exceto`): o fluxo por ano mostra o período inteiro com o intervalo destacado, e o mapa das UFs mantém as outras UFs clicáveis. Os filtros de lugar valem por documento (basta uma afiliação); o peso fracionário só entra nas somas geográficas.
 
-`src/lib/dados/corpus.ts` abre o corpus uma vez por fonte (`abrirCubo`): tabela de documentos, tópicos, afiliações (se houver) e o cubo, compartilhado pelas vistas e pela barra de recorte. A busca (`dados/busca.ts`) monta o índice uma vez (`indiceDe`).
+`src/lib/dados/corpus.ts` abre o corpus uma vez por fonte (`abrirCubo`): tabela de documentos, tópicos, afiliações (se houver) e o cubo, compartilhado pelas vistas e pela barra de recorte. Como na `FonteEstatica`, uma falha não fica guardada: a próxima chamada pede de novo, e o "Tentar de novo" das vistas (`ErroAoAbrir.svelte`) chama `reabrirCubo`, que também avisa a barra do recorte. Se só as afiliações falharem, o cubo abre sem lugares (`erroAfiliacoes`), e só a Geografia mostra o erro. A busca (`dados/busca.ts`) monta o índice uma vez (`indiceDe`).
 
 ## Estado na URL
 
@@ -210,6 +210,7 @@ Um só sistema de tokens (`src/lib/estilos/tokens.css`) com dois temas, escolhid
 | `estatistica/glm.test.ts` | a tendência no navegador igual à referência em Python: os 13 casos de `contrato/casos/tendencia.json` e o gabarito de cada tópico e macrotema do exemplo |
 | `graficos/fluxo.test.ts` | empilhamento do fluxo (proporção soma 1, absoluto soma o total, fluxo preserva as espessuras, ordem fixa entre os modos) e rótulos dentro das faixas só onde cabem |
 | `formato.test.ts` | decimais, porcentagens e pontos percentuais em pt-BR |
+| `dados/corpus.test.ts` | uma falha passageira não fica guardada; sem as afiliações, o cubo abre sem lugares, e `reabrirCubo` tenta de novo e avisa a barra do recorte |
 | `dados/cubo.test.ts` | o filtro cruzado contra o gabarito do Python (`agregados.json`): tópico × ano × revista com e sem filtros, UFs, países e instituições fracionários, séries; 300 recortes aleatórios contra uma filtragem ingênua; exclusão de dimensões; lugares por documento; busca e laço |
 | `dados/documentos.test.ts` | decodificação do `documentos.json`: NDC com a mesma escala nos dois eixos, enquadramento que resiste a ilhas, vizinhos, índice |
 | `estado/url.test.ts` | `rota()`, `lerHash()` e a ida e volta dos filtros, inclusive `laco` e `vista` |
@@ -241,6 +242,7 @@ Os testes cobrem:
 - troca de tema e memória da escolha;
 - o link de pular;
 - rota inexistente;
+- falha passageira de rede (o "Tentar de novo" abre a vista sem recarregar) e o arquivo das afiliações indisponível (só a Geografia falha);
 - tela estreita: nenhuma rota rola de lado a 375 px (celular emulado, com a barra de navegação na tela e o recorte do Mapa aberto), 768 e 1024 px;
 - projeto vazio, sem pedir arquivos ausentes;
 - no Mapa (`mapa.spec.ts`): o desenho dos pontos, contornos e rótulos pelo zoom, legenda, cor por revista, cartão pelo link e pelo clique, busca, laço pelo link e pelo mouse, play da linha do tempo, atalhos, o canvas que acompanha a janela, o modo apresentação e o painel recolhido, a lista da busca ao lado de uma legenda longa e, no celular, o painel e o cartão acima da barra de navegação.

@@ -16,6 +16,11 @@ export interface Corpus {
 /** O corpus, as afiliações (se houver) e o cubo: tudo o que as vistas de análise precisam. */
 export interface Aberto extends Corpus {
 	afiliacoes: TabelaAfiliacoes | null;
+	/**
+	 * Por que as afiliações não abriram, quando o projeto tem geografia mas o arquivo falhou (rede instável). Só a
+	 * vista Geografia depende delas: as outras seguem com o cubo sem lugares.
+	 */
+	erroAfiliacoes: Error | null;
 	cubo: Cubo;
 }
 
@@ -23,42 +28,75 @@ const corpos = new WeakMap<FonteDeDados, Promise<Corpus | null>>();
 const afiliacoes = new WeakMap<FonteDeDados, Promise<TabelaAfiliacoes | null>>();
 const cubos = new WeakMap<FonteDeDados, Promise<Aberto | null>>();
 
-/** Documentos e tópicos (só existem depois de `mapa topicos`; sem eles, `null` e nenhum pedido). */
-export function abrirCorpus(fonte: FonteDeDados): Promise<Corpus | null> {
-	let p = corpos.get(fonte);
+/**
+ * A promessa guardada para a fonte, ou uma nova. Uma falha (de rede, passageira) não fica guardada: a próxima
+ * chamada tenta de novo, como na `FonteEstatica`.
+ */
+function lembrar<T>(guardadas: WeakMap<FonteDeDados, Promise<T>>, fonte: FonteDeDados, criar: () => Promise<T>): Promise<T> {
+	let p = guardadas.get(fonte);
 	if (!p) {
-		p = Promise.all([fonte.documentos(), fonte.topicos()]).then(([documentos, topicos]) =>
-			documentos && topicos ? { tabela: decodificar(documentos), topicos } : null
-		);
-		corpos.set(fonte, p);
+		const nova = criar();
+		guardadas.set(fonte, nova);
+		nova.catch(() => {
+			if (guardadas.get(fonte) === nova) guardadas.delete(fonte);
+		});
+		p = nova;
 	}
 	return p;
+}
+
+/** Documentos e tópicos (só existem depois de `mapa topicos`; sem eles, `null` e nenhum pedido). */
+export function abrirCorpus(fonte: FonteDeDados): Promise<Corpus | null> {
+	return lembrar(corpos, fonte, () =>
+		Promise.all([fonte.documentos(), fonte.topicos()]).then(([documentos, topicos]) =>
+			documentos && topicos ? { tabela: decodificar(documentos), topicos } : null
+		)
+	);
 }
 
 /** A tabela de afiliações (só existe depois de `mapa geografia`). */
 export function abrirAfiliacoes(fonte: FonteDeDados, tabela: TabelaDocumentos): Promise<TabelaAfiliacoes | null> {
-	let p = afiliacoes.get(fonte);
-	if (!p) {
-		p = fonte.afiliacoes().then((a) => (a ? decodificarAfiliacoes(a, tabela.n) : null));
-		afiliacoes.set(fonte, p);
-	}
-	return p;
+	return lembrar(afiliacoes, fonte, () =>
+		fonte.afiliacoes().then((a) => (a ? decodificarAfiliacoes(a, tabela.n) : null))
+	);
 }
 
 /**
  * O cubo do projeto, com as afiliações quando o projeto já tem geografia. Todas as vistas e a barra de recorte
- * usam este mesmo cubo, para as contagens baterem entre si.
+ * usam este mesmo cubo, para as contagens baterem entre si. Se as afiliações falharem, o cubo abre sem elas (e com
+ * `erroAfiliacoes`): a falha de um arquivo que só a Geografia usa não derruba o Mapa, os Tópicos e a Classificação.
  */
 export function abrirCubo(fonte: FonteDeDados): Promise<Aberto | null> {
-	let p = cubos.get(fonte);
-	if (!p) {
-		p = abrirCorpus(fonte).then(async (corpus) => {
+	return lembrar(cubos, fonte, () =>
+		abrirCorpus(fonte).then(async (corpus) => {
 			if (!corpus) return null;
-			const a = (await fonte.tem('afiliacoes')) ? await abrirAfiliacoes(fonte, corpus.tabela) : null;
-			return { ...corpus, afiliacoes: a, cubo: new Cubo(corpus.tabela, corpus.topicos, a) };
-		});
-		cubos.set(fonte, p);
-	}
+			let a: TabelaAfiliacoes | null = null;
+			let erroAfiliacoes: Error | null = null;
+			if (await fonte.tem('afiliacoes')) {
+				try {
+					a = await abrirAfiliacoes(fonte, corpus.tabela);
+				} catch (e) {
+					erroAfiliacoes = e instanceof Error ? e : new Error(String(e));
+				}
+			}
+			return { ...corpus, afiliacoes: a, erroAfiliacoes, cubo: new Cubo(corpus.tabela, corpus.topicos, a) };
+		})
+	);
+}
+
+const ouvintes = new Set<() => void>();
+
+/** Chama `ouvinte` quando o cubo for reaberto ("Tentar de novo"), para a barra do recorte trocar de cubo. */
+export function aoReabrir(ouvinte: () => void): () => void {
+	ouvintes.add(ouvinte);
+	return () => ouvintes.delete(ouvinte);
+}
+
+/** "Tentar de novo": esquece o cubo guardado (que pode ter aberto sem as afiliações) e abre outra vez. */
+export function reabrirCubo(fonte: FonteDeDados): Promise<Aberto | null> {
+	cubos.delete(fonte);
+	const p = abrirCubo(fonte);
+	for (const ouvinte of ouvintes) ouvinte();
 	return p;
 }
 

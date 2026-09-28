@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ErroAoAbrir from '$lib/componentes/ErroAoAbrir.svelte';
 	import PaginaDeSecao from '$lib/componentes/PaginaDeSecao.svelte';
 	import type { Validacao } from '$lib/contrato/tipos';
 	import { usarProjeto } from '$lib/dados/contexto';
@@ -10,10 +11,13 @@
 
 	const { fonte, manifesto } = usarProjeto();
 	// no painel local, as métricas vêm da API (calculadas agora, com as divergências de todos); no site, do contrato
-	const metricas: Promise<Validacao | null> = manifesto.api
-		? lerMetricas().catch(() => fonte.validacao())
-		: fonte.validacao();
-	const dados = Promise.all([metricas, fonte.codebook(), abrirCorpus(fonte)]);
+	const abrir = () => {
+		const metricas: Promise<Validacao | null> = manifesto.api
+			? lerMetricas().catch(() => fonte.validacao())
+			: fonte.validacao();
+		return Promise.all([metricas, fonte.codebook(), abrirCorpus(fonte)]);
+	};
+	let dados = $state(abrir());
 </script>
 
 {#await dados}
@@ -34,7 +38,7 @@
 		</PaginaDeSecao>
 	{/if}
 {:catch erro}
-	<p class="aviso" role="alert">Não foi possível abrir a validação: {erro.message}</p>
+	<ErroAoAbrir oque="a validação" {erro} tentar={() => (dados = abrir())} />
 {/await}
 
 <style>

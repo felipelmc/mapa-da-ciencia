@@ -1,13 +1,14 @@
 <script lang="ts">
+	import ErroAoAbrir from '$lib/componentes/ErroAoAbrir.svelte';
 	import PaginaDeSecao from '$lib/componentes/PaginaDeSecao.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
-	import { abrirCubo } from '$lib/dados/corpus';
+	import { abrirCubo, reabrirCubo } from '$lib/dados/corpus';
 	import { secao } from '$lib/secoes';
 	import VistaTopicos from '$lib/topicos/VistaTopicos.svelte';
 
 	const { fonte } = usarProjeto();
 	// documentos.json e topicos.json só existem depois de `mapa topicos`; sem eles, nenhum pedido é feito
-	const dados = abrirCubo(fonte);
+	let dados = $state(abrirCubo(fonte));
 </script>
 
 {#await dados}
@@ -21,7 +22,7 @@
 		</PaginaDeSecao>
 	{/if}
 {:catch erro}
-	<p class="aviso" role="alert">Não foi possível abrir os tópicos: {erro.message}</p>
+	<ErroAoAbrir oque="os tópicos" {erro} tentar={() => (dados = reabrirCubo(fonte))} />
 {/await}
 
 <style>

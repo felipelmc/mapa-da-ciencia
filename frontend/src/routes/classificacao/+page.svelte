@@ -1,16 +1,19 @@
 <script lang="ts">
 	import VistaClassificacao from '$lib/classificacao/VistaClassificacao.svelte';
+	import ErroAoAbrir from '$lib/componentes/ErroAoAbrir.svelte';
 	import PaginaDeSecao from '$lib/componentes/PaginaDeSecao.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
-	import { abrirCubo } from '$lib/dados/corpus';
+	import { abrirCubo, reabrirCubo } from '$lib/dados/corpus';
 	import { secao } from '$lib/secoes';
 
 	const { fonte } = usarProjeto();
 	// classificacoes.json só existe depois de `mapa classificar`; sem ele, a vista explica o que falta
-	const dados = Promise.all([fonte.classificacoes(), fonte.codebook(), fonte.validacao()]).then(
-		async ([classificacoes, codebook, validacao]) =>
-			classificacoes && codebook ? { classificacoes, codebook, validacao, aberto: await abrirCubo(fonte) } : null
-	);
+	const abrir = (cubo: typeof abrirCubo) =>
+		Promise.all([fonte.classificacoes(), fonte.codebook(), fonte.validacao()]).then(
+			async ([classificacoes, codebook, validacao]) =>
+				classificacoes && codebook ? { classificacoes, codebook, validacao, aberto: await cubo(fonte) } : null
+		);
+	let dados = $state(abrir(abrirCubo));
 </script>
 
 {#await dados}
@@ -30,7 +33,7 @@
 		</PaginaDeSecao>
 	{/if}
 {:catch erro}
-	<p class="aviso" role="alert">Não foi possível abrir a classificação: {erro.message}</p>
+	<ErroAoAbrir oque="a classificação" {erro} tentar={() => (dados = abrir(reabrirCubo))} />
 {/await}
 
 <style>

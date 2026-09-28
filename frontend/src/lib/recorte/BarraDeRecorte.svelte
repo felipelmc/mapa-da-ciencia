@@ -4,11 +4,12 @@
 	 * as revistas, os filtros ativos como chips removíveis, o contador de documentos e "Limpar recorte". Tudo lê e
 	 * escreve a URL, então a barra e as vistas estão sempre de acordo, e o trilho leva o recorte adiante.
 	 */
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { Tween, prefersReducedMotion } from 'svelte/motion';
 	import type { Revistas } from '$lib/contrato/tipos';
 	import { usarProjeto } from '$lib/dados/contexto';
-	import { abrirCubo, versaoDoMapa, type Aberto } from '$lib/dados/corpus';
+	import { abrirCubo, aoReabrir, versaoDoMapa, type Aberto } from '$lib/dados/corpus';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { lerHash, limparRecorte, temRecorte } from '$lib/estado/url';
 	import { formatarInteiro } from '$lib/formato';
@@ -21,8 +22,17 @@
 
 	let aberto = $state<Aberto | null>(null);
 	let revistas = $state<Revistas | null>(null);
-	abrirCubo(fonte).then((a) => (aberto = a));
-	fonte.revistas().then((r) => (revistas = r));
+	// se o corpus não abrir (rede), a vista mostra o erro e o "Tentar de novo"; a barra reabre junto com ela
+	const abrir = () =>
+		abrirCubo(fonte)
+			.then((a) => (aberto = a))
+			.catch(() => (aberto = null));
+	abrir();
+	onMount(() => aoReabrir(abrir));
+	fonte
+		.revistas()
+		.then((r) => (revistas = r))
+		.catch(() => (revistas = null)); // sem os títulos, a lista mostra os ids
 
 	const falhas = $derived(aberto ? aberto.cubo.falhas(filtros) : null);
 	const n = $derived(aberto && falhas ? aberto.cubo.contar(falhas) : 0);

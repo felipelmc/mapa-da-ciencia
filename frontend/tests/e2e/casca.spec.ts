@@ -203,6 +203,50 @@ test.describe('acessibilidade e casos de borda', () => {
 		expect(problemas).toEqual([]);
 	});
 
+	test('uma falha passageira de rede mostra "Tentar de novo", que abre a vista sem recarregar', async ({ page }) => {
+		let falhou = false;
+		await page.route('**/dados/documentos.json', (r) => {
+			if (falhou) return r.continue();
+			falhou = true;
+			return r.fulfill({ status: 503, body: '' });
+		});
+		const excecoes: string[] = [];
+		page.on('pageerror', (e) => excecoes.push(e.message));
+		await page.goto(`${url('RAIZ')}#/mapa`);
+		await expect(page.getByTestId('falha-ao-abrir')).toContainText('HTTP 503');
+		await page.evaluate(() => (window.__semRecarga = true));
+		await page.getByRole('button', { name: 'Tentar de novo' }).click();
+		const d = await esperarMapa(page);
+		expect(d.erro).toBeNull();
+		await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(tabelaDocumentos.n)); // a barra também
+		await trilho(page).getByRole('link', { name: 'Tópicos', exact: true }).click();
+		await expect(h1(page)).toHaveText('Tópicos');
+		expect(await page.evaluate(() => window.__semRecarga)).toBe(true);
+		expect(excecoes).toEqual([]);
+	});
+
+	test('sem o arquivo das afiliações, só a Geografia falha, e "Tentar de novo" a abre', async ({ page }) => {
+		let bloqueado = true;
+		await page.route('**/dados/afiliacoes.json', (r) => (bloqueado ? r.fulfill({ status: 503, body: '' }) : r.continue()));
+		const excecoes: string[] = [];
+		page.on('pageerror', (e) => excecoes.push(e.message));
+		await page.goto(`${url('RAIZ')}#/mapa`);
+		expect((await esperarMapa(page)).erro).toBeNull();
+		for (const [rotulo, titulo] of [
+			['Tópicos', 'Tópicos'],
+			['Classificação', 'Classificação']
+		]) {
+			await trilho(page).getByRole('link', { name: rotulo, exact: true }).click();
+			await expect(h1(page)).toHaveText(titulo);
+		}
+		await trilho(page).getByRole('link', { name: 'Geografia', exact: true }).click();
+		await expect(page.getByTestId('falha-ao-abrir')).toContainText('as afiliações');
+		bloqueado = false;
+		await page.getByRole('button', { name: 'Tentar de novo' }).click();
+		await expect(page.getByTestId('figura-ufs')).toHaveAttribute('data-pronto', 'sim');
+		expect(excecoes).toEqual([]);
+	});
+
 	test('rota inexistente mostra a página de erro dentro da casca', async ({ page }) => {
 		await page.goto(`${url('RAIZ')}#/nao-existe`);
 		await expect(page.getByText('Nada neste ponto do céu')).toBeVisible();
