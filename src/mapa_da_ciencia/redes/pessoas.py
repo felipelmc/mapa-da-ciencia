@@ -14,8 +14,9 @@ ADR 0014):
 2. uma autoria sem id nem ORCID entra na pessoa com o mesmo nome, se houver exatamente uma;
 3. duas pessoas com o mesmo nome, ou com grafias variantes (o mesmo primeiro nome, e as partes de um nome contidas
    nas do outro: "Marjorie Marona" e "Marjorie Corrêa Marona"), se juntam quando têm um coautor ou uma instituição
-   em comum, e desde que todo nome de uma seja comparável com todo nome da outra (assim "Ana Silva" não emenda "Ana
-   Maria Silva" com "Ana Paula Silva").
+   em comum, e desde que todo nome de uma seja comparável com todo nome da outra, aceitas as iniciais (assim "Ana
+   Silva" não emenda "Ana Maria Silva" com "Ana Paula Silva", e "J. Feres Jr." continua comparável com "João Feres
+   Júnior").
 
 O resto dos homônimos e das grafias variantes vira `candidatos`, que `mapa redes --revisar` lista com as evidências
 para o `pessoas.yaml` do projeto: `fundir` junta, `nao_fundir` separa (e desfaz uma fusão automática) e `nomes` troca
@@ -36,9 +37,10 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from ..config import ErroConfig
 from ..documento import Documento
@@ -50,9 +52,12 @@ _PARTICULAS = {"de", "da", "do", "dos", "das", "e", "d"}
 _ORCID = re.compile(r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$", re.IGNORECASE)
 
 
+_SUFIXOS = {"jr": "junior"}
+
+
 def chave_nome(nome: str | None) -> str:
-    """Nome na forma de comparação: sem acentos, minúsculas, sem partículas."""
-    return " ".join(p for p in normalizar.chave(nome or "").split() if p not in _PARTICULAS)
+    """Nome na forma de comparação: sem acentos, minúsculas, sem partículas, com "Jr." como "Júnior"."""
+    return " ".join(_SUFIXOS.get(p, p) for p in normalizar.chave(nome or "").split() if p not in _PARTICULAS)
 
 
 def variantes(a: str, b: str) -> bool:
@@ -64,8 +69,29 @@ def variantes(a: str, b: str) -> bool:
     return set(pa) <= set(pb) or set(pb) <= set(pa)
 
 
+def _mesma_parte(p: str, q: str) -> bool:
+    """Duas partes de nome iguais, ou uma inicial da outra ("j" e "joao")."""
+    return p == q or (len(p) == 1 and q.startswith(p)) or (len(q) == 1 and p.startswith(q))
+
+
+def _contido(menor: list[str], maior: list[str]) -> bool:
+    livres = list(maior)
+    for p in menor:
+        achada = next((q for q in livres if _mesma_parte(p, q)), None)
+        if achada is None:
+            return False
+        livres.remove(achada)
+    return True
+
+
 def _comparaveis(a: str, b: str) -> bool:
-    return a == b or variantes(a, b)
+    """Dois nomes que podem ser da mesma pessoa: o mesmo primeiro nome (ou a inicial dele), e as partes de um contidas
+    nas do outro, aceitando iniciais ("j feres junior" e "joao feres junior"). "ana maria silva" e "ana paula silva"
+    não são: cada um tem uma parte que o outro não tem."""
+    pa, pb = a.split(), b.split()
+    if not pa or not pb or not _mesma_parte(pa[0], pb[0]):
+        return False
+    return _contido(pa, pb) or _contido(pb, pa)
 
 
 def id_publicado(interno: str, segredo: bytes) -> str:
@@ -139,6 +165,14 @@ class CorrecoesPessoas(BaseModel):
         description="Pares de ids que são pessoas diferentes (separa até o que a etapa juntou sozinha).",
     )
     nomes: dict[str, str] = Field(default_factory=dict, description="Id de uma autoria da pessoa → nome a exibir.")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _vazios(cls, dados: Any) -> Any:
+        """Uma lista sem itens (`fundir:` só com linhas comentadas, como sai da revisão) vale como vazia."""
+        if isinstance(dados, dict):
+            return {k: v for k, v in dados.items() if v is not None}
+        return dados
 
 
 def _erro_legivel(e: ValidationError) -> str:

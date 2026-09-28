@@ -132,6 +132,10 @@ def test_homonimos_e_variantes_com_instituicao_ou_coautor_em_comum():
         _doc("d7", [("Ana Silva", "A10", None, "I3")]),
         _doc("d8", [("Ana Maria Silva", "A11", None, "I3")]),
         _doc("d9", [("Ana Paula Silva", "A12", None, "I3")]),
+        # uma pessoa com uma grafia abreviada ("J. Feres Jr.") ainda se junta a um homônimo com coautor em comum
+        _doc("d12", [("Joao Feres Junior", "A15", None), ("Luiz Campos", "A17", None)]),
+        _doc("d13", [("Joao Feres Junior", "A16", None), ("Luiz Campos", "A17", None)]),
+        _doc("d14", [("J. Feres Jr.", "A16", None)]),
         # homônimos sem nada em comum: ficam separados e vão para a revisão
         _doc("d10", [("Luis Fernandes", "A13", None, "I4")]),
         _doc("d11", [("Luis Fernandes", "A14", None, "I5")]),
@@ -143,6 +147,7 @@ def test_homonimos_e_variantes_com_instituicao_ou_coautor_em_comum():
     assert pessoa[("d5", 0)] == pessoa[("d6", 0)]
     assert pessoa[("d8", 0)] != pessoa[("d9", 0)]
     assert pessoa[("d10", 0)] != pessoa[("d11", 0)]
+    assert pessoa[("d12", 0)] == pessoa[("d13", 0)] == pessoa[("d14", 0)]
     assert ("openalex:A13", "openalex:A14", "homonimo") in {(c.a, c.b, c.tipo) for c in i.candidatos}
     assert any(c.tipo == "variante" for c in i.candidatos)
     # as instituições da geografia também contam
@@ -307,6 +312,16 @@ def projeto(tmp_path_factory):
                     }
                 )
             )
+        # dois homônimos de temas e instituições diferentes, sem coautor em comum: ficam para a revisão
+        com_oa = [i for i, d in enumerate(novos) if d.autorias_openalex]
+        a = com_oa[0]
+        par = [a, next(i for i in com_oa if temas[novos[i].id] != temas[novos[a].id] and i % 4 != a % 4)]
+        for k, i in enumerate(par):
+            d = novos[i]
+            autores = [Autor(nome="Celso", sobrenome="Amorim"), *d.autores[1:]]
+            oa = [AutoriaOpenAlex(nome="Celso Amorim", id=f"A900000{k}"), *d.autorias_openalex[1:]]
+            afiliacoes = [x for x in d.afiliacoes if x.id != "aff1"]
+            novos[i] = d.model_copy(update={"autores": autores, "autorias_openalex": oa, "afiliacoes": afiliacoes})
         gravar_documentos(novos, p.dados / ARQUIVO)
         internas = [(i, j) for i in range(0, len(novos), 3) for j in (i + 1, i + 2) if j < len(novos)]
         refs = [{"obra": f"W{i:05d}", "citada": f"W{j:05d}"} for i, j in internas]
@@ -318,6 +333,30 @@ def projeto(tmp_path_factory):
         gerar_geografia(p)
     mp.undo()
     return p
+
+
+def test_revisao_com_evidencias_e_bloco_que_funciona(projeto):
+    import yaml
+    from typer.testing import CliRunner
+
+    from mapa_da_ciencia.cli import app
+    from mapa_da_ciencia.redes.pessoas import ler_correcoes
+
+    gerar_redes(projeto)
+    r = CliRunner().invoke(app, ["redes", "--revisar", "-P", str(projeto.raiz)], env={"COLUMNS": "200"})
+    assert r.exit_code == 0, r.output
+    # as evidências de cada lado, e o bloco inteiro: o Rich não pode engolir os colchetes como marcação
+    assert "Celso Amorim" in r.output and "doc(s)" in r.output and "mostrando" in r.output
+    linha = next(x for x in r.output.splitlines() if "openalex:A9000000" in x and "# - [" in x)
+    assert re.search(r"# - \[openalex:A9000000, openalex:A9000001\]  # Celso Amorim", linha)
+    bloco = r.output[r.output.index("# Descomente") :]
+    # colado como está, não muda nada; com a linha descomentada, funde os dois
+    (projeto.raiz / "pessoas.yaml").write_text(bloco, encoding="utf-8")
+    assert ler_correcoes(projeto.raiz) == CorrecoesPessoas()
+    (projeto.raiz / "pessoas.yaml").write_text(bloco.replace("  # - [openalex:A9000000", "  - [openalex:A9000000"))
+    assert ler_correcoes(projeto.raiz).fundir == [["openalex:A9000000", "openalex:A9000001"]]
+    assert yaml.safe_load(bloco)["nao_fundir"] is None
+    (projeto.raiz / "pessoas.yaml").unlink()
 
 
 def test_redes_de_ponta_a_ponta(projeto):

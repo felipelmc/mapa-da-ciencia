@@ -152,8 +152,8 @@ mapa redes [OPÇÕES]
 | Argumento ou opção | Descrição | Padrão |
 |---|---|---|
 | `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
-| `--revisar` | Lista os homônimos que podem ser a mesma pessoa, com um bloco para o pessoas.yaml. |  |
-| `--limite` | Quantos homônimos listar na revisão. | `20` |
+| `--revisar` | Lista as pessoas que podem ser a mesma (homônimos, grafias variantes, dois ORCIDs), com as evidências e um bloco para o pessoas.yaml. |  |
+| `--limite` | Quantos itens listar na revisão. | `40` |
 
 ## `mapa geografia`
 

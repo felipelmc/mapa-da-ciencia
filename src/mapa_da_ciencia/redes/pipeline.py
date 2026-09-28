@@ -357,7 +357,7 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
         "comunidades": linhas_com,
         "citacoes": linhas_cit,
         "canone": linhas_canone,
-        "candidatos": [asdict(c) for c in ident.candidatos],
+        "candidatos": _para_revisao(ident),
         "colaboracao": [{k: v for k, v in asdict(c).items() if k != "extras"} for c in serie],
     }
     for nome, linhas in tabelas.items():
@@ -414,6 +414,20 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
         duracao_s=round(time.perf_counter() - t0, 2),
         avisos=avisos,
     )
+
+
+def _para_revisao(ident) -> list[dict[str, Any]]:
+    """O que `mapa redes --revisar` lista: os pares de homônimos e de grafias variantes, as pessoas com dois ORCIDs e as
+    autorias que perderam um ORCID de outro nome (`a`: a autoria; `b`: a pessoa que ficou com o ORCID)."""
+    linhas = [asdict(c) for c in ident.candidatos]
+    linhas += [
+        {"a": p.interno, "b": None, "nome": p.nome, "tipo": "dois_orcids"} for p in ident.pessoas if len(p.orcids) > 1
+    ]
+    dono = {o: p.interno for p in ident.pessoas for o in p.orcids}
+    for i, orcid in ident.orcids_retirados:
+        a = ident.autorias[i]
+        linhas.append({"a": a.id, "b": dono.get(orcid), "nome": a.nome, "tipo": "orcid_retirado"})
+    return linhas
 
 
 def _docs_por_no(por_doc: dict[str, list[str]]) -> dict[str, set[str]]:

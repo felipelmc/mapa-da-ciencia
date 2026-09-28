@@ -17,6 +17,7 @@ from typing import Annotated
 import typer
 from rich.columns import Columns
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from mapa_da_ciencia import __version__
@@ -1047,46 +1048,60 @@ def redes(
     revisar: Annotated[
         bool,
         typer.Option(
-            "--revisar", help="Lista os homônimos que podem ser a mesma pessoa, com um bloco para o pessoas.yaml."
+            "--revisar",
+            help="Lista as pessoas que podem ser a mesma (homônimos, grafias variantes, dois ORCIDs), com as "
+            "evidências e um bloco para o pessoas.yaml.",
         ),
     ] = False,
-    limite: Annotated[int, typer.Option("--limite", help="Quantos homônimos listar na revisão.", min=1)] = 20,
+    limite: Annotated[int, typer.Option("--limite", help="Quantos itens listar na revisão.", min=1)] = 40,
 ) -> None:
     """Redes de coautoria, de colaboração entre instituições e estados, e de citação, com as comunidades."""
     from mapa_da_ciencia.progresso import ProgressoRich
-    from mapa_da_ciencia.redes.pipeline import PASTA, gerar_redes
+    from mapa_da_ciencia.redes.pipeline import gerar_redes, redes_em_dia
 
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
-        resumo = gerar_redes(p, ProgressoRich(console))
+        # a revisão usa a última execução; só refaz as redes se elas estiverem desatualizadas
+        resumo = None if revisar and redes_em_dia(p) else gerar_redes(p, ProgressoRich(console))
     if revisar:
-        from mapa_da_ciencia.armazenamento import ler_tabela
-
-        candidatos = ler_tabela(p.dados / PASTA / "candidatos.parquet")
-        if not candidatos:
-            console.print("Nenhum homônimo a revisar.")
-            return
-        tabela = Table("Nome", "Pessoa A", "Pessoa B")
-        for c in candidatos[:limite]:
-            tabela.add_row(c["nome"], c["a"], c["b"])
-        console.print(tabela)
-        console.print(
-            "Se forem a mesma pessoa, acrescente ao [bold]pessoas.yaml[/] do projeto (e rode [bold]mapa redes[/] de "
-            "novo); se não forem, use `nao_fundir` para não vê-los mais aqui:"
-        )
-        exemplo = candidatos[0]
-        console.print(
-            f"fundir:\n  - [{exemplo['a']}, {exemplo['b']}]\nnao_fundir:\n  - [{exemplo['a']}, {exemplo['b']}]"
-        )
+        if resumo is not None:
+            for aviso in resumo.avisos:
+                console.print(f"[yellow]Aviso:[/] {escape(aviso)}")
+        _revisar_redes(p, limite)
         return
-    console.print(f"\n[bold green]Redes prontas[/]: {resumo}")
+    assert resumo is not None
+    console.print(f"\n[bold green]Redes prontas[/]: {escape(str(resumo))}")
     if resumo.candidatos:
         console.print(
-            f"{num(resumo.candidatos, 0)} par(es) de homônimos ficaram separados: [bold]mapa redes --revisar[/] "
-            "lista-os para conferir."
+            f"{num(resumo.candidatos, 0)} par(es) de homônimos ou grafias variantes ficaram separados: "
+            "[bold]mapa redes --revisar[/] lista-os, com as evidências de cada lado."
         )
     for aviso in resumo.avisos:
-        console.print(f"[yellow]Aviso:[/] {aviso}")
+        console.print(f"[yellow]Aviso:[/] {escape(aviso)}")
+
+
+def _revisar_redes(p: Projeto, limite: int) -> None:
+    from mapa_da_ciencia.redes.revisao import NOMES_DOS_TIPOS, bloco_yaml, descrever, resumo_por_tipo, revisao
+
+    r = revisao(p, limite)
+    if not r.itens:
+        console.print("\n[bold green]Nada a revisar[/]: nenhum homônimo, grafia variante ou ORCID em dúvida.")
+        return
+    tabela = Table("O quê", "Pessoa A", "Pessoa B", show_lines=True, title_justify="left")
+    mostrando = f"mostrando {num(len(r.itens), 0)} de {num(r.total, 0)}"
+    tabela.title = f"Para revisar: {resumo_por_tipo(r.por_tipo)} ({mostrando}; use --limite para ver mais)"
+    for it in r.itens:
+        tabela.add_row(escape(NOMES_DOS_TIPOS.get(it.tipo, it.tipo)), escape(descrever(it.a)), escape(descrever(it.b)))
+    console.print()
+    console.print(tabela)
+    console.print(
+        "\nCopie para o [bold]pessoas.yaml[/] do projeto e decida cada par: descomente em [bold]fundir[/] os que "
+        "são a mesma pessoa e mova para [bold]nao_fundir[/] os que não são (saem da revisão). As pessoas com dois "
+        "ORCIDs só precisam de ação se forem duas pessoas: separe-as com nao_fundir e o id de uma autoria "
+        "([dim]documento#posição[/]). Depois, rode [bold]mapa redes[/] de novo:\n"
+    )
+    # sem marcação nem quebra de linha, para o bloco sair inteiro e poder ser colado como está
+    console.print(bloco_yaml(r.itens), highlight=False, markup=False, soft_wrap=True)
 
 
 @app.command()
