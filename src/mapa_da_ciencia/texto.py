@@ -14,16 +14,16 @@ import unicodedata
 from difflib import SequenceMatcher
 from typing import Any
 
-# E-mails, com as variações que aparecem em afiliações: espaço em volta do @ ou depois do ponto, e "[at]"/"(arroba)"
-# e "[dot]"/"(ponto)" entre colchetes ou parênteses. O primeiro ramo é o padrão comum. Os outros exigem que o domínio
-# termine, em minúsculas, num domínio de topo: sem isso, pegariam "p @ 0.05" e "o perfil @fulano. Em seguida", e
-# apagariam junto a palavra anterior, que tomam pela parte local do endereço.
+# E-mails, com as variações que aparecem em afiliações: o arroba largo (＠, ﹫), espaço em volta do @ ou depois do
+# ponto, e "[at]"/"(arroba)" e "[dot]"/"(ponto)" entre colchetes ou parênteses. O último ramo é o padrão comum. Os
+# outros exigem que o domínio termine, em minúsculas, num domínio de topo (qualquer domínio de país da IANA ou um
+# genérico comum): sem isso, pegariam "p @ 0.05" e "o perfil @fulano. Em seguida", e apagariam junto a palavra
+# anterior, que tomam pela parte local do endereço.
 #
-# A forma "palavra @perfil.x" (espaço antes do @ e nenhum depois) é também a de um perfil de rede social com ponto
-# ("o perfil @maria.silva", "RT @fulano.oficial", "@frente.pe"). Nela, o domínio precisa passar por um dos domínios
-# de topo de `_TLDS_PERFIL`: os genéricos e os de países frequentes em afiliações que não são siglas de UF nem de
-# partido (fora pe, es, se, pa, ma, ms, mt, pt…). Nas outras formas com espaço ou disfarce, que um perfil não tem
-# ("maria@ up.ac.pa", "[at] … [dot] io"), vale qualquer domínio de país (`_CCTLDS`) e os genéricos comuns.
+# A forma "palavra @dominio.tld" (espaço só antes do @) é ambígua: pode ser um e-mail com espaço ("fulana
+# @ufrj.br") ou um perfil de rede social citado num texto ("o perfil @frente.pe"). Nela, o e-mail é só o
+# "@dominio.tld": `remover_emails` devolve a palavra anterior ao texto (o grupo `palavra`). Assim o endereço nunca
+# fica reconstruível, e um perfil perde só o @handle. Um perfil sem domínio de topo ("@maria.silva") fica inteiro.
 #
 # Todos os ramos só começam no início de uma sequência de [\w.+-] (o lookbehind): sem ele, cada posição de uma
 # sequência longa sem espaço (um token de 20 mil caracteres num JSON) seria tentada até o fim dela, em tempo
@@ -42,11 +42,6 @@ _CCTLDS = (  # noqa: SIM905 (uma lista longa de códigos fica mais legível numa
     "re ro rs ru rw sa sb sc sd se sg sh si sj sk sl sm sn so sr ss st su sv sx sy sz tc td tf tg th tj tk tl tm tn "
     "to tr tt tv tw tz ua ug uk us uy uz va vc ve vg vi vn vu wf ws ye yt za zm zw"
 ).split()
-_TLDS_PERFIL = (  # noqa: SIM905 (uma lista longa de códigos fica mais legível numa string)
-    "com org net edu gov mil int info eu "
-    "br ao mz cv st gw tl ar bo cl co cr cu ec gt mx py uy ve "
-    "uk ie fr it de at ch be nl dk no fi pl ru us ca au nz jp cn kr in za il"
-).split()
 
 
 def _tld(nomes: list[str]) -> str:
@@ -54,7 +49,6 @@ def _tld(nomes: list[str]) -> str:
 
 
 _TLD = _tld(_CCTLDS + _GENERICOS)
-_TLD_PERFIL = _tld(_TLDS_PERFIL)
 _LOCAL = r"[\w.+-]*\w"
 _ROTULO = r"[\w-]+"
 _ARROBA = r"(?:@|＠|﹫)"
@@ -64,16 +58,19 @@ _DOT = rf"(?:\.|{_DOT_DISFARCADO})"
 _DOMINIO = rf"{_ROTULO}(?:{_DOT}{_ROTULO})*{_DOT}{_TLD}"
 EMAIL = re.compile(
     r"(?<![\w.+-])(?:"
-    r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"  # fulana@exemplo.br
+    # fulana @exemplo.br, a forma ambígua: o e-mail é o @exemplo.br (até o fim do domínio), e a palavra fica
+    rf"(?P<palavra>{_LOCAL}[ \t]+){_ARROBA}{_ROTULO}(?:\.{_ROTULO})*\.{_TLD}(?:\.{_ROTULO})*"
     rf"|{_LOCAL}(?:"  # a parte local uma vez só, para as formas com espaço ou disfarce:
-    # fulana @exemplo.br, a forma de um perfil: o domínio passa por um de `_TLDS_PERFIL` (até o fim dele)
-    rf"[ \t]+{_ARROBA}{_ROTULO}(?:\.{_ROTULO})*\.{_TLD_PERFIL}(?:\.{_ROTULO})*(?![\w-])"
-    rf"|[ \t]*{_ARROBA}[ \t]+{_DOMINIO}"  # fulana@ exemplo.br, fulana @ exemplo.br
+    rf"[ \t]*{_ARROBA}[ \t]+{_DOMINIO}"  # fulana@ exemplo.br, fulana @ exemplo.br
     rf"|[ \t]*{_AT_DISFARCADO}[ \t]*{_DOMINIO}"  # fulana [at] exemplo [dot] br
-    rf"|[ \t]*{_ARROBA}{_ROTULO}(?:{_DOT}{_ROTULO})*{_DOT_DISFARCADO}{_TLD}"  # fulana@exemplo (ponto) br
-    # fulana@exemplo. br: o primeiro rótulo com duas letras ou mais (não "tod@s. no entanto" nem "P@10. de acordo")
-    rf"|@(?=[\w-]*[^\W\d_])[\w-]{{2,}}(?:\. ?{_ROTULO})*\. ?{_TLD}"
-    r"))",
+    # fulana@exemplo (ponto) br, fulana@dcc.ufmg (ponto) br: um (ponto) em qualquer lugar do domínio
+    rf"|[ \t]*{_ARROBA}{_ROTULO}(?:\.{_ROTULO})*{_DOT_DISFARCADO}(?:{_ROTULO}{_DOT})*{_TLD}"
+    rf"|{_ARROBA}{_ROTULO}(?:\. ?{_ROTULO})*\. ?{_TLD}"  # fulana@exemplo. br
+    r")"
+    # por último, o comum (fulana@exemplo.br, fulana＠exemplo.br), com qualquer final: se viesse antes, pegaria só o
+    # começo de "fulana@dcc.ufmg (ponto) br"
+    rf"|[\w.+-]+{_ARROBA}[\w-]+(?:\.[\w-]+)+"
+    r")",
     re.IGNORECASE,
 )
 _TAG = re.compile(r"<[^>]+>")
@@ -106,11 +103,16 @@ def limpar(texto: str | None, *, prefixo_resumo: bool = False) -> str:
     return texto
 
 
+def _sem_email(achado: re.Match[str]) -> str:
+    return achado.group("palavra") or ""  # na forma ambígua ("fulana @ufrj.br"), a palavra antes do @ fica
+
+
 def remover_emails(texto: str) -> str:
-    """Tira endereços de e-mail de um texto (ex.: afiliações que trazem o e-mail no meio)."""
+    """Tira endereços de e-mail de um texto (ex.: afiliações que trazem o e-mail no meio). Na forma ambígua
+    "palavra @dominio.tld", que também é a de um perfil de rede social, tira só o "@dominio.tld"."""
     # de novo até não sobrar nenhum: um endereço colado ao fim de outro ("fulana @ x.br.joao@y.br") começa no meio
     # de uma sequência, e o padrão só o acha depois que o primeiro sai
-    while (novo := EMAIL.sub("", texto)) != texto:
+    while (novo := EMAIL.sub(_sem_email, texto)) != texto:
         texto = novo
     return _ESPACOS.sub(" ", texto).strip(" ,;")
 
