@@ -69,3 +69,49 @@ def test_painel_sugere_uma_porta_livre_e_nao_so_a_seguinte():
     assert r.exit_code == 1
     assert "--porta " in r.output
     assert f"--porta {porta + 1}." not in r.output
+
+
+# ---- textos do Typer e do Click em português
+
+
+def test_erro_de_opcao_inexistente_em_portugues():
+    r = runner.invoke(app, ["status", "--xyz"])
+    assert r.exit_code == 2
+    assert "No such option" not in r.output
+    assert "Opção inexistente: --xyz" in r.output
+    assert "Uso: mapa status [OPÇÕES]" in r.output
+    assert "Veja 'mapa status -h' para a ajuda." in r.output
+
+
+def test_erro_de_comando_inexistente_em_portugues():
+    r = runner.invoke(app, ["stauts"])
+    assert "No such command" not in r.output
+    assert "Comando inexistente: 'stauts'. Você quis dizer 'status'?" in r.output
+
+
+def test_erro_de_valor_invalido_e_de_argumento_faltando_em_portugues():
+    r = runner.invoke(app, ["painel", "--porta", "abc"])
+    assert "Invalid value" not in r.output
+    assert "Valor inválido para '--porta': 'abc' não é um número inteiro." in r.output
+    r = runner.invoke(app, ["novo"])
+    assert "Falta o argumento 'pasta'." in r.output
+
+
+def test_ajuda_em_portugues():
+    r = runner.invoke(app, ["novo", "-h"])
+    assert r.exit_code == 0
+    for ingles in ("Show this message", "Options", "Arguments", "[required]", "[default:", "Usage"):
+        assert ingles not in r.output
+    for portugues in (
+        "Mostra esta ajuda e sai.",
+        "Opções",
+        "Argumentos",
+        "[obrigatório]",
+        "[padrão:",
+        "Uso: mapa novo",
+    ):
+        assert portugues in r.output
+    # também num subcomando de um grupo (mapa validar amostra)
+    r = runner.invoke(app, ["validar", "amostra", "-h"])
+    assert "Mostra esta ajuda e sai." in r.output
+    assert "Show this message" not in r.output

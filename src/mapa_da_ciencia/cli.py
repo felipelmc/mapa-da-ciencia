@@ -22,6 +22,7 @@ from rich.table import Table
 from mapa_da_ciencia import __version__
 from mapa_da_ciencia.armazenamento import ARQUIVO as ARQUIVO_DOCUMENTOS
 from mapa_da_ciencia.armazenamento import cobertura
+from mapa_da_ciencia.cli_portugues import GrupoEmPortugues
 from mapa_da_ciencia.coleta import interpretar_anos
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.diagnostico import DICAS_OLLAMA, diagnosticar
@@ -40,6 +41,7 @@ app = typer.Typer(
     add_completion=False,
     rich_markup_mode="rich",
     context_settings={"help_option_names": ["-h", "--help"]},
+    cls=GrupoEmPortugues,  # ajuda e erros de uso em português
 )
 console = Console()
 
