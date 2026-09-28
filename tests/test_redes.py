@@ -468,6 +468,7 @@ def test_canone_sem_titulos_genericos_nem_numeracao():
     c = cit.calcular(refs, citadas, doc, {f"d{k}": 2020 for k in range(3)}, {}, {})
     assert [o.titulo for o in c.canone] == ["Civil Society and Political Theory"]
     assert c.cobertura["titulos_genericos"] == 1
+    assert c.sem_metadados == [] and c.cobertura["sem_metadados"] == 0  # "Resumos" tem metadados: saiu de propósito
 
 
 def test_canone_soma_registros_da_mesma_obra_e_ignora_a_obra_apagada():

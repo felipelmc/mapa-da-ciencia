@@ -343,7 +343,11 @@ def calcular(
     # as obras que a coleta buscou e o OpenAlex não descreveu, com citantes para entrar no cânone
     corte = canone[-1].n if len(canone) == N_CANONE else 1
     buscadas = sorted(externas, key=lambda w: (-len(externas[w]), w))[:N_BUSCADAS]
-    sem_metadados = [w for w in buscadas if w not in meta and len(externas[w]) >= corte]
+    # um título genérico ("Resumos") ou uma obra apagada têm metadados, mas ficam fora de propósito: não são "sem
+    # metadados"
+    sem_metadados = [
+        w for w in buscadas if w not in meta and w not in genericos | OBRAS_APAGADAS and len(externas[w]) >= corte
+    ]
 
     # a cobertura por referência sobre todos os documentos casados com referências listadas na ArticleMeta, também os
     # que não têm nenhuma resolvida (contam 0%)
