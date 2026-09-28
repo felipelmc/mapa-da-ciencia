@@ -342,11 +342,35 @@ def diagnostico(
     console.print("\n[bold green]Tudo pronto.[/]")
 
 
-def _porta_livre(porta: int) -> bool:
+def _problema_da_porta(porta: int) -> str | None:
+    """`None` se o painel pode usar a porta; senão, o motivo, em português.
+
+    Além de ver se alguém já escuta nela, tenta ocupá-la como o uvicorn (e a solta em seguida): assim o erro sai
+    antes de o painel anunciar o endereço, e não em inglês, depois dele.
+    """
+    import errno
     import socket
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(("127.0.0.1", porta)) != 0
+        if s.connect_ex(("127.0.0.1", porta)) == 0:
+            return f"a porta {porta} já está em uso"
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # como o uvicorn
+        try:
+            s.bind(("127.0.0.1", porta))
+        except OSError as e:
+            if e.errno == errno.EADDRINUSE:
+                return f"a porta {porta} já está em uso"
+            if e.errno == errno.EACCES:
+                return f"sem permissão para usar a porta {porta} (as abaixo de 1024 costumam ser reservadas)"
+            return f"não foi possível usar a porta {porta} ({e.strerror})"
+    return None
+
+
+def _porta_sugerida(porta: int) -> int | None:
+    """A primeira porta livre depois de `porta` (e acima de 1024), para sugerir no erro."""
+    inicio = max(porta + 1, 1025)
+    return next((p for p in range(inicio, min(inicio + 50, 65536)) if _problema_da_porta(p) is None), None)
 
 
 @app.command()
@@ -385,7 +409,7 @@ def painel(
     exemplo: Annotated[
         bool, typer.Option("--exemplo", help="Mostra o exemplo sintético, sem precisar de um projeto.")
     ] = False,
-    porta: Annotated[int, typer.Option("--porta", help="Porta local do servidor.")] = 8765,
+    porta: Annotated[int, typer.Option("--porta", min=1, max=65535, help="Porta local do servidor.")] = 8765,
     abrir: Annotated[bool, typer.Option("--abrir/--nao-abrir", help="Abre o navegador automaticamente.")] = True,
 ) -> None:
     """Abre o painel no navegador: a interface do projeto, servida só nesta máquina."""
@@ -399,8 +423,10 @@ def painel(
     from mapa_da_ciencia.contrato.exportar import escrever_dados
     from mapa_da_ciencia.servidor.app import criar_app
 
-    if not _porta_livre(porta):
-        console.print(f"[bold red]Erro:[/] a porta {porta} já está em uso. Use outra, por exemplo --porta {porta + 1}.")
+    if problema := _problema_da_porta(porta):
+        sugerida = _porta_sugerida(porta)
+        dica = f"por exemplo --porta {sugerida}" if sugerida else "com --porta"
+        console.print(f"[bold red]Erro:[/] {problema}. Use outra, {dica}.")
         raise typer.Exit(1)
     temporario = None
     with _erros_amigaveis():
