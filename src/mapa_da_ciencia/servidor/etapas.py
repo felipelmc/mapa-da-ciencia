@@ -35,6 +35,10 @@ class OpcoesGeografiaPainel(_Opcoes):
     pass
 
 
+class OpcoesRedesPainel(_Opcoes):
+    pass
+
+
 class OpcoesClassificacaoPainel(_Opcoes):
     estimar: bool = False
     limite: int | None = Field(None, ge=1)
@@ -61,6 +65,13 @@ def _geografia(p: Projeto, o: dict[str, Any], progresso: Progresso) -> Any:
     return gerar_geografia(p, progresso)
 
 
+def _redes(p: Projeto, o: dict[str, Any], progresso: Progresso) -> Any:
+    from ..redes.pipeline import gerar_redes
+
+    OpcoesRedesPainel(**o)
+    return gerar_redes(p, progresso)
+
+
 def _classificacao(p: Projeto, o: dict[str, Any], progresso: Progresso) -> Any:
     from ..classificacao.pipeline import OpcoesClassificacao, classificar
 
@@ -81,6 +92,7 @@ OPCOES = {
     "coleta": OpcoesColetaPainel,
     "topicos": OpcoesTopicosPainel,
     "geografia": OpcoesGeografiaPainel,
+    "redes": OpcoesRedesPainel,
     "classificacao": OpcoesClassificacaoPainel,
     "modelo": OpcoesModeloPainel,
 }
@@ -88,6 +100,7 @@ ETAPAS_DO_PAINEL = {
     "coleta": _coleta,
     "topicos": _topicos,
     "geografia": _geografia,
+    "redes": _redes,
     "classificacao": _classificacao,
     "modelo": _modelo,
 }

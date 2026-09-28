@@ -158,6 +158,7 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 				coleta: { estado: estado('coleta', 'em_dia'), ultima },
 				topicos: { estado: estado('topicos', 'em_dia'), ultima },
 				geografia: { estado: estado('geografia', 'em_dia'), ultima },
+				redes: feitos.has('redes') ? { estado: 'em_dia', ultima } : { estado: 'desatualizada', ultima, mudou: ['o pessoas.yaml'] },
 				classificacao: { estado: estado('classificacao', 'desatualizada'), ultima },
 				validacao: { estado: 'pendente', ultima: null, ...(amostra ? { amostra } : {}) }
 			});

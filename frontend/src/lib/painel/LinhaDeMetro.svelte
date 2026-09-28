@@ -18,6 +18,7 @@
 		},
 		{ id: 'topicos', rotulo: 'Tópicos', frase: 'Embeddings, agrupamento e rótulos', variacoes: [] },
 		{ id: 'geografia', rotulo: 'Geografia', frase: 'Afiliações e instituições', variacoes: [] },
+		{ id: 'redes', rotulo: 'Redes', frase: 'Coautoria, instituições e citações', variacoes: [] },
 		{
 			id: 'classificacao',
 			rotulo: 'Classificação',
@@ -64,7 +65,7 @@
 	const acao = (estado: string) =>
 		estado === 'pendente' ? 'Rodar' : estado === 'desatualizada' ? 'Atualizar' : estado === 'incompleta' ? 'Continuar' : 'Rodar de novo';
 	const resumoContagens = (c: Record<string, number>) => {
-		const [chave, n] = Object.entries(c).find(([k]) => ['documentos', 'classificados', 'vinculos', 'topicos'].includes(k)) ?? [];
+		const [chave, n] = Object.entries(c).find(([k]) => ['documentos', 'classificados', 'vinculos', 'topicos', 'pessoas'].includes(k)) ?? [];
 		return chave ? `${formatarInteiro(n!)} ${chave}` : '';
 	};
 </script>
@@ -80,6 +81,9 @@
 				<h3>{e.rotulo}</h3>
 				<p class="frase">{e.frase}</p>
 				<p class="estado" data-testid="estado-{e.id}">{estado === 'rodando' ? 'Rodando…' : NOMES[info.estado]}</p>
+				{#if info.estado === 'desatualizada' && info.mudou?.length}
+					<p class="ultima" data-testid="mudou-{e.id}">Mudou {info.mudou.join(' e ')}</p>
+				{/if}
 				{#if info.ultima}
 					<p class="ultima">
 						{[formatarData(info.ultima.fim), formatarDuracao(info.ultima.duracao_s), resumoContagens(info.ultima.contagens)]
