@@ -8,6 +8,8 @@
 
 	const { manifesto } = usarProjeto();
 	const secoes = secoesDoTrilho(manifesto).filter((s) => s.id !== 'inicio');
+	// um site publicado sem redes (desatualizadas na publicação) não explica uma vista que não tem
+	const temRedes = secoes.some((s) => s.id === 'redes');
 
 	// `#/ajuda?secao=redes` (o link "Como ler as redes" da vista) rola até a seção, depois que a navegação pôs a
 	// página no topo
@@ -126,6 +128,7 @@
 			</p>
 		</section>
 
+		{#if temRedes}
 		<section aria-labelledby="ajuda-redes" data-testid="ajuda-redes" tabindex="-1">
 			<h2 id="ajuda-redes">Como ler as redes</h2>
 			<p>
@@ -178,6 +181,7 @@
 				quais, só entre documentos do recorte.
 			</p>
 		</section>
+		{/if}
 
 		<section aria-labelledby="ajuda-links">
 			<h2 id="ajuda-links">Links que guardam a vista</h2>
@@ -236,6 +240,7 @@
 				<dt>roda do mouse, arrastar</dt>
 				<dd>aproxima e move o mapa; de perto, os rótulos passam dos macrotemas para os tópicos</dd>
 			</dl>
+			{#if temRedes}
 			<h3 id="atalhos-redes">Nas redes</h3>
 			<dl class="atalhos" data-testid="atalhos-redes">
 				<dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd></dt>
@@ -245,6 +250,7 @@
 				<dt>roda do mouse, arrastar, pinça</dt>
 				<dd>aproximam e movem o grafo; os botões + e − fazem o mesmo, e “Reiniciar” volta ao começo</dd>
 			</dl>
+			{/if}
 			<p>
 				Tudo o que você faz no mapa (filtros, busca, laço, documento aberto e a posição da câmera) fica no endereço
 				da página: copie o link para mostrar exatamente a mesma coisa a outra pessoa.

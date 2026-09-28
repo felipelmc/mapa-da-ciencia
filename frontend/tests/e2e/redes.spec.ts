@@ -422,6 +422,11 @@ test('site publicado sem redes: a vista some do trilho e não dá instrução de
 	await expect(page.getByText('As redes não fazem parte desta publicação.')).toBeVisible();
 	await expect(page.getByRole('main')).not.toContainText('mapa redes');
 	await expect(page.getByRole('main')).not.toContainText('Rode');
+	// a Ajuda não explica uma vista que o site não tem
+	await page.goto(`${url('PUBLICADO')}#/ajuda`);
+	await expect(page.getByRole('heading', { name: 'Como ler este observatório' })).toBeVisible();
+	await expect(page.getByTestId('ajuda-redes')).toHaveCount(0);
+	await expect(page.getByTestId('atalhos-redes')).toHaveCount(0);
 });
 
 test('um recorte fora do período não quebra as séries', async ({ page }) => {
