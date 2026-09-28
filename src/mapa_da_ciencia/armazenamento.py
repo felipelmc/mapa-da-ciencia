@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -107,8 +107,14 @@ def _linhas(con: duckdb.DuckDBPyConnection, sql: str, params: list[Any] | None =
     return [dict(zip(nomes, linha, strict=True)) for linha in cursor.fetchall()]
 
 
-def gravar_tabela(linhas: Iterable[dict[str, Any]], colunas: dict[str, str], destino: Path, ordem: str = "id") -> int:
-    """Grava uma tabela qualquer em Parquet (zstd), ordenada por `ordem`, de forma atômica. Devolve quantas linhas."""
+def gravar_tabela(
+    linhas: Iterable[dict[str, Any]], colunas: dict[str, str], destino: Path, ordem: str | Sequence[str] = "id"
+) -> int:
+    """Grava uma tabela qualquer em Parquet (zstd), ordenada por `ordem`, de forma atômica. Devolve quantas linhas.
+
+    Os empates em `ordem` se desfazem pelas outras colunas, na ordem do esquema: o DuckDB não garante a ordem das
+    linhas empatadas com várias threads (acima de ~250 mil linhas, o mesmo conteúdo dava arquivos diferentes, e a
+    assinatura das entradas das redes mudava a cada coleta)."""
     destino.parent.mkdir(parents=True, exist_ok=True)
     tmp_parquet = destino.with_name(destino.name + ".tmp")
     n = 0
@@ -127,9 +133,9 @@ def gravar_tabela(linhas: Iterable[dict[str, Any]], colunas: dict[str, str], des
             con.execute(
                 f"INSERT INTO t SELECT * FROM read_json(?, format='newline_delimited', columns={tipos})", [jsonl]
             )
-        con.execute(
-            f"COPY (SELECT * FROM t ORDER BY \"{ordem}\") TO '{tmp_parquet}' (FORMAT parquet, COMPRESSION zstd)"
-        )
+        chaves = [ordem] if isinstance(ordem, str) else list(ordem)
+        criterio = ", ".join(f'"{k}"' for k in [*chaves, *(k for k in colunas if k not in chaves)])
+        con.execute(f"COPY (SELECT * FROM t ORDER BY {criterio}) TO '{tmp_parquet}' (FORMAT parquet, COMPRESSION zstd)")
     finally:
         con.close()
         Path(jsonl).unlink(missing_ok=True)

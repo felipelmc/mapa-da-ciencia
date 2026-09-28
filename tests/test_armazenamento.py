@@ -74,3 +74,20 @@ def test_autorias_do_openalex_vao_e_voltam_e_parquet_antigo_e_detectado(tmp_path
     antigo = tmp_path / "antigo.parquet"
     duckdb.execute(f"COPY (SELECT id, ano FROM read_parquet('{tmp_path / ARQUIVO}')) TO '{antigo}' (FORMAT parquet)")
     assert not tem_coluna(antigo, "autorias_openalex")
+
+
+def test_gravar_tabela_desempata_por_todas_as_colunas(tmp_path):
+    from mapa_da_ciencia.armazenamento import gravar_tabela, ler_tabela
+
+    colunas = {"obra": "VARCHAR", "citada": "VARCHAR", "n": "INTEGER"}
+    # empates na coluna de ordem, em ordem inversa: a ordem de saída não pode depender da de entrada
+    linhas = [{"obra": f"W{k % 3}", "citada": f"C{k:03d}", "n": k % 2} for k in reversed(range(60))]
+    gravar_tabela(linhas, colunas, tmp_path / "a.parquet", ordem="obra")
+    gravar_tabela(list(reversed(linhas)), colunas, tmp_path / "b.parquet", ordem="obra")
+    lidas = ler_tabela(tmp_path / "a.parquet")
+    assert lidas == sorted(lidas, key=lambda x: (x["obra"], x["citada"], x["n"]))
+    assert (tmp_path / "a.parquet").read_bytes() == (tmp_path / "b.parquet").read_bytes()
+    # várias chaves: primeiro elas, depois o resto do esquema
+    gravar_tabela(linhas, colunas, tmp_path / "c.parquet", ordem=("n", "obra"))
+    lidas = ler_tabela(tmp_path / "c.parquet")
+    assert lidas == sorted(lidas, key=lambda x: (x["n"], x["obra"], x["citada"]))
