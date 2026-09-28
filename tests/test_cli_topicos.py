@@ -60,3 +60,34 @@ def test_topicos_num_projeto_sem_coleta(tmp_path, apis_falsas):
     r = runner.invoke(app, ["topicos", "-P", str(p.raiz), "--sem-rotulos"], env={"COLUMNS": "200"})
     assert r.exit_code == 1 and "Rode `mapa coletar` antes" in r.output, r.output
     assert r.exception is None or isinstance(r.exception, SystemExit)
+
+
+def test_corpus_vazio_na_cli(tmp_path, apis_falsas):
+    """Uma revista sem artigos no período: os tópicos e a amostra explicam o que fazer, sem traceback (r1-09)."""
+    from mapa_da_ciencia.coleta import coletar
+
+    p = Projeto.criar(
+        tmp_path / "vazio", modelo="ciencia-politica", perfil=PERFIS["leve"], revistas=["0104-6276"], anos=(1990, 1991)
+    )
+    coletar(p)
+    for comando, mensagem in (
+        (["topicos", "--sem-rotulos"], "O corpus tem 0 documento(s) com texto"),
+        (["validar", "amostra"], "Nenhum documento com resumo para sortear"),
+    ):
+        r = runner.invoke(app, [*comando, "-P", str(p.raiz)], env={"COLUMNS": "200"})
+        assert r.exit_code == 1 and mensagem in " ".join(r.output.split()), (comando, r.output)
+        assert r.exception is None or isinstance(r.exception, SystemExit), comando
+
+
+def test_rotulos_do_cache_nao_exigem_memoria(projeto, apis_falsas, monkeypatch):
+    """Rodar os tópicos de novo com todos os rótulos no cache não checa a memória do modelo de rótulos (r1-07)."""
+    from mapa_da_ciencia import recursos
+
+    mapa.topicos(projeto, progresso=False)
+    chats = apis_falsas.chamadas["ollama_chat"]
+    # outro processo ocupa a máquina: só 1 GB livre, pouco para carregar o modelo de rótulos (0,5 GB e a margem)
+    monkeypatch.setattr(recursos, "memoria", lambda: recursos.Memoria(24.0, 1.0, 0.0, 8.0))
+    r = runner.invoke(app, ["topicos", "-P", str(projeto.raiz)], env={"COLUMNS": "200"})
+    assert r.exit_code == 0, r.output
+    saida = " ".join(r.output.split())
+    assert apis_falsas.chamadas["ollama_chat"] == chats and "): 0 chamada(s) ao modelo" in saida
