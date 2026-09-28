@@ -145,7 +145,8 @@ class ConfigTopicos(_Base):
         ge=1,
         le=50,
         description="Um documento que o HDBSCAN deixou sem tópico vai para o tópico com mais vizinhos seus no núcleo, "
-        "se forem pelo menos estes (entre os `vizinhos` mais próximos). Menos que isso, fica sem tópico.",
+        "se forem pelo menos estes (entre os `vizinhos` − 1 mais próximos: o grafo inclui o próprio documento). "
+        "Menos que isso, fica sem tópico.",
     )
     selecao: Literal["eom", "leaf"] = Field(
         "leaf",

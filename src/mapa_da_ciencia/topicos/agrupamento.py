@@ -6,8 +6,9 @@ as palavras-chave, os representativos, os contornos e a identidade estável.
 
 No piloto, um terço do corpus fica como ruído em qualquer configuração estável (ADR 0007). Esses documentos
 são **reatribuídos por vizinhança**: vão para o tópico que tem mais vizinhos seus no núcleo, se forem pelo
-menos `votos_minimos` dos 15 mais próximos no espaço dos embeddings (e não no UMAP, que distorce distâncias).
-Quem não chega lá continua sem tópico. A marca `vizinho` fica em cada documento reatribuído.
+menos `votos_minimos` dos `vizinhos − 1` mais próximos (o grafo inclui o próprio documento), no espaço dos
+embeddings (e não no UMAP, que distorce distâncias). Quem não chega lá continua sem tópico. A marca `vizinho`
+fica em cada documento reatribuído.
 """
 
 from __future__ import annotations
