@@ -525,6 +525,20 @@ def projeto(tmp_path_factory):
     return p
 
 
+def test_erro_do_pessoas_yaml_mostra_o_exemplo_entre_colchetes(projeto):
+    from typer.testing import CliRunner
+
+    from mapa_da_ciencia.cli import app
+
+    (projeto.raiz / "pessoas.yaml").write_text("fundir:\n  - openalex:A5034166995\n", encoding="utf-8")
+    try:
+        r = CliRunner().invoke(app, ["redes", "-P", str(projeto.raiz)], env={"COLUMNS": "200"})
+    finally:
+        (projeto.raiz / "pessoas.yaml").unlink()
+    assert r.exit_code == 1
+    assert "como [openalex:A1, openalex:A2]" in " ".join(r.output.split())
+
+
 def test_consultar_as_redes_de_fora_do_projeto(projeto, tmp_path, monkeypatch):
     import mapa_da_ciencia.api as mapa
 

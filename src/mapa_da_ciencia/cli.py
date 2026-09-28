@@ -58,7 +58,8 @@ def _erros_amigaveis() -> Iterator[None]:
     try:
         yield
     except (ErroConfig, ErroFonte, ErroProvedor) as e:
-        console.print(f"[bold red]Erro:[/] {e}")
+        # a mensagem sai como texto: um exemplo entre colchetes ("[openalex:A1, openalex:A2]") não é marcação do Rich
+        console.print(f"[bold red]Erro:[/] {escape(str(e))}")
         raise typer.Exit(1) from e
 
 
