@@ -192,8 +192,6 @@ test('numa tela larga, escolher outra variável com a página rolada traz o deta
 	await page.setViewportSize({ width: 1920, height: 700 });
 	await page.goto(`${url('RAIZ')}#/validacao`);
 	await expect(page.getByTestId('detalhe-variavel')).toBeVisible();
-	// a tabela grudada rola por dentro, se não couber na altura da janela
-	expect(await page.locator('.tabela-do-par').evaluate((el) => getComputedStyle(el).overflowY)).toBe('auto');
 	await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
 	const titulo = page.locator('#titulo-detalhe');
 	expect((await titulo.boundingBox())!.y).toBeLessThan(0); // o título do detalhe ficou lá em cima
@@ -204,4 +202,35 @@ test('numa tela larga, escolher outra variável com a página rolada traz o deta
 			return caixa.y >= 0 && caixa.y < 700;
 		})
 		.toBe(true);
+});
+
+test('numa tela larga, com muitas variáveis, a tabela grudada rola por dentro e cabe na janela', async ({ page }) => {
+	// o exemplo tem poucas variáveis; o piloto tem 6 por par, e um codebook maior passa de 20
+	await page.route('**/dados/validacao.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const v = await resposta.json();
+		const extra = [];
+		for (let k = 1; k < 5; k += 1) for (const m of v.metricas) extra.push({ ...m, variavel: `${m.variavel}_${k}` });
+		v.metricas.push(...extra);
+		await rota.fulfill({ response: resposta, json: v });
+	});
+	await page.setViewportSize({ width: 1600, height: 800 });
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	const tabela = page.locator('.tabela-do-par');
+	await expect(tabela).toBeVisible();
+	expect(await tabela.evaluate((el) => el.scrollHeight > el.clientHeight + 1)).toBe(true);
+	// rolada a página até a figura grudar, ela fica inteira na janela, e a última linha da tabela recebe o clique
+	const figura = page.getByTestId('figura-concordancia');
+	await figura.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top));
+	const caixa = (await figura.boundingBox())!;
+	expect(caixa.y).toBeGreaterThan(0);
+	expect(caixa.y + caixa.height).toBeLessThanOrEqual(800);
+	await tabela.evaluate((el) => (el.scrollTop = el.scrollHeight));
+	const ultima = page.getByTestId('linha-variavel').last();
+	const livre = await ultima.evaluate((el) => {
+		const c = el.getBoundingClientRect();
+		const topo = document.elementFromPoint(c.left + c.width / 2, c.top + c.height / 2);
+		return c.bottom <= innerHeight && !!topo && el.contains(topo);
+	});
+	expect(livre).toBe(true);
 });

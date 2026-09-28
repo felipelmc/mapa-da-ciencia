@@ -14,6 +14,8 @@ Funciona dentro do Jupyter e do Colab: a coleta roda numa thread quando já há 
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -419,7 +421,9 @@ class Painel:
 
     def parar(self) -> None:
         """Derruba o servidor do painel e espera ele sair (a thread solta o projeto para outro painel ao terminar).
-        Uma etapa em andamento continua até o fim, mas a página que a acompanha é desligada."""
+        Uma etapa em andamento é interrompida na próxima atualização de progresso, como com Ctrl+C (o que ela já fez
+        fica guardado, e rodá-la de novo continua dali), e a página que a acompanha é desligada. Se o servidor não sair
+        em 10 s, `parar()` avisa, e o projeto fica travado até ele sair."""
         self._servidor.should_exit = True
         if self._fio is not None:
             self._fio.join(timeout=10)
@@ -432,6 +436,19 @@ class Painel:
 
     def _repr_html_(self) -> str:  # num notebook, o painel aparece como um link
         return f'<a href="{self.url}" target="_blank">Painel do mapa-da-ciencia em {self.url}</a>'
+
+
+class _SemCancelamento(logging.Filter):
+    """No `parar()`, as conexões ainda abertas (a página que acompanha uma etapa) são canceladas depois de 1 s: o
+    cancelamento é o esperado, e o *traceback* dele cairia na célula do notebook como um erro."""
+
+    def filter(self, registro: logging.LogRecord) -> bool:
+        erro = registro.exc_info[1] if registro.exc_info else None
+        while isinstance(erro, BaseExceptionGroup) and len(erro.exceptions) == 1:
+            erro = erro.exceptions[0]
+        if isinstance(erro, asyncio.CancelledError):
+            return False
+        return "timeout graceful shutdown exceeded" not in registro.getMessage()
 
 
 def _no_colab() -> bool:
@@ -473,6 +490,9 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
         servidor = uvicorn.Server(
             uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning", timeout_graceful_shutdown=1)
         )
+        registro = logging.getLogger("uvicorn.error")  # depois do Config, que refaz a configuração dos logs
+        if not any(isinstance(f, _SemCancelamento) for f in registro.filters):
+            registro.addFilter(_SemCancelamento())
     except BaseException:
         if trava is not None:
             trava.close()

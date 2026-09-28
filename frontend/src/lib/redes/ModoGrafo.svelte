@@ -755,6 +755,11 @@
 	/* o atalho até o cartão só aparece quando ele fica embaixo do grafo */
 	.ir-ao-cartao {
 		display: none;
+		/* numa linha só, mesmo com o nome longo de uma instituição (a tela cheia reserva a altura de uma linha) */
+		max-width: 100%;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
 		margin-top: 0.5rem;
 		padding: 0.3rem 0.7rem;
 		border: 1px solid var(--acento);

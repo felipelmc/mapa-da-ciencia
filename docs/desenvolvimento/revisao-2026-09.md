@@ -145,15 +145,31 @@ alargava a página para 732 px. E o cartão, que agora acompanha a rolagem, cobr
 cartão de uma pessoa com muitos documentos, 96% da figura). O exemplo do contrato, com rótulos curtos ("Comunidade
 1") e cartões pequenos, não pegava nenhum dos dois. Corrigidos com testes (o da largura com rótulos longos, como os do
 piloto, por `page.route`; o do cartão, conferindo que nada cobre a figura), a re-revisão foi repetida e aprovou com
-ressalvas baixas, das quais as de conserto direto entraram antes do merge: a tabela da Validação, grudada, rola por
-dentro com muitas variáveis; a colaboração muda de lugar sem ser recriada; e o `parar()` do painel no notebook não
-espera mais de 1 s pelas conexões abertas.
+ressalvas baixas. As de conserto direto entraram antes do merge:
+- na Validação, a tabela grudada rola por dentro com muitas variáveis, e o detalhe volta à vista ao trocar de
+  variável;
+- nas Redes:
+  - a colaboração muda de lugar sem ser recriada;
+  - a tela cheia estreita mostra o botão que leva ao cartão;
+  - abrir um parceiro pelo teclado põe o foco no cartão novo;
+- no notebook, o `parar()` do painel não espera mais de 1 s pelas conexões abertas nem joga na célula o *traceback* do
+  cancelamento;
+- os textos.
+
+Uma última verificação, só desse diff, também aprovou com ressalvas baixas. A docstring do `parar()` e um teste que
+não protegia nada foram corrigidos.
 
 Ficaram para depois, registrados: a cor dos nós por comunidade (hoje é a do macrotema, e várias comunidades dividem
 a mesma cor); o cartão do documento, que cobre parte do mapa numa tela de 1440 px; o kappa de uma pessoa, que conta
 fichas ainda não confirmadas; o editor do codebook, que acrescenta listas vazias ao YAML; o histórico das etapas, que
 mostra "na fila" durante a execução; o júri, que ainda não aparece na linha das etapas nem no `mapa status`; e, nas
-redes, um link com `comunidade=` e `no=` juntos, que enquadra a comunidade (o nó pode ficar fora da tela).
+redes:
+- um link com `comunidade=` e `no=` juntos, que enquadra a comunidade (o nó pode ficar fora da tela);
+- o Esc que fecha um cartão aberto pelo link, que leva o foco para a busca (o Esc seguinte não solta a comunidade);
+- o painel de exportar ao lado do grafo, que passa uns pixels da borda;
+- fechar o cartão lendo a colaboração, embaixo do grafo, que a tira da tela (ela volta para o lado do grafo).
+
+Na Validação, com "Ver como tabela" aberto, a figura grudada volta a passar da altura da janela.
 
 ## Como repetir
 

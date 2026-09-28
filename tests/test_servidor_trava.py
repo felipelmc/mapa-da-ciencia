@@ -1,6 +1,7 @@
 """Um painel por projeto: o segundo `mapa painel` no mesmo projeto não abre e aponta o primeiro."""
 
 import gc
+import logging
 import sys
 import time
 
@@ -122,6 +123,10 @@ def test_parar_nao_espera_uma_conexao_que_nao_termina(tmp_path, monkeypatch):
     monkeypatch.setattr(modulo_app, "criar_app", _app_com_eventos_sem_fim)
     p = Projeto.criar(tmp_path / "p", modelo="vazio", perfil=PERFIS["leve"])
     aberto = mapa.painel(p, porta=8792, colab=False)
+    erros: list[logging.LogRecord] = []
+    guardar = logging.Handler(level=logging.ERROR)
+    guardar.emit = erros.append
+    logging.getLogger("uvicorn.error").addHandler(guardar)
     conexao = socket.create_connection(("127.0.0.1", 8792))
     try:
         conexao.sendall(b"GET /eventos HTTP/1.1\r\nHost: 127.0.0.1:8792\r\n\r\n")
@@ -130,5 +135,8 @@ def test_parar_nao_espera_uma_conexao_que_nao_termina(tmp_path, monkeypatch):
         aberto.parar()
         assert time.monotonic() - inicio < 5
         travar(p, 8791).close()  # a trava já foi solta
+        # o cancelamento da conexão é o esperado: nenhum erro (nem traceback) no log, que no notebook cai na célula
+        assert [r.getMessage() for r in erros] == []
     finally:
         conexao.close()
+        logging.getLogger("uvicorn.error").removeHandler(guardar)
