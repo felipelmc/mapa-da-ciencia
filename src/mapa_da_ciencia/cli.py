@@ -17,6 +17,7 @@ from typing import Annotated
 import typer
 from rich.columns import Columns
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from mapa_da_ciencia import __version__
@@ -55,7 +56,7 @@ def _erros_amigaveis() -> Iterator[None]:
     try:
         yield
     except (ErroConfig, ErroFonte, ErroProvedor) as e:
-        console.print(f"[bold red]Erro:[/] {e}")
+        console.print(f"[bold red]Erro:[/] {escape(str(e))}")
         raise typer.Exit(1) from e
 
 

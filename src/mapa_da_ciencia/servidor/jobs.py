@@ -109,11 +109,15 @@ class Jobs:
         self._parar: dict[str, threading.Event] = {}
         with self._conectar() as con:
             con.executescript(_ESQUEMA)
+            orfaos = [r[0] for r in con.execute("SELECT id FROM jobs WHERE estado IN ('na_fila', 'rodando')")]
             con.execute(
                 "UPDATE jobs SET estado = 'falhou', erro = 'interrompido: o painel foi fechado no meio da etapa', "
                 "fim = ? WHERE estado IN ('na_fila', 'rodando')",
                 (_agora(),),
             )
+        for id_ in orfaos:  # quem reconecta ao fluxo de eventos recebe o fim, e não só batimentos
+            self.emitir(id_, "erro", {"mensagem": "interrompido: o painel foi fechado no meio da etapa"})
+            self.emitir(id_, "fim", {"estado": "falhou"})
 
     # ---------------------------------------------------------------- banco
     @property

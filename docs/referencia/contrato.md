@@ -171,7 +171,7 @@ Valores por trás dos índices das colunas categóricas.
 |---|---|---|---|
 | `revista` | lista de texto | **obrigatório** |  |
 | `idioma` | lista de texto | **obrigatório** |  |
-| `atribuicao` | lista de `"cluster"` \\| `"vizinho"` | `["cluster", "vizinho"]` |  |
+| `atribuicao` | lista de `"cluster"` \| `"vizinho"` | `["cluster", "vizinho"]` |  |
 | `cls` | mapa de texto para lista de texto | vazio |  |
 
 ## `afiliacoes.json`
@@ -248,7 +248,7 @@ O que a interface mostra ao abrir um documento: resumo, autores, licença e evid
 | `licenca_fonte` | texto | **obrigatório** |  |
 | `evidencias` | mapa de texto para [Evidencia](#evidencia) | vazio | Valor de uma variável do codebook e o trecho do resumo que o justifica. |
 | `idioma_analise` | texto ou vazio | vazio | Idioma do texto usado nos embeddings e nos tópicos. |
-| `fonte_analise` | `"resumo"` \\| `"reserva"` \\| `"so_titulo"` ou vazio | vazio | `resumo`: título e resumo no idioma de análise; `reserva`: resumo em outro idioma (não havia no de análise); `so_titulo`: o documento não tem resumo. O texto em si não é publicado. |
+| `fonte_analise` | `"resumo"` \| `"reserva"` \| `"so_titulo"` ou vazio | vazio | `resumo`: título e resumo no idioma de análise; `reserva`: resumo em outro idioma (não havia no de análise); `so_titulo`: o documento não tem resumo. O texto em si não é publicado. |
 
 ### Evidencia
 
@@ -258,10 +258,10 @@ Valor de uma variável do codebook e o trecho do resumo que o justifica.
 |---|---|---|---|
 | `valor` | texto ou sim/não ou lista de texto ou vazio | **obrigatório** |  |
 | `evidencia` | texto | **obrigatório** |  |
-| `status` | `"literal"` \\| `"aproximada"` \\| `"ausente"` \\| `"dispensada"` | **obrigatório** | `literal`: o trecho está no texto; `aproximada`: quase (90% dos caracteres); `ausente`: não está; `dispensada`: vazia numa resposta sem informação. |
+| `status` | `"literal"` \| `"aproximada"` \| `"ausente"` \| `"dispensada"` | **obrigatório** | `literal`: o trecho está no texto; `aproximada`: quase (90% dos caracteres); `ausente`: não está; `dispensada`: vazia numa resposta sem informação. |
 | `inicio` | inteiro ou vazio | vazio | Posição do trecho no resumo exibido, se localizado, em pontos de código Unicode (como o Python conta; em JavaScript, converta para UTF-16). |
 | `fim` | inteiro ou vazio | vazio |  |
-| `campo` | `"titulo"` \\| `"resumo"` ou vazio | vazio | Onde o trecho foi localizado; `inicio` e `fim` são posições nesse texto. |
+| `campo` | `"titulo"` \| `"resumo"` ou vazio | vazio | Onde o trecho foi localizado; `inicio` e `fim` são posições nesse texto. |
 
 ## `topicos.json`
 
@@ -310,7 +310,7 @@ Tendência da participação anual no período inteiro, sem filtros (ADR 0009): 
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `direcao` | `"alta"` \\| `"queda"` \\| `"estavel"` \\| `"insuficiente"` | **obrigatório** |  |
+| `direcao` | `"alta"` \| `"queda"` \| `"estavel"` \| `"insuficiente"` | **obrigatório** |  |
 | `inclinacao` | número ou vazio | vazio | Inclinação na escala logit, por ano. |
 | `erro_padrao` | número ou vazio | vazio | Erro-padrão da inclinação, já corrigido pela dispersão. |
 | `ic95` | par de número e número ou vazio | vazio |  |
@@ -320,7 +320,7 @@ Tendência da participação anual no período inteiro, sem filtros (ADR 0009): 
 | `pp_periodo` | número ou vazio | vazio | Variação em pontos percentuais no período. |
 | `pp_por_ano` | número ou vazio | vazio |  |
 | `anos` | par de inteiro e inteiro ou vazio | vazio |  |
-| `motivo` | `"poucos_anos"` \\| `"poucos_documentos"` \\| `"sem_variacao"` \\| `"sem_convergencia"` ou vazio | vazio | Por que não há tendência, quando é `insuficiente`. |
+| `motivo` | `"poucos_anos"` \| `"poucos_documentos"` \| `"sem_variacao"` \| `"sem_convergencia"` ou vazio | vazio | Por que não há tendência, quando é `insuficiente`. |
 
 ### Topico
 
@@ -339,7 +339,7 @@ Um tópico: rótulo e descrição escritos pelo LLM, palavras-chave, cor estáve
 | `serie` | [Serie](#serie) | **obrigatório** | Série temporal de um tópico. |
 | `por_revista` | mapa de texto para inteiro | **obrigatório** |  |
 | `representativos` | lista de texto | **obrigatório** | Ids de documentos. |
-| `rotulo_fonte` | `"llm"` \\| `"palavras"` \\| `"manual"` | `"llm"` | Quem escreveu o rótulo: o modelo de linguagem, as palavras-chave ou você (rotulos.yaml). |
+| `rotulo_fonte` | `"llm"` \| `"palavras"` \| `"manual"` | `"llm"` | Quem escreveu o rótulo: o modelo de linguagem, as palavras-chave ou você (rotulos.yaml). |
 | `n_nucleo` | inteiro ou vazio | vazio | Documentos do núcleo, que o HDBSCAN agrupou (os demais foram reatribuídos por vizinhança). |
 | `tendencia` | [Tendencia](#tendencia) ou vazio | vazio | Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel. |
 
@@ -361,7 +361,7 @@ Como a tendência é calculada. O painel lê daqui os parâmetros para recalcula
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `modelo` | `"logistica_binomial"` | `"logistica_binomial"` |  |
-| `dispersao` | `"quase"` \\| `"binomial"` | `"quase"` |  |
+| `dispersao` | `"quase"` \| `"binomial"` | `"quase"` |  |
 | `nivel` | número | `0.95` |  |
 | `z` | número | `1.959963984540054` |  |
 | `anos_minimos` | inteiro | `5` |  |
@@ -390,7 +390,7 @@ Variável do codebook.
 |---|---|---|---|
 | `id` | texto | **obrigatório** |  |
 | `rotulo` | texto | **obrigatório** |  |
-| `tipo` | `"categorica"` \\| `"multipla"` \\| `"booleana"` \\| `"texto"` | **obrigatório** |  |
+| `tipo` | `"categorica"` \| `"multipla"` \| `"booleana"` \| `"texto"` | **obrigatório** |  |
 | `pergunta` | texto | **obrigatório** |  |
 | `categorias` | lista de [CategoriaContrato](#categoriacontrato) | vazio | Categoria de uma variável, como o codebook define. |
 
@@ -518,7 +518,7 @@ Um caso em que um codificador de referência e o modelo principal discordam, par
 | `modelo` | texto | **obrigatório** |  |
 | `evidencia` | texto | **obrigatório** | Trecho que o modelo citou. |
 | `codificador` | texto | `""` |  |
-| `status` | `"literal"` \\| `"aproximada"` \\| `"ausente"` \\| `"dispensada"` ou vazio | vazio |  |
+| `status` | `"literal"` \| `"aproximada"` \| `"ausente"` \| `"dispensada"` ou vazio | vazio |  |
 | `incerto` | sim/não | `false` | O codificador marcou a resposta como incerta. |
 
 ### Participante
@@ -528,7 +528,7 @@ Quem respondeu na amostra: um codificador (`humano` ou `referencia`, que não é
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `nome` | texto | **obrigatório** |  |
-| `tipo` | `"humano"` \\| `"referencia"` \\| `"modelo"` | **obrigatório** |  |
+| `tipo` | `"humano"` \| `"referencia"` \| `"modelo"` | **obrigatório** |  |
 | `n` | inteiro | **obrigatório** | Documentos da amostra com resposta. |
 
 ### ComparacaoModelos

@@ -120,6 +120,12 @@ def gerar_topicos(
     inicio, t0 = datetime.now(UTC), time.perf_counter()
     avisos: list[str] = []
 
+    from mapa_da_ciencia.embeddings import texto_de_analise
+
+    analisaveis = [
+        d for d in ler_documentos(projeto.dados / ARQUIVO) if texto_de_analise(d, cfg.recorte.idioma_analise)
+    ]
+    conferir_tamanho(len(analisaveis))  # antes de chamar o modelo: um corpus vazio vira mensagem, e não traceback
     e = calcular_embeddings(projeto, refazer=opcoes.refazer_embeddings, ollama=ollama, progresso=progresso)
     avisos += e.avisos
     n = len(e.ids)

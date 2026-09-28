@@ -56,8 +56,8 @@ Período e idiomas do corpus.
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `anos` | par de inteiro e inteiro | **obrigatório** | Primeiro e último ano de publicação, inclusive. |
-| `idioma_analise` | `"pt"` \\| `"en"` \\| `"es"` | `"en"` | Idioma dos textos usados nos embeddings e nos tópicos (ver ADR 0004). |
-| `idioma_exibicao` | `"pt"` \\| `"en"` \\| `"es"` | `"pt"` | Idioma preferido para mostrar resumos e palavras-chave. |
+| `idioma_analise` | `"pt"` \| `"en"` \| `"es"` | `"en"` | Idioma dos textos usados nos embeddings e nos tópicos (ver ADR 0004). |
+| `idioma_exibicao` | `"pt"` \| `"en"` \| `"es"` | `"pt"` | Idioma preferido para mostrar resumos e palavras-chave. |
 
 ### Modelos
 
@@ -107,7 +107,7 @@ corpus, `scripts/calibrar_topicos.py` refaz a grade.
 | `min_cluster_size` | inteiro ou vazio | vazio | Menor tópico, em documentos. Vazio: automático, 1 a cada 200 documentos (mínimo 10). |
 | `min_samples` | inteiro | `5` | Quão conservador é o HDBSCAN: maior, mais documentos ficam de fora dos tópicos. |
 | `votos_minimos` | inteiro | `3` | Um documento que o HDBSCAN deixou sem tópico vai para o tópico com mais vizinhos seus no núcleo, se forem pelo menos estes (entre os `vizinhos` mais próximos). Menos que isso, fica sem tópico. |
-| `selecao` | `"eom"` \\| `"leaf"` | `"leaf"` | `leaf` fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` prefere tópicos maiores, mas pode trocar um tópico grande por vários pequenos com uma mudança mínima. |
+| `selecao` | `"eom"` \| `"leaf"` | `"leaf"` | `leaf` fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` prefere tópicos maiores, mas pode trocar um tópico grande por vários pequenos com uma mudança mínima. |
 | `macrotemas` | inteiro | `7` | Quantos macrotemas, no máximo (grupos de tópicos próximos, com cores bem distintas). Com poucos tópicos são menos, para que cada macrotema reúna em média ao menos 3 tópicos. |
 | `sementes` | lista de inteiro | `[42, 7, 2024]` | A primeira gera os tópicos; as demais medem a estabilidade (ARI entre as execuções). |
 
@@ -118,6 +118,6 @@ Amostra de resumos codificados por pessoas para medir a qualidade da classifica�
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `n` | inteiro | `200` | Tamanho da amostra para codificação humana. |
-| `estratificar_por` | `"topico"` \\| `"ano"` \\| `"revista"` | `"topico"` | Garante que a amostra cubra todos os tópicos (ou anos, ou revistas). |
+| `estratificar_por` | `"topico"` \| `"ano"` \| `"revista"` | `"topico"` | Garante que a amostra cubra todos os tópicos (ou anos, ou revistas). |
 | `semente` | inteiro | `7` | Semente do sorteio da amostra. |
 | `codificadores` | lista de texto | vazio | Nomes de quem vai codificar. |

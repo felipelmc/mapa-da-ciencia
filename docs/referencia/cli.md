@@ -81,13 +81,13 @@ mapa painel [OPÇÕES]
 Lista as revistas do SciELO Brasil, para escolher o recorte de um projeto.
 
 ```
-mapa revistas [OPÇÕES] busca
+mapa revistas [OPÇÕES] [busca]
 ```
 
 | Argumento ou opção | Descrição | Padrão |
 |---|---|---|
-| `busca` | Parte do título, acrônimo, categoria ou ISSN. | **obrigatório** |
-| `--area`, `-a` | Filtra pela grande área (ex.: humanas, saúde). | `` |
+| `busca` | Parte do título, acrônimo, categoria ou ISSN. |  |
+| `--area`, `-a` | Filtra pela grande área (ex.: humanas, saúde). |  |
 | `--yaml` | Imprime as linhas prontas para colar em `fontes.scielo.revistas`. |  |
 
 ## `mapa coletar`
@@ -175,5 +175,60 @@ mapa importar [OPÇÕES] arquivos
 Validação da classificação: a amostra, as codificações e a concordância.
 
 ```
-mapa validar [OPÇÕES]
+mapa validar [OPÇÕES] COMANDO
 ```
+
+Subcomandos: `mapa validar amostra`, `mapa validar importar`, `mapa validar metricas`, `mapa validar relatorio`.
+
+## `mapa validar amostra`
+
+Sorteia a amostra de validação (uma vez) e exporta os textos para quem vai codificar.
+
+```
+mapa validar amostra [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--refazer` | Sorteia outra amostra (as codificações já feitas continuam guardadas). |  |
+| `--n` | Tamanho da amostra neste sorteio (padrão: validacao.n do mapa.yaml). |  |
+
+## `mapa validar importar`
+
+Importa as codificações de um arquivo JSONL (formato no guia "Codificar a amostra").
+
+```
+mapa validar importar [OPÇÕES] arquivo
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `arquivo` | JSONL com uma linha por documento. | **obrigatório** |
+| `--codificador`, `-c` | Nome de quem codificou. | **obrigatório** |
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--tipo` | `humano` ou `referencia` (um anotador que não é uma pessoa, como outro modelo de IA). | `humano` |
+
+## `mapa validar metricas`
+
+Concordância entre codificadores e modelos na amostra: kappa com IC 95%, PABAK e alfa, por variável.
+
+```
+mapa validar metricas [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+
+## `mapa validar relatorio`
+
+Grava o relatório da validação em `validacao/`: Markdown, tabelas LaTeX e JSON.
+
+```
+mapa validar relatorio [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |

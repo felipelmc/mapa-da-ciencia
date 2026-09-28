@@ -164,6 +164,8 @@ def sortear(projeto: Projeto, *, refazer: bool = False, n: int | None = None) ->
     rng = random.Random(cfg.semente)
     escolhidos = [doc for e in sorted(grupos) for doc in rng.sample(sorted(grupos[e]), alocacao.get(e, 0))]
     rng.shuffle(escolhidos)
+    if not escolhidos:  # antes de apagar a amostra anterior
+        raise ErroConfig("Nenhum documento com resumo para sortear: amplie o recorte e rode `mapa coletar`.")
     agora = datetime.now(UTC).isoformat(timespec="seconds")
     with conectar(projeto) as con:
         con.execute("DELETE FROM validacao_amostra")
@@ -208,7 +210,10 @@ def exportar(projeto: Projeto, amostra: Amostra) -> Path:
     destino = pasta / ARQUIVO_AMOSTRA
     with destino.open("w", encoding="utf-8") as f:
         for doc in amostra.docs:
-            t = textos[doc]
+            t = textos.get(doc)
+            if t is None:  # o documento saiu do corpus depois do sorteio (rode `mapa validar amostra --refazer`)
+                amostra.avisos.append(f"{doc} não está mais no corpus e ficou fora do arquivo.")
+                continue
             linha = {"doc": doc, "titulo": t.titulo, "resumo": t.resumo, "idioma": t.idioma}
             assert not contem_email(linha), f"e-mail no texto de {doc}"
             f.write(json.dumps(linha, ensure_ascii=False) + "\n")

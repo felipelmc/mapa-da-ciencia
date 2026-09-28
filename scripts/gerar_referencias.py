@@ -51,7 +51,7 @@ def _tipo(anot: object) -> str:
         padrao = next((getattr(m, "pattern", None) for m in meta if getattr(m, "pattern", None)), None)
         return _tipo(base) + (f" (formato `{padrao}`)" if padrao else "")
     if origem is typing.Literal:
-        return " \\| ".join(f"`{json.dumps(a, ensure_ascii=False)}`" for a in args)
+        return " | ".join(f"`{json.dumps(a, ensure_ascii=False)}`" for a in args)
     if origem in (typing.Union, types.UnionType):
         partes = [a for a in args if a is not type(None)]
         texto = " ou ".join(_tipo(a) for a in partes)
@@ -135,22 +135,39 @@ def pagina_cli() -> str:
         "Opção global: `mapa --versao` (`-V`) mostra a versão instalada.",
         "",
     ]
-    for nome, cmd in grupo.commands.items():
+
+    def comandos(g: TyperGroup, prefixo: str):
+        for nome, cmd in g.commands.items():
+            yield f"{prefixo} {nome}", cmd
+            if isinstance(cmd, TyperGroup):
+                yield from comandos(cmd, f"{prefixo} {nome}")
+
+    for nome, cmd in comandos(grupo, "mapa"):
         args = [p for p in cmd.params if isinstance(p, TyperArgument)]
-        uso = " ".join([f"mapa {nome}", "[OPÇÕES]", *(p.human_readable_name for p in args)])
-        linhas += [f"## `mapa {nome}`", "", _sem_markup(cmd.help or ""), "", f"```\n{uso}\n```", ""]
+        partes = [p.human_readable_name if p.required else f"[{p.human_readable_name}]" for p in args]
+        if isinstance(cmd, TyperGroup):
+            partes.append("COMANDO")
+        uso = " ".join([nome, "[OPÇÕES]", *partes])
+        linhas += [f"## `{nome}`", "", _sem_markup(cmd.help or ""), "", f"```\n{uso}\n```", ""]
+        if isinstance(cmd, TyperGroup):
+            linhas += ["Subcomandos: " + ", ".join(f"`{nome} {s}`" for s in cmd.commands) + ".", ""]
         params = [p for p in cmd.params if p.name != "help"]
         if not params:
             continue
         linhas += ["| Argumento ou opção | Descrição | Padrão |", "|---|---|---|"]
         for p in params:
             if isinstance(p, TyperArgument):
-                rotulo, padrao = f"`{p.human_readable_name}`", "**obrigatório**"
+                rotulo = f"`{p.human_readable_name}`"
             else:
                 rotulo = ", ".join(f"`{o}`" for o in [*p.opts, *p.secondary_opts])
-                padrao = "" if p.default in (None, False) or callable(p.default) else f"`{p.default}`"
-                if isinstance(p.default, Path):
-                    padrao = "pasta atual" if str(p.default) == "." else f"`{p.default}`"
+            if p.required:
+                padrao = "**obrigatório**"
+            elif p.default in (None, False, "") or callable(p.default):
+                padrao = ""
+            elif isinstance(p.default, Path):
+                padrao = "pasta atual" if str(p.default) == "." else f"`{p.default}`"
+            else:
+                padrao = f"`{p.default}`"
             ajuda = _sem_markup(getattr(p, "help", "") or "")
             linhas.append(f"| {rotulo} | {_celula(ajuda)} | {padrao} |")
         linhas.append("")

@@ -264,6 +264,8 @@ def _explicar(erro: ValidationError, arquivo: Path) -> str:
             msg = "campo desconhecido (erro de digitação?)"
         elif e["type"] == "missing":
             msg = "campo obrigatório ausente"
+        elif campo == "recorte.anos" and e["type"] in ("tuple_type", "too_short", "too_long", "int_parsing"):
+            msg = "use [ano_inicial, ano_final], por exemplo [2010, 2025]"
         linhas.append(f"  - {campo}: {msg}")
     return "\n".join(linhas)
 
