@@ -180,7 +180,7 @@ def test_cli_validar_metricas(projeto, tmp_path):
 
 
 def test_texto_normalizado():
-    n = vm._normalizar_texto
+    n = vm.normalizar_texto
     assert n("1994 - 2018") == n("1994–2018") == n("1994—2018")
     assert n("Não se aplica") == n("nao  se aplica")
 
