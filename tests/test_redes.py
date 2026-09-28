@@ -1,5 +1,6 @@
 """As redes: pesos fracionários, identidade das pessoas, desenho reprodutível, citações e a etapa de ponta a ponta."""
 
+import hashlib
 import json
 import re
 
@@ -12,6 +13,7 @@ from mapa_da_ciencia.armazenamento import (
     ARQUIVO_REFERENCIAS,
     gravar_documentos,
     gravar_tabela,
+    ler_tabela,
 )
 from mapa_da_ciencia.contrato import modelos as m
 from mapa_da_ciencia.contrato.redes import fluxo_por_posicao, instituicoes_fora_de_afiliacoes
@@ -22,8 +24,9 @@ from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.redes import citacoes as cit
 from mapa_da_ciencia.redes.desenho import desenhar
 from mapa_da_ciencia.redes.grafos import grafo, pares_ponderados
-from mapa_da_ciencia.redes.pessoas import CorrecoesPessoas, identificar
+from mapa_da_ciencia.redes.pessoas import CorrecoesPessoas, id_publicado, identificar
 from mapa_da_ciencia.redes.pipeline import gerar_redes, redes_em_dia
+from mapa_da_ciencia.segredos import segredo
 
 ORCID = re.compile(r"\d{4}-\d{4}-\d{4}-\d{3}[\dX]")
 
@@ -62,7 +65,7 @@ def test_identidade_das_pessoas():
         _doc("d5", [("Eva Nunes", None, None)]),
         _doc("d6", [("Eva Nunes", None, "0000-0003-0000-0003")]),
     ]
-    i = identificar(docs)
+    i = identificar(docs, segredo=b"teste")
     pessoa = {(a.doc, a.posicao): i.pessoas[i.pessoa_da_autoria[k]].interno for k, a in enumerate(i.autorias)}
     assert pessoa[("d1", 0)] == pessoa[("d2", 0)] != pessoa[("d3", 0)]
     assert i.conflitos == 1
@@ -74,9 +77,19 @@ def test_identidade_das_pessoas():
     assert len(ids) == len(set(ids)) and all(not ORCID.search(x) for x in ids)
     # correções manuais: fundir força a união; nomes troca o nome exibido
     anas = sorted({pessoa[("d1", 0)], pessoa[("d3", 0)]})
-    j = identificar(docs, CorrecoesPessoas(fundir=[anas], nomes={anas[0]: "Ana M. Silva"}))
+    j = identificar(docs, CorrecoesPessoas(fundir=[anas], nomes={anas[0]: "Ana M. Silva"}), segredo=b"teste")
     pj = {(a.doc, a.posicao): j.pessoas[j.pessoa_da_autoria[k]] for k, a in enumerate(j.autorias)}
     assert pj[("d1", 0)] is pj[("d3", 0)] and pj[("d1", 0)].nome == "Ana M. Silva"
+
+
+def test_id_publicado_nao_se_liga_ao_orcid():
+    # sem o segredo do projeto, o id publicado não se liga ao ORCID nem ao id do OpenAlex (cr-03: o SHA-256 sem
+    # chave de "orcid:…" se quebrava por força bruta em minutos)
+    orcid = "orcid:0000-0002-1825-0097"
+    publicado = id_publicado(orcid, b"segredo do projeto")
+    assert publicado != "p" + hashlib.sha256(orcid.encode()).hexdigest()[:10]
+    assert publicado == id_publicado(orcid, b"segredo do projeto") != id_publicado(orcid, b"outro segredo")
+    assert re.fullmatch(r"p[0-9a-f]{10}", publicado)
 
 
 def test_desenho_reprodutivel():
@@ -211,8 +224,12 @@ def test_redes_de_ponta_a_ponta(projeto):
     ]
     assert len(citacoes.fluxo_macrotemas) == len(topicos.macrotemas)
     assert sum(map(sum, citacoes.fluxo_macrotemas)) == len(com_topico)
-    # nada de e-mail nem ORCID
+    # nada de e-mail nem ORCID, e nenhum id publicado que seja o hash sem chave do id interno
     assert "@" not in texto and not ORCID.search(texto)
+    internos = {p["id"]: p["interno"] for p in ler_tabela(projeto.dados / "redes" / "pessoas.parquet")}
+    sem_chave = {"p" + hashlib.sha256(i.encode()).hexdigest()[:10] for i in internos.values()}
+    assert set(redes.pessoas.id) == set(internos) and not sem_chave & set(redes.pessoas.id)
+    assert segredo(projeto, "redes") == segredo(projeto, "redes")  # guardado no estado.sqlite, fora de saida/
     # reprodutível: de novo, o mesmo arquivo
     gerar_redes(projeto)
     assert (dados / "redes.json").read_text(encoding="utf-8") == texto

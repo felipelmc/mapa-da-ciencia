@@ -664,7 +664,7 @@ As pessoas (autores identificados), em colunas. `x` e `y` só para quem teve coa
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `id` | lista de texto | **obrigatório** | Id publicado (um hash curto; o site não publica ORCIDs). |
+| `id` | lista de texto | **obrigatório** | Id publicado: um HMAC curto do id interno com o segredo do projeto (o site não publica ORCIDs nem ids do OpenAlex, e o id não se liga a eles sem o segredo). |
 | `nome` | lista de texto | **obrigatório** |  |
 | `documentos` | lista de inteiro | **obrigatório** |  |
 | `grau` | lista de inteiro | **obrigatório** | Coautores distintos. |

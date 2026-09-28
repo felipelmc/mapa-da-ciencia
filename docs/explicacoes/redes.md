@@ -15,7 +15,8 @@ junta as autorias em pessoas, em ordem de confiança:
 3. dois homônimos sem ORCIDs em conflito se juntam se tiverem **um coautor em comum**.
 
 O que sobra de homônimos fica separado e aparece em `mapa redes --revisar`, com um bloco pronto para o `pessoas.yaml`
-do projeto (`fundir`, `nao_fundir` e `nomes`). O site não publica ORCIDs: cada pessoa tem um id curto, um *hash*.
+do projeto (`fundir`, `nao_fundir` e `nomes`). O site não publica ORCIDs nem ids do OpenAlex: cada pessoa tem um id
+curto, um HMAC com o segredo do projeto (ver [Privacidade e licenças](privacidade-e-licencas.md)).
 
 ## Pesos fracionários
 

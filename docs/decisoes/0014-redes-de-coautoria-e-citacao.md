@@ -30,12 +30,16 @@ OpenAlex tem as referências já resolvidas (`referenced_works`), a 1 crédito p
 5. **Citações pelo OpenAlex** (`referenced_works`, em lotes de 100), e os metadados das 500 obras de fora mais
    citadas (o cânone). A coleta guarda as duas tabelas, e a segunda coleta faz 0 requisições. As referências da
    ArticleMeta entram só na cobertura; o casamento aproximado por título fica para depois.
-6. **Contrato 1.5:** `redes.json` traz as pessoas (com id publicado, um *hash*; **nenhum ORCID**), as autorias por
+6. **Contrato 1.5:** `redes.json` traz as pessoas (com id publicado; **nenhum ORCID**), as autorias por
    índice de documento (o navegador recalcula as arestas dentro do recorte, sem mandar uma lista de documentos por
    aresta), as instituições com o desenho, as comunidades, as métricas e as séries da colaboração. `citacoes.json`
    traz as citações internas, o cânone com os citantes, o fluxo entre macrotemas e a cobertura.
 7. **Privacidade:** os nomes dos autores já eram públicos no painel (são metadados bibliográficos dos artigos). O
-   site não publica ORCIDs nem e-mails, e as histórias da abertura não fazem rankings de pessoas.
+   site não publica ORCIDs nem e-mails, e as histórias da abertura não fazem rankings de pessoas. O id publicado é
+   um HMAC-SHA256 do id interno com um segredo do projeto guardado no `estado.sqlite`, e não um *hash* sem chave: a
+   revisão mostrou que o SHA-256 truncado de `orcid:…` devolvia 58 ORCIDs do piloto em 26 s de força bruta. Um id
+   sequencial num mapa interno também serviria, mas mudaria com a ordem das pessoas; o HMAC só muda quando a
+   identidade da pessoa muda (ou o segredo se perde).
 
 ## Números do piloto
 

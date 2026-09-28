@@ -2,7 +2,7 @@
 
 Os documentos entram pelo índice deles em `documentos.json` (a mesma ordem), para o navegador recalcular as arestas
 no recorte (anos, revistas, tópicos) sem mandar uma lista de documentos por aresta. Nenhum ORCID e nenhum e-mail:
-as pessoas têm um id publicado (um *hash*) e o nome.
+as pessoas têm um id publicado (um HMAC com o segredo do projeto) e o nome.
 """
 
 from __future__ import annotations

@@ -196,7 +196,9 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     rotulo_do_topico = {t.id: t.rotulo for t in topicos.topicos}
 
     # 1. pessoas e coautoria
-    ident = identificar(docs, ler_correcoes(projeto.raiz))
+    from ..segredos import segredo
+
+    ident = identificar(docs, ler_correcoes(projeto.raiz), segredo=segredo(projeto, "redes"))
     pessoas = ident.pessoas
     autores_do_doc: dict[str, list[str]] = defaultdict(list)
     for i, a in enumerate(ident.autorias):

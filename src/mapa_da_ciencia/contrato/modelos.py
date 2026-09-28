@@ -648,7 +648,10 @@ class Agregados(_Arquivo):
 class ColunasPessoas(_Base):
     """As pessoas (autores identificados), em colunas. `x` e `y` só para quem teve coautor (o desenho da rede)."""
 
-    id: list[str] = Field(description="Id publicado (um hash curto; o site não publica ORCIDs).")
+    id: list[str] = Field(
+        description="Id publicado: um HMAC curto do id interno com o segredo do projeto (o site não publica ORCIDs "
+        "nem ids do OpenAlex, e o id não se liga a eles sem o segredo)."
+    )
     nome: list[str]
     documentos: list[int]
     grau: list[int] = Field(description="Coautores distintos.")

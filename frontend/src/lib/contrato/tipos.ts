@@ -703,7 +703,7 @@ export interface ColunasPessoas {
 	 */
 	grau: number[];
 	/**
-	 * Id publicado (um hash curto; o site não publica ORCIDs).
+	 * Id publicado: um HMAC curto do id interno com o segredo do projeto (o site não publica ORCIDs nem ids do OpenAlex, e o id não se liga a eles sem o segredo).
 	 */
 	id: string[];
 	nome: string[];

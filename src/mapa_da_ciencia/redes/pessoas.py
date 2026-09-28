@@ -11,12 +11,14 @@ pessoas num *union-find*, em ordem de confiança:
 
 O resto dos homônimos vira `candidatos`, que `mapa redes --revisar` lista para o `pessoas.yaml` do projeto
 (`fundir`, `nao_fundir`, `nomes`). O id interno de uma pessoa é o menor id do OpenAlex dela, senão o ORCID, senão o
-nome; o id publicado é um *hash* curto dele (o site não publica ORCIDs).
+nome; o id publicado é um HMAC curto dele, com o segredo do projeto (`segredos.segredo`): o site não publica ORCIDs
+nem ids do OpenAlex, e o id publicado não se liga a eles sem o segredo.
 """
 
 from __future__ import annotations
 
 import hashlib
+import hmac
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -38,8 +40,10 @@ def chave_nome(nome: str | None) -> str:
     return " ".join(p for p in normalizar.chave(nome or "").split() if p not in _PARTICULAS)
 
 
-def id_publicado(interno: str) -> str:
-    return "p" + hashlib.sha256(interno.encode("utf-8")).hexdigest()[:10]
+def id_publicado(interno: str, segredo: bytes) -> str:
+    """ "p" e 10 dígitos hexadecimais do HMAC-SHA256 do id interno. Estável enquanto a pessoa tiver o mesmo id interno
+    e o projeto o mesmo segredo; uma fusão ou uma separação no `pessoas.yaml` pode mudá-lo."""
+    return "p" + hmac.new(segredo, interno.encode("utf-8"), hashlib.sha256).hexdigest()[:10]
 
 
 @dataclass(frozen=True)
@@ -138,7 +142,9 @@ class Identidade:
     conflitos: int = 0  # uniões recusadas por ORCIDs diferentes
 
 
-def identificar(documentos: list[Documento], correcoes: CorrecoesPessoas | None = None) -> Identidade:
+def identificar(
+    documentos: list[Documento], correcoes: CorrecoesPessoas | None = None, *, segredo: bytes
+) -> Identidade:
     correcoes = correcoes or CorrecoesPessoas()
     autorias = autorias_do_corpus(documentos)
     g = _Grupos(len(autorias), [a.orcid for a in autorias])
@@ -196,7 +202,7 @@ def identificar(documentos: list[Documento], correcoes: CorrecoesPessoas | None 
                         for d in docs_do_grupo[raiz]:
                             grupos_do_doc[d] = {g.achar(h) for h in grupos_do_doc[d]}
                         mudou = True
-    pessoas, pessoa_da_autoria, candidatos = _montar(autorias, g, correcoes)
+    pessoas, pessoa_da_autoria, candidatos = _montar(autorias, g, correcoes, segredo)
     return Identidade(autorias, pessoas, pessoa_da_autoria, candidatos, conflitos)
 
 
@@ -226,7 +232,7 @@ def _internos(autorias: list[Autoria], grupos: dict[int, list[int]]) -> dict[int
 
 
 def _montar(
-    autorias: list[Autoria], g: _Grupos, correcoes: CorrecoesPessoas
+    autorias: list[Autoria], g: _Grupos, correcoes: CorrecoesPessoas, segredo: bytes
 ) -> tuple[list[Pessoa], list[int], list[tuple[str, str, str]]]:
     grupos: dict[int, list[int]] = defaultdict(list)
     for i in range(len(autorias)):
@@ -257,7 +263,7 @@ def _montar(
         pessoas.append(
             Pessoa(
                 interno,
-                id_publicado(interno),
+                id_publicado(interno, segredo),
                 nome,
                 sorted(membros),
                 sorted({autorias[i].openalex for i in membros if autorias[i].openalex}),
