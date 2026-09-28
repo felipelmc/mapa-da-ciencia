@@ -15,32 +15,65 @@ from difflib import SequenceMatcher
 from typing import Any
 
 # E-mails, com as variações que aparecem em afiliações: espaço em volta do @ ou depois do ponto, e "[at]"/"(arroba)"
-# e "[dot]"/"(ponto)" entre colchetes ou parênteses. O primeiro ramo é o padrão comum. Os outros dois exigem que o
-# domínio termine, em minúsculas, num dos domínios de topo de `_TLDS`: sem isso, eles pegariam "p @ 0.05", "o perfil
-# @fulano. Em seguida" e arrobas de rede social com ponto ("o perfil @maria.silva", "RT @fulano.oficial"), e apagariam
-# junto a palavra anterior, que o ramo toma pela parte local do endereço.
-# Os três ramos só começam no início de uma sequência de [\w.+-] (o lookbehind): sem ele, cada posição de uma
+# e "[dot]"/"(ponto)" entre colchetes ou parênteses. O primeiro ramo é o padrão comum. Os outros exigem que o domínio
+# termine, em minúsculas, num domínio de topo: sem isso, pegariam "p @ 0.05" e "o perfil @fulano. Em seguida", e
+# apagariam junto a palavra anterior, que tomam pela parte local do endereço.
+#
+# A forma "palavra @perfil.x" (espaço antes do @ e nenhum depois) é também a de um perfil de rede social com ponto
+# ("o perfil @maria.silva", "RT @fulano.oficial", "@frente.pe"). Nela, o domínio precisa passar por um dos domínios
+# de topo de `_TLDS_PERFIL`: os genéricos e os de países frequentes em afiliações que não são siglas de UF nem de
+# partido (fora pe, es, se, pa, ma, ms, mt, pt…). Nas outras formas com espaço ou disfarce, que um perfil não tem
+# ("maria@ up.ac.pa", "[at] … [dot] io"), vale qualquer domínio de país (`_CCTLDS`) e os genéricos comuns.
+#
+# Todos os ramos só começam no início de uma sequência de [\w.+-] (o lookbehind): sem ele, cada posição de uma
 # sequência longa sem espaço (um token de 20 mil caracteres num JSON) seria tentada até o fim dela, em tempo
 # quadrático. O resultado de uma busca não muda, porque um endereço achado no meio da sequência também seria achado
 # a partir do começo dela; na remoção, ver `remover_emails`.
-_TLDS = (
-    # genéricos
-    "com", "org", "net", "edu", "gov", "mil", "int", "info", "eu",
-    # países de língua portuguesa e da América Latina
-    "br", "pt", "ao", "mz", "cv", "ar", "bo", "cl", "co", "cr", "cu", "ec", "gt", "mx", "pe", "py", "uy", "ve",
-    # outros frequentes em afiliações acadêmicas
-    "uk", "ie", "fr", "es", "it", "de", "at", "ch", "be", "nl", "dk", "se", "no", "fi", "pl", "ru", "us", "ca", "au",
-    "nz", "jp", "cn", "kr", "in", "za", "il",
-)  # fmt: skip
-_TLD = rf"(?-i:(?:{'|'.join(_TLDS)}))(?!\w)"
-_AT = r"(?:@|＠|﹫|[\[({][ \t]*(?:at|arroba)[ \t]*[\])}])"
-_DOT = r"(?:\.|[ \t]*[\[({][ \t]*(?:dot|ponto)[ \t]*[\])}][ \t]*)"
+_GENERICOS = (  # noqa: SIM905 (uma lista longa de códigos fica mais legível numa string)
+    "com org net edu gov mil int info biz name pro cat eus gal museum coop aero asia app dev online site xyz tech"
+).split()
+# os domínios de país da IANA (os códigos ISO 3166 de duas letras, mais ac, eu, su e uk)
+_CCTLDS = (  # noqa: SIM905 (uma lista longa de códigos fica mais legível numa string)
+    "ac ad ae af ag ai al am ao aq ar as at au aw ax az ba bb bd be bf bg bh bi bj bm bn bo br bs bt bv bw by bz ca "
+    "cc cd cf cg ch ci ck cl cm cn co cr cu cv cw cx cy cz de dj dk dm do dz ec ee eg er es et eu fi fj fk fm fo fr "
+    "ga gb gd ge gf gg gh gi gl gm gn gp gq gr gs gt gu gw gy hk hm hn hr ht hu id ie il im in io iq ir is it je jm "
+    "jo jp ke kg kh ki km kn kp kr kw ky kz la lb lc li lk lr ls lt lu lv ly ma mc md me mg mh mk ml mm mn mo mp mq "
+    "mr ms mt mu mv mw mx my mz na nc ne nf ng ni nl no np nr nu nz om pa pe pf pg ph pk pl pm pn pr ps pt pw py qa "
+    "re ro rs ru rw sa sb sc sd se sg sh si sj sk sl sm sn so sr ss st su sv sx sy sz tc td tf tg th tj tk tl tm tn "
+    "to tr tt tv tw tz ua ug uk us uy uz va vc ve vg vi vn vu wf ws ye yt za zm zw"
+).split()
+_TLDS_PERFIL = (  # noqa: SIM905 (uma lista longa de códigos fica mais legível numa string)
+    "com org net edu gov mil int info eu "
+    "br ao mz cv st gw tl ar bo cl co cr cu ec gt mx py uy ve "
+    "uk ie fr it de at ch be nl dk no fi pl ru us ca au nz jp cn kr in za il"
+).split()
+
+
+def _tld(nomes: list[str]) -> str:
+    return rf"(?-i:(?:{'|'.join(sorted(set(nomes), key=lambda n: (-len(n), n)))}))(?!\w)"
+
+
+_TLD = _tld(_CCTLDS + _GENERICOS)
+_TLD_PERFIL = _tld(_TLDS_PERFIL)
+_LOCAL = r"[\w.+-]*\w"
+_ROTULO = r"[\w-]+"
+_ARROBA = r"(?:@|＠|﹫)"
+_AT_DISFARCADO = r"[\[({][ \t]*(?:at|arroba)[ \t]*[\])}]"
+_DOT_DISFARCADO = r"[ \t]*[\[({][ \t]*(?:dot|ponto)[ \t]*[\])}][ \t]*"
+_DOT = rf"(?:\.|{_DOT_DISFARCADO})"
+_DOMINIO = rf"{_ROTULO}(?:{_DOT}{_ROTULO})*{_DOT}{_TLD}"
 EMAIL = re.compile(
     r"(?<![\w.+-])(?:"
-    r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
-    rf"|[\w.+-]*\w[ \t]*{_AT}[ \t]*[\w-]+(?:{_DOT}[\w-]+)*{_DOT}{_TLD}"
-    rf"|[\w.+-]*\w@[\w-]+(?:\. ?[\w-]+)*\. ?{_TLD}"
-    r")",
+    r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"  # fulana@exemplo.br
+    rf"|{_LOCAL}(?:"  # a parte local uma vez só, para as formas com espaço ou disfarce:
+    # fulana @exemplo.br, a forma de um perfil: o domínio passa por um de `_TLDS_PERFIL` (até o fim dele)
+    rf"[ \t]+{_ARROBA}{_ROTULO}(?:\.{_ROTULO})*\.{_TLD_PERFIL}(?:\.{_ROTULO})*(?![\w-])"
+    rf"|[ \t]*{_ARROBA}[ \t]+{_DOMINIO}"  # fulana@ exemplo.br, fulana @ exemplo.br
+    rf"|[ \t]*{_AT_DISFARCADO}[ \t]*{_DOMINIO}"  # fulana [at] exemplo [dot] br
+    rf"|[ \t]*{_ARROBA}{_ROTULO}(?:{_DOT}{_ROTULO})*{_DOT_DISFARCADO}{_TLD}"  # fulana@exemplo (ponto) br
+    # fulana@exemplo. br: o primeiro rótulo com duas letras ou mais (não "tod@s. no entanto" nem "P@10. de acordo")
+    rf"|@(?=[\w-]*[^\W\d_])[\w-]{{2,}}(?:\. ?{_ROTULO})*\. ?{_TLD}"
+    r"))",
     re.IGNORECASE,
 )
 _TAG = re.compile(r"<[^>]+>")

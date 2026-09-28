@@ -108,6 +108,14 @@ def test_documento_texto_em_idioma_preferido():
         "ciclano {at} exemplo.br",
         "joao (arroba) exemplo (ponto) br",
         "maria@exemplo.com.br",
+        # domínios de país fora da lista dos perfis, nas formas que um perfil de rede social não tem
+        "Universidad de Panamá. maria@ exemplo.ac.pa",
+        "Universidade de São Tomé e Príncipe. rosa@ exemplo.st",
+        "UAB, Barcelona. fulana@ exemplo.cat",
+        "Empresa X. fulana [at] exemplo [dot] io",
+        "Univ. X. fulana (arroba) exemplo (ponto) ac (ponto) id",
+        "Univ. X. fulana@exemplo (ponto) es",
+        "UNAH, Honduras. juan.perez @exemplo.edu.hn",
     ],
 )
 def test_emails_com_espacos_e_disfarces(texto):
@@ -131,6 +139,14 @@ def test_emails_com_espacos_e_disfarces(texto):
         "look [at] data.table and dplyr",
         "Recall@10. results show",
         "entre tod@s. em seguida",
+        # perfis que terminam numa sigla de UF, ou de partido, que também é domínio de país
+        "Analisamos o perfil @frente.pe no Instagram",
+        "as contas @governo.es e @camara.ms",
+        "o coletivo @mst.se publicou",
+        "o perfil @lula.pt comenta",
+        "a página @jornal.do.commercio",
+        "para tod@s. no entanto",
+        "precisão P@10. de acordo com a literatura",
     ],
 )
 def test_arroba_que_nao_e_email(texto):
