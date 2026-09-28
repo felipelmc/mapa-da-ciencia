@@ -126,6 +126,16 @@ test('fechar a gaveta com Esc devolve o foco a quem a abriu', async ({ page }) =
 	await expect(item).toBeFocused();
 });
 
+test('um link com um tópico ou macrotema que não existe avisa e o tira da URL', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos?topico=9999`);
+	await expect(page.getByRole('status').filter({ hasText: 'Este tópico não está nesta publicação' })).toBeVisible();
+	await expect(page).toHaveURL(/#\/topicos$/);
+	await expect(page.getByTestId('gaveta-topico')).toHaveCount(0);
+	await page.goto(`${url('RAIZ')}#/topicos?macro=999`);
+	await expect(page.getByRole('status').filter({ hasText: 'Este macrotema não está nesta publicação' })).toBeVisible();
+	await expect(page).toHaveURL(/#\/topicos$/);
+});
+
 test('os pequenos múltiplos por revista filtram o recorte', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/topicos`);
 	const figura = page.getByTestId('figura-por-revista');

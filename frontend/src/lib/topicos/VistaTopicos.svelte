@@ -174,6 +174,16 @@
 
 	// ---- gaveta do tópico
 	const topicoAberto = $derived(filtros.topico !== null ? (topicos.topicos.find((t) => t.id === filtros.topico) ?? null) : null);
+	// um link antigo (de outra publicação, com os tópicos renumerados) pode trazer um tópico ou macrotema que não
+	// existe aqui: avisa e tira da URL
+	let avisoLink = $state<string | null>(null);
+	$effect(() => {
+		const semTopico = filtros.topico !== null && topicoAberto === null;
+		const semMacro = filtros.macro !== null && macroAberto === null;
+		if (!semTopico && !semMacro) return;
+		avisoLink = `Este ${semTopico ? 'tópico' : 'macrotema'} não está nesta publicação: o link pode ser de outra versão do mapa.`;
+		mudarFiltros({ ...(semTopico ? { topico: null } : {}), ...(semMacro ? { macro: null } : {}) }, { substituir: true, em });
+	});
 	const macroDoAberto = $derived(topicoAberto ? (macros.get(topicoAberto.macro_id) ?? null) : null);
 
 	// ---- pequenos múltiplos por revista: macrotemas por ano em cada revista (sem os filtros de revista, anos e
@@ -246,6 +256,9 @@
 				<span aria-current="page">Todos os macrotemas</span>
 			{/if}
 		</nav>
+		<p class="aviso-link" role="status">
+			{#if avisoLink}<span data-testid="aviso-link">{avisoLink}</span>{/if}
+		</p>
 	</header>
 
 	<Figura
@@ -413,6 +426,19 @@
 
 	.trilha [aria-current] {
 		color: var(--texto);
+	}
+
+	.aviso-link:empty {
+		display: none;
+	}
+
+	.aviso-link span {
+		display: inline-block;
+		padding: 0.4rem 0.7rem;
+		border: 1px solid var(--linha-forte);
+		border-radius: var(--raio);
+		background: var(--superficie-alta);
+		font-size: 0.88rem;
 	}
 
 	.link {

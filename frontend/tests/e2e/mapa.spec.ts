@@ -167,6 +167,14 @@ test('o link com doc= abre o cartão, e os vizinhos navegam', async ({ page }) =
 	expect(problemas).toEqual([]);
 });
 
+test('um link com um documento que não existe avisa e tira o documento da URL', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa?anos=2012-2020&doc=S0000-00000000000000000`);
+	await esperarMapa(page);
+	await expect(page.getByRole('status').filter({ hasText: 'não está nesta publicação' })).toBeVisible();
+	await expect(page).toHaveURL(/#\/mapa\?anos=2012-2020$/);
+	await expect(page.getByTestId('cartao-documento')).toHaveCount(0);
+});
+
 test('o cartão marca no resumo as evidências da classificação', async ({ page }) => {
 	const problemas = vigiar(page);
 	const id = ids.find((i) => detalhes[i].resumo && Object.keys(detalhes[i].evidencias ?? {}).length)!;

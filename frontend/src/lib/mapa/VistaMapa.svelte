@@ -104,6 +104,17 @@
 	// ---- documento em destaque (cartão)
 	const destaque = $derived(filtros.doc ? (tabela.indice.get(filtros.doc) ?? null) : null);
 	const abrir = (i: number | null) => mudarFiltros({ doc: i === null ? null : tabela.ids[i] });
+	// um link antigo (de outra publicação) pode trazer um documento que não existe aqui: avisa e tira da URL
+	let avisoLink = $state<string | null>(null);
+	let apagarAviso: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		if (!filtros.doc || destaque !== null) return;
+		avisoLink = 'Este documento não está nesta publicação: o link pode ser de outra versão do mapa.';
+		clearTimeout(apagarAviso);
+		apagarAviso = setTimeout(() => (avisoLink = null), 8000);
+		mudarFiltros({ doc: null }, { substituir: true, em: '/mapa' });
+	});
+	$effect(() => () => clearTimeout(apagarAviso));
 
 	// ---- contornos (uma vez) e rótulos (a cada movimento da câmera)
 	const ZOOM_TOPICOS = 1.8; // abaixo, rótulos dos macrotemas; acima, dos tópicos
@@ -297,6 +308,10 @@
 			{/if}
 		{/if}
 	</aside>
+
+	<p class="aviso-link" role="status">
+		{#if avisoLink}<span data-testid="aviso-link">{avisoLink}</span>{/if}
+	</p>
 
 	{#if destaque !== null}
 		<div class="lado" data-sobre-o-mapa>
@@ -492,6 +507,27 @@
 
 	.painel.recolhido {
 		width: auto;
+	}
+
+	.aviso-link {
+		position: absolute;
+		top: 1rem;
+		left: 50%;
+		transform: translateX(-50%);
+		max-width: min(28rem, calc(100% - 2rem));
+		margin: 0;
+		font-size: 0.85rem;
+		pointer-events: none;
+	}
+
+	.aviso-link span {
+		display: block;
+		padding: 0.5rem 0.8rem;
+		border: 1px solid var(--linha-forte);
+		border-radius: var(--raio);
+		background: var(--superficie-alta);
+		color: var(--texto);
+		box-shadow: var(--sombra);
 	}
 
 
