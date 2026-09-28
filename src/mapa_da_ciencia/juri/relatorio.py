@@ -190,7 +190,8 @@ def gerar(projeto: Projeto) -> tuple[Path, NumerosJuri]:
                 ),
                 None,
             )
-            mc_txt = "—" if mc is None else f"p = {num(mc.p, 3)} ({mc.so_a} × {mc.so_b})"
+            p_txt = "p < 0,001" if mc is not None and mc.p < 0.001 else f"p = {num(mc.p, 3)}" if mc else ""
+            mc_txt = "—" if mc is None else f"{p_txt} ({mc.so_a} × {mc.so_b})"
             linhas.append(f"| `{var}` | " + " | ".join(_k(v, ref, p, var) for p in participantes) + f" | {mc_txt} |")
         linhas.append("")
         if any(p.nome == "juri-supervisor" for p in v.participantes):
