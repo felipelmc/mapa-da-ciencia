@@ -20,7 +20,7 @@ from mapa_da_ciencia.documento import Afiliacao, Autor, Documento, Texto, mais_r
 from mapa_da_ciencia.fontes import revistas
 from mapa_da_ciencia.fontes.base import Buscador
 from mapa_da_ciencia.fontes.revistas import Revista
-from mapa_da_ciencia.texto import EMAIL, limpar, normalizar_doi, normalizar_orcid, remover_emails
+from mapa_da_ciencia.texto import contem_email, limpar, normalizar_doi, normalizar_orcid, remover_emails
 
 URL = "https://articlemeta.scielo.org/api/v1"
 TAMANHO_PAGINA = 1000
@@ -238,7 +238,7 @@ def _autores(artigo: dict) -> list[Autor]:
 def _sem_emails(valor: Any) -> Any:
     """Varredura final: remove qualquer e-mail que tenha escapado da lista branca."""
     if isinstance(valor, str):
-        return remover_emails(valor) if EMAIL.search(valor) else valor
+        return remover_emails(valor) if contem_email(valor) else valor
     if isinstance(valor, dict):
         return {k: _sem_emails(v) for k, v in valor.items()}
     if isinstance(valor, list):

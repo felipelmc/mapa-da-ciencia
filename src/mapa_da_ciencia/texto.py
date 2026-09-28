@@ -75,6 +75,10 @@ EMAIL = re.compile(
     r")",
     re.IGNORECASE,
 )
+# Antes de procurar e-mails: sem o hífen suave e os espaços de largura zero (que `limpar` produz a partir de "&shy;"
+# e "&#8203;", e que escondem um endereço na tela: "fulana@uf\xadrj.br" aparece como fulana@ufrj.br), e com o ponto
+# largo como ponto.
+_PARA_BUSCA = {ord(c): None for c in "\u00ad\u200b\u200c\u200d\u2060\ufeff"} | {0xFF0E: "."}
 _TAG = re.compile(r"<[^>]+>")
 _ESPACOS = re.compile(r"\s+")
 _PREFIXO_RESUMO = re.compile(r"^\s*(resumo|abstract|resumen|résumé)\s*[:.\-–—]?\s+", re.IGNORECASE)
@@ -111,18 +115,23 @@ def _sem_email(achado: re.Match[str]) -> str:
 
 def remover_emails(texto: str) -> str:
     """Tira endereços de e-mail de um texto (ex.: afiliações que trazem o e-mail no meio). Na forma ambígua
-    "palavra @dominio.tld", que também é a de um perfil de rede social, tira só o "@dominio.tld"."""
-    # de novo até não sobrar nenhum: um endereço colado ao fim de outro ("fulana @ x.br.joao@y.br") começa no meio
-    # de uma sequência, e o padrão só o acha depois que o primeiro sai
-    while (novo := EMAIL.sub(_sem_email, texto)) != texto:
-        texto = novo
+    "palavra @dominio.tld", que também é a de um perfil de rede social, tira só o "@dominio.tld". Num texto com
+    e-mail, saem também o hífen suave e os espaços de largura zero, e o ponto largo vira ponto."""
+    busca = texto.translate(_PARA_BUSCA)
+    if EMAIL.search(busca):
+        texto = busca
+        # de novo até não sobrar nenhum: um endereço colado ao fim de outro ("fulana @ x.br.joao@y.br") começa no
+        # meio de uma sequência, e o padrão só o acha depois que o primeiro sai
+        while (novo := EMAIL.sub(_sem_email, texto)) != texto:
+            texto = novo
     return _ESPACOS.sub(" ", texto).strip(" ,;")
 
 
 def contem_email(valor: Any) -> bool:
-    """Procura e-mails em qualquer estrutura JSON (usado na varredura final e nos testes)."""
+    """Procura e-mails em qualquer estrutura JSON (usado na varredura final e nos testes), também os escondidos por
+    um hífen suave, um espaço de largura zero ou o ponto largo."""
     if isinstance(valor, str):
-        return bool(EMAIL.search(valor))
+        return bool(EMAIL.search(valor.translate(_PARA_BUSCA)))
     if isinstance(valor, dict):
         return any(contem_email(v) for v in valor.values())
     if isinstance(valor, list | tuple):

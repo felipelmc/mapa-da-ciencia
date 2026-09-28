@@ -177,6 +177,30 @@ def test_forma_ambigua_perde_so_o_dominio(texto, limpo):
     assert contem_email(texto) and remover_emails(texto) == limpo and not contem_email(limpo)
 
 
+@pytest.mark.parametrize(
+    "texto",
+    [
+        "Univ. X, fulana@uf\u00adexemplo.br",  # o hífen suave de "&shy;"
+        "Univ. X, fulana@ufexemplo\u200b.br",  # o espaço de largura zero de "&#8203;"
+        "Univ. X, fu\u200clana@exemplo\u200d.com.br",
+        "Univ. X, fulana@exemplo\u2060.br",
+        "Univ. X, chen@exemplo．edu．tw",  # o ponto largo
+    ],
+)
+def test_email_escondido_por_caractere_invisivel_ou_ponto_largo(texto):
+    """Um endereço que aparece inteiro na tela, mas tem um caractere invisível ou o ponto largo no meio."""
+    assert contem_email(texto)
+    limpo = remover_emails(texto)
+    assert not contem_email(limpo) and "exemplo" not in limpo and limpo == "Univ. X"
+
+
+def test_texto_sem_email_nao_perde_caracteres_invisiveis():
+    """Só um texto com e-mail é normalizado: os outros ficam como estão (a chave do cache da classificação e os
+    offsets das evidências dependem do texto)."""
+    texto = "Política\u00adpública e partici\u200bpação．Fim"
+    assert remover_emails(texto) == texto
+
+
 def test_email_colado_a_outro_tambem_sai():
     """O segundo endereço começa no meio de uma sequência sem espaço: sai numa segunda passada."""
     for texto in ("Univ. X, fulana @ exemplo.br.joao@exemplo.org", "fulana@ exemplo.br-joao@exemplo.org; Rio"):
