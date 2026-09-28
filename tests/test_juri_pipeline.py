@@ -1,0 +1,169 @@
+"""O júri de ponta a ponta com o Ollama falso: votação, deliberação, pedidos ao supervisor, respostas e relatório.
+
+Três "modelos" discordam de propósito: em `abordagem`, cada um escolhe uma categoria (sem maioria, vai para o
+supervisor); em `subarea`, o `qwen3.5:9b` fica sozinho (maioria, com deliberação); no resto, todos concordam.
+"""
+
+import json
+
+import pytest
+import yaml
+
+from mapa_da_ciencia.coleta import coletar
+from mapa_da_ciencia.juri.consolidar import ler_resumo
+from mapa_da_ciencia.juri.pipeline import deliberar_juri, estado
+from mapa_da_ciencia.juri.relatorio import gerar
+from mapa_da_ciencia.juri.supervisor import auditoria, exportar_pedidos, importar_respostas, wilson
+from mapa_da_ciencia.juri.votacao import votar
+from mapa_da_ciencia.llm.perfis import PERFIS
+from mapa_da_ciencia.projeto import Projeto
+from mapa_da_ciencia.validacao import amostra as va
+from mapa_da_ciencia.validacao.metricas import calcular
+
+MEMBROS = ["qwen3.5:4b", "qwen3.5:9b", "gemma4:12b-it-qat"]
+INDICE = {m: i for i, m in enumerate(MEMBROS)}
+
+
+def _resumo_do_pedido(corpo: dict) -> list[str]:
+    documento = next(m["content"] for m in corpo["messages"] if m["role"] == "user")
+    return documento.split("Resumo:", 1)[-1].split()
+
+
+def responder(corpo: dict) -> str:
+    """Cada membro responde de um jeito, na classificação e na deliberação (onde mantém o voto)."""
+    i = INDICE[corpo["model"]]
+    evidencia = " ".join(_resumo_do_pedido(corpo)[:8])
+    saida = {}
+    for var, prop in corpo["format"]["properties"].items():
+        valor = prop["properties"]["valor"]
+        if valor["type"] == "boolean":
+            v: object = True
+        elif valor["type"] == "array":
+            v = [valor["items"]["enum"][0]]
+        elif "enum" in valor:
+            enum = valor["enum"]
+            v = enum[i] if var == "abordagem" else enum[1] if var == "subarea" and i == 1 else enum[0]
+        else:
+            v = "2010–2020"
+        saida[var] = {"evidencia": evidencia, "valor": v}
+    return json.dumps(saida, ensure_ascii=False)
+
+
+@pytest.fixture
+def projeto(tmp_path, apis_falsas):
+    apis_falsas.modelos_ollama["gemma4:12b-it-qat"] = 0.5
+    apis_falsas.responder_chat = responder
+    p = Projeto.criar(
+        tmp_path / "op", modelo="ciencia-politica", perfil=PERFIS["leve"], revistas=["0104-6276"], anos=(2024, 2024)
+    )
+    arquivo = p.raiz / "mapa.yaml"
+    cfg = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
+    cfg["juri"] = {"membros": MEMBROS, "auditoria": 3}
+    cfg.setdefault("validacao", {})["familias"] = {"claude-opus": "claude"}
+    arquivo.write_text(yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8")
+    coletar(p)
+    p = Projeto.abrir(p.raiz)
+    va.sortear(p, n=8)
+    return p
+
+
+def test_juri_de_ponta_a_ponta(projeto, apis_falsas):
+    n_amostra = len(va.ler(projeto).docs)
+    r = votar(projeto)
+    assert set(r.classificados) == set(MEMBROS) and not r.ja_prontos
+    assert votar(projeto).ja_prontos == MEMBROS  # tudo no cache
+
+    chamadas = apis_falsas.chamadas["ollama_chat"]
+    d, resumo = deliberar_juri(projeto)
+    assert d.documentos == n_amostra and d.chamadas == len(MEMBROS) * n_amostra
+    assert apis_falsas.chamadas["ollama_chat"] == chamadas + d.chamadas
+    variaveis = len(projeto.codebook.variaveis)
+    assert sum(sum(e.values()) for e in resumo.etapas.values()) == n_amostra * variaveis
+    assert resumo.etapas["abordagem"]["sem_maioria"] == n_amostra
+    assert resumo.etapas["subarea"]["deliberacao"] == n_amostra and resumo.virou["subarea"] == 0
+    assert resumo.etapas["brasil_como_caso"]["unanime"] == n_amostra
+    assert resumo.pendentes_supervisor == n_amostra
+
+    # a deliberação: mesmo prefixo da classificação, a própria resposta e os pares sem nome
+    deliberacoes = [c for c in apis_falsas.pedidos_chat if len(c["messages"]) == 4]
+    assert len(deliberacoes) == d.chamadas
+    exemplo = deliberacoes[0]
+    classificacao = next(c for c in apis_falsas.pedidos_chat if len(c["messages"]) == 2)
+    assert exemplo["messages"][0] == classificacao["messages"][0]
+    assert set(exemplo["format"]["properties"]) == {"abordagem", "subarea"}
+    texto = json.dumps(exemplo["messages"][3], ensure_ascii=False)
+    assert "Modelo A" in texto and not any(m in texto for m in MEMBROS)
+
+    # retomada: rodar de novo não chama os modelos
+    chamadas = apis_falsas.chamadas["ollama_chat"]
+    d2, _ = deliberar_juri(projeto)
+    assert d2.chamadas == 0 and d2.do_cache == d.chamadas and apis_falsas.chamadas["ollama_chat"] == chamadas
+
+    # pedidos ao supervisor: sem nomes dos modelos, com as instruções
+    pedidos = exportar_pedidos(projeto, lote=5)
+    assert (pedidos.arbitragem, pedidos.auditoria) == (n_amostra, 3)
+    pasta = projeto.raiz / "juri"
+    assert (pasta / "instrucoes-supervisor.md").exists()
+    linhas = [json.loads(x) for f in sorted(pasta.glob("arbitragem-*.jsonl")) for x in f.read_text().splitlines()]
+    assert len(linhas) == n_amostra and not any(m in json.dumps(linhas) for m in MEMBROS)
+    assert all(len(p["candidatos"]) == 3 for p in linhas)
+    auditorias = [json.loads(x) for x in (pasta / "auditoria-01.jsonl").read_text().splitlines()]
+
+    def ev(p):
+        return " ".join(p["resumo"].split()[:5])
+
+    respostas = [
+        {"id": p["id"], "escolha": 2, "evidencia": ev(p), "justificativa": "…", "nenhum_adequado": False}
+        for p in linhas[2:]
+    ]
+    respostas.append({"id": linhas[0]["id"], "escolha": 9, "evidencia": ev(linhas[0])})  # fora dos candidatos
+    respostas.append({"id": linhas[1]["id"], "escolha": 1, "evidencia": "um trecho que não está no texto"})
+    respostas += [{"id": a["id"], "correto": True, "evidencia": ev(a), "justificativa": "ok"} for a in auditorias]
+    arquivo = pasta / "arbitragem-01.respostas.jsonl"
+    arquivo.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in respostas), encoding="utf-8")
+    r = importar_respostas(projeto, [arquivo])
+    assert r.aceitas == n_amostra - 2 + 3 and len(r.recusadas) == 2
+    assert any("escolha" in m for m in r.recusadas) and any("evidência" in m for m in r.recusadas)
+    resumo = ler_resumo(projeto)
+    assert resumo.arbitrados == n_amostra - 2 and resumo.pendentes_supervisor == 2
+    a = auditoria(projeto)
+    assert (a.n, a.erros) == (3, 0)
+    assert exportar_pedidos(projeto).arbitragem == 2  # só o que falta
+
+    # validação: o supervisor e a referência da mesma família ficam marcados como circulares
+    referencia = projeto.raiz / "ref.jsonl"
+    with referencia.open("w", encoding="utf-8") as f:
+        for doc in va.ler(projeto).docs:
+            valores = {v.id: {"valor": "2010–2020" if v.tipo == "texto" else True if v.tipo == "booleana" else
+                              [v.categorias[0].valor] if v.tipo == "multipla" else v.categorias[0].valor}
+                       for v in projeto.codebook.variaveis}  # fmt: skip
+            f.write(json.dumps({"doc": doc, "respostas": valores}, ensure_ascii=False) + "\n")
+    va.importar(projeto, referencia, "claude-opus", tipo="referencia")
+    v = calcular(projeto)
+    nomes = {p.nome for p in v.participantes}
+    assert {"juri-r1", "juri", "juri-supervisor", *MEMBROS} <= nomes
+    assert v.metrica("abordagem", "claude-opus", "juri-supervisor").circular
+    assert not v.metrica("abordagem", "claude-opus", "juri").circular
+    destino, numeros = gerar(projeto)
+    texto = destino.read_text(encoding="utf-8")
+    assert "Limite superior" in texto and "(circular)" in texto and numeros.referencia == "claude-opus"
+    assert numeros.deliberacao["qwen3.5:9b"]["mudou"] == 0
+    assert estado(projeto).proximo.startswith("mapa juri exportar-pedidos")
+
+
+def test_wilson():
+    assert wilson(0, 0) is None
+    baixo, alto = wilson(0, 40)
+    assert baixo == 0 and 0.08 < alto < 0.09
+    baixo, alto = wilson(4, 40)
+    assert 0.03 < baixo < 0.05 and 0.22 < alto < 0.24
+
+
+def test_config_do_juri():
+    from mapa_da_ciencia.config import ConfigJuri, ErroConfig  # noqa: F401
+
+    with pytest.raises(ValueError):
+        ConfigJuri(membros=["qwen3.5:9b"])
+    with pytest.raises(ValueError):
+        ConfigJuri(membros=["qwen3.5:9b", "qwen3.5:9b"])
+    assert ConfigJuri().supervisor.modo == "arquivo" and not ConfigJuri().supervisor.enviar_textos
