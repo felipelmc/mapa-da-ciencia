@@ -58,7 +58,7 @@ O que a grade mostra:
 
 - **O ruído não se concentra** em anos nem em revistas: fica entre 28% e 38% por revista (mais na *RBCS*, na *Contexto Internacional* e na *Lua Nova*) e entre 26% e 40% por ano, com exceção de 2010 (45%).
 - **As séries anuais dos tópicos quase não mudam** com a reatribuição: a correlação entre a proporção anual de cada tópico só com o núcleo e com os reatribuídos tem mediana 0,94 (mínima 0,74), e a maior diferença numa proporção anual é de 3,9 pontos percentuais (mediana 1,1).
-- **A estabilidade cai onde deveria:** o ARI entre sementes é 0,89 no núcleo e 0,79 contando os reatribuídos, que são documentos de fronteira. Por isso a estabilidade publicada é a do núcleo, e a atribuição por vizinhança fica marcada.
+- **A estabilidade cai onde deveria:** o ARI entre sementes é 0,89 no núcleo e 0,78 contando os reatribuídos, que são documentos de fronteira. Por isso a estabilidade publicada é a do núcleo, e a atribuição por vizinhança fica marcada.
 - Ficam sem tópico 19 dos 28 documentos só com título, 8 dos 88 com resumo em reserva e 440 dos 4.159 com resumo em inglês.
 
 Custo: kNN exato em 0,2 s; UMAP de 5 dimensões em 3,5 a 5 s por semente (9 s na primeira, com a compilação do numba); HDBSCAN em menos de 1 s. A grade inteira (80 combinações × 3 sementes) leva cerca de 45 s, com pico de 0,77 GB de memória.
