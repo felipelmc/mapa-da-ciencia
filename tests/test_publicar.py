@@ -100,6 +100,11 @@ def test_varredura_recusa_email_e_orcid(tmp_path):
     (dados / "citacoes.json").write_text('{"canone": [{"titulo": "Uma obra (0000-0002-1825-0097)"}]}')
     with pytest.raises(ErroConfig, match=r"ORCID \(0000-0002-1825-0097\) apareceu em citacoes\.json"):
         conferir_privacidade(dados)
+    # a URL do orcid.org (como o OpenAlex devolve) e a forma sem hífens também
+    for forma in ("https://orcid.org/0000-0002-1825-0097", "0000000218250097"):
+        (dados / "citacoes.json").write_text(f'{{"autor": "{forma}"}}')
+        with pytest.raises(ErroConfig, match=r"ORCID \(0000-0002-1825-0097\)"):
+            conferir_privacidade(dados)
     (dados / "citacoes.json").write_text('{"nome": "fulano@exemplo.org"}')
     with pytest.raises(ErroConfig, match="e-mail"):
         conferir_privacidade(dados)
