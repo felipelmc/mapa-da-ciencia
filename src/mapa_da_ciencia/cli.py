@@ -1139,8 +1139,9 @@ def _revisar_redes(p: Projeto, limite: int) -> None:
         console.print("\n[bold green]Nada a revisar[/]: nenhum homônimo, grafia variante ou ORCID em dúvida.")
         return
     tabela = Table("O quê", "Pessoa A", "Pessoa B", show_lines=True, title_justify="left")
-    mostrando = f"mostrando {num(len(r.itens), 0)} de {num(r.total, 0)}"
-    tabela.title = f"Para revisar: {resumo_por_tipo(r.por_tipo)} ({mostrando}; use --limite para ver mais)"
+    tabela.title = f"Para revisar: {resumo_por_tipo(r.por_tipo)}"
+    if len(r.itens) < r.total:
+        tabela.title += f" (mostrando {num(len(r.itens), 0)} de {num(r.total, 0)}; use --limite para ver mais)"
     for it in r.itens:
         tabela.add_row(escape(NOMES_DOS_TIPOS.get(it.tipo, it.tipo)), escape(descrever(it.a)), escape(descrever(it.b)))
     console.print()

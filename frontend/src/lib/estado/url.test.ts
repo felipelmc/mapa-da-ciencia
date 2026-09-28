@@ -206,6 +206,12 @@ describe('recorte e parâmetros das vistas do M4', () => {
 		expect(escreverFiltros(lerFiltros(new URLSearchParams('rede=coautoria&no=p0001'))).toString()).toBe('no=p0001');
 		// e nenhuma das duas faz parte do recorte que o trilho leva
 		expect(escreverFiltros(recorteDe(f)).toString()).toBe('');
+		// as duplas e os trios isolados à mostra também vão para o link (e só quando marcados)
+		const duplas = lerFiltros(new URLSearchParams('duplas=1&no=p0001'));
+		expect(duplas.duplas).toBe(true);
+		expect(escreverFiltros(duplas).toString()).toBe('no=p0001&duplas=1');
+		expect(lerFiltros(new URLSearchParams('duplas=sim')).duplas).toBe(false);
+		expect(escreverFiltros(recorteDe(duplas)).toString()).toBe('');
 	});
 
 	it('o recorte leva só as chaves compartilhadas', () => {

@@ -142,7 +142,9 @@
 		for (let i = 0; i < nos.n; i += 1) tamanho.set(achar(i), (tamanho.get(achar(i)) ?? 0) + 1);
 		return Int32Array.from({ length: nos.n }, (_, i) => tamanho.get(achar(i))!);
 	});
-	let mostrarPequenos = $state(false);
+	// na URL (`duplas=1`), como o resto da vista: o link reproduz a tela
+	const mostrarPequenos = $derived(filtros.duplas);
+	const mostrarDuplas = (sim: boolean) => mudarFiltros({ duplas: sim }, { em });
 	const escondidos = $derived.by(() => {
 		let n = 0;
 		for (let i = 0; i < nos.n; i += 1) if (Number.isFinite(nos.x[i]) && tamanhoDoComponente[i] < MINIMO_VISIVEL) n += 1;
@@ -151,7 +153,7 @@
 	// um nó aberto num grupo pequeno (pela busca ou pelo link) mostra os grupos pequenos
 	$effect(() => {
 		const i = selecionado;
-		if (i !== null && tamanhoDoComponente[i] < MINIMO_VISIVEL) untrack(() => (mostrarPequenos = true));
+		if (i !== null && tamanhoDoComponente[i] < MINIMO_VISIVEL && !untrack(() => filtros.duplas)) mostrarDuplas(true);
 	});
 	const visivel = (i: number) => mostrarPequenos || tamanhoDoComponente[i] >= MINIMO_VISIVEL;
 	const xVisivel = $derived(Float64Array.from(nos.x, (v, i) => (visivel(i) ? v : NaN)));
@@ -191,14 +193,18 @@
 			const [sx, sy, n] = soma.get(c) ?? [0, 0, 0];
 			soma.set(c, [sx + nos.x[i], sy + nos.y[i], n + 1]);
 		}
-		return [...nos.comunidades.values()]
+		const escolhidas = [...nos.comunidades.values()]
 			.filter((c) => (soma.get(c.id)?.[2] ?? 0) >= 3)
 			.sort((a, b) => b.n - a.n)
-			.slice(0, MAXIMO_ROTULOS)
-			.map((c) => {
-				const [sx, sy, n] = soma.get(c.id)!;
-				return { id: String(c.id), texto: rotuloCurto(c.rotulo), x: sx / n, y: sy / n };
-			});
+			.slice(0, MAXIMO_ROTULOS);
+		// duas comunidades com o mesmo primeiro tópico levam o segundo, para os rótulos não se repetirem
+		const primeiros = escolhidas.map((c) => rotuloCurto(c.rotulo));
+		return escolhidas.map((c, k) => {
+			const [sx, sy, n] = soma.get(c.id)!;
+			const repetido = primeiros.filter((t) => t === primeiros[k]).length > 1;
+			const texto = repetido ? rotuloCurto(c.rotulo.split(' · ').slice(1).join(' · ') || c.rotulo) : primeiros[k];
+			return { id: String(c.id), texto, x: sx / n, y: sy / n };
+		});
 	});
 
 	// ---- o nó aberto (pela URL)
@@ -353,8 +359,8 @@
 
 <p class="lide" data-testid="lide-redes">
 	{#if pessoas}
-		{contar(noRecorte, 'documento')} no recorte, com {contar(ativos, 'pessoa')} ({formatarInteiro(desenhadosNoRecorte)}
-		com coautor no corpus, as desenhadas) e {formatarInteiro(recorte.n)}
+		{contar(noRecorte, 'documento')} no recorte, com {contar(ativos, 'pessoa')}, {formatarInteiro(desenhadosNoRecorte)}
+		delas desenhadas (as que têm coautor no corpus), e {formatarInteiro(recorte.n)}
 		{recorte.n === 1 ? 'par de coautores' : 'pares de coautores'}. Duas pessoas ficam ligadas quando assinam juntas um
 		documento; num artigo de n autores, cada par ganha 1/(n−1) de peso, e assim cada pessoa distribui no máximo 1 por
 		artigo.
@@ -396,7 +402,12 @@
 		/>
 		{#if escondidos}
 			<label class="pequenos">
-				<input type="checkbox" bind:checked={mostrarPequenos} data-testid="mostrar-pequenos" />
+				<input
+					type="checkbox"
+					checked={mostrarPequenos}
+					onchange={(e) => mostrarDuplas(e.currentTarget.checked)}
+					data-testid="mostrar-pequenos"
+				/>
 				Mostrar as duplas e os trios isolados ({contar(escondidos, pessoas ? 'pessoa' : 'instituição', pessoas ? 'pessoas' : 'instituições')})
 			</label>
 		{/if}

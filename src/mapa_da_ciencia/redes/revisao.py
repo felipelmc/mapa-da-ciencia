@@ -206,4 +206,7 @@ def bloco_yaml(itens: list[ItemRevisao]) -> str:
 
 
 def resumo_por_tipo(por_tipo: dict[str, Any]) -> str:
-    return ", ".join(f"{n} {NOMES_DOS_TIPOS.get(t, t)}" for t, n in sorted(por_tipo.items(), key=lambda kv: kv[0]))
+    """ "10 homônimos, 66 grafias variantes, …", na ordem da tabela da revisão."""
+    ordem = list(NOMES_DOS_TIPOS)
+    itens = sorted(por_tipo.items(), key=lambda kv: (ordem.index(kv[0]) if kv[0] in ordem else len(ordem), kv[0]))
+    return ", ".join(f"{n} {NOMES_DOS_TIPOS.get(t, t)}" for t, n in itens)

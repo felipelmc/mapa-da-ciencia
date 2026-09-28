@@ -80,7 +80,7 @@ for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 		await expect(page.getByTestId('lide-redes')).toContainText(`${inteiro(agregados.arestas_coautoria)} pares de coautores`);
 		await expect(page.getByTestId('metricas-rede')).toContainText(`${inteiro(redes.metricas.coautoria.arestas)} pares`);
 		// o lide e a nota contam as mesmas pessoas com coautor (as desenhadas), com as métricas explicadas
-		await expect(page.getByTestId('lide-redes')).toContainText(`(${inteiro(redes.metricas.coautoria.nos)} com coautor no corpus`);
+		await expect(page.getByTestId('lide-redes')).toContainText(`${inteiro(redes.metricas.coautoria.nos)} delas desenhadas`);
 		await expect(page.getByTestId('metricas-rede')).toContainText(`${inteiro(redes.metricas.coautoria.nos)} pessoas com coautor`);
 		await expect(page.getByTestId('metricas-rede')).toContainText('grupos ligados por algum caminho');
 		expect(await page.getByTestId('metricas-rede').innerText()).not.toMatch(/[\p{L}\d)]\.\p{Lu}/u);
@@ -258,6 +258,18 @@ test('estados: os arcos são os pares do gabarito, e clicar numa UF põe no reco
 	await expect(arcos).toHaveCount(agregados.uf_pares.length);
 	// as UFs com as parcerias mais fortes têm a sigla escrita ao lado do ponto
 	await expect(page.getByTestId('sigla-uf').first()).toBeVisible();
+	// a dica de uma UF chama o exterior pelo nome (e não "EX")
+	const paresUf = agregados.uf_pares as [string, string, number, number][];
+	const parceirasDe = (k: string) =>
+		paresUf
+			.filter((p) => p[0] === k || p[1] === k)
+			.sort((p, q) => q[2] - p[2])
+			.map((p) => (p[0] === k ? p[1] : p[0]));
+	const uf = [...new Set(paresUf.flatMap((p) => [p[0], p[1]]))].find((k) => k !== 'EX' && parceirasDe(k).slice(0, 3).includes('EX'))!;
+	await page.locator(`[data-testid="uf-rede"][data-chave="${uf}"]`).focus();
+	const dica = page.locator('.dica');
+	await expect(dica).toContainText('Exterior (');
+	await expect(dica).not.toContainText('EX (');
 	// o arco mais grosso é a parceria de maior peso do gabarito, com o mesmo peso
 	const [a, b, peso] = [...agregados.uf_pares].sort((p: number[], q: number[]) => q[2] - p[2])[0];
 	const pares = await arcos.evaluateAll((els) => els.map((e) => [e.getAttribute('data-par'), Number(e.getAttribute('data-peso'))] as const));

@@ -254,6 +254,13 @@ def test_id_publicado_nao_se_liga_ao_orcid():
     assert re.fullmatch(r"p[0-9a-f]{10}", publicado)
 
 
+def test_resumo_da_revisao_na_ordem_da_tabela():
+    from mapa_da_ciencia.redes.revisao import resumo_por_tipo
+
+    resumo = resumo_por_tipo({"dois_orcids": 17, "variante": 66, "homonimo": 10, "orcid_retirado": 5})
+    assert resumo == "10 homônimos, 66 grafias variantes, 17 dois ORCIDs, 5 ORCID de outro nome"
+
+
 def test_frases_da_documentacao_batem_com_as_contas():
     docs = Path(__file__).resolve().parent.parent / "docs"
     guia = " ".join((docs / "guias" / "ler-as-redes.md").read_text(encoding="utf-8").split())
@@ -619,7 +626,12 @@ def test_revisao_com_evidencias_e_bloco_que_funciona(projeto):
     r = CliRunner().invoke(app, ["redes", "--revisar", "-P", str(projeto.raiz)], env={"COLUMNS": "200"})
     assert r.exit_code == 0, r.output
     # as evidências de cada lado, e o bloco inteiro: o Rich não pode engolir os colchetes como marcação
-    assert "Celso Amorim" in r.output and "doc(s)" in r.output and "mostrando" in r.output
+    assert "Celso Amorim" in r.output and "doc(s)" in r.output
+    assert "use --limite" not in r.output  # tudo listado: nada a pedir
+    curto = CliRunner().invoke(
+        app, ["redes", "--revisar", "--limite", "1", "-P", str(projeto.raiz)], env={"COLUMNS": "200"}
+    )
+    assert "(mostrando 1 de" in curto.output or "Para revisar: 1 " in curto.output
     linha = next(x for x in r.output.splitlines() if "openalex:A9000000" in x and "# - [" in x)
     assert re.search(r"# - \[openalex:A9000000, openalex:A9000001\]  # Celso Amorim", linha)
     bloco = r.output[r.output.index("# Descomente") :]

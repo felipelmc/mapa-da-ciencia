@@ -120,7 +120,7 @@
 		return [
 			nome(sobre),
 			`${formatarDecimal(forca.get(sobre) ?? 0)} de peso em ${formatarInteiro(lista.length)} parcerias no recorte`,
-			...(lista.length ? [`Mais com: ${lista.slice(0, 3).map(([x, p]) => `${x} (${formatarDecimal(p)})`).join(', ')}`] : [])
+			...(lista.length ? [`Mais com: ${lista.slice(0, 3).map(([x, p]) => `${x === EXTERIOR ? 'Exterior' : x} (${formatarDecimal(p)})`).join(', ')}`] : [])
 		];
 	});
 	const rotuloDe = (k: string) =>

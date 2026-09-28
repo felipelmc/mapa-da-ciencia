@@ -147,7 +147,7 @@
 			</p>
 			<p>
 				O maior grupo ligado fica em cima; embaixo, os grupos menores, e as duplas e os trios isolados só aparecem
-				se você pedir. Duas ressalvas: <strong>a distância no desenho não é uma medida</strong> (dois nós perto
+				se você pedir (o pedido vai para o link, e o desenho se reenquadra para caber todos). Duas ressalvas: <strong>a distância no desenho não é uma medida</strong> (dois nós perto
 				costumam estar no mesmo grupo, mas dois nós longe podem estar a um passo um do outro), e
 				<strong>tamanho não é importância</strong>: um nó grande tem mais documentos no corpus, e mais coautores não
 				quer dizer mais relevância. A rede só vê o que está no corpus.
