@@ -487,3 +487,41 @@ test('no celular, a seção aberta fica à vista na barra de baixo', async ({ br
 	await expect(trilho(page).locator('[aria-current="page"]')).toBeInViewport({ ratio: 0.9 });
 	await contexto.close();
 });
+
+/** `true` se o centro do elemento está na tela e é ele (ou um filho dele) que recebe o clique ali. */
+const clicavel = (loc: import('@playwright/test').Locator) =>
+	loc.evaluate((el) => {
+		const c = el.getBoundingClientRect();
+		const [x, y] = [c.left + c.width / 2, c.top + c.height / 2];
+		if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) return false;
+		const topo = document.elementFromPoint(x, y);
+		return !!topo && (topo === el || el.contains(topo));
+	});
+
+test('rolando a página, a barra do recorte fica abaixo da barra do topo, e a Ajuda continua clicável', async ({ page }) => {
+	await page.setViewportSize({ width: 1440, height: 700 });
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(h1(page)).toHaveText('Tópicos');
+	await page.mouse.wheel(0, 1500);
+	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(300);
+	await expect.poll(() => clicavel(page.getByRole('link', { name: /Ajuda/ }).first())).toBe(true);
+	await expect.poll(() => clicavel(page.getByTestId('linha-do-tempo'))).toBe(true);
+});
+
+test('no celular, o "Baixar" da última figura não fica embaixo da barra de navegação', async ({ browser }) => {
+	const contexto = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+	const page = await contexto.newPage();
+	await page.goto(`${url('RAIZ')}#/geografia`);
+	await expect(h1(page)).toHaveText('Geografia');
+	await expect(page.locator('[data-testid^="figura-"]:not([data-pronto])')).toHaveCount(0);
+	const ultimo = page.getByTestId('abrir-exportar').last();
+	await ultimo.scrollIntoViewIfNeeded();
+	await ultimo.click();
+	const baixar = page.getByTestId('baixar-figura');
+	await expect(baixar).toBeVisible();
+	await expect.poll(() => clicavel(baixar)).toBe(true);
+	const caixa = (await page.locator('[aria-label="Exportar a figura"]').boundingBox())!;
+	expect(caixa.x).toBeGreaterThanOrEqual(0);
+	expect(caixa.x + caixa.width).toBeLessThanOrEqual(375);
+	await contexto.close();
+});

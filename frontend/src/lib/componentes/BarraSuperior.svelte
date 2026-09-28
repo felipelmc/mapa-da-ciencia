@@ -9,6 +9,15 @@
 
 	const manifesto = $derived(projeto.manifesto);
 
+	// a barra do recorte gruda logo abaixo desta (e não em cima dela) ao rolar a página: a altura real vai para a
+	// variável `--altura-barra` (muda com a letra e, no celular, com a quebra do título)
+	let altura = $state(0);
+	$effect(() => {
+		const estilo = document.documentElement.style;
+		if (altura) estilo.setProperty('--altura-barra', `${altura}px`);
+		return () => estilo.removeProperty('--altura-barra');
+	});
+
 	// Resumo do recorte: só entra o que o projeto já tem.
 	const recorte = $derived.by(() => {
 		const partes = [formatarPeriodo(manifesto.recorte.anos)];
@@ -20,7 +29,7 @@
 	});
 </script>
 
-<header class="barra transicao-tema">
+<header class="barra transicao-tema" bind:offsetHeight={altura}>
 	<div class="identidade">
 		<p class="titulo">
 			<span class="titulo-texto">{manifesto.projeto.titulo}</span>

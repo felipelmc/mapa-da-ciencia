@@ -207,7 +207,8 @@
 <style>
 	.recorte {
 		position: sticky;
-		top: 0;
+		/* logo abaixo da barra do topo, que também gruda: antes as duas grudavam em 0, e esta cobria a outra */
+		top: var(--altura-barra, var(--barra-altura));
 		z-index: 20;
 		grid-area: recorte;
 		border-bottom: 1px solid var(--linha);

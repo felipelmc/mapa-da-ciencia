@@ -18,6 +18,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Corrigido
 
+- rolando a página, a barra do recorte gruda logo abaixo da barra do topo, em vez de cobri-la (os botões Tema e Ajuda ficavam inacessíveis); no celular, o painel de exportação vira uma folha acima da barra de navegação, que cobria o "Baixar" da última figura.
 - painel: quando a API das métricas da validação falha, a vista mostra o erro (com "Tentar de novo"), em vez de mostrar em silêncio as métricas antigas do `validacao.json`; as cópias que o iCloud cria nos resultados da classificação (`… 2.json`) não são mais lidas como resultados.
 - painel: um pedido inválido à API (por exemplo, sortear uma amostra de 0 documentos) volta com a mensagem em português, e não "Unprocessable Entity".
 - `mapa status` e a linha das etapas do painel: as contagens com acento ("57 tópicos", "7.242 vínculos") e a duração legível ("10 h 5 min", em vez de "36.329 s").
