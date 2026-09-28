@@ -189,3 +189,29 @@ def test_somente_amostra_com_a_versao_nova_fica_a_parte_e_entra_nas_metricas(pro
     assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb).modelo.endswith("@novo00000000")
     assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb, somente_amostra=True) is None
     assert [p.nome for p in calcular(projeto, reamostras=10).participantes] == ["qwen3.5:4b"]
+
+
+def test_codebook_editado_no_meio_da_etapa_nao_muda_o_hash_do_manifesto(projeto, monkeypatch):
+    """O codebook.yaml salvo no editor enquanto a classificação roda: o manifesto registra o codebook que a etapa
+    usou, o mesmo do resultado."""
+    import os
+
+    from mapa_da_ciencia.classificacao.executor import Classificador
+
+    antes = projeto.codebook.hash()
+    classificar, cb = Classificador.classificar, projeto.raiz / "codebook.yaml"
+
+    def editando(self, textos):
+        for i, c in enumerate(classificar(self, textos)):
+            if i == 3:
+                cb.write_text(
+                    cb.read_text(encoding="utf-8").replace('versao: "0.1"', 'versao: "0.2"'), encoding="utf-8"
+                )
+                os.utime(cb, ns=(cb.stat().st_atime_ns, cb.stat().st_mtime_ns + 10**9))
+            yield c
+
+    monkeypatch.setattr(Classificador, "classificar", editando)
+    mapa.classificar(projeto, progresso=False)
+    assert projeto.codebook.hash() != antes  # a edição chegou ao projeto
+    assert Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", antes).hash_codebook == antes
+    assert ultima_execucao(projeto, "classificacao")["hash_codebook"] == antes

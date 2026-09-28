@@ -33,10 +33,16 @@ def registrar_execucao(
     contagens: dict[str, int] | None = None,
     modelos: dict[str, str] | None = None,
     parametros: dict[str, Any] | None = None,
+    hash_codebook: str | None = None,
 ) -> Path:
-    """Grava o manifesto de uma execução concluída e devolve o caminho do arquivo."""
+    """Grava o manifesto de uma execução concluída e devolve o caminho do arquivo. `hash_codebook` é o do codebook
+    que a etapa usou (lido no começo dela); sem ele, vale o do arquivo agora."""
     if etapa not in ETAPAS:
         raise ValueError(f"etapa desconhecida: {etapa}")
+    if etapa not in ("classificacao", "validacao"):
+        hash_codebook = None
+    elif hash_codebook is None:
+        hash_codebook = projeto.codebook.hash()
     manifesto = {
         "etapa": etapa,
         "versao_pacote": __version__,
@@ -46,7 +52,7 @@ def registrar_execucao(
         "fim": fim.isoformat(),
         "duracao_s": round((fim - inicio).total_seconds(), 3),
         "hash_config": _hash_arquivo(projeto.raiz / ARQUIVO_CONFIG),
-        "hash_codebook": projeto.codebook.hash() if etapa in ("classificacao", "validacao") else None,
+        "hash_codebook": hash_codebook,
         "modelos": modelos or {},
         "parametros": parametros or {},
         "contagens": contagens or {},

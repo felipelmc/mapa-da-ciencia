@@ -295,6 +295,7 @@ def classificar(
             # False quando o resultado completo anterior foi mantido: esta execução não é a dos dados
             "gravado": gravou,
         },
+        hash_codebook=resultado.hash_codebook,  # o do começo da etapa, mesmo que o arquivo mude no meio dela
     )
     resumo.avisos += avisos_gravacao
     if principal and (gravou or resultado.somente_amostra):  # a amostra à parte entra nas métricas do painel
