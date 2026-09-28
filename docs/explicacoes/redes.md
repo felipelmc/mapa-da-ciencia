@@ -16,10 +16,10 @@ etapa junta as autorias em pessoas, em ordem de confiança:
 2. o **mesmo id de autor no OpenAlex** e o **mesmo ORCID** são a mesma pessoa, ainda que ela acabe com dois ORCIDs
    (no piloto, isso era a mesma pessoa com dois registros no ORCID); um id do OpenAlex nunca fica em duas pessoas;
 3. uma autoria sem id nem ORCID entra na pessoa de mesmo nome, **se houver só uma**;
-4. dois homônimos, ou duas grafias variantes do mesmo nome ("Marjorie Marona" e "Marjorie Corrêa Marona"), se juntam
+4. dois homônimos, ou duas grafias variantes do mesmo nome ("Maria Souza" e "Maria Lima Souza"), se juntam
    se tiverem **um coautor ou uma instituição em comum**, desde que os nomes de um lado se comparem com todos os do
-   outro, ou que um nome por extenso contenha todos ("Francisco Mata Machado Tavares" junta "Francisco Tavares" e
-   "Francisco Mata Machado"). Assim, "Ana Silva" não emenda "Ana Maria Silva" com "Ana Paula Silva".
+   outro, ou que um nome por extenso contenha todos ("João Pedro Almeida Costa" junta "João Costa" e
+   "João Pedro Almeida"). Assim, "Ana Silva" não emenda "Ana Maria Silva" com "Ana Paula Silva".
 
 O que sobra fica separado e aparece em `mapa redes --revisar`, com as evidências de cada lado (documentos, anos,
 revistas, instituições, coautores e um título) e um bloco para o `pessoas.yaml` do projeto: `fundir`, `nao_fundir`

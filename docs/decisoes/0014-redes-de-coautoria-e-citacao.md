@@ -64,12 +64,12 @@ que a regra supunha:
 
 - **O ORCID errava para os dois lados.** Os 8 ids do OpenAlex que o conflito de ORCIDs repartia em duas pessoas não
   eram homônimos fundidos: 5 eram a mesma pessoa com dois registros no ORCID, e 3 vinham de um ORCID trocado na fonte
-  (o de um coautor). E a união por ORCID juntava 8 autorias de nomes incompatíveis ("Marcelo Kunrath Silva" com o
-  ORCID de "Matheus Mazzilli Pereira"), com arestas falsas; em 2 delas a ArticleMeta e o OpenAlex discordavam do
+  (o de um coautor). E a união por ORCID juntava 8 autorias de nomes incompatíveis (um autor com o ORCID de um
+  coautor), com arestas falsas; em 2 delas a ArticleMeta e o OpenAlex discordavam do
   ORCID, e o código preferia o da ArticleMeta.
 - **Manter homônimos separados errava quase sempre.** Dos 32 pares de homônimos exatos que ficavam separados, 30
   eram a mesma pessoa (93,8%, IC95% de Wilson 79,9%–98,3%); numa amostra de 30 dos 81 pares de grafias variantes
-  ("Marjorie Marona" e "Marjorie Corrêa Marona"), 12 eram (40%, IC95% 24,6%–57,7%). Já as fusões por nome não
+  (como "Maria Souza" e "Maria Lima Souza"), 12 eram (40%, IC95% 24,6%–57,7%). Já as fusões por nome não
   erraram (0 de 36). O erro dominante é a **fragmentação**: o OpenAlex dá vários ids à mesma pessoa.
 - **A instituição separa bem.** Juntar os homônimos com uma instituição casada em comum acertaria 22 dos 30 sem
   nenhuma fusão errada; nas variantes da amostra, 7 dos 12, também sem fusão errada.
@@ -87,16 +87,15 @@ Daí as regras de agora:
    coautor **ou uma instituição** em comum (as do OpenAlex, com a linhagem, e as casadas pela geografia), desde que
    todos os nomes de um grupo sejam comparáveis com todos os do outro: "Ana Silva" não emenda "Ana Maria Silva" com
    "Ana Paula Silva". Uma grafia curta não barra a união quando um nome por extenso (sem iniciais) contém todos os
-   outros: "Francisco Mata Machado Tavares" junta "Francisco Mata Machado" e "Francisco Tavares".
+   outros: "João Pedro Almeida Costa" junta "João Pedro Almeida" e "João Costa".
 
 Medido com os mesmos julgamentos (os casos casados pelas autorias, na cópia do piloto): dos 30 pares de homônimos que
 eram a mesma pessoa, 25 agora se juntam, e os 2 que eram pessoas diferentes continuam separados; das variantes da
 amostra, 7 dos 12 se juntam, nenhuma das 18 distintas; os 8 ids repartidos e as 8 autorias com ORCID trocado estão
 corrigidos, e a varredura de fusões suspeitas (nomes incompatíveis na mesma pessoa) acha 0 casos, contra 8 antes
-(fora as grafias curtas juntadas de propósito por um nome por extenso, como "Rafael Lima" e "Rafael Mesquita" em
-"Rafael Mesquita de Souza Lima": 2 no piloto). Das 36 fusões por nome, 35 continuam; a outra virou um par de
+(fora as grafias curtas juntadas de propósito por um nome por extenso: 2 no piloto). Das 36 fusões por nome, 35 continuam; a outra virou um par de
 homônimos na revisão, porque a autoria ganhou um id do OpenAlex com o alinhamento novo. Os homônimos sem coautor nem
-instituição em comum (5 dos 30, como "Celso Amorim") continuam na revisão: um nome igual sozinho não basta, porque os
+instituição em comum (5 dos 30) continuam na revisão: um nome igual sozinho não basta, porque os
 dois pares distintos também eram nomes iguais.
 
 ## Números do piloto

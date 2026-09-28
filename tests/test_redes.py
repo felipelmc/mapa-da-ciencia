@@ -119,11 +119,11 @@ def test_nome_exibido_sem_caixa_alta():
 
 def test_orcid_conferido_pelo_nome():
     docs = [
-        _doc("d1", [("Matheus Mazzilli Pereira", "A2", ORCID_2), ("Ana Lima", "A9", None)]),
-        _doc("d2", [("Matheus Mazzilli Pereira", "A2", ORCID_2)]),
-        _doc("d3", [("Marcelo Kunrath Silva", "A1", ORCID_1)]),
+        _doc("d1", [("Pedro Alves Rocha", "A2", ORCID_2), ("Ana Lima", "A9", None)]),
+        _doc("d2", [("Pedro Alves Rocha", "A2", ORCID_2)]),
+        _doc("d3", [("Marcos Teixeira Silva", "A1", ORCID_1)]),
         # um ORCID trocado na fonte: o de Matheus na autoria de Marcelo (que tem o id do OpenAlex dele)
-        _doc("d4", [("Marcelo Kunrath Silva", "A1", ORCID_2), ("Rui Dias", "A8", None)]),
+        _doc("d4", [("Marcos Teixeira Silva", "A1", ORCID_2), ("Rui Dias", "A8", None)]),
         # ArticleMeta e OpenAlex discordam do ORCID de Rui: nenhum dos dois vale
         _doc("d5", [("Rui Dias", "A8", ORCID_1, None, ORCID_3)]),
     ]
@@ -134,7 +134,7 @@ def test_orcid_conferido_pelo_nome():
     assert [(i.autorias[k].id, o) for k, o in i.orcids_retirados] == [("d4#0", ORCID_2)]
     assert i.orcids_divergentes == 1 and i.autorias[[a.id for a in i.autorias].index("d5#0")].orcid is None
     matheus = next(p for p in i.pessoas if p.interno == "openalex:A2")
-    assert matheus.nome == "Matheus Mazzilli Pereira" and len(matheus.autorias) == 2
+    assert matheus.nome == "Pedro Alves Rocha" and len(matheus.autorias) == 2
 
 
 def test_homonimos_e_variantes_com_instituicao_ou_coautor_em_comum():
@@ -143,8 +143,8 @@ def test_homonimos_e_variantes_com_instituicao_ou_coautor_em_comum():
         _doc("d1", [("Fabiano Santos", "A1", None, "I1")]),
         _doc("d2", [("Fabiano Santos", "A2", ORCID_1, "I1")]),
         # grafia variante com a mesma instituição
-        _doc("d3", [("Marjorie Marona", "A3", None, "I2")]),
-        _doc("d4", [("Marjorie Correa Marona", "A4", None, "I2")]),
+        _doc("d3", [("Maria Souza", "A3", None, "I2")]),
+        _doc("d4", [("Maria Lima Souza", "A4", None, "I2")]),
         # homônimos com um coautor em comum (e ORCIDs diferentes, que não impedem mais)
         _doc("d5", [("Tiago Lopes", "A5", ORCID_2), ("Marcos Maio", "A7", None)]),
         _doc("d6", [("Tiago Lopes", "A6", ORCID_3), ("Marcos Maio", "A7", None)]),
@@ -651,7 +651,7 @@ def test_erro_do_pessoas_yaml_mostra_o_exemplo_entre_colchetes(projeto):
 
     from mapa_da_ciencia.cli import app
 
-    (projeto.raiz / "pessoas.yaml").write_text("fundir:\n  - openalex:A5034166995\n", encoding="utf-8")
+    (projeto.raiz / "pessoas.yaml").write_text("fundir:\n  - openalex:A5000000099\n", encoding="utf-8")
     try:
         r = CliRunner().invoke(app, ["redes", "-P", str(projeto.raiz)], env={"COLUMNS": "200"})
     finally:

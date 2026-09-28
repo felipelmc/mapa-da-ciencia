@@ -13,7 +13,7 @@ ADR 0014):
    para a revisão, e um id do OpenAlex nunca fica em duas pessoas (salvo um `nao_fundir` explícito);
 2. uma autoria sem id nem ORCID entra na pessoa com o mesmo nome, se houver exatamente uma;
 3. duas pessoas com o mesmo nome, ou com grafias variantes (o mesmo primeiro nome, e as partes de um nome contidas
-   nas do outro: "Marjorie Marona" e "Marjorie Corrêa Marona"), se juntam quando têm um coautor ou uma instituição
+   nas do outro: "Maria Souza" e "Maria Lima Souza"), se juntam quando têm um coautor ou uma instituição
    em comum, e desde que todo nome de uma seja comparável com todo nome da outra, aceitas as iniciais (assim "Ana
    Silva" não emenda "Ana Maria Silva" com "Ana Paula Silva", e "J. Feres Jr." continua comparável com "João Feres
    Júnior").
@@ -278,8 +278,8 @@ class Identidade:
 
 def _limpar_orcids(autorias: list[Autoria]) -> tuple[list[Autoria], list[tuple[int, str]]]:
     """Cada ORCID fica só com o maior grupo de autorias de nomes compatíveis entre si (no empate, o da autoria de menor
-    id); as outras perdem o ORCID. Um ORCID trocado na fonte ("Marcelo Kunrath Silva" com o ORCID de "Matheus
-    Mazzilli Pereira") não junta mais duas pessoas."""
+    id); as outras perdem o ORCID. Um ORCID trocado na fonte (um autor com o ORCID de um
+    coautor) não junta mais duas pessoas."""
     por_orcid: dict[str, list[int]] = defaultdict(list)
     for i, a in enumerate(autorias):
         if a.orcid:

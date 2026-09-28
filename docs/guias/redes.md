@@ -36,7 +36,7 @@ mapa redes --revisar
 ```
 
 Lista as pessoas que a etapa deixou separadas mas podem ser a mesma: primeiro os homônimos (o mesmo nome), depois as
-grafias variantes ("Marjorie Marona" e "Marjorie Corrêa Marona"), e também as pessoas que ficaram com dois ORCIDs e
+grafias variantes ("Maria Souza" e "Maria Lima Souza"), e também as pessoas que ficaram com dois ORCIDs e
 as autorias que perderam um ORCID de outro nome. Cada lado vem com as evidências para decidir: documentos, anos,
 revistas, instituições, coautores e um título. No fim sai um bloco para o `pessoas.yaml` do projeto, com uma linha
 comentada por par; descomente a linha na lista certa:

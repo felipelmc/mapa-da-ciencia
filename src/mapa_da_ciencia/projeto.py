@@ -42,6 +42,8 @@ saida/
 estado.sqlite*
 # os textos da amostra e o relatório da validação, com as respostas de cada pessoa que codificou
 validacao/
+# os pedidos ao supervisor do júri (com os resumos inteiros) e as respostas dele, que podem ser de uma pessoa
+juri/
 """
 
 _ENV_EXEMPLO = """\
