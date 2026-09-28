@@ -3,8 +3,9 @@
 **O maior componente, por comunidades.** Cada comunidade do Louvain (a partição inteira, também as pequenas) é
 desenhada à parte (`spring_layout`, semente 7) num disco de área proporcional ao número de nós. Os discos são
 arrumados pelo grafo das comunidades: um `spring_layout` em que o peso entre duas comunidades é a soma dos pesos das
-arestas entre elas, de modo que grupos muito ligados ficam vizinhos. Depois, um relaxamento tira as sobreposições
-entre os discos, com uma gravidade fraca que os mantém juntos. O resultado separa as comunidades à vista, que é o
+arestas entre elas, que aproxima os grupos muito ligados. Esse arranjo é ampliado até nenhum disco encostar noutro e
+depois contraído aos poucos, desfazendo as sobreposições a cada passo, o que o preserva melhor que relaxar a partir
+dele apertado. O resultado separa as comunidades à vista, que é o
 que a vista rotula e deixa clicar, sem perder as pontes entre elas.
 
 **Os outros componentes** são desenhados como antes (`spring_layout` pelos pesos), menores, e arrumados em
@@ -106,31 +107,50 @@ def _por_comunidades(grafo, nos: list[str], particao: list[set[str]]) -> dict[st
     r = np.array(raios)
     c = c - c.mean(axis=0)
     c[:, 0] *= ALONGAR_MAIOR  # um pouco mais largo que alto, como a tela
-    c = c / max(np.abs(c).max(), 1e-9) * math.sqrt((r**2).sum()) * 1.2
 
-    # 3. discos sem sobreposição, com uma gravidade fraca para o centro de massa
-    area = r**2
-    for volta in range(400):
-        mexeu = False
-        for i in range(len(r)):
-            for j in range(i + 1, len(r)):
-                d = c[j] - c[i]
-                dist = math.hypot(d[0], d[1])
-                alvo = r[i] + r[j] + FOLGA_COMUNIDADES
-                if dist >= alvo:
-                    continue
-                if dist < 1e-9:  # coincidentes: uma direção fixa pelo índice
-                    d, dist = np.array([math.cos(i * 2.399), math.sin(i * 2.399)]), 1.0
-                passo = (alvo - dist) * d / dist
-                c[i] -= passo * area[j] / (area[i] + area[j])
-                c[j] += passo * area[i] / (area[i] + area[j])
-                mexeu = True
-        c -= 0.04 * (c - (c * area[:, None]).sum(axis=0) / area.sum())
-        if not mexeu and volta > 50:
-            break
+    c = _arranjar_discos(c, r, FOLGA_COMUNIDADES)
 
     pos = {x: (px + c[k, 0], py + c[k, 1]) for k, grupo in enumerate(internos) for x, (px, py) in grupo.items()}
     return _centrar(pos, 1.25 * math.sqrt(n))
+
+
+def _arranjar_discos(c, r, folga: float, voltas: int = 600):
+    """Os discos das comunidades sem se sobrepor, mantendo o arranjo do grafo das comunidades: primeiro o arranjo é
+    ampliado até nenhum disco encostar noutro (a posição relativa fica a mesma), e depois contraído aos poucos para o
+    centro de massa, desfazendo a cada passo as sobreposições que a contração criar. Assim as comunidades muito
+    ligadas continuam perto uma da outra (relaxar a partir do arranjo apertado as embaralhava)."""
+    import numpy as np
+
+    area = r**2
+    c = c - (c * area[:, None]).sum(axis=0) / area.sum()
+    n = len(r)
+    ampliar = 1.0
+    for i in range(n):
+        for j in range(i + 1, n):
+            ampliar = max(ampliar, (r[i] + r[j] + folga) / max(math.hypot(*(c[i] - c[j])), 1e-9))
+    c = c * ampliar
+    for volta in range(voltas + 1):
+        if volta < voltas:
+            c = c - 0.03 * (c - (c * area[:, None]).sum(axis=0) / area.sum())
+        # entre as contrações, umas poucas passadas; no fim, até não sobrar sobreposição nenhuma
+        for _ in range(3 if volta < voltas else 500):
+            mexeu = False
+            for i in range(n):
+                for j in range(i + 1, n):
+                    d = c[j] - c[i]
+                    dist = math.hypot(d[0], d[1])
+                    alvo = r[i] + r[j] + folga
+                    if dist >= alvo:
+                        continue
+                    if dist < 1e-9:  # coincidentes: uma direção fixa pelo índice
+                        d, dist = np.array([math.cos(i * 2.399), math.sin(i * 2.399)]), 1.0
+                    passo = (alvo - dist) * d / dist
+                    c[i] -= passo * area[j] / (area[i] + area[j])
+                    c[j] += passo * area[i] / (area[i] + area[j])
+                    mexeu = True
+            if not mexeu:
+                break
+    return c
 
 
 def _medidas(bloco: dict[str, tuple[float, float]]) -> tuple[float, float, float, float]:

@@ -127,32 +127,49 @@ homônimos que ficaram separados, 7 são a mesma pessoa, e vão para a revisão 
 ## Adendo (2.1.0): o desenho por comunidades
 
 Na 2.0.0, o maior componente saía de um `spring_layout` só, com os parâmetros padrão. No piloto, isso fazia um núcleo
-denso: numa área de 1250 × 840 px (a do grafo numa tela de 1920 × 1080, com a interface da 2.1.0), 57% das pessoas
-desenhadas encostavam em outra (74% na área menor da 2.0.0), e o maior componente ocupava só 27% do desenho, com os
-grupos menores numa faixa embaixo. O autor pediu grafos "mais espaçados".
+denso: na área do grafo de uma tela de 1920 × 1080 (1206 × 838 px, com a interface da 2.1.0), 58% das pessoas
+desenhadas encostavam em outra, e o maior componente ocupava só 27% do desenho, com os grupos menores numa faixa
+embaixo. O autor pediu grafos "mais espaçados".
 
 Comparamos cinco desenhos no piloto, com métricas na vista inicial (os raios da vista, os componentes de 2 e 3 nós
 escondidos, como por padrão): o atual; o `spring_layout` com mais distância e mais iterações; o `forceatlas2_layout`
-do networkx, com e sem o modo linlog; e um desenho por comunidades. Um avaliador independente, que não sabia qual
-desenho era qual, escolheu pelas imagens e pelas métricas o mesmo que elas apontavam:
+do networkx, com e sem o modo linlog; e um desenho por comunidades, em duas versões (com os componentes menores
+embaixo, ou à direita do maior). Um avaliador independente viu os seis candidatos sem saber qual era qual e escolheu
+pelas imagens e pelas métricas o mesmo que elas apontavam, a segunda versão do desenho por comunidades:
 
 - **O maior componente por comunidades.** Cada comunidade do Louvain (a partição inteira) é desenhada à parte, num
-  disco; os discos são arrumados por um `spring_layout` do grafo das comunidades (o peso entre duas é a soma das
-  arestas entre elas) e afastados até não se sobreporem, com uma gravidade fraca que os mantém juntos.
+  disco. Os discos são arrumados por um `spring_layout` do grafo das comunidades (o peso entre duas é a soma das
+  arestas entre elas), e esse arranjo é ampliado até nenhum disco encostar noutro e depois contraído aos poucos,
+  desfazendo as sobreposições a cada passo.
 - **Os componentes menores à direita do maior**, na altura dele, e depois embaixo, com a largura que deixa o desenho
   visível perto de 1,6 : 1, a proporção de uma tela larga. As duplas e os trios ficam embaixo de tudo.
-- **Nenhum nó encostado noutro** na tela de referência (1250 × 840 px): um relaxamento dentro de cada componente afasta
-  os nós pelos raios que a vista desenha (`raios_na_vista`). O raio vai de 1 documento (o mínimo) ao nó com mais
-  documentos (o máximo); na 2.0.0, a fórmula levava 0 documento ao mínimo, e o menor nó saía bem maior que ele.
+- **Nenhum nó encostado noutro numa área de 1250 × 840 px** (a tela de referência, perto da área do grafo numa tela de
+  1920 × 1080): um relaxamento dentro de cada componente afasta os nós pelos raios que a vista desenha
+  (`raios_na_vista`). O raio vai de 1 documento (o mínimo) ao nó com mais documentos (o máximo); na 2.0.0, a fórmula
+  levava 0 documento ao mínimo, e o menor nó saía bem maior que ele.
 
-| Piloto, tela de 1250 × 840 px, com os raios de cada versão | Coautoria, 2.0.0 | Coautoria, 2.1.0 | Instituições, 2.0.0 | Instituições, 2.1.0 |
+Medido no piloto com uma reconstrução fiel da vista (os raios de cada versão, o enquadramento da vista e os componentes
+de 4 nós ou mais), por um auditor independente e conferido de novo depois do ajuste do arranjo dos discos:
+
+| Piloto, vista inicial | Coautoria, 2.0.0 | Coautoria, 2.1.0 | Instituições, 2.0.0 | Instituições, 2.1.0 |
 |---|---|---|---|---|
-| Nós encostados em outro | 57% | 0% | 29% | 0% |
-| Distância ao vizinho mais próximo (mediana) | 5,9 px | 8,3 px | 10,1 px | 16,0 px |
-| Vizinhos mais próximos da mesma comunidade (dos 5) | 62% | 98% | 35% | 97% |
-| Área do desenho ocupada pelo maior componente | 27% | 61% | 49% | 66% |
+| Nós encostados em outro, tela de 1920 × 1080 (1206 × 838 px) | 58% | 0% | 25% | 0% |
+| Nós encostados em outro, notebook de 1440 × 900 (726 × 547 px) | 84% | 63% | 67% | 19% |
+| Distância ao vizinho mais próximo (mediana, 1206 × 838) | 5,8 px | 7,7 px | 10,0 px | 17,2 px |
+| Área do desenho ocupada pelo maior componente | 27% | 62% | 50% | 85% |
+| O vizinho mais próximo é um parceiro (coautor, instituição parceira) | 55% | 75% | 14% | 33% |
+| Dos 5 vizinhos mais próximos, os da mesma comunidade | 62% | 98% | 35% | 98% |
 
-Na coautoria, o vizinho mais próximo de uma pessoa no desenho é um coautor dela em 86% dos casos (38% na 2.0.0). O
-desenho leva cerca de 1 s no piloto e continua reprodutível. A separação entre as comunidades vem em parte da construção:
-**o vão entre dois grupos não é uma medida**, como a distância em geral (veja "Como ler as redes").
+Numa tela pequena, os nós ainda se tocam: o botão "Tela cheia" e o zoom os separam. A última linha é alta em boa parte
+por construção (cada comunidade tem um disco próprio), e **o vão entre dois grupos não é uma medida**, como a distância
+em geral (veja "Como ler as redes"). A proximidade entre as comunidades acompanha a ligação entre elas só em parte:
+entre as comunidades de 8 nós ou mais, a correlação de Spearman entre o peso das arestas que as ligam e a distância
+entre elas é de −0,53 na coautoria (−0,28 na 2.0.0) e de −0,19 nas instituições (−0,46 na 2.0.0), e a comunidade mais
+ligada a cada uma está entre as três mais próximas dela em 35% e 78% dos casos (16% e 38% seriam o acaso; 25% e 67% na
+2.0.0). Nas instituições, 45% das arestas do maior componente ligam comunidades diferentes: o desenho as esmaece (as
+arestas entre comunidades ficam mais fracas que as de dentro), e passar o mouse num nó as acende.
 
+O desenho leva cerca de 1 s no piloto, e três rodadas de `mapa redes` deram arquivos idênticos byte a byte. Só as
+coordenadas mudaram: pessoas, comunidades, métricas, arestas, citações e o cânone são os mesmos da 2.0.0. O
+relaxamento garante a folga até o tamanho do piloto; numa rede muito maior (dezenas de milhares de nós), os nós voltam
+a se tocar na tela de referência, e o zoom continua sendo o caminho.

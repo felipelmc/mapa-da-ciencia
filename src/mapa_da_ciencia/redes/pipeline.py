@@ -288,7 +288,8 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     com_p, particao_p = comunidades(g, "coautoria")
     met_p = metricas(g, particao_p)
     docs_p = Counter(p for lista in autores_do_doc.values() for p in set(lista))
-    pos_p = desenhar(g, particao_p, raios_na_vista({k: docs_p[k] for k in g.nodes}, "coautoria"))
+    # o teto do raio vem de todas as pessoas, como na vista (ModoGrafo), e não só das que têm coautor
+    pos_p = desenhar(g, particao_p, raios_na_vista(dict(docs_p), "coautoria"))
     progresso.avancar()
 
     # 2. instituições e estados, pela geografia

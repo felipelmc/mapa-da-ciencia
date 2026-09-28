@@ -399,6 +399,45 @@ def test_desenho_por_comunidades_separa_os_grupos_sem_sobrepor_os_nos():
         assert distancia >= raios[a] + raios[b] - 0.5, (a, b, distancia)
 
 
+def test_discos_sem_sobreposicao_mantem_o_arranjo():
+    """Os discos das comunidades saem sem se sobrepor e com o arranjo que o grafo das comunidades deu: a ordem das
+    distâncias entre os centros muda pouco (relaxar a partir do arranjo apertado a embaralhava)."""
+    import numpy as np
+    from scipy.stats import spearmanr
+
+    from mapa_da_ciencia.redes.desenho import _arranjar_discos
+
+    rng = np.random.default_rng(3)
+    c = rng.normal(size=(25, 2))
+    r = rng.uniform(0.3, 1.2, size=25)
+    novo = _arranjar_discos(c.copy(), r, 0.35)
+    pares = list(itertools.combinations(range(25), 2))
+    for i, j in pares:
+        assert math.dist(novo[i], novo[j]) >= r[i] + r[j] + 0.35 - 1e-6, (i, j)
+    antes = [math.dist(c[i], c[j]) for i, j in pares]
+    depois = [math.dist(novo[i], novo[j]) for i, j in pares]
+    assert spearmanr(antes, depois).correlation > 0.6  # 0,69; o relaxamento antigo dava 0,37
+
+
+def test_as_constantes_do_desenho_batem_com_as_da_vista():
+    """O desenho sem sobreposição usa os raios, a margem e o mínimo visível da vista: um lado muda com o outro."""
+    from mapa_da_ciencia.redes import desenho as d
+
+    raiz = Path(__file__).resolve().parent.parent / "frontend" / "src" / "lib" / "redes"
+    modo = (raiz / "ModoGrafo.svelte").read_text(encoding="utf-8")
+    grafo_ = (raiz / "Grafo.svelte").read_text(encoding="utf-8")
+    raio = re.search(
+        r"RAIO = \$derived\(pessoas \? \{ min: ([\d.]+), max: ([\d.]+) \} : \{ min: ([\d.]+), max: ([\d.]+) \}\)", modo
+    )
+    assert raio, "a fórmula do RAIO mudou em ModoGrafo.svelte"
+    coautoria, instituicoes = tuple(map(float, raio.groups()[:2])), tuple(map(float, raio.groups()[2:]))
+    for rede, (minimo, maximo) in (("coautoria", coautoria), ("instituicoes", instituicoes)):
+        r = d.raios_na_vista({"a": 1, "b": 16}, rede)
+        assert (r["a"], r["b"]) == pytest.approx((minimo, maximo)), rede
+    assert re.search(rf"const MINIMO_VISIVEL = {d.MINIMO_VISIVEL};", modo)
+    assert re.search(rf"const MARGEM = {d.MARGEM_TELA};", grafo_)
+
+
 def test_citacoes_e_canone():
     refs = [
         {"obra": "W1", "citada": "W2"},  # interna
