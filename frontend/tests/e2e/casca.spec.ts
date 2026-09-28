@@ -228,6 +228,26 @@ test.describe('acessibilidade e casos de borda', () => {
 	});
 });
 
+test.describe('no celular', () => {
+	test.use({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+
+	test('a barra de navegação mostra que rola e deixa de fora a seção desativada', async ({ page }) => {
+		await page.goto(url('RAIZ'));
+		await expect(h1(page)).toHaveText(manifesto.projeto.titulo);
+		const nav = trilho(page);
+		await expect(nav.getByText('Redes', { exact: true })).toBeHidden();
+		// os itens não cabem em 375 px: a borda direita ganha um degradê
+		expect(await nav.evaluate((n) => n.scrollWidth > n.clientWidth)).toBe(true);
+		await expect.poll(() => nav.evaluate((n) => getComputedStyle(n).maskImage)).not.toBe('none');
+		// rolando até o fim, a Metodologia aparece, e o degradê passa para a borda esquerda
+		await nav.evaluate((n) => n.scrollTo({ left: n.scrollWidth }));
+		await expect(nav.getByRole('link', { name: 'Metodologia' })).toBeInViewport({ ratio: 1 });
+		await expect
+			.poll(() => nav.evaluate((n) => n.classList.contains('mais-a-esquerda') && !n.classList.contains('mais-a-direita')))
+			.toBe(true);
+	});
+});
+
 test.describe('nenhuma rota rola de lado', () => {
 	const LARGURAS = [
 		{ nome: 'celular', viewport: { width: 375, height: 812 }, isMobile: true },

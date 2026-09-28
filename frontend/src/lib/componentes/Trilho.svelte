@@ -26,6 +26,23 @@
 		if (estreita.current && altura) estilo.setProperty('--altura-trilho', `${altura}px`);
 		else estilo.removeProperty('--altura-trilho');
 	});
+
+	// Na barra do celular, que rola de lado sem barra de rolagem, um degradê na borda mostra que há mais itens.
+	let nav = $state<HTMLElement>();
+	let maisADireita = $state(false);
+	let maisAEsquerda = $state(false);
+	function medirRolagem() {
+		if (!nav) return;
+		maisADireita = nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 1;
+		maisAEsquerda = nav.scrollLeft > 1;
+	}
+	$effect(() => {
+		if (!nav) return;
+		const observador = new ResizeObserver(medirRolagem);
+		observador.observe(nav);
+		if (nav.firstElementChild) observador.observe(nav.firstElementChild);
+		return () => observador.disconnect();
+	});
 </script>
 
 <aside class="lateral transicao-tema" bind:offsetHeight={altura}>
@@ -37,7 +54,13 @@
 		<span class="marca-nome">mapa <em>da</em> ciência</span>
 	</a>
 
-	<nav aria-label="Seções">
+	<nav
+		aria-label="Seções"
+		bind:this={nav}
+		onscroll={medirRolagem}
+		class:mais-a-direita={maisADireita}
+		class:mais-a-esquerda={maisAEsquerda}
+	>
 		<ul>
 			{#each secoes as s (s.id)}
 				<li class:separado={s.selo || s.soNoPainel || s.noSite}>
@@ -260,6 +283,23 @@
 		nav {
 			overflow-x: auto;
 			scrollbar-width: none;
+		}
+
+		nav.mais-a-direita {
+			mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+		}
+
+		nav.mais-a-esquerda {
+			mask-image: linear-gradient(to left, #000 calc(100% - 3rem), transparent);
+		}
+
+		nav.mais-a-direita.mais-a-esquerda {
+			mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent);
+		}
+
+		/* uma seção desativada (que ainda não chegou) não ocupa lugar na barra estreita */
+		li:has(.desativado) {
+			display: none;
 		}
 
 		ul {
