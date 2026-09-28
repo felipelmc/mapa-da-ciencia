@@ -29,7 +29,8 @@ ARQUIVO_RESULTADO = "resultado.json"
 ARQUIVO_VINCULOS = "vinculos.parquet"
 ARQUIVO_PESOS = "pesos.parquet"
 ARQUIVO_INSTITUICOES_USADAS = "instituicoes.parquet"
-VERSAO = 1  # suba quando o casamento ou a contagem mudarem de um jeito que mude os resultados
+VERSAO = 2  # suba quando o casamento ou a contagem mudarem de um jeito que mude os resultados
+# 2: hífens tipográficos e "ı" na normalização; o alinhamento com o OpenAlex confere o nome também no caso 1:1
 
 COLUNAS_VINCULOS = {
     "doc": "VARCHAR",

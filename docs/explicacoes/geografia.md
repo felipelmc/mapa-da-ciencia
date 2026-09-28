@@ -17,7 +17,7 @@ A coleta guarda também o **registro de cada instituição** do OpenAlex: siglas
 Contar direto pelos textos daria dezenas de grafias para a mesma instituição. O `mapa` liga cada afiliação a uma instituição do OpenAlex, procurando os candidatos do mais próximo ao mais distante:
 
 1. **apelidos**: textos que o pacote ou o `instituicoes.yaml` do projeto já ligam a uma instituição ("Instituto de Estudos Sociais e Políticos" é a UERJ);
-2. **autoria**: as instituições que o OpenAlex deu ao mesmo autor, se o nome se parecer com o texto;
+2. **autoria**: as instituições que o OpenAlex deu ao mesmo autor, se o nome se parecer com o texto. O autor da ArticleMeta é ligado à autoria do OpenAlex pela posição e pelo nome: um sobrenome (ou outra parte do nome depois da primeira) precisa aparecer nos dois, mesmo quando o artigo tem um autor só ("Juan Jesús Morales" não é "Juan Martín"), e os hífens tipográficos e o "ı" sem ponto do OpenAlex ("Bresser‐Pereira", "Bourdıeu") contam como os comuns;
 3. **obra**: as instituições de todos os autores do artigo, com uma exigência maior de semelhança;
 4. **corpus**: o mesmo texto já casado em outros artigos, pelo menos duas vezes e sem divergência;
 5. **índice**: todas as instituições conhecidas, só com um nome quase idêntico e bem à frente do segundo candidato.
