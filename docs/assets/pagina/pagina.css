@@ -463,6 +463,23 @@
   overflow: visible;
 }
 
+/* uma ressalva que muda a leitura do número: à vista, entre o texto e o gráfico */
+.historia__ressalva {
+  margin: 0.15rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--ceu-acento);
+  border-radius: 0 0.5rem 0.5rem 0;
+  background: var(--ceu-fundo);
+  color: var(--ceu-suave);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.historia__ressalva strong {
+  color: var(--ceu-texto);
+  font-weight: 600;
+}
+
 /* a base da conta (os denominadores), sob o gráfico */
 .historia__nota {
   margin: 0;
@@ -513,6 +530,11 @@
 
 .grafico-barra {
   fill: var(--ceu-acento);
+}
+
+/* o fundo de uma barra, de 0 a 100% */
+.grafico-trilho {
+  fill: var(--ceu-linha);
 }
 
 .grafico-barra--apagada {

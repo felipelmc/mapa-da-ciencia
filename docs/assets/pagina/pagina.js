@@ -698,6 +698,31 @@
     return svg(L, kappas.length * passo + 10, corpo, rotulo);
   }
 
+  /** Quantas obras: "1 obra", "10 obras". */
+  function nomeObras(k) {
+    return num(k) + ' ' + (k === 1 ? t('obra', 'work') : t('obras', 'works'));
+  }
+
+  /** O alcance das obras mais citadas: barras sobre um trilho de 0 a 100% dos artigos, com o núcleo (`destaque`) em
+   * cor e a metade marcada; os números ficam numa coluna à direita, longe da linha. */
+  function degraus(itens, destaque, rotulo) {
+    var L = 320, passo = 22, m = 72, h = 13;
+    var x = function (v) { return m + (v / 100) * (L - m - 32); };
+    var corpo = itens
+      .map(function (d, i) {
+        var forte = d.obras === destaque;
+        var classe = 'grafico-texto' + (forte ? ' grafico-texto--forte' : '');
+        return '<text class="' + classe + '" x="0" y="' + (i * passo + 10) + '">' + esc(nomeObras(d.obras)) + '</text>' +
+          '<rect class="grafico-trilho" x="' + m + '" y="' + i * passo + '" width="' + (x(100) - m).toFixed(1) + '" height="' + h + '" rx="1.5"/>' +
+          '<rect class="grafico-barra' + (forte ? '' : ' grafico-barra--apagada') + '" x="' + m + '" y="' + i * passo + '" width="' + (x(d.pct) - m).toFixed(1) + '" height="' + h + '" rx="1.5"/>' +
+          '<text class="' + classe + '" x="' + L + '" y="' + (i * passo + 10) + '" text-anchor="end">' + num(d.pct) + '%</text>';
+      })
+      .join('') +
+      '<line class="grafico-limiar" x1="' + x(50) + '" x2="' + x(50) + '" y1="-4" y2="' + (itens.length * passo - 4) + '"/>' +
+      '<text class="grafico-texto" x="' + x(50) + '" y="' + (itens.length * passo + 8) + '" text-anchor="middle">' + t('metade', 'half') + '</text>';
+    return svg(L, itens.length * passo + 10, corpo, rotulo);
+  }
+
   // ------------------------------------------------------------------ histórias
 
   function cartao(h) {
@@ -706,6 +731,7 @@
       '<p class="historia__numero">' + h.numero + '</p>' +
       '<h3>' + esc(h.titulo) + '</h3>' +
       '<p class="historia__texto">' + h.texto + '</p>' +
+      (h.ressalva ? '<p class="historia__ressalva">' + h.ressalva + '</p>' : '') +
       '<div class="historia__grafico">' + h.grafico + '</div>' +
       (h.nota ? '<p class="historia__nota">' + h.nota + '</p>' : '') +
       '<a class="historia__link" href="' + esc(h.link) + '">' + esc(h.chamada) + ' <span aria-hidden="true">→</span></a>' +
@@ -840,6 +866,38 @@
         grafico: empilhadas(ab, t('Abordagem dos artigos por período', 'Approach of the articles by period')) + legendaCategorias(ab),
         link: demo('/classificacao?variavel=abordagem'),
         chamada: t('Ver na Classificação', 'See it in Classification')
+      });
+    }
+    var can = h.canone;
+    if (can) {
+      var todas = can.degraus[can.degraus.length - 1];
+      var existe = function (v) { return v !== null && v !== undefined; };
+      var perfil = [];
+      if (existe(can.antes_2000)) perfil.push(t(num(can.antes_2000) + ' são de antes de 2000', num(can.antes_2000) + ' were published before 2000'));
+      if (existe(can.ingles)) perfil.push(t(num(can.ingles) + ' estão em inglês', num(can.ingles) + ' are in English'));
+      var alcanceTodas = todas.pct < 50
+        ? t(', e nem as ' + num(todas.obras) + ' mais citadas chegam à metade deles (' + num(todas.pct) + '%)', ', and not even the ' + num(todas.obras) + ' most cited reach half of them (' + num(todas.pct) + '%)')
+        : t(', e as ' + num(todas.obras) + ' mais citadas, ' + num(todas.pct) + '%', ', and the ' + num(todas.obras) + ' most cited, ' + num(todas.pct) + '%');
+      var limitacoes = '<a href="' + DOCS + 'explicacoes/redes/#limitacoes">';
+      cartoes.push({
+        tema: t('Cânone', 'Canon'),
+        numero: num(can.pct) + '<small>%</small>',
+        titulo: t('O cânone que o OpenAlex vê', 'The canon OpenAlex can see'),
+        texto: t(
+          num(can.pct) + '% dos artigos citam ao menos uma das ' + num(can.topo) + ' obras de fora do corpus mais citadas' + alcanceTodas + '.' + (perfil.length ? ' Das ' + num(can.topo) + ', ' + perfil.join(', e ') + '.' : ''),
+          num(can.pct) + '% of articles cite at least one of the ' + num(can.topo) + ' most cited works from outside the corpus' + alcanceTodas + '.' + (perfil.length ? ' Of the ' + num(can.topo) + ', ' + perfil.join(', and ') + '.' : '')
+        ),
+        // a cobertura muda a leitura do número: fica à vista, antes do gráfico
+        ressalva: t(
+          '<strong>Ressalva:</strong> o cânone só vê obras que o OpenAlex indexa, e livros e capítulos em português ficam de fora com frequência. Só entram na conta os ' + num(can.base) + ' artigos (de ' + num(can.documentos) + ') com referências no OpenAlex. Veja as ' + limitacoes + 'limitações</a>.',
+          '<strong>Caveat:</strong> the canon only sees works indexed by OpenAlex, which often misses books and chapters in Portuguese. Only the ' + num(can.base) + ' articles (of ' + num(can.documentos) + ') with references in OpenAlex are counted. See the ' + limitacoes + 'limitations</a> (in Portuguese).'
+        ),
+        grafico: degraus(can.degraus, can.topo, t(
+          'Artigos que citam ao menos uma das obras de fora do corpus mais citadas: ' + can.degraus.map(function (d) { return nomeObras(d.obras) + ', ' + num(d.pct) + '%'; }).join('; ') + '.',
+          'Articles citing at least one of the most cited works from outside the corpus: ' + can.degraus.map(function (d) { return nomeObras(d.obras) + ', ' + num(d.pct) + '%'; }).join('; ') + '.'
+        )),
+        link: demo('/redes?rede=citacoes'),
+        chamada: t('Ver nas Redes', 'See it in Networks')
       });
     }
     var val = h.validacao;

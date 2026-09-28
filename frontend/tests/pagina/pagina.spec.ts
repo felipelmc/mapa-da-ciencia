@@ -140,6 +140,43 @@ test('a colaboração: os dois períodos, os denominadores e o gráfico com os n
 	await expect(card.locator('svg')).toHaveAttribute('aria-label', new RegExp(`^Articles with more than one author, per year: ${primeiro}% in ${col.anos[0]}`));
 });
 
+test('o cânone: a parte dos artigos, sem nomes nem títulos, e a ressalva da cobertura à vista, em PT e EN', async ({ page }) => {
+	const can = dados.historias.canone;
+	test.skip(!can, 'o projeto não tem citações');
+	const [pt, en] = [new Intl.NumberFormat('pt-BR'), new Intl.NumberFormat('en-US')];
+	const todas = can.degraus.at(-1);
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await page.goto(url());
+	const cartao = page.locator('.historia', { hasText: 'O cânone que o OpenAlex vê' });
+	await expect(cartao.locator('.historia__numero')).toHaveText(`${can.pct}%`);
+	await expect(cartao.locator('.historia__texto')).toContainText(`${can.pct}% dos artigos citam ao menos uma das ${can.topo} obras de fora do corpus mais citadas`);
+	await expect(cartao.locator('.historia__texto')).toContainText(`${todas.obras} mais citadas`);
+	if (can.antes_2000 !== null) await expect(cartao.locator('.historia__texto')).toContainText(`${can.antes_2000} são de antes de 2000`);
+	if (can.ingles !== null) await expect(cartao.locator('.historia__texto')).toContainText(`${can.ingles} estão em inglês`);
+	// a ressalva: visível, entre o texto e o gráfico, com a cobertura e o denominador
+	const ressalva = cartao.locator('.historia__ressalva');
+	await expect(ressalva).toBeVisible();
+	await expect(ressalva).toContainText('Ressalva: o cânone só vê obras que o OpenAlex indexa');
+	await expect(ressalva).toContainText('livros e capítulos em português ficam de fora');
+	await expect(ressalva).toContainText(`os ${pt.format(can.base)} artigos (de ${pt.format(can.documentos)}) com referências no OpenAlex`);
+	const [caixaTexto, caixaRessalva, caixaGrafico] = await Promise.all(['.historia__texto', '.historia__ressalva', 'svg'].map((s) => cartao.locator(s).boundingBox()));
+	expect(caixaTexto!.y).toBeLessThan(caixaRessalva!.y);
+	expect(caixaRessalva!.y).toBeLessThan(caixaGrafico!.y);
+	const degraus = can.degraus.map((d: { obras: number; pct: number }) => `${d.obras} ${d.obras === 1 ? 'obra' : 'obras'}, ${d.pct}%`).join('; ');
+	await expect(cartao.locator('svg')).toHaveAttribute('aria-label', `Artigos que citam ao menos uma das obras de fora do corpus mais citadas: ${degraus}.`);
+	await expect(cartao.getByRole('link', { name: 'Ver nas Redes' })).toHaveAttribute('href', /#\/redes\?rede=citacoes$/);
+	// nenhuma obra nem autor pelo nome: o cartão só tem números (e o gerador não publica títulos)
+	expect(JSON.stringify(can)).not.toMatch(/titulo|autores|"W\d/);
+
+	await page.getByRole('button', { name: 'EN', exact: true }).click();
+	const card = page.locator('.historia', { hasText: 'The canon OpenAlex can see' });
+	await expect(card.locator('.historia__texto')).toContainText(`${can.pct}% of articles cite at least one of the ${can.topo} most cited works from outside the corpus`);
+	await expect(card.locator('.historia__ressalva')).toBeVisible();
+	await expect(card.locator('.historia__ressalva')).toContainText(`Caveat: the canon only sees works indexed by OpenAlex`);
+	await expect(card.locator('.historia__ressalva')).toContainText(`Only the ${en.format(can.base)} articles (of ${en.format(can.documentos)}) with references in OpenAlex are counted.`);
+	await expect(card.locator('svg')).toHaveAttribute('aria-label', /^Articles citing at least one of the most cited works from outside the corpus: 1 work, /);
+});
+
 test('a seção "Como citar" traz o DOI e copia o BibTeX', async ({ page, context }) => {
 	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 	await page.goto(url());

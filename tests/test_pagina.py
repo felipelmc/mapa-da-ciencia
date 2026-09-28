@@ -3,6 +3,7 @@
 import base64
 import importlib.util
 import json
+import random
 import shutil
 import struct
 from pathlib import Path
@@ -79,6 +80,40 @@ def test_colaboracao_sem_geografia_e_sem_redes(pagina, projeto, capsys):
     assert "aviso" not in capsys.readouterr().err
     (projeto / "saida" / "dados" / "redes.json").unlink()
     assert pagina.gerar(projeto)["historias"]["colaboracao"] is None
+
+
+def test_historia_do_canone(pagina, projeto):
+    """A parte dos artigos com referências que cita uma das 10 obras mais citadas, sem títulos nem autores."""
+    citacoes = json.loads((projeto / "saida" / "dados" / "citacoes.json").read_text(encoding="utf-8"))
+    random.Random(3).shuffle(citacoes["canone"])  # o contrato não garante a ordem: o gerador ordena pelos citantes
+    (projeto / "saida" / "dados" / "citacoes.json").write_text(json.dumps(citacoes), encoding="utf-8")
+    can = pagina.gerar(projeto)["historias"]["canone"]
+    base = {i for i, n in enumerate(citacoes["n_referencias"]) if n > 0}
+    obras = citacoes["canone"]
+    topo = sorted(range(len(obras)), key=lambda k: (-obras[k]["n"], obras[k]["id"]))[:10]
+    cc = citacoes["canone_citantes"]
+    citantes = {d for d, o in zip(cc["doc"], cc["obra"], strict=True) if o in topo and d in base}
+    assert can["base"] == len(base) < can["documentos"]
+    assert can["citantes"] == len(citantes) and can["pct"] == round(100 * len(citantes) / len(base))
+    assert [d["obras"] for d in can["degraus"]] == [1, 10, len(citacoes["canone"])]  # o exemplo tem menos de 50
+    assert [d["pct"] for d in can["degraus"]] == sorted(d["pct"] for d in can["degraus"])
+    assert can["antes_2000"] == sum(citacoes["canone"][k]["ano"] < 2000 for k in topo)
+    assert can["ingles"] is None  # sem `dados/obras_citadas_openalex.parquet`, sem o idioma
+    assert set(can) == {"topo", "citantes", "pct", "degraus", "base", "documentos", "antes_2000", "ingles"}
+
+
+def test_canone_com_o_idioma_das_obras_e_sem_citacoes(pagina, projeto):
+    citacoes = json.loads((projeto / "saida" / "dados" / "citacoes.json").read_text(encoding="utf-8"))
+    (projeto / "dados").mkdir()
+    linhas = ", ".join(f"('{o['id']}', '{'en' if k % 2 else 'pt'}')" for k, o in enumerate(citacoes["canone"]))
+    duckdb.sql(f"SELECT * FROM (VALUES {linhas}) t(id, idioma)").write_parquet(
+        str(projeto / "dados" / "obras_citadas_openalex.parquet")
+    )
+    ingles = {o["id"] for k, o in enumerate(citacoes["canone"]) if k % 2}
+    topo = sorted(citacoes["canone"], key=lambda o: (-o["n"], o["id"]))[:10]
+    assert pagina.gerar(projeto)["historias"]["canone"]["ingles"] == sum(o["id"] in ingles for o in topo)
+    (projeto / "saida" / "dados" / "citacoes.json").unlink()
+    assert pagina.gerar(projeto)["historias"]["canone"] is None
 
 
 def test_diferenca_entre_proporcoes(pagina):
