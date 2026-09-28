@@ -447,3 +447,33 @@ test('a capa leva aos macrotemas e à geografia; a Ajuda explica o recorte', asy
 	await expect(page.getByTestId('ajuda-recorte')).toContainText('um documento passa se tiver ao menos uma afiliação');
 	await expect(page.getByRole('heading', { name: 'Como ler a geografia' })).toBeVisible();
 });
+
+test.describe('telas largas', () => {
+	for (const [largura, altura] of [
+		[1920, 1080],
+		[2560, 1440]
+	] as const) {
+		test(`em ${largura} px, o conteúdo fica centrado e as figuras crescem`, async ({ browser }) => {
+			const contexto = await browser.newContext({ viewport: { width: largura, height: altura }, reducedMotion: 'reduce' });
+			const page = await contexto.newPage();
+			const problemas = vigiar(page);
+			await page.goto(`${url('RAIZ')}#/topicos`);
+			await expect(h1(page)).toHaveText('Tópicos');
+			await expect(page.locator('[data-testid^="figura-"]:not([data-pronto])')).toHaveCount(0);
+			const m = await page.evaluate(() => {
+				const principal = document.querySelector('main')!;
+				// a coluna do trilho, no grid da casca
+				const trilho = parseFloat(getComputedStyle(principal.parentElement!).gridTemplateColumns.split(' ')[0]);
+				const main = principal.getBoundingClientRect();
+				const figura = document.querySelector('[data-testid="figura-fluxo"] svg')?.getBoundingClientRect().width ?? 0;
+				return { esquerda: main.left - trilho, direita: innerWidth - main.right, largura: main.width, figura };
+			});
+			// as sobras dos dois lados da coluna do conteúdo são iguais (a da esquerda, a partir do trilho)
+			expect(Math.abs(m.esquerda - m.direita)).toBeLessThanOrEqual(2);
+			// e a figura principal passa da largura antiga (76rem de casca, 1.104 px de figura)
+			expect(m.figura).toBeGreaterThan(1200);
+			expect(problemas).toEqual([]);
+			await contexto.close();
+		});
+	}
+});

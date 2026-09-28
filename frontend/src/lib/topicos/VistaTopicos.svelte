@@ -242,7 +242,7 @@
 	const somaDe = (l: Float64Array) => l.reduce((a, b) => a + b, 0);
 </script>
 
-<div class="vista surgir">
+<div class="vista surgir" class:com-gaveta={!!topicoAberto}>
 	<header class="cabecalho">
 		<h1>Tópicos</h1>
 		<nav class="trilha" aria-label="Nível">
@@ -494,6 +494,13 @@
 		margin: 0.5rem 0 0;
 		font-size: 0.85rem;
 		color: var(--texto-suave);
-		max-width: 60rem;
+		max-width: var(--medida);
+	}
+
+	/* numa tela larga, a gaveta do tópico vira uma coluna ao lado, e não cobre os gráficos */
+	@media (min-width: 1600px) {
+		.vista.com-gaveta {
+			margin-right: 29.5rem;
+		}
 	}
 </style>

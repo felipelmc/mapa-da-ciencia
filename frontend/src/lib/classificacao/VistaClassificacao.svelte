@@ -187,58 +187,60 @@
 		</dl>
 	</details>
 
-	<Figura
-		n={classificadosRecorte}
-		id="por-ano"
-		titulo="Por ano"
-		resumo={resumoAno}
-		colunas={['Ano', 'Classificados', ...v.rotulos]}
-		linhas={linhasAno}
-		dados={dadosAnoCsv}
-	>
-		<BarrasPorAno
-			dados={dadosAno}
-			variavel={v}
-			{cores}
-			intervalo={filtros.anos}
-			escolhido={valorEscolhido}
-			aoEscolher={(x) => ((escolhida = null), (valorEscolhido = valorEscolhido === x ? null : x))}
-		/>
-	</Figura>
+	<div class="duas-colunas">
+		<Figura
+			n={classificadosRecorte}
+			id="por-ano"
+			titulo="Por ano"
+			resumo={resumoAno}
+			colunas={['Ano', 'Classificados', ...v.rotulos]}
+			linhas={linhasAno}
+			dados={dadosAnoCsv}
+		>
+			<BarrasPorAno
+				dados={dadosAno}
+				variavel={v}
+				{cores}
+				intervalo={filtros.anos}
+				escolhido={valorEscolhido}
+				aoEscolher={(x) => ((escolhida = null), (valorEscolhido = valorEscolhido === x ? null : x))}
+			/>
+		</Figura>
 
-	<Figura
-		n={classificadosRecorte}
-		id="cruzamento"
-		titulo="Por {NOMES_CRUZAR[filtros.cruzar].toLowerCase()}"
-		resumo={resumoCruz}
-		colunas={[NOMES_CRUZAR[filtros.cruzar], 'Classificados', ...v.rotulos]}
-		linhas={linhasCruz}
-		dados={dadosCruzCsv}
-	>
-		{#snippet controles()}
-			<div class="segmentado" role="group" aria-label="Cruzar com">
-				{#each CRUZAR as c (c)}
-					<button
-						type="button"
-						aria-pressed={filtros.cruzar === c}
-						onclick={() => mudarFiltros({ cruzar: c }, { em })}
-					>
-						{NOMES_CRUZAR[c]}
-					</button>
-				{/each}
-			</div>
-		{/snippet}
-		<Cruzamento
-			dados={cruz}
-			variavel={v}
-			{cores}
-			{escolhida}
-			aoEscolher={(linha, valor) => {
-				valorEscolhido = null;
-				escolhida = escolhida?.linha === linha && escolhida.valor === valor ? null : { linha, valor };
-			}}
-		/>
-	</Figura>
+		<Figura
+			n={classificadosRecorte}
+			id="cruzamento"
+			titulo="Por {NOMES_CRUZAR[filtros.cruzar].toLowerCase()}"
+			resumo={resumoCruz}
+			colunas={[NOMES_CRUZAR[filtros.cruzar], 'Classificados', ...v.rotulos]}
+			linhas={linhasCruz}
+			dados={dadosCruzCsv}
+		>
+			{#snippet controles()}
+				<div class="segmentado" role="group" aria-label="Cruzar com">
+					{#each CRUZAR as c (c)}
+						<button
+							type="button"
+							aria-pressed={filtros.cruzar === c}
+							onclick={() => mudarFiltros({ cruzar: c }, { em })}
+						>
+							{NOMES_CRUZAR[c]}
+						</button>
+					{/each}
+				</div>
+			{/snippet}
+			<Cruzamento
+				dados={cruz}
+				variavel={v}
+				{cores}
+				{escolhida}
+				aoEscolher={(linha, valor) => {
+					valorEscolhido = null;
+					escolhida = escolhida?.linha === linha && escolhida.valor === valor ? null : { linha, valor };
+				}}
+			/>
+		</Figura>
+	</div>
 
 	{#if docsEscolhidos.length}
 		{#key tituloLista}
@@ -282,7 +284,7 @@
 	}
 
 	.lide {
-		max-width: 60rem;
+		max-width: var(--medida);
 		margin: 0;
 		color: var(--texto-suave);
 	}
@@ -370,6 +372,20 @@
 	@media (max-width: 640px) {
 		.definicoes dl {
 			grid-template-columns: 1fr;
+		}
+	}
+
+	/* numa tela larga, a série por ano e o cruzamento lado a lado */
+	.duas-colunas {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	@media (min-width: 1600px) {
+		.duas-colunas {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			column-gap: 2.5rem;
+			align-items: start;
 		}
 	}
 </style>

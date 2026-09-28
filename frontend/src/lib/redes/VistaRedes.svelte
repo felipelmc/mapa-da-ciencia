@@ -123,7 +123,7 @@
 	}
 
 	.aviso {
-		max-width: 60rem;
+		max-width: var(--medida);
 		color: var(--texto-suave);
 	}
 </style>

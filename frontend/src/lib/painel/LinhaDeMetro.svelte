@@ -126,7 +126,9 @@
 
 	.metro {
 		display: grid;
-		grid-template-columns: repeat(5, minmax(0, 1fr));
+		/* tantas colunas quantas etapas (eram 5 fixas, e a sexta caía sozinha numa segunda linha) */
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(0, 1fr);
 		gap: 0;
 		margin: 0;
 		padding: 0;

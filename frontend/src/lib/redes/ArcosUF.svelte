@@ -214,6 +214,9 @@
 	.arcos {
 		position: relative;
 		width: 100%;
+		/* mais largo que isso, o mapa não cresce (a altura trava em 640) e o Exterior se afastaria do Brasil */
+		max-width: 56rem;
+		margin-inline: auto;
 	}
 
 	svg {

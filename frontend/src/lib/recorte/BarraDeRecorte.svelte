@@ -220,7 +220,7 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 0.5rem 0.9rem;
-		padding: 0.45rem clamp(1rem, 3vw, 2rem);
+		padding: 0.45rem calc(var(--sobra-lateral, 0px) + clamp(1rem, 3vw, 2rem));
 	}
 
 	.resumo {

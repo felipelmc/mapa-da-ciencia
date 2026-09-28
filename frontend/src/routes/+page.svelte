@@ -262,7 +262,8 @@
 	}
 
 	.numero-item {
-		flex: 1 1 auto;
+		flex: 1 1 0;
+		min-width: 11rem;
 		display: grid;
 		align-content: start;
 		gap: 0.5rem;

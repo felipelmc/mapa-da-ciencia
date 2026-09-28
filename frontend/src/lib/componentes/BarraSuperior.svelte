@@ -55,7 +55,7 @@
 		justify-content: space-between;
 		gap: 1.5rem;
 		min-height: var(--barra-altura);
-		padding: 0.5rem clamp(1.25rem, 4vw, 3.5rem);
+		padding: 0.5rem calc(var(--sobra-lateral, 0px) + clamp(1.25rem, 4vw, 3.5rem));
 		border-bottom: 1px solid var(--linha);
 		background: color-mix(in srgb, var(--fundo) 94%, transparent);
 	}

@@ -266,9 +266,21 @@
 <style>
 	.atalhos {
 		display: grid;
-		grid-template-columns: max-content 1fr;
+		/* a coluna das teclas cresce até 15rem e depois quebra a linha (não alarga a página no celular) */
+		grid-template-columns: fit-content(15rem) minmax(0, 1fr);
 		gap: 0.4rem 1rem;
 		margin: 0.5rem 0 1rem;
+	}
+
+	@media (max-width: 640px) {
+		.atalhos {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.15rem;
+		}
+
+		.atalhos dd {
+			margin-bottom: 0.5rem;
+		}
 	}
 
 	.atalhos dd {

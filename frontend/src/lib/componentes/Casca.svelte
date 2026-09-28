@@ -142,6 +142,8 @@
 	}
 
 	.casca {
+		/* quanto a coluna do conteúdo se afasta das bordas da área à direita do trilho: as barras alinham com ela */
+		--sobra-lateral: max(0px, calc((100% - var(--conteudo-largura)) / 2));
 		display: grid;
 		grid-template-columns: var(--trilho-largura) minmax(0, 1fr);
 		grid-template-rows: var(--barra-altura) auto minmax(0, 1fr);
@@ -155,6 +157,7 @@
 	/* nas vistas de tela cheia (o mapa), a casca tem a altura da janela, e o conteúdo fica com o que sobra */
 	.casca.tela-cheia {
 		height: 100dvh;
+		--sobra-lateral: 0px;
 	}
 
 	.conteudo {

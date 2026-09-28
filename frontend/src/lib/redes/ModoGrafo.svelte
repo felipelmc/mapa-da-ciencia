@@ -531,7 +531,7 @@
 
 <style>
 	.lide {
-		max-width: 60rem;
+		max-width: var(--medida);
 		margin: 0;
 		color: var(--texto-suave);
 	}
@@ -681,7 +681,7 @@
 
 	.nota {
 		margin: 0.6rem 0 0;
-		max-width: 60rem;
+		max-width: var(--medida);
 		font-size: 0.82rem;
 		color: var(--texto-suave);
 	}

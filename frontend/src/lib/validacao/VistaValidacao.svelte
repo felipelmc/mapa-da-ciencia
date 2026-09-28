@@ -410,7 +410,7 @@
 
 	.lide,
 	.nota-referencia {
-		max-width: 60rem;
+		max-width: var(--medida);
 		margin: 0;
 		color: var(--texto-suave);
 	}
@@ -480,6 +480,11 @@
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.86rem;
+	}
+
+	/* numa tela larga, a tabela das métricas não se espalha: as colunas ficam perto dos nomes */
+	table.metricas {
+		max-width: 72rem;
 	}
 
 	/* numa tela estreita, a tabela rola dentro da própria caixa, e não a página inteira */

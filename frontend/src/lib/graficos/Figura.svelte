@@ -113,7 +113,7 @@
 
 	.resumo {
 		margin: 0.35rem 0 0.9rem;
-		max-width: 62rem;
+		max-width: var(--medida);
 		color: var(--texto-suave);
 	}
 
