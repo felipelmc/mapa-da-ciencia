@@ -28,7 +28,7 @@ from .contrato.exportar import exportar
 from .documento import pode_publicar_resumo
 from .pastas import substituir_conteudo
 from .projeto import Projeto
-from .texto import EMAIL
+from .texto import contem_email
 
 
 @dataclass
@@ -149,7 +149,7 @@ def publicar(
     manifesto = m.Manifesto.model_validate(_json(novo / "dados" / "manifesto.json"))
 
     for arq in (novo / "dados").rglob("*.json"):
-        if EMAIL.search(arq.read_text(encoding="utf-8")):
+        if contem_email(arq.read_text(encoding="utf-8")):
             shutil.rmtree(novo, ignore_errors=True)
             raise ErroConfig(f"Um e-mail apareceu em {arq.name}; a publicação foi interrompida. Avise o projeto.")
 

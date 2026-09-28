@@ -126,3 +126,33 @@ def test_sortear_a_amostra_pelo_painel(projeto, tmp_path):
     assert c.post("/api/validacao/amostra", json={"n": 8}).status_code == 409
     assert c.post("/api/validacao/amostra", json={"n": 8, "refazer": True}).json()["n"] == 8
     assert c.post("/api/validacao/amostra", json={}, headers={"Origin": "https://malicioso.example"}).status_code == 403
+
+
+def test_versao_nova_a_parte_fica_no_painel_local_e_fora_do_contrato(projeto, tmp_path, apis_falsas):
+    """A versão à parte de um modelo aparece nas métricas calculadas na hora (a vista Validação do painel), mas não
+    no `validacao.json` exportado nem no site publicado, que falam do resultado completo."""
+    import json
+
+    from mapa_da_ciencia.contrato.exportar import exportar
+    from mapa_da_ciencia.publicar import publicar
+
+    a = va.sortear(projeto)
+    mapa.classificar(projeto, progresso=False)
+    c = _cliente(projeto, tmp_path)
+    for doc in a.docs:
+        corpo = {"codificador": "maria", "respostas": _respostas(projeto), "completa": True}
+        assert c.put(f"/api/validacao/codificacoes/{doc}", json=corpo).status_code == 200
+    apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    ao_vivo = c.get("/api/validacao/metricas").json()
+    assert [x["nome"] for x in ao_vivo["codificadores"]] == ["maria", "qwen3.5:4b", "qwen3.5:4b (versão nova)"]
+
+    exportar(projeto)
+    estatico = tmp_path / "estatico"
+    estatico.mkdir()
+    (estatico / "index.html").write_text("<title>mapa</title>", encoding="utf-8")
+    publicar(projeto, tmp_path / "site", estatico=estatico)
+    for pasta in (projeto.saida / "dados", tmp_path / "site" / "dados"):
+        validacao = json.loads((pasta / "validacao.json").read_text(encoding="utf-8"))
+        assert validacao["modelos"] == ["qwen3.5:4b"], pasta
+        assert "(versão nova)" not in json.dumps(validacao, ensure_ascii=False), pasta

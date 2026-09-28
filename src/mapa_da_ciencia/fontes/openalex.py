@@ -386,7 +386,7 @@ def documento_de_obra(obra: dict, origem: str) -> Documento:
             )
         )
     resumo = reconstruir_resumo(obra.get("abstract_inverted_index"))
-    titulo = limpar(obra.get("title"))
+    titulo = remover_emails(limpar(obra.get("title")))
     return Documento(
         id=f"doi:{doi}" if doi else f"openalex:{oid}",
         doi=doi,
@@ -481,7 +481,7 @@ def reconstruir_resumo(indice_invertido: dict[str, list[int]] | None) -> str:
     if not indice_invertido:
         return ""
     posicoes = {pos: palavra for palavra, lista in indice_invertido.items() for pos in lista}
-    return limpar(" ".join(posicoes[i] for i in sorted(posicoes)))
+    return remover_emails(limpar(" ".join(posicoes[i] for i in sorted(posicoes))))
 
 
 def enriquecer(doc: Documento, obra: dict | None, passo: Casamento) -> Documento:
@@ -502,7 +502,7 @@ def enriquecer(doc: Documento, obra: dict | None, passo: Casamento) -> Documento
     }
     if not doc.resumos and (resumo := reconstruir_resumo(obra.get("abstract_inverted_index"))):
         mudancas["resumos"] = [Texto(idioma=obra.get("language"), texto=resumo, origem="openalex")]
-    if not doc.titulos and (titulo := limpar(obra.get("title"))):
+    if not doc.titulos and (titulo := remover_emails(limpar(obra.get("title")))):
         mudancas["titulos"] = [Texto(idioma=obra.get("language"), texto=titulo, origem="openalex")]
     return doc.model_copy(update=mudancas)
 

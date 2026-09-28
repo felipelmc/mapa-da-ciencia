@@ -23,7 +23,7 @@ Uma pergunta que o modelo responde para cada resumo.
 |---|---|---|---|
 | `id` | texto | **obrigatório** | Identificador em minúsculas, sem acento. |
 | `rotulo` | texto | **obrigatório** | Nome curto exibido nas tabelas e gráficos. |
-| `tipo` | `"categorica"` \\| `"multipla"` \\| `"booleana"` \\| `"texto"` | **obrigatório** | `categorica`: uma categoria; `multipla`: várias; `booleana`: sim/não; `texto`: resposta livre curta. |
+| `tipo` | `"categorica"` \| `"multipla"` \| `"booleana"` \| `"texto"` | **obrigatório** | `categorica`: uma categoria; `multipla`: várias; `booleana`: sim/não; `texto`: resposta livre curta. |
 | `pergunta` | texto | **obrigatório** | A pergunta, como o modelo vai lê-la. |
 | `categorias` | lista de [Categoria](#categoria) | vazio | Obrigatórias (2 ou mais) em `categorica` e `multipla`. |
 

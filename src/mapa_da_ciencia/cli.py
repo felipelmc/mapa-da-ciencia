@@ -17,6 +17,7 @@ from typing import Annotated
 import typer
 from rich.columns import Columns
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from mapa_da_ciencia import __version__
@@ -57,7 +58,7 @@ def _erros_amigaveis() -> Iterator[None]:
     try:
         yield
     except (ErroConfig, ErroFonte, ErroProvedor) as e:
-        console.print(f"[bold red]Erro:[/] {e}")
+        console.print(f"[bold red]Erro:[/] {escape(str(e))}")
         raise typer.Exit(1) from e
 
 
@@ -137,17 +138,29 @@ def status(projeto: OpcaoProjeto = Path(".")) -> None:
         f"rótulos [bold]{m.rotulos.modelo}[/]"
     )
 
+    from mapa_da_ciencia.manifesto import estados_das_etapas
+
     tabela = Table("Etapa", "Estado", "Última execução", "Duração", "Resultado")
     etapas = status_das_etapas(p)
+    estados = estados_das_etapas(p)  # o mesmo cálculo da linha de metrô do painel
+    rotulos = {
+        "pendente": "[dim]pendente[/]",
+        "em_dia": "[green]em dia[/]",
+        "incompleta": "[yellow]incompleta[/]",
+        "desatualizada": "[yellow]desatualizada[/]",
+    }
     for etapa, manifesto in etapas.items():
+        estado = estados[etapa]["estado"] if etapa in estados else ("em_dia" if manifesto else "pendente")
+        amostra = estados.get(etapa, {}).get("amostra")
         if manifesto is None:
-            tabela.add_row(etapa, "[dim]pendente[/]", "", "", "")
+            resultado = f"{num(amostra['codificados'], 0)} de {num(amostra['n'], 0)} codificados" if amostra else ""
+            tabela.add_row(etapa, rotulos[estado], "", "", resultado)
             continue
         quando = datetime.fromisoformat(manifesto["fim"]).astimezone().strftime("%d/%m/%Y %H:%M")
         # a primeira contagem é a principal da etapa; as demais aparecem nos detalhes de cada uma
         principal = next(iter(manifesto["contagens"].items()), None)
         resultado = f"{num(principal[1], 0)} {principal[0]}" if principal else ""
-        tabela.add_row(etapa, "[green]concluída[/]", quando, f"{num(manifesto['duracao_s'], 0)} s", resultado)
+        tabela.add_row(etapa, rotulos[estado], quando, f"{num(manifesto['duracao_s'], 0)} s", resultado)
     console.print(tabela)
     _mostrar_corpus(p, etapas.get("coleta"))
 
@@ -215,7 +228,7 @@ def _mostrar_topicos(p: Projeto) -> None:
 
 def _mostrar_classificacao_status(p: Projeto) -> None:
     from mapa_da_ciencia.classificacao.pipeline import classificacao_em_dia
-    from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado
+    from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado, rotulo_a_parte
 
     cfg = p.config.modelos.classificacao
     r = Resultado.ler(p.dados / PASTA, cfg.modelo, p.codebook.hash())
@@ -235,11 +248,37 @@ def _mostrar_classificacao_status(p: Projeto) -> None:
         + (f"; evidência literal em {num(100 * literal, 0)}%" if literal is not None else "")
         + "."
     )
-    if em_dia is False:
+    so_falhas = bool(r.falhas) and r.classificados + len(r.falhas) >= r.documentos  # nada mais ficou de fora
+    if em_dia is False and not (so_falhas and _mesmo_corpus(p, r.assinatura)):
         console.print(
             "[yellow]A classificação está incompleta ou é de antes da última coleta.[/] Rode "
             "[bold]mapa classificar[/] para completá-la."
         )
+    if r.falhas:
+        console.print(
+            f"[yellow]{num(len(r.falhas), 0)} documento(s) sem resposta válida nas duas tentativas[/] (por exemplo "
+            f"{', '.join(r.falhas[:3])}). Com temperatura 0 e semente fixa, a falha tende a se repetir: veja "
+            "“Documentos que falham sempre” no guia Classificar os resumos."
+        )
+    a_parte = Resultado.ler(p.dados / PASTA, cfg.modelo, p.codebook.hash(), a_parte=True)
+    if a_parte is not None:
+        o_que = (
+            "Uma rodada parcial da mesma versão"
+            if rotulo_a_parte(a_parte, r) == "rodada parcial"
+            else "Uma versão nova"
+        )
+        console.print(
+            f"[yellow]{o_que} ({a_parte.modelo}) está à parte e não entrou nesta[/]: "
+            f"{num(a_parte.classificados, 0)} de {num(a_parte.documentos, 0)} documentos, "
+            f"{num(len(a_parte.falhas), 0)} sem resposta válida. `mapa validar metricas` compara as duas na amostra."
+        )
+
+
+def _mesmo_corpus(p: Projeto, assinatura: str) -> bool:
+    from mapa_da_ciencia.armazenamento import ler_documentos
+    from mapa_da_ciencia.topicos.resultado import assinatura_corpus
+
+    return assinatura == assinatura_corpus([d.id for d in ler_documentos(p.dados / ARQUIVO_DOCUMENTOS)])
 
 
 def _mostrar_geografia(p: Projeto) -> None:
@@ -701,7 +740,7 @@ def _mostrar_classificacao(p: Projeto, resumo, *, estimar: bool) -> None:
     from mapa_da_ciencia.classificacao.resultado import PASTA, ler_linhas
 
     console.print(f"\n[bold green]Classificação pronta[/]: {resumo}")
-    linhas = ler_linhas(p.dados / PASTA, resumo.modelo, p.codebook.hash())
+    linhas = ler_linhas(p.dados / PASTA, resumo.modelo, p.codebook.hash(), a_parte=resumo.a_parte)
     tabela = Table("Variável", "Mais frequentes", "Evidência literal")
     for v in p.codebook.variaveis:
         valores = Counter(linha["valor"] for linha in linhas if linha["variavel"] == v.id)

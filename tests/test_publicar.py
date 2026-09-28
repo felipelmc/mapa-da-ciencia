@@ -156,6 +156,24 @@ def test_o_destino_so_pode_ser_uma_pasta_vazia_ou_um_site_publicado(projeto, est
     publicar(projeto, site, estatico=estatico)  # um site publicado antes pode ser trocado
 
 
+def test_email_escondido_por_hifen_suave_interrompe_a_publicacao(projeto, estatico, tmp_path):
+    """A varredura final do `publicar` também vê um e-mail escondido por um hífen suave (de um "&shy;" na fonte), que
+    aparece inteiro na tela."""
+    import re
+    import shutil
+
+    from mapa_da_ciencia.publicar import publicar
+
+    raiz = shutil.copytree(projeto.raiz, tmp_path / "copia")
+    cfg = raiz / "mapa.yaml"  # o título vai para o manifesto publicado
+    titulo = "Contato fulana@uf\u00adrj.br"
+    cfg.write_text(re.sub(r"^titulo: .*$", f"titulo: {titulo}", cfg.read_text(encoding="utf-8"), flags=re.M), "utf-8")
+    copia = Projeto.abrir(raiz)
+    assert copia.config.titulo == titulo
+    with pytest.raises(ErroConfig, match="Um e-mail apareceu"):
+        publicar(copia, tmp_path / "site", estatico=estatico)
+
+
 def test_exemplo_publicado_sem_trechos_do_juri_nos_resumos_fechados():
     """Os votos do júri e a justificativa do supervisor citam o resumo: somem quando a licença não é aberta."""
     raiz = Path(__file__).parents[1] / "contrato" / "exemplo-publicado" / "dados" / "detalhes"
