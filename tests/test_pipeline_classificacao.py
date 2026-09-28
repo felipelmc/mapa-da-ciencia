@@ -1,6 +1,8 @@
 """A etapa de classificação de ponta a ponta: `mapa classificar`, `api.classificar`, status e a view."""
 
 import json
+import os
+import re
 import time
 
 import pytest
@@ -319,3 +321,101 @@ def test_a_versao_a_parte_sai_quando_deixa_de_ser_a_mais_nova(projeto, apis_fals
     apis_falsas.digests["qwen3.5:4b"] = "v4000000000000000"  # a v5 foi abandonada: de volta à v4, que está no cache
     mapa.classificar(projeto, limite=3, progresso=False)
     assert a_parte() is None and modelos() == ["qwen3.5:4b"]
+
+
+def _interromper_depois_de(apis_falsas, n: int):
+    """O chat responde normalmente as primeiras `n` chamadas e depois simula o ++ctrl+c++."""
+    original, chamadas = apis_falsas.responder_chat, []
+
+    def responder(corpo):
+        chamadas.append(1)
+        if len(chamadas) > n:
+            raise KeyboardInterrupt
+        return original(corpo)
+
+    apis_falsas.responder_chat = responder
+    return lambda: setattr(apis_falsas, "responder_chat", original)
+
+
+@pytest.mark.parametrize("rodada", ["tudo_falha", "interrompida", "somente_amostra"])
+def test_resultado_completo_com_uma_falha_continua_protegido(projeto, apis_falsas, monkeypatch, rodada):
+    """Um resultado completo com uma falha (aceito dentro do limite, ou com um documento que falha sempre) fica
+    marcado como parcial, mas a rodada que o gravou terminou: ele continua protegido contra a versão seguinte."""
+    import mapa_da_ciencia.classificacao.pipeline as pipeline
+
+    mapa.classificar(projeto, progresso=False)
+    mapa.amostra_de_validacao(projeto, n=5)
+    pasta, hash_cb = projeto.dados / PASTA, projeto.codebook.hash()
+    original = apis_falsas.responder_chat
+    apis_falsas.digests["qwen3.5:4b"] = "v2000000000000000"
+    _falhar_sempre_num_documento(apis_falsas)
+    mapa.classificar(projeto, progresso=False)  # v2 com 1 falha: substitui (dentro do limite) e fica parcial
+    v2 = Resultado.ler(pasta, "qwen3.5:4b", hash_cb)
+    assert v2.modelo.endswith("@v20000000000") and v2.parcial and len(v2.falhas) == 1
+    exportado = (projeto.saida / "dados" / "manifesto.json").read_text(encoding="utf-8")
+
+    apis_falsas.responder_chat = original
+    apis_falsas.digests["qwen3.5:4b"] = "v3000000000000000"  # outro `ollama pull`
+    if rodada == "tudo_falha":
+        _falhar(apis_falsas, 1.0)
+        mapa.classificar(projeto, progresso=False)
+    elif rodada == "interrompida":
+        monkeypatch.setattr(pipeline, "GRAVAR_A_CADA", 3)
+        _interromper_depois_de(apis_falsas, 7)
+        with pytest.raises(KeyboardInterrupt):
+            mapa.classificar(projeto, progresso=False)
+    else:
+        mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb) == v2
+    assert (projeto.saida / "dados" / "manifesto.json").read_text(encoding="utf-8") == exportado
+    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb, a_parte=True).modelo.endswith("@v30000000000")
+
+
+def _resultado_sem_execucao(projeto):
+    """O resultado como a versão 1.0.1 o gravava: sem as marcas `execucao` e `a_parte`."""
+    arquivo = next((projeto.dados / PASTA).glob("qwen3.5-4b__*.json"))
+    dados = json.loads(arquivo.read_text(encoding="utf-8"))
+    del dados["execucao"], dados["a_parte"]
+    arquivo.write_text(json.dumps(dados), encoding="utf-8")
+    for manifesto in projeto.execucoes.glob("*-classificacao.json"):  # e os manifestos da 1.0.1, sem as marcas novas
+        m = json.loads(manifesto.read_text(encoding="utf-8"))
+        for chave in ("execucao", "gravado"):
+            m["parametros"].pop(chave, None)
+        manifesto.write_text(json.dumps(m), encoding="utf-8")
+    return Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
+
+
+def test_resultado_de_uma_versao_anterior_do_pacote(projeto, apis_falsas):
+    """Um resultado sem `execucao` (como o do piloto, gravado pela 1.0.1): com outros parâmetros no manifesto que o
+    gravou, ou sem manifesto para conferir, conta como de outra execução e fica protegido; com o mesmo modelo e os
+    mesmos parâmetros, a rodada seguinte o regrava normalmente."""
+    mapa.classificar(projeto, progresso=False)
+    mapa.amostra_de_validacao(projeto, n=5)
+    pasta, hash_cb = projeto.dados / PASTA, projeto.codebook.hash()
+    antigo = _resultado_sem_execucao(projeto)
+
+    # o mesmo modelo e os mesmos parâmetros: a mesma execução, e o --somente-amostra regrava o completo (do cache)
+    r = mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    assert not r.a_parte and Resultado.ler(pasta, "qwen3.5:4b", hash_cb).classificados == antigo.classificados
+
+    # outro num_ctx: outra execução, e o completo antigo fica
+    antigo = _resultado_sem_execucao(projeto)
+    cfg = projeto.raiz / "mapa.yaml"
+    cfg.write_text(re.sub(r"(num_ctx:) *\d+", r"\1 16384", cfg.read_text(encoding="utf-8"), count=1), encoding="utf-8")
+    os.utime(cfg, ns=(cfg.stat().st_atime_ns, cfg.stat().st_mtime_ns + 10**9))
+    assert projeto.config.modelos.classificacao.num_ctx == 16384
+    r = mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    assert r.a_parte and Resultado.ler(pasta, "qwen3.5:4b", hash_cb) == antigo
+
+    # sem manifesto para conferir os parâmetros (e sem as respostas no cache, como num projeto copiado sem o
+    # estado.sqlite): na dúvida, protegido
+    import sqlite3
+
+    cfg.write_text(re.sub(r"(num_ctx:) *\d+", r"\1 8192", cfg.read_text(encoding="utf-8"), count=1), encoding="utf-8")
+    os.utime(cfg, ns=(cfg.stat().st_atime_ns, cfg.stat().st_mtime_ns + 10**9))
+    for manifesto in projeto.execucoes.glob("*-classificacao.json"):
+        manifesto.unlink()
+    with sqlite3.connect(projeto.estado) as con:
+        con.execute("DELETE FROM llm_cache")
+    r = mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    assert r.a_parte and r.novos == 5 and Resultado.ler(pasta, "qwen3.5:4b", hash_cb) == antigo

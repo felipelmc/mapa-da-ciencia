@@ -17,6 +17,7 @@ import time
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import Any
 
 from ..armazenamento import ARQUIVO, ler_documentos
 from ..config import ErroConfig
@@ -24,7 +25,7 @@ from ..contrato.exportar import exportar
 from ..formatar import num
 from ..llm.cache import chave_de
 from ..llm.ollama import Ollama
-from ..manifesto import registrar_execucao
+from ..manifesto import registrar_execucao, ultima_execucao
 from ..progresso import Progresso, ProgressoNulo
 from ..projeto import Projeto
 from ..topicos.resultado import assinatura_corpus
@@ -145,17 +146,30 @@ def classificar(
     k = classificador.contadores
     parametros = (modelo_cfg.num_ctx, modelo_cfg.temperatura, modelo_cfg.semente, modelo_cfg.pensar)
     execucao = chave_de(classificador.modelo, VERSAO_PROMPT, parametros)[:16]
-    # um resultado completo de outra execução (modelo atualizado, outro prompt ou outros parâmetros) não é trocado
-    # por um parcial desta (--somente-amostra, --estimar, --limite ou uma rodada interrompida): só a rodada completa
-    # o substitui, mesmo que alguns documentos tenham falhado nas duas tentativas (com temperatura 0 e semente fixa, a
-    # falha tende a se repetir, e o resultado novo nunca chegaria), mas não com falhas demais (acima de
-    # `LIMITE_FALHAS`: um modelo que devolve JSON inválido em tudo apagaria horas de classificação). Enquanto isso,
-    # as respostas da versão nova ficam no resultado à parte, que as métricas da validação comparam com o completo
+    # um resultado completo (de uma rodada que terminou, mesmo com falhas) de outra execução (modelo atualizado, outro
+    # prompt ou outros parâmetros) não é trocado por um parcial desta (--somente-amostra, --estimar, --limite ou uma
+    # rodada interrompida): só a rodada completa o substitui, mesmo que alguns documentos tenham falhado nas duas
+    # tentativas (com temperatura 0 e semente fixa, a falha tende a se repetir, e o resultado novo nunca chegaria),
+    # mas não com falhas demais (acima de `LIMITE_FALHAS`: um modelo que devolve JSON inválido em tudo apagaria horas
+    # de classificação). Enquanto isso, as respostas da versão nova ficam no resultado à parte, que as métricas da
+    # validação comparam com o completo
     anterior = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
     protegido = (
         anterior is not None
-        and not anterior.parcial
-        and (anterior.execucao or anterior.modelo) != (execucao if anterior.execucao else classificador.modelo)
+        and anterior.classificados + len(anterior.falhas) >= anterior.documentos  # a rodada que o gravou terminou
+        and not _mesma_execucao(
+            projeto,
+            anterior,
+            execucao,
+            classificador.modelo,
+            {
+                "num_ctx": modelo_cfg.num_ctx,
+                "temperatura": modelo_cfg.temperatura,
+                "semente": modelo_cfg.semente,
+                "pensar": modelo_cfg.pensar,
+                "versao_prompt": VERSAO_PROMPT,
+            },
+        )
     )
     limite_falhas = max(1, int(len(textos) * LIMITE_FALHAS))
     gravou = False  # a última chamada de `gravar` gravou o resultado principal?
@@ -312,6 +326,31 @@ def classificar(
     if principal and gravou:  # a versão à parte não muda o contrato (ver `validacao.metricas.calcular`)
         resumo.avisos += exportar(projeto)
     return resumo
+
+
+def _mesma_execucao(
+    projeto: Projeto, anterior: Resultado, execucao: str, modelo: str, parametros: dict[str, Any]
+) -> bool:
+    """O resultado `anterior` é desta mesma execução (o mesmo modelo com o digest, a versão do prompt e os
+    parâmetros)? Um resultado gravado por uma versão anterior do pacote não tem a marca `execucao`: vale o modelo que
+    ele registra e os parâmetros do manifesto da rodada que o gravou (a mais recente com esse modelo, também sem a
+    marca). Sem manifesto para conferir, não é: na dúvida, o resultado fica protegido."""
+    if anterior.execucao:
+        return anterior.execucao == execucao
+    if anterior.modelo != modelo:
+        return False
+    manifesto = ultima_execucao(
+        projeto,
+        "classificacao",
+        lambda m: (
+            (m.get("modelos") or {}).get("classificacao") == anterior.modelo
+            and "execucao" not in (m.get("parametros") or {})
+        ),
+    )
+    if manifesto is None:
+        return False
+    gravados = manifesto.get("parametros") or {}
+    return all(k in gravados and gravados[k] == v for k, v in parametros.items())
 
 
 def classificacao_em_dia(projeto: Projeto) -> bool | None:
