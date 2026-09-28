@@ -14,6 +14,7 @@
 	 * um abre o próprio cartão) e os documentos do nó que estão no recorte, com o link para cada um no Mapa. Numa
 	 * instituição, um botão põe (ou tira) a instituição no recorte.
 	 */
+	import { usarProjeto } from '$lib/dados/contexto';
 	import type { TabelaDocumentos } from '$lib/dados/documentos';
 	import { contar, formatarDecimal } from '$lib/formato';
 
@@ -49,6 +50,9 @@
 	} = $props();
 
 	const INICIAIS = 12;
+	// o nome da revista (de revistas.json), como no cartão do Mapa, e não a sigla interna do SciELO
+	const { revistas } = usarProjeto();
+	const nomeDaRevista = (acronimo: string) => revistas?.revistas.find((r) => r.id === acronimo)?.titulo ?? acronimo;
 
 	/** Fecha e devolve o foco a quem o tinha (senão, à busca da vista), para quem usa o teclado não voltar ao topo. */
 	function fechar() {
@@ -126,7 +130,7 @@
 			{#each visiveis as d (d)}
 				<li>
 					<a href={linkDoc(d)}>{tabela.titulos[d]}</a>
-					<span class="suave">{tabela.revistas[tabela.revista[d]]} · {tabela.ano[d]}</span>
+					<span class="suave" data-testid="revista-no">{nomeDaRevista(tabela.revistas[tabela.revista[d]])} · {tabela.ano[d]}</span>
 				</li>
 			{/each}
 		</ol>
@@ -166,8 +170,9 @@
 
 	.fechar {
 		flex: none;
-		width: 1.75rem;
-		height: 1.75rem;
+		/* 40 px: um alvo de toque que o dedo acha no celular */
+		width: 2.5rem;
+		height: 2.5rem;
 		font-size: 1.2rem;
 		line-height: 1;
 		color: var(--texto-suave);

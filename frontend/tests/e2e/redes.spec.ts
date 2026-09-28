@@ -162,6 +162,10 @@ test('a busca pelo teclado abre o cartão de uma pessoa', async ({ page }) => {
 	await expect(page.getByTestId('cartao-no').getByRole('heading', { level: 2 })).toHaveText(nome);
 	await expect(page.getByTestId('cartao-no').getByRole('heading', { level: 2 })).toBeFocused();
 	await expect(campo).toHaveAttribute('aria-expanded', 'false');
+	// a revista pelo nome (revistas.json), e não pela sigla interna
+	const titulos = ler('revistas.json').revistas.map((r: { titulo: string }) => r.titulo);
+	const revista = (await page.getByTestId('revista-no').first().innerText()).split(' · ')[0];
+	expect(titulos).toContain(revista);
 	// o cartão diz o que é cada número dos parceiros
 	await expect(page.getByTestId('cartao-no').locator('.parceiros .numero').first()).toContainText('peso');
 	// Esc fecha o cartão, e o foco volta para a busca (quem usa o teclado não volta ao topo da página)
@@ -252,6 +256,8 @@ test('estados: os arcos são os pares do gabarito, e clicar numa UF põe no reco
 	await expect(page.getByTestId('figura-estados')).toHaveAttribute('data-pronto', 'sim');
 	const arcos = page.getByTestId('arco');
 	await expect(arcos).toHaveCount(agregados.uf_pares.length);
+	// as UFs com as parcerias mais fortes têm a sigla escrita ao lado do ponto
+	await expect(page.getByTestId('sigla-uf').first()).toBeVisible();
 	// o arco mais grosso é a parceria de maior peso do gabarito, com o mesmo peso
 	const [a, b, peso] = [...agregados.uf_pares].sort((p: number[], q: number[]) => q[2] - p[2])[0];
 	const pares = await arcos.evaluateAll((els) => els.map((e) => [e.getAttribute('data-par'), Number(e.getAttribute('data-peso'))] as const));
@@ -383,6 +389,14 @@ test('redes desatualizadas: a vista diz o que rodar, em vez de "sem redes"', asy
 	await expect(page.getByText('As redes deste projeto estão desatualizadas.')).toBeVisible();
 	await expect(page.getByTestId('redes-desatualizadas')).toContainText('mapa redes');
 	await expect(page.getByText('Este projeto ainda não tem redes.')).toHaveCount(0);
+});
+
+test('um recorte fora do período não quebra as séries', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/redes?anos=2030-2031`);
+	await expect(page.getByTestId('serie-coautoria')).toBeVisible();
+	await page.waitForTimeout(300);
+	expect(problemas).toEqual([]);
 });
 
 test('a Ajuda explica como ler as redes', async ({ page }) => {

@@ -83,6 +83,17 @@
 		return saida;
 	});
 	const forcaMaxima = $derived(Math.max(1e-9, ...forca.values()));
+	/** As UFs com as parcerias mais fortes ganham a sigla ao lado do ponto (as outras, na dica e na tabela). */
+	const MAIS_ROTULADAS = 12;
+	const rotuladas = $derived(
+		new Set(
+			[...forca.entries()]
+				.filter(([k]) => k !== EXTERIOR)
+				.sort((p, q) => q[1] - p[1])
+				.slice(0, MAIS_ROTULADAS)
+				.map(([k]) => k)
+		)
+	);
 	const raio = (k: string) => 2 + 9 * Math.sqrt((forca.get(k) ?? 0) / forcaMaxima);
 
 	// ---- dica
@@ -164,6 +175,9 @@
 				{@const c = centros.get(k)}
 				{#if c}
 					<circle cx={c[0]} cy={c[1]} r={raio(k)} class="ponto" class:destaque={selecionadas.has(k)} />
+					{#if rotuladas.has(k)}
+						<text x={c[0] + raio(k) + 3} y={c[1] + 4} class="sigla" data-testid="sigla-uf">{k}</text>
+					{/if}
 				{/if}
 			{/each}
 			{#if forca.has(EXTERIOR)}
@@ -236,6 +250,15 @@
 
 	.ponto.destaque {
 		fill: var(--acento);
+	}
+
+	.sigla {
+		font-family: var(--fonte-mono);
+		font-size: 0.66rem;
+		fill: var(--texto);
+		paint-order: stroke;
+		stroke: var(--fundo);
+		stroke-width: 3px;
 	}
 
 	.exterior {

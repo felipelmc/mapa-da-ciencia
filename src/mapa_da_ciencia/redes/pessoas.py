@@ -484,8 +484,13 @@ def identificar(
 
 
 def _nome_exibido(contagem: Counter[str]) -> str:
-    """O nome mais frequente; no empate, o que não está todo em maiúsculas, e depois a ordem alfabética."""
-    return sorted(contagem.items(), key=lambda kv: (-kv[1], kv[0].isupper(), kv[0]))[0][0]
+    """O nome mais frequente que não está todo em maiúsculas (algumas revistas mandam "ARGELINA CHEIBUB FIGUEIREDO");
+    se todos estão, o mais frequente em caixa normal, com as partículas em minúsculas. No empate, a ordem alfabética."""
+    normais = {n: k for n, k in contagem.items() if not n.isupper()}
+    if normais:
+        return sorted(normais.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
+    nome = sorted(contagem.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
+    return " ".join(p.lower() if p.lower() in _PARTICULAS else p.title() for p in nome.split())
 
 
 def _regra_dos_nomes(autorias: list[Autoria], g: _Grupos) -> None:

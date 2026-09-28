@@ -103,6 +103,17 @@ def test_identidade_das_pessoas():
     assert all(len(x) == 1 for x in por_id.values())
 
 
+def test_nome_exibido_sem_caixa_alta():
+    docs = [
+        _doc("d1", [("ARGELINA CHEIBUB FIGUEIREDO", "A1", None)]),
+        _doc("d2", [("ARGELINA CHEIBUB FIGUEIREDO", "A1", None)]),
+        _doc("d3", [("Argelina Cheibub Figueiredo", "A1", None)]),
+        _doc("d4", [("MARTA RODRIGUEZ DE ASSIS MACHADO", "A2", None)]),
+    ]
+    nomes = sorted(p.nome for p in identificar(docs, segredo=b"t").pessoas)
+    assert nomes == ["Argelina Cheibub Figueiredo", "Marta Rodriguez de Assis Machado"]
+
+
 def test_orcid_conferido_pelo_nome():
     docs = [
         _doc("d1", [("Matheus Mazzilli Pereira", "A2", ORCID_2), ("Ana Lima", "A9", None)]),
