@@ -197,7 +197,11 @@ class SupervisorJuri(_Base):
         description="`arquivo`: pedidos e respostas em JSONL, para um supervisor externo; `api`: a API da Anthropic "
         "(precisa de `ANTHROPIC_API_KEY` no `.env`, de `enviar_textos: true` e do pacote extra `anthropic`).",
     )
-    nome: Slug = Field("supervisor", description="Nome gravado nas decisões do supervisor.")
+    nome: str = Field(
+        "supervisor",
+        pattern=r"^[a-z][a-z0-9_-]*$",
+        description="Nome gravado nas decisões do supervisor (minúsculas, números, - e _).",
+    )
     familia: str = Field(
         "claude",
         description="Família do modelo supervisor. Se for a mesma de um codificador de referência "
