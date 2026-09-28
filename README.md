@@ -8,7 +8,7 @@
 - **como se pesquisa**, com a classificação de cada resumo segundo um codebook seu, com evidência textual e validação contra a sua codificação;
 - **onde se produz**, com UF, país e instituição.
 
-Os modelos rodam no seu computador, via [Ollama](https://ollama.com): nenhum texto sai da sua máquina, e não é preciso chave de API.
+Os modelos rodam no seu computador, via [Ollama](https://ollama.com): nenhum texto sai da sua máquina, e não é preciso chave de API (a única exceção é opcional: o supervisor do júri pela API da Anthropic, com consentimento explícito).
 
 *In English: [see below](#in-english).*
 

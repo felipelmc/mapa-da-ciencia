@@ -365,8 +365,7 @@
 			{/if}
 			{#if juri.auditoria}
 				<p class="creditos" data-testid="auditoria-juri">
-					Auditoria: o supervisor conferiu {formatarInteiro(juri.auditoria.n)} decisões unânimes sorteadas e discordou de {formatarInteiro(juri.auditoria.erros)}{#if juri.auditoria.ic95}
-						(erro estimado entre {formatarPorcentagem(juri.auditoria.ic95[0])} e {formatarPorcentagem(juri.auditoria.ic95[1])}, IC 95% de Wilson){/if}.
+					Auditoria: o supervisor conferiu {formatarInteiro(juri.auditoria.n)} decisões unânimes sorteadas e discordou de {formatarInteiro(juri.auditoria.erros)}{#if juri.auditoria.ic95}{' '}(erro estimado entre {formatarPorcentagem(juri.auditoria.ic95[0])} e {formatarPorcentagem(juri.auditoria.ic95[1])}, IC 95% de Wilson){/if}.
 				</p>
 			{/if}
 		</section>

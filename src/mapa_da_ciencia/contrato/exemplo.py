@@ -800,8 +800,15 @@ def _juri_sintetico(rng, validacao: m.Validacao, amostra: list[dict], vars_cls, 
         documentos=len(amostra),
         etapas=etapas,
         virou=virou,
-        concordancia_por_etapa={"unanime": {"n": 240, "acertos": 221}, "sem_maioria": {"n": 20, "acertos": 8}},
-        concordancia_supervisor=m.ConcordanciaSupervisor(n=20, acertos=12, circular=True),
+        # a concordância por estágio sobre os estágios do próprio exemplo (as taxas são fictícias)
+        concordancia_por_etapa={
+            e: {"n": n, "acertos": round(taxa * n)}
+            for e, taxa in (("unanime", 0.92), ("maioria", 0.8), ("deliberacao", 0.6), ("sem_maioria", 0.4))
+            if (n := sum(v[e] for v in etapas.values()))
+        },
+        concordancia_supervisor=m.ConcordanciaSupervisor(
+            n=(n_sup := sum(v["sem_maioria"] for v in etapas.values())), acertos=round(0.6 * n_sup), circular=True
+        ),
         deliberacao=deliberacao,
         auditoria=m.AuditoriaJuri(n=12, erros=1, taxa=round(1 / 12, 4), ic95=wilson(1, 12), por_variavel={}),
     )
