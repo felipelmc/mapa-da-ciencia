@@ -8,6 +8,7 @@
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { vizinhosDe, type TabelaDocumentos } from '$lib/dados/documentos';
 	import ResumoComEvidencias from '$lib/classificacao/ResumoComEvidencias.svelte';
+	import VotosDoJuri from '$lib/classificacao/VotosDoJuri.svelte';
 
 	let {
 		tabela,
@@ -77,6 +78,11 @@
 		{#if d && !d.resumo && Object.keys(d.evidencias ?? {}).length}
 			{#await codebook then cb}
 				<ResumoComEvidencias resumo={null} idioma={d.idioma} evidencias={d.evidencias ?? {}} codebook={cb} />
+			{/await}
+		{/if}
+		{#if d && Object.keys(d.juri ?? {}).length}
+			{#await codebook then cb}
+				<VotosDoJuri juri={d.juri ?? {}} codebook={cb} />
 			{/await}
 		{/if}
 		{#if d?.palavras_chave?.length}

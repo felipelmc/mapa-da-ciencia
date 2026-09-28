@@ -17,7 +17,9 @@ test('mostra os participantes, as métricas do par e as divergências da variáv
 	// o codificador de referência é identificado como tal
 	await expect(page.getByTestId('aviso-referencia')).toBeVisible();
 	await expect(page.getByTestId('lide-validacao')).toContainText('referência (não humano)');
-	const doPar = validacao.metricas.filter((m: { referencia: string }) => m.referencia === 'referencia-exemplo');
+	const doPar = validacao.metricas.filter(
+		(m: { referencia: string; comparado: string }) => m.referencia === 'referencia-exemplo' && m.comparado === 'exemplo'
+	);
 	await expect(page.getByTestId('linha-variavel')).toHaveCount(doPar.length);
 	await expect(page.getByTestId('matriz-confusao')).toBeVisible();
 	// a segunda variável: as divergências dela, com a evidência do modelo
@@ -41,5 +43,28 @@ test('no painel, as métricas vêm da API e há o link para codificar', async ({
 	await page.getByTestId('link-codificar').click();
 	await expect(page).toHaveURL(/#\/validacao\/codificar/);
 	await expect(page.getByRole('link', { name: 'Validação' })).toHaveAttribute('aria-current', 'page');
+	expect(problemas).toEqual([]);
+});
+
+test('o júri: estágios por variável, auditoria e o par circular marcado', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	await expect(page.getByTestId('secao-juri')).toBeVisible();
+	await expect(page.getByTestId('tabela-juri').locator('tbody tr')).toHaveCount(Object.keys(validacao.juri.etapas).length);
+	await expect(page.getByTestId('auditoria-juri')).toContainText(`conferiu ${validacao.juri.auditoria.n} decisões`);
+	const circular = page.getByTestId('par').filter({ hasText: 'juri-supervisor' });
+	await expect(circular).toContainText('circular');
+	await circular.click();
+	await expect(page.getByTestId('aviso-circular')).toBeVisible();
+	expect(problemas).toEqual([]);
+});
+
+test('o cartão de um documento da amostra mostra os votos do júri', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent('exemplo:00689')}`);
+	const juri = page.getByTestId('votos-do-juri');
+	await expect(juri).toBeVisible({ timeout: 15_000 });
+	await juri.locator('summary').click();
+	await expect(juri.getByTestId('decisao-juri').first()).toBeVisible();
 	expect(problemas).toEqual([]);
 });
