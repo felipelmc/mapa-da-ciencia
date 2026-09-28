@@ -10,7 +10,9 @@
   `mapa redes` e guardado no `estado.sqlite` (que não é publicado). Sem o segredo, não dá para voltar do id publicado
   ao ORCID testando candidatos, o que um *hash* sem chave permitiria em minutos. O id continua o mesmo entre
   execuções enquanto a pessoa for a mesma; uma fusão ou separação no `pessoas.yaml`, ou um projeto copiado sem o
-  `estado.sqlite`, muda os ids (e os links com `no=`).
+  `estado.sqlite`, muda os ids (e os links com `no=`). O `mapa publicar` procura ORCIDs, além de e-mails, em cada
+  arquivo do site, e interrompe a publicação se achar um que tenha chegado aos dados por outro caminho (um título de
+  obra, um nome no `pessoas.yaml`).
 - **Chaves e e-mail de contato:** ficam no `.env` do projeto, que o `mapa novo` já coloca no `.gitignore`.
 
 As únicas chamadas externas são as da coleta de metadados públicos (ArticleMeta e OpenAlex), identificadas por um User-Agent do projeto.

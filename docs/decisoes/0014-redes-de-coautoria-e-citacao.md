@@ -39,7 +39,8 @@ OpenAlex tem as referências já resolvidas (`referenced_works`), a 1 crédito p
    um HMAC-SHA256 do id interno com um segredo do projeto guardado no `estado.sqlite`, e não um *hash* sem chave: a
    revisão mostrou que o SHA-256 truncado de `orcid:…` devolvia 58 ORCIDs do piloto em 26 s de força bruta. Um id
    sequencial num mapa interno também serviria, mas mudaria com a ordem das pessoas; o HMAC só muda quando a
-   identidade da pessoa muda (ou o segredo se perde).
+   identidade da pessoa muda (ou o segredo se perde). O `mapa publicar` procura ORCIDs (com o dígito verificador),
+   além de e-mails, em todos os JSON do site.
 
 ## Números do piloto
 

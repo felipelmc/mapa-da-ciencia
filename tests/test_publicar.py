@@ -88,6 +88,23 @@ def test_resumos_so_com_licenca_aberta(projeto, estatico, tmp_path):
     assert not (site / "sobra.txt").exists() and not (tmp_path / "site.novo").exists()
 
 
+def test_varredura_recusa_email_e_orcid(tmp_path):
+    from mapa_da_ciencia.publicar import conferir_privacidade
+
+    dados = tmp_path / "dados"
+    dados.mkdir()
+    # números de quatro em quatro dígitos que não são ORCIDs (ISSN, PID, dígito verificador errado) passam
+    parecidos = '{"issn": "0011-5258", "x": "1234-5678-9012-3456", "y": "0000-0002-1825-0098"}'
+    (dados / "revistas.json").write_text(parecidos)
+    conferir_privacidade(dados)
+    (dados / "citacoes.json").write_text('{"canone": [{"titulo": "Uma obra (0000-0002-1825-0097)"}]}')
+    with pytest.raises(ErroConfig, match=r"ORCID \(0000-0002-1825-0097\) apareceu em citacoes\.json"):
+        conferir_privacidade(dados)
+    (dados / "citacoes.json").write_text('{"nome": "fulano@exemplo.org"}')
+    with pytest.raises(ErroConfig, match="e-mail"):
+        conferir_privacidade(dados)
+
+
 def test_sem_resumos(projeto, estatico, tmp_path):
     from mapa_da_ciencia.publicar import publicar
 

@@ -71,6 +71,30 @@ def normalizar_doi(doi: str | None) -> str | None:
     return achado.group(0).rstrip(".,;)]").lower()
 
 
+_ORCID_NO_TEXTO = re.compile(r"(?<![\w/.-])(000[09]-\d{4}-\d{4}-\d{3}[\dX])(?![\w-])", re.IGNORECASE)
+
+
+def _digito_orcid(base: str) -> str:
+    """Dígito verificador do ORCID (ISO 7064 MOD 11-2) dos 15 primeiros dígitos."""
+    total = 0
+    for c in base:
+        total = (total + int(c)) * 2
+    resto = (12 - total % 11) % 11
+    return "X" if resto == 10 else str(resto)
+
+
+def orcids_no_texto(texto: str) -> list[str]:
+    """Os ORCIDs válidos (faixas 0000 e 0009, dígito verificador certo) que aparecem num texto. O dígito
+    verificador evita confundir com outros números de quatro em quatro dígitos."""
+    saida = []
+    for achado in _ORCID_NO_TEXTO.finditer(texto):
+        orcid = achado.group(1).upper()
+        digitos = orcid.replace("-", "")
+        if _digito_orcid(digitos[:15]) == digitos[15]:
+            saida.append(orcid)
+    return saida
+
+
 def normalizar_orcid(orcid: str | None) -> str | None:
     if not orcid:
         return None
