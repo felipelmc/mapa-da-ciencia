@@ -131,9 +131,10 @@ topicos:
 macrotemas:
   0:
     rotulo: Instituições e eleições
+    descricao: O funcionamento das instituições políticas e a competição eleitoral.
 ```
 
-O que está no `rotulos.yaml` tem prioridade sobre o modelo, e continua valendo nas execuções seguintes, porque o número do tópico é estável. Sem modelo de linguagem (`mapa topicos --sem-rotulos`), os rótulos são as três palavras-chave mais fortes.
+Escreva sempre a `descricao` junto com o `rotulo`: uma entrada só com o rótulo deixa o tópico (ou o macrotema) sem descrição. O que está no `rotulos.yaml` tem prioridade sobre o modelo, e continua valendo nas execuções seguintes, porque o número do tópico é estável. Sem modelo de linguagem (`mapa topicos --sem-rotulos`), os rótulos são as três palavras-chave mais fortes.
 
 ## 12. Em alta e em queda
 
