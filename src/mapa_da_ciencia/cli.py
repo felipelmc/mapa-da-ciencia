@@ -917,6 +917,36 @@ def juri_importar_respostas(
         console.print(f"[red]… e mais {num(len(r.recusadas) - 10, 0)}.[/]")
 
 
+@juri_app.command("supervisionar")
+def juri_supervisionar(
+    projeto: OpcaoProjeto = Path("."),
+    limite_gasto: Annotated[
+        float | None,
+        typer.Option("--limite-gasto", min=0, help="Gasto máximo em dólares (padrão: o do mapa.yaml)."),
+    ] = None,
+    sim: Annotated[bool, typer.Option("--sim", help="Envia sem perguntar (depois de mostrar a estimativa).")] = False,
+) -> None:
+    """Supervisor pela API da Anthropic (modo `api`): envia os pedidos, com consentimento e limite de gasto."""
+    from mapa_da_ciencia.juri.supervisor import supervisionar
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        estimativa = supervisionar(p, limite_gasto=limite_gasto)
+        console.print(str(estimativa))
+        if not estimativa.pedidos:
+            return
+        if not sim and not typer.confirm(
+            f"Enviar {estimativa.pedidos} pedido(s), com títulos e resumos, para a API da Anthropic?", default=False
+        ):
+            raise typer.Exit(1)
+        r = supervisionar(p, limite_gasto=limite_gasto, confirmar=True)
+    console.print(f"[bold green]Supervisor[/]: {r}")
+    if r.importacao:
+        console.print(str(r.importacao))
+    for falha in r.falhas[:5]:
+        console.print(f"[red]Falhou:[/] {falha}")
+
+
 @juri_app.command("status")
 def juri_status(projeto: OpcaoProjeto = Path(".")) -> None:
     """Em que passo o júri está."""

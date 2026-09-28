@@ -167,3 +167,64 @@ def test_config_do_juri():
     with pytest.raises(ValueError):
         ConfigJuri(membros=["qwen3.5:9b", "qwen3.5:9b"])
     assert ConfigJuri().supervisor.modo == "arquivo" and not ConfigJuri().supervisor.enviar_textos
+
+
+class ClienteFalso:
+    """Um substituto do `anthropic.Anthropic`: responde cada pedido como um supervisor, e conta o uso."""
+
+    def __init__(self) -> None:
+        self.pedidos: list[dict] = []
+        self.messages = self
+
+    def create(self, **kw):
+        from types import SimpleNamespace
+
+        self.pedidos.append(kw)
+        pedido = json.loads(kw["messages"][0]["content"])
+        evidencia = " ".join(pedido["resumo"].split()[:5])
+        if pedido["tarefa"] == "arbitragem":
+            r = {"escolha": 1, "evidencia": evidencia, "justificativa": "…", "nenhum_adequado": False}
+        else:
+            r = {"correto": True, "valor_sugerido": "", "evidencia": evidencia, "justificativa": "ok"}
+        uso = SimpleNamespace(input_tokens=900, output_tokens=400, cache_read_input_tokens=0,
+                              cache_creation_input_tokens=0)  # fmt: skip
+        return SimpleNamespace(
+            content=[SimpleNamespace(type="text", text=json.dumps(r))], usage=uso, stop_reason="end_turn"
+        )
+
+
+def test_supervisor_pela_api_com_consentimento_e_limite(projeto):
+    from mapa_da_ciencia.config import ErroConfig
+    from mapa_da_ciencia.juri.supervisor import supervisionar
+
+    votar(projeto)
+    deliberar_juri(projeto)
+    with pytest.raises(ErroConfig, match="por arquivos"):
+        supervisionar(projeto)
+    arquivo = projeto.raiz / "mapa.yaml"
+    cfg = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
+    cfg["juri"]["supervisor"] = {"modo": "api"}
+    arquivo.write_text(yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8")
+    with pytest.raises(ErroConfig, match="enviar_textos"):
+        supervisionar(Projeto.abrir(projeto.raiz))
+    cfg["juri"]["supervisor"] = {"modo": "api", "enviar_textos": True, "limite_gasto_usd": 5}
+    arquivo.write_text(yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8")
+    p = Projeto.abrir(projeto.raiz)
+
+    cliente = ClienteFalso()
+    estimativa = supervisionar(p, cliente=cliente)  # sem confirmar: nada sai da máquina
+    assert not estimativa.feito and estimativa.pedidos > 0 and not cliente.pedidos
+    with pytest.raises(ErroConfig, match="limite de gasto"):
+        supervisionar(p, limite_gasto=0.0001, cliente=cliente)
+
+    # um limite que cabe na estimativa, mas acaba no meio: para antes de passar dele
+    r = supervisionar(p, limite_gasto=estimativa.estimativa_usd * 1.01, confirmar=True, cliente=cliente)
+    assert r.feito and r.respondidos == len(cliente.pedidos) > 0
+    assert r.gasto_usd <= estimativa.estimativa_usd * 1.01
+    primeiro = cliente.pedidos[0]
+    assert primeiro["model"] == "claude-opus-5-5" and primeiro["system"][0]["cache_control"]
+    assert primeiro["output_config"]["format"]["type"] == "json_schema"
+    assert r.importacao.aceitas == r.respondidos and not r.importacao.recusadas
+
+    r = supervisionar(p, limite_gasto=5, confirmar=True, cliente=ClienteFalso())
+    assert ler_resumo(p).pendentes_supervisor == 0 and auditoria(p).n == 3

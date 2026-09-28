@@ -329,3 +329,128 @@ def auditoria(projeto: Projeto) -> Auditoria:
 
 def valor_sugerido(texto: str | None, tipo: str) -> Any:
     return None if texto is None else valor_do_texto(texto, tipo)
+
+
+# ---------------------------------------------------------------- supervisor pela API
+@dataclass
+class ResumoSupervisao:
+    pedidos: int
+    estimativa_usd: float
+    modelo: str
+    feito: bool = False
+    respondidos: int = 0
+    gasto_usd: float = 0.0
+    parou_no_limite: bool = False
+    falhas: list[str] = field(default_factory=list)
+    importacao: ResumoRespostas | None = None
+
+    def __str__(self) -> str:
+        if not self.feito:
+            return (
+                f"{self.pedidos} pedido(s) ao supervisor ({self.modelo}), custo estimado de US$ "
+                f"{self.estimativa_usd:.2f}."
+            )
+        texto = (
+            f"{self.respondidos} de {self.pedidos} pedido(s) respondidos por {self.modelo}, US$ {self.gasto_usd:.2f}"
+        )
+        if self.parou_no_limite:
+            texto += " (parou no limite de gasto)"
+        return texto + "."
+
+
+def esquema_da_resposta(pedido: dict[str, Any], variavel: Any) -> dict[str, Any]:
+    """O JSON Schema da resposta do supervisor a um pedido (o mesmo formato do protocolo por arquivos)."""
+    comum = {"evidencia": {"type": "string"}, "justificativa": {"type": "string"}}
+    if pedido["tarefa"] == "arbitragem":
+        propriedades = {
+            "escolha": {"type": "integer", "enum": [c["n"] for c in pedido["candidatos"]]},
+            **comum,
+            "nenhum_adequado": {"type": "boolean"},
+        }
+    else:
+        categorias = [c.valor for c in variavel.categorias]
+        sugerido: dict[str, Any]
+        if variavel.tipo == "categorica":
+            sugerido = {"type": "string", "enum": [*categorias, ""]}
+        elif variavel.tipo == "booleana":
+            sugerido = {"type": "string", "enum": ["true", "false", ""]}
+        elif variavel.tipo == "multipla":
+            sugerido = {"type": "array", "items": {"type": "string", "enum": categorias}}
+        else:
+            sugerido = {"type": "string"}
+        propriedades = {"correto": {"type": "boolean"}, "valor_sugerido": sugerido, **comum}
+    return {"type": "object", "properties": propriedades, "required": list(propriedades), "additionalProperties": False}
+
+
+def _normalizar_auditoria(resposta: dict[str, Any], variavel: Any) -> dict[str, Any]:
+    """No esquema da API o valor sugerido nunca é nulo: "" (ou lista vazia) quando a decisão está correta."""
+    sugerido = resposta.get("valor_sugerido")
+    if resposta.get("correto") or sugerido in ("", [], None):
+        resposta["valor_sugerido"] = None
+    elif variavel.tipo == "booleana":
+        resposta["valor_sugerido"] = sugerido == "true"
+    return resposta
+
+
+def supervisionar(
+    projeto: Projeto, *, limite_gasto: float | None = None, confirmar: bool = False, cliente: Any = None
+) -> ResumoSupervisao:
+    """O supervisor pela API da Anthropic. Sem `confirmar`, só estima (nada sai da máquina); com ele, envia os
+    pedidos, para antes de passar do limite de gasto e importa as respostas pelo mesmo caminho do protocolo por
+    arquivos (a mesma conferência de candidatos e evidências)."""
+    from ..llm.anthropic import Anthropic, ErroOrcamento, estimar_custo
+    from ..llm.base import ErroProvedor
+    from ..rede import variavel as variavel_do_ambiente
+
+    cfg = projeto.config.juri.supervisor
+    if cfg.modo != "api":
+        raise ErroConfig(
+            "O supervisor deste projeto trabalha por arquivos (`juri.supervisor.modo: arquivo`). Para usar a API da "
+            "Anthropic, ponha `modo: api` e `enviar_textos: true` no mapa.yaml; ou use `mapa juri exportar-pedidos`."
+        )
+    if not cfg.enviar_textos:
+        raise ErroConfig(
+            "O supervisor pela API envia títulos e resumos à Anthropic. Para consentir, ponha "
+            "`juri.supervisor.enviar_textos: true` no mapa.yaml."
+        )
+    limite = cfg.limite_gasto_usd if limite_gasto is None else limite_gasto
+    exportados = exportar_pedidos(projeto, lote=10**6)
+    lista = [json.loads(x) for arquivo in exportados.arquivos for x in arquivo.read_text(encoding="utf-8").splitlines()]
+    textos = [json.dumps(p, ensure_ascii=False) for p in lista]
+    estimativa = estimar_custo(cfg.modelo, INSTRUCOES_SUPERVISOR, textos) if lista else 0.0
+    resumo = ResumoSupervisao(len(lista), round(estimativa, 4), cfg.modelo)
+    if estimativa > limite:
+        raise ErroConfig(
+            f"O custo estimado (US$ {estimativa:.2f}) passa do limite de gasto (US$ {limite:.2f}). Aumente "
+            "`--limite-gasto` ou `juri.supervisor.limite_gasto_usd`."
+        )
+    if not confirmar or not lista:
+        return resumo
+    gerador = Anthropic(
+        cfg.modelo, cfg.esforco, limite, chave=variavel_do_ambiente("ANTHROPIC_API_KEY", projeto.raiz), cliente=cliente
+    )
+    variaveis = {v.id: v for v in projeto.codebook.variaveis}
+    respostas = []
+    for pedido, texto in zip(lista, textos, strict=True):
+        v = variaveis[pedido["variavel"]["id"]]
+        antes = gerador.custo_usd()
+        try:
+            r = gerador.gerar_estruturado(INSTRUCOES_SUPERVISOR, texto, esquema_da_resposta(pedido, v))
+        except ErroOrcamento:
+            resumo.parou_no_limite = True
+            break
+        except ErroProvedor as e:
+            resumo.falhas.append(f"{pedido['id']}: {e}")
+            continue
+        if pedido["tarefa"] == "auditoria":
+            r = _normalizar_auditoria(r, v)
+        respostas.append({**r, "id": pedido["id"], "custo_usd": round(gerador.custo_usd() - antes, 6)})
+    resumo.feito = True
+    resumo.respondidos = len(respostas)
+    resumo.gasto_usd = round(gerador.custo_usd(), 4)
+    if respostas:
+        carimbo = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+        arquivo = pasta_pedidos(projeto) / f"api-{carimbo}.respostas.jsonl"
+        arquivo.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in respostas) + "\n", encoding="utf-8")
+        resumo.importacao = importar_respostas(projeto, [arquivo], supervisor=cfg.nome, origem="api")
+    return resumo
