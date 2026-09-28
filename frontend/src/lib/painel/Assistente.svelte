@@ -120,6 +120,23 @@
 		)?.nome ?? null
 	);
 
+	/**
+	 * O que o modelo lê do codebook (a mensagem de sistema da classificação, `classificacao/prompt.py`): as instruções e,
+	 * de cada variável, o id, o rótulo, o tipo, a pergunta e as categorias com a definição e os exemplos. O rótulo das
+	 * categorias, o nome e a versão ficam de fora: mudá-los cria um resultado novo, mas montado das respostas guardadas.
+	 */
+	const oQueOModeloLe = (cb: CodebookEditavel) =>
+		JSON.stringify({
+			instrucoes: cb.instrucoes,
+			variaveis: cb.variaveis.map((v) => ({
+				id: v.id,
+				rotulo: v.rotulo,
+				tipo: v.tipo,
+				pergunta: v.pergunta,
+				categorias: (v.categorias ?? []).map((c) => ({ valor: c.valor, definicao: c.definicao, exemplos: c.exemplos ?? [] }))
+			}))
+		});
+
 	// ---- o que muda
 	const mudancas = $derived.by(() => {
 		if (!original || !codebook) return [];
@@ -149,8 +166,17 @@
 					refaz: papel === 'classificacao' ? 'classificação' : 'tópicos'
 				});
 		}
-		if (JSON.stringify(codebook) !== codebookOriginal)
-			saida.push({ texto: 'O codebook mudou.', refaz: 'classificação, se as definições mudaram' });
+		if (JSON.stringify(codebook) !== codebookOriginal) {
+			const leituraMudou = oQueOModeloLe(codebook) !== oQueOModeloLe(JSON.parse(codebookOriginal));
+			saida.push(
+				leituraMudou
+					? { texto: 'O codebook mudou no que o modelo lê.', refaz: 'a classificação inteira (horas, num corpus grande) e o júri' }
+					: {
+							texto: 'O codebook mudou só nos rótulos das categorias, no nome ou na versão.',
+							refaz: 'a classificação, montada em segundos das respostas guardadas (rode `mapa classificar`), e o júri'
+						}
+			);
+		}
 		return saida;
 	});
 
@@ -299,8 +325,10 @@
 			{:else if passo === 3}
 				<h3>O codebook</h3>
 				<p class="suave">
-					O modelo lê as instruções, as perguntas, as definições e os exemplos: mudar uma definição refaz a
-					classificação. Os rótulos só mudam o que o painel mostra.
+					O modelo lê as instruções e, de cada variável, o rótulo, a pergunta, as definições e os exemplos: mudar
+					qualquer um deles refaz a classificação inteira. O rótulo de uma categoria, o nome e a versão ele não lê:
+					mudá-los deixa a classificação desatualizada até a próxima <code>mapa classificar</code>, que a monta em
+					segundos das respostas guardadas. Nos dois casos, o júri precisa ser refeito.
 				</p>
 				<EditorCodebook bind:codebook />
 			{:else}

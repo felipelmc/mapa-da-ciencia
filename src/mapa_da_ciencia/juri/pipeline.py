@@ -11,7 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ..classificacao.executor import Classificador
+from ..classificacao.resultado import PASTA as PASTA_CLASSIFICACAO
+from ..classificacao.resultado import documentos_classificados
 from ..llm.ollama import Ollama
 from ..progresso import Progresso, ProgressoNulo
 from ..projeto import Projeto
@@ -44,22 +45,20 @@ class EstadoJuri:
 
 
 def estado(projeto: Projeto, *, ollama: Ollama | None = None) -> EstadoJuri:
-    """Em que passo o júri está e qual é o próximo comando."""
+    """Em que passo o júri está e qual é o próximo comando. Os votos de cada membro contam pelo resultado gravado
+    com o codebook atual (o que o júri lê), e não pelo cache do modelo: o status não depende do Ollama, e uma mudança
+    de rótulo no codebook (que deixa o cache inteiro, mas sem o resultado do codebook novo) pede `votar` de novo."""
     membros = membros_do_juri(projeto)
     textos = textos_da_amostra(projeto)
-    base = projeto.config.modelos.classificacao
-    ollama = ollama or Ollama()
-    classificados = {}
-    for membro in membros:
-        cfg = base.model_copy(update={"modelo": membro})
-        try:
-            pendentes = Classificador(cfg, projeto.codebook, projeto.estado, ollama=ollama).pendentes(textos)
-            classificados[membro] = len(textos) - len(pendentes)
-        except Exception:  # modelo não instalado ou Ollama fora do ar: o status não quebra
-            classificados[membro] = 0
+    na_amostra = {t.doc for t in textos}
+    pasta = projeto.dados / PASTA_CLASSIFICACAO
+    hash_cb = projeto.codebook.hash()
+    classificados = {m: len(na_amostra & (documentos_classificados(pasta, m, hash_cb) or set())) for m in membros}
     completos = not any(n < len(textos) for n in classificados.values())
     # recalculado, e não o resumo.json da última consolidação: depois de uma votação nova ele estaria velho
     resumo = resumir(projeto) if completos else ler_resumo(projeto)
+    if resumo is not None and not resumo.documentos:  # o resumo de outro codebook, ou vazio
+        resumo = None
     if not completos:
         proximo = "mapa juri votar"
     elif resumo is None or resumo.nao_deliberados:

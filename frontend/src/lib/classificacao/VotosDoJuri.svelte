@@ -36,6 +36,8 @@
 		return x === null ? '—' : v?.tipo === 'texto' ? x : rotulo(x);
 	}
 	const mudancas = $derived(Object.values(juri).some((d) => (d.votos ?? []).some((v) => v.revisou)));
+	/** O primeiro membro do júri (o primeiro voto da rodada 1, na ordem do júri): o voto dele vale sem maioria. */
+	const primeiro = (d: DecisaoJuri) => (d.votos ?? []).find((v) => v.rodada === 1)?.membro ?? null;
 
 	function votos(d: DecisaoJuri, membro: string) {
 		const r1 = (d.votos ?? []).find((v) => v.membro === membro && v.rodada === 1);
@@ -93,8 +95,8 @@
 								{valor(id, d.valor_sem_supervisor)}
 								<span class="nota"
 									>{codebook?.variaveis.find((v) => v.id === id)?.tipo === 'texto'
-										? 'o voto do primeiro membro (texto livre não vai ao supervisor)'
-										: 'o voto do primeiro membro, até o supervisor decidir'}</span
+										? `o voto do primeiro membro${primeiro(d) ? ` (${primeiro(d)})` : ''}; texto livre não vai ao supervisor`
+										: `o voto do primeiro membro${primeiro(d) ? ` (${primeiro(d)})` : ''}, até o supervisor decidir`}</span
 								>
 							</span>
 						</li>

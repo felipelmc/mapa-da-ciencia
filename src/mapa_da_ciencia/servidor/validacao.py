@@ -52,7 +52,7 @@ def semente_do_codificador(nome: str) -> int:
 
 def rotas_validacao(projeto: Projeto) -> APIRouter:
     from mapa_da_ciencia.classificacao.resultado import valor_do_texto
-    from mapa_da_ciencia.contrato.classificacao import codebook_contrato, validacao_contrato
+    from mapa_da_ciencia.contrato.classificacao import codebook_contrato, juri_contrato, validacao_contrato
     from mapa_da_ciencia.validacao import amostra as va
 
     rotas = APIRouter(prefix="/api/validacao", tags=["validação"])
@@ -158,6 +158,10 @@ def rotas_validacao(projeto: Projeto) -> APIRouter:
         from mapa_da_ciencia.validacao.metricas import calcular
 
         _amostra()
-        return validacao_contrato(calcular(projeto), so_referencia=False).model_dump(mode="json")
+        v = calcular(projeto)
+        validacao = validacao_contrato(v, so_referencia=False)
+        # o júri, como no `validacao.json` exportado (sem ele, a vista do painel perdia a seção "Júri")
+        validacao.juri, _ = juri_contrato(projeto, v)
+        return validacao.model_dump(mode="json")
 
     return rotas

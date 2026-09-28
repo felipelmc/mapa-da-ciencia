@@ -114,6 +114,14 @@ class DecisaoFinal:
         return chave_pedido(self.doc, self.variavel.id, self.candidatos)
 
 
+NOME_DO_ESTAGIO = {"unanime": "unânimes", "maioria": "por maioria", "deliberacao": "na deliberação",
+                   "sem_maioria": "sem maioria"}  # fmt: skip
+
+
+def _num(n: int) -> str:
+    return f"{n:,}".replace(",", ".")
+
+
 @dataclass
 class ResumoJuri:
     membros: list[str]
@@ -130,10 +138,11 @@ class ResumoJuri:
 
     def __str__(self) -> str:
         total = {e: sum(v.get(e, 0) for v in self.etapas.values()) for e in ESTAGIOS}
-        partes = ", ".join(f"{e}: {n}" for e, n in total.items() if n)
+        partes = ", ".join(f"{_num(n)} {NOME_DO_ESTAGIO.get(e, e)}" for e, n in total.items() if n)
         texto = (
-            f"Júri de {len(self.membros)} membros em {self.documentos} documento(s): {partes}; "
-            f"{self.arbitrados} decididos pelo supervisor, {self.pendentes_supervisor} esperando o supervisor"
+            f"Júri de {len(self.membros)} membros em {_num(self.documentos)} documento(s), com as decisões por "
+            f"variável: {partes}; {_num(self.arbitrados)} decididas pelo supervisor, "
+            f"{_num(self.pendentes_supervisor)} esperando o supervisor"
         )
         if self.nao_deliberados:
             texto += f"; {self.nao_deliberados} em disputa ainda sem deliberação"
