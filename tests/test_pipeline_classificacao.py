@@ -285,3 +285,37 @@ def test_gravacoes_periodicas_da_rodada_completa_nao_deixam_aviso_de_parcial(pro
     pasta, hash_cb = projeto.dados / PASTA, projeto.codebook.hash()
     assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb).modelo.endswith("@novo00000000")
     assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb, a_parte=True) is None
+
+
+def test_a_versao_a_parte_sai_quando_deixa_de_ser_a_mais_nova(projeto, apis_falsas):
+    """Uma versão medida só na amostra e depois abandonada (o modelo foi atualizado de novo, ou o parâmetro voltou)
+    não fica para sempre nas métricas."""
+    from mapa_da_ciencia.validacao.metricas import calcular
+
+    mapa.classificar(projeto, progresso=False)  # v1, completa
+    mapa.amostra_de_validacao(projeto, n=5)
+    pasta, hash_cb = projeto.dados / PASTA, projeto.codebook.hash()
+
+    def a_parte():
+        return Resultado.ler(pasta, "qwen3.5:4b", hash_cb, a_parte=True)
+
+    def modelos():
+        return [p.nome for p in calcular(projeto, reamostras=10).participantes if p.tipo == "modelo"]
+
+    apis_falsas.digests["qwen3.5:4b"] = "v2000000000000000"
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    assert a_parte().modelo.endswith("@v20000000000")
+    apis_falsas.digests["qwen3.5:4b"] = "v3000000000000000"  # outra atualização: a v3 toma o lugar da v2 à parte
+    mapa.classificar(projeto, estimar=True, progresso=False)
+    assert a_parte().modelo.endswith("@v30000000000")
+    apis_falsas.digests["qwen3.5:4b"] = "v4000000000000000"  # e a rodada completa de outra versão ainda
+    mapa.classificar(projeto, progresso=False)
+    assert Resultado.ler(pasta, "qwen3.5:4b", hash_cb).modelo.endswith("@v40000000000") and a_parte() is None
+    assert modelos() == ["qwen3.5:4b"]
+
+    apis_falsas.digests["qwen3.5:4b"] = "v5000000000000000"
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    assert modelos() == ["qwen3.5:4b", "qwen3.5:4b (versão nova)"]
+    apis_falsas.digests["qwen3.5:4b"] = "v4000000000000000"  # a v5 foi abandonada: de volta à v4, que está no cache
+    mapa.classificar(projeto, limite=3, progresso=False)
+    assert a_parte() is None and modelos() == ["qwen3.5:4b"]

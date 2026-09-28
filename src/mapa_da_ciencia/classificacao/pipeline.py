@@ -202,10 +202,10 @@ def classificar(
             a_parte=not gravou,
         )
         resultado.gravar(projeto.dados / PASTA, linhas)
-        if gravou:  # a versão à parte desta mesma execução ficou repetida
-            a_parte = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash(), a_parte=True)
-            if a_parte is not None and a_parte.execucao == execucao:
-                a_parte.apagar(projeto.dados / PASTA)
+        # gravado o principal, a versão à parte sai: ou é esta mesma (ficou repetida), ou uma que deixou de ser a mais
+        # nova (outra atualização, ou o parâmetro de volta); uma versão à parte nova toma o lugar da anterior
+        if gravou and (velha := Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash(), a_parte=True)):
+            velha.apagar(projeto.dados / PASTA)
         return resultado
 
     resultados: list[Classificacao] = []
