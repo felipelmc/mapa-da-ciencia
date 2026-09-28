@@ -99,6 +99,31 @@ test('projeto sem tópicos: o mapa explica o que fazer e não pede arquivos ause
 	expect(problemas).toEqual([]);
 });
 
+test('o mapa acompanha a janela, o modo apresentação e o painel recolhido', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	// diferença, em pixels, entre o canvas e a área do mapa (a `.tela`, pai do canvas)
+	const folga = () =>
+		page.evaluate(() => {
+			const c = document.querySelector<HTMLCanvasElement>('[data-testid=canvas-mapa]')!;
+			const p = c.parentElement!;
+			return Math.max(Math.abs(c.clientWidth - p.clientWidth), Math.abs(c.clientHeight - p.clientHeight));
+		});
+	expect(await folga()).toBeLessThanOrEqual(1);
+	await page.setViewportSize({ width: 1100, height: 700 });
+	await expect.poll(folga, { message: 'janela menor' }).toBeLessThanOrEqual(1);
+	await page.setViewportSize({ width: 1920, height: 1080 });
+	await expect.poll(folga, { message: 'janela maior' }).toBeLessThanOrEqual(1);
+	await page.keyboard.press('p');
+	await expect(page.getByTestId('modo-apresentacao')).toBeVisible();
+	await expect.poll(folga, { message: 'modo apresentação' }).toBeLessThanOrEqual(1);
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Recolher' }).click();
+	await expect.poll(folga, { message: 'painel recolhido' }).toBeLessThanOrEqual(1);
+	expect(problemas).toEqual([]);
+});
+
 // ---- cartão do documento
 
 type Detalhe = {

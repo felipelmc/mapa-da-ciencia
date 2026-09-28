@@ -196,11 +196,16 @@
 				pronto = true;
 				avisarCamera();
 
+				// Com largura e altura em números, o regl-scatterplot fixa o tamanho do canvas em pixels no `style`:
+				// a caixa do canvas não muda mais, e observá-la não adianta. Quem muda é o pai (a `.tela`, que ocupa
+				// a área do mapa): janela redimensionada, modo apresentação, painel recolhido, celular girado.
+				const pai = canvas.parentElement ?? canvas;
 				observador = new ResizeObserver(() => {
-					const caixa = canvas.getBoundingClientRect();
-					if (caixa.width && caixa.height) grafico?.set({ width: caixa.width, height: caixa.height }).then(avisarCamera);
+					const caixa = pai.getBoundingClientRect();
+					if (!caixa.width || !caixa.height) return;
+					emFila(() => grafico?.set({ width: caixa.width, height: caixa.height })).then(avisarCamera);
 				});
-				observador.observe(canvas);
+				observador.observe(pai);
 			} catch (e) {
 				debug().erro = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
 				console.error('[mapa] falha ao desenhar', e);
