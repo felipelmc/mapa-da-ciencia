@@ -10,8 +10,9 @@ supervisiona?
 
 **1. Votação.** Cada membro de `juri.membros` classifica os documentos da amostra de validação, pelo mesmo caminho
 de `mapa classificar --modelo`: o mesmo prompt, a mesma evidência obrigatória e o mesmo cache. A decisão de cada
-variável é a **maioria estrita** dos membros, e só vale se ao menos um voto da maioria trouxer evidência que esteja
-no texto (um valor sem trecho que o sustente não decide nada). Variáveis de múltipla escolha são decididas categoria
+variável é a **maioria estrita** dos membros. Uma maioria que não é unânime só vale se ao menos um voto dela trouxer
+evidência que esteja no texto (um valor sem trecho que o sustente não desempata nada); a unanimidade decide mesmo
+sem evidência, porque não há o que deliberar, e a auditoria pode sorteá-la. Variáveis de múltipla escolha são decididas categoria
 a categoria; as de texto livre, pela forma normalizada.
 
 **2. Deliberação.** Nas variáveis sem unanimidade, cada membro recebe, na mesma conversa em que classificou, a
