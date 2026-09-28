@@ -52,6 +52,7 @@ test('o júri: estágios por variável, auditoria e o par circular marcado', asy
 	await expect(page.getByTestId('secao-juri')).toBeVisible();
 	await expect(page.getByTestId('tabela-juri').locator('tbody tr')).toHaveCount(Object.keys(validacao.juri.etapas).length);
 	await expect(page.getByTestId('auditoria-juri')).toContainText(`conferiu ${validacao.juri.auditoria.n} decisões`);
+	await expect(page.getByTestId('concordancia-supervisor')).toContainText('circular');
 	const circular = page.getByTestId('par').filter({ hasText: 'juri-supervisor' });
 	await expect(circular).toContainText('circular');
 	await circular.click();
@@ -66,5 +67,38 @@ test('o cartão de um documento da amostra mostra os votos do júri', async ({ p
 	await expect(juri).toBeVisible({ timeout: 15_000 });
 	await juri.locator('summary').click();
 	await expect(juri.getByTestId('decisao-juri').first()).toBeVisible();
+	expect(problemas).toEqual([]);
+});
+
+test('sem maioria e sem supervisor, o cartão diz o que valeu; a mudança na deliberação é dita em texto', async ({ page }) => {
+	const problemas = vigiar(page);
+	const doc = 'exemplo:00689';
+	await page.route('**/detalhes/*.json', async (route) => {
+		const resposta = await route.fetch();
+		const dados = await resposta.json();
+		const juri = dados.documentos?.[doc]?.juri;
+		if (juri) {
+			const [id] = Object.keys(juri);
+			const votos = juri[id].votos.filter((v: { rodada: number }) => v.rodada === 1);
+			juri[id] = {
+				...juri[id],
+				etapa: 'sem_maioria',
+				supervisor: null,
+				justificativa: null,
+				valor: votos[0].valor,
+				valor_sem_supervisor: votos[0].valor,
+				votos: [...votos, { ...votos[1], rodada: 2, valor: votos[0].valor, revisou: true }]
+			};
+		}
+		await route.fulfill({ response: resposta, json: dados });
+	});
+	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(doc)}`);
+	const juri = page.getByTestId('votos-do-juri');
+	await expect(juri).toBeVisible({ timeout: 15_000 });
+	await juri.locator('summary').click();
+	await expect(juri.getByTestId('valeu-presidente')).toContainText('o voto do primeiro membro');
+	await expect(juri.getByTestId('mudou-na-deliberacao').first()).toContainText('mudou na deliberação para');
+	await expect(juri.getByText('A seta (→) mostra o voto mudado na deliberação.')).toBeVisible();
+	await expect(juri.locator('q.trecho').first()).toBeVisible();
 	expect(problemas).toEqual([]);
 });
