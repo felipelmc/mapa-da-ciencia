@@ -20,9 +20,10 @@ O Felipe escolheu uma regressão logística da participação anual do tópico, 
 
 - A **dispersão** (X² de Pearson ÷ graus de liberdade) tem mediana de 1,47 e máximo de 5,48. As séries anuais variam mais do que uma binomial prevê, porque dossiês temáticos concentram artigos de um assunto num número só.
 - Com a **binomial pura**, 22 tópicos são marcados (11 em alta, 11 em queda). Entre eles, "Cooperação regional em saúde durante a pandemia" (φ = 5,48) aparece em alta por causa de um pico em 2020–2021, e "República conflitiva em Maquiavel", em queda, por causa de um dossiê no começo do período.
-- Com a **quase-binomial**, que multiplica o erro-padrão por √φ, 13 são marcados (7 em alta, 6 em queda). Todos têm séries com mudança sustentada:
+- Com a **quase-binomial**, que multiplica o erro-padrão por √φ, 13 são marcados (7 em alta, 6 em queda):
   - em alta: identificação partidária e polarização (+4,1 pontos percentuais no período), capacidades estatais municipais (+3,0), comunicação política nas redes sociais (+2,5), religião e política (+2,1), alocação de ministérios em coalizões, competição eleitoral municipal, Fernando Henrique Cardoso e Gramsci;
   - em queda: modernidade e teoria social crítica (−2,0), cobertura da imprensa (−2,0), democracia deliberativa (−1,8), representação na sociedade civil, Estado e bem-estar social, arquitetura e estética no cinema.
+- Dez desses 13 têm uma mudança que se sustenta: retirando um ano de cada vez, continuam marcados em pelo menos 12 das 16 retiradas. Três são marginais (modernidade e teoria social crítica, arquitetura e estética no cinema, Fernando Henrique Cardoso e Gramsci): passam a estáveis com o quantil t(14) no lugar do z e, retirando um só ano, em 7 a 12 das 16 retiradas.
 
 ## Decisão
 
@@ -40,6 +41,7 @@ Alternativas descartadas: regressão linear na participação (ignora que a vari
 - Com 57 tópicos testados a 5%, cerca de 3 marcações podem acontecer por acaso mesmo sem nenhuma tendência real. A interface e o guia avisam.
 - Tópicos pequenos quase nunca são marcados: é o comportamento desejado, porque a série deles é dominada pelo ruído.
 - Com filtros (uma revista, um período curto), menos tópicos passam dos mínimos, e a lista mostra "sem dados suficientes".
+- Com o período filtrado no painel, um dossiê no primeiro ou no último ano da janela ainda pode aparecer como tendência: a inclinação absorve o pico, e a dispersão não cresce o bastante para cobri-lo. Confira a série antes de citar.
 - Uma tendência descreve o corpus coletado, não a produção da área: revistas que entram ou saem do recorte mudam as participações.
 
 ## Como reproduzir

@@ -144,7 +144,7 @@ Um tópico está **em alta** quando a participação dele no corpus (documentos 
 - o tópico só é marcado quando o intervalo não inclui zero; com menos de 5 anos com documentos ou menos de 10 documentos do tópico, não há tendência calculada;
 - o tamanho da mudança é dado em **pontos percentuais**: a diferença entre a participação ajustada no primeiro e no último ano.
 
-No piloto, 13 dos 57 tópicos são marcados: 7 em alta (como identificação partidária e polarização, +4,1 pontos percentuais de 2010 a 2025, e comunicação política nas redes sociais, +2,5) e 6 em queda (como modernidade e teoria social crítica, −2,0). Com 57 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço).
+No piloto, 13 dos 57 tópicos são marcados: 7 em alta (como identificação partidária e polarização, +4,1 pontos percentuais de 2010 a 2025, e comunicação política nas redes sociais, +2,5) e 6 em queda (como modernidade e teoria social crítica, −2,0). Com 57 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço). Com o período filtrado, um dossiê no primeiro ou no último ano da janela ainda pode aparecer como tendência: confira a série antes de citar.
 
 ## 13. Onde ficam os resultados
 
