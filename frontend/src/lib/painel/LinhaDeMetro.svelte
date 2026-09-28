@@ -66,7 +66,8 @@
 		estado === 'pendente' ? 'Rodar' : estado === 'desatualizada' ? 'Atualizar' : estado === 'incompleta' ? 'Continuar' : 'Rodar de novo';
 	const resumoContagens = (c: Record<string, number>) => {
 		const [chave, n] = Object.entries(c).find(([k]) => ['documentos', 'classificados', 'vinculos', 'topicos', 'pessoas'].includes(k)) ?? [];
-		return chave ? `${formatarInteiro(n!)} ${chave}` : '';
+		const NOME: Record<string, string> = { vinculos: 'vínculos', topicos: 'tópicos' };
+		return chave ? `${formatarInteiro(n!)} ${NOME[chave] ?? chave}` : '';
 	};
 </script>
 
