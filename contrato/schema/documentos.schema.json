@@ -199,7 +199,7 @@
       "type": "integer"
     },
     "versao_contrato": {
-      "default": "1.4",
+      "default": "1.5",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",

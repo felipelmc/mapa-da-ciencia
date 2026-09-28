@@ -4,10 +4,12 @@
 
 - **Textos para modelos:** os embeddings, os rótulos dos tópicos e a classificação rodam no Ollama local.
 - **E-mails de autores:** a ArticleMeta traz o e-mail de alguns autores nas afiliações. A normalização da coleta (marco M2) descarta esse campo, e ele nunca chega aos dados do projeto nem ao site publicado. Os testes do contrato de dados verificam que nenhum arquivo exportado contém e-mails.
-- **Codificações humanas individuais:** ficam no `estado.sqlite` do projeto. Os arquivos que o painel lê (`saida/dados/`) e o site publicado trazem só as métricas agregadas de concordância; as divergências caso a caso saem apenas para codificadores de referência, que não são pessoas. As divergências de uma pessoa aparecem só no painel local, pela API, e no relatório em `validacao/`, que não é publicado e que o `.gitignore` do projeto deixa fora do git.
+- **Codificações humanas individuais:** ficam no `estado.sqlite` do projeto. O mesmo vale para um supervisor do júri que seja uma pessoa (sem família de modelo em `juri.supervisor.familia`): as escolhas e as justificativas dele entram só nos números agregados. Os arquivos que o painel lê (`saida/dados/`) e o site publicado trazem só as métricas agregadas de concordância; as divergências caso a caso saem apenas para codificadores de referência, que não são pessoas. As divergências de uma pessoa aparecem só no painel local, pela API, e no relatório em `validacao/`, que não é publicado e que o `.gitignore` do projeto deixa fora do git.
 - **Chaves e e-mail de contato:** ficam no `.env` do projeto, que o `mapa novo` já coloca no `.gitignore`.
 
 As únicas chamadas externas são as da coleta de metadados públicos (ArticleMeta e OpenAlex), identificadas por um User-Agent do projeto.
+
+A exceção é opcional e explícita: o supervisor do júri pela API da Anthropic (`juri.supervisor.modo: api`) envia os títulos e resumos dos pedidos em disputa. Ele só roda com `enviar_textos: true` no `mapa.yaml`, uma confirmação a cada execução e um limite de gasto; o padrão é o supervisor por arquivos, sem rede. Veja [Usar o júri](../guias/juri.md#o-supervisor-pela-api-da-anthropic-opcional).
 
 ## Licenças dos resumos
 

@@ -177,3 +177,11 @@ Validação da classificação: a amostra, as codificações e a concordância.
 ```
 mapa validar [OPÇÕES]
 ```
+
+## `mapa juri`
+
+Júri de modelos locais: votação, deliberação, supervisor e relatório (ver o guia "Usar o júri").
+
+```
+mapa juri [OPÇÕES]
+```

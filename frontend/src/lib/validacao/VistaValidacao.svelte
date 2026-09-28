@@ -112,6 +112,37 @@
 				)
 			: []
 	);
+	// ---- júri e comparações circulares
+	const circular = (r: string, c: string) =>
+		validacao.metricas.some((m) => par(m).join('|') === `${r}|${c}` && m.circular);
+	const parCircular = $derived(circular(ref, comp));
+	const juri = $derived(validacao.juri ?? null);
+	const ETAPAS_JURI = { unanime: 'Unânime', maioria: 'Maioria', deliberacao: 'Na deliberação', sem_maioria: 'Sem maioria' } as const;
+	const dadosJuri = $derived({
+		colunas: ['Variável', 'Unânime', 'Maioria', 'Na deliberação', 'Sem maioria', 'Mudou na deliberação'],
+		linhas: juri
+			? Object.entries(juri.etapas).map(([v, e]) => [
+					nomeVariavel(v),
+					...(['unanime', 'maioria', 'deliberacao', 'sem_maioria'] as const).map((k) => e[k] ?? 0),
+					juri.virou?.[v] ?? 0
+				])
+			: []
+	});
+	const linhasJuri = $derived(
+		juri
+			? Object.entries(juri.etapas).map(([v, e]) => [
+					nomeVariavel(v),
+					...(['unanime', 'maioria', 'deliberacao', 'sem_maioria'] as const).map((k) => formatarInteiro(e[k] ?? 0)),
+					formatarInteiro(juri.virou?.[v] ?? 0)
+				])
+			: []
+	);
+	const resumoJuri = $derived.by(() => {
+		if (!juri) return '';
+		const total = Object.values(juri.etapas).reduce((s, e) => s + Object.values(e).reduce((a, b) => a + b, 0), 0);
+		const unan = Object.values(juri.etapas).reduce((s, e) => s + (e.unanime ?? 0), 0);
+		return `${formatarInteiro(juri.membros.length)} modelos locais votaram em ${formatarInteiro(juri.documentos)} documentos: ${formatarPorcentagem(total ? unan / total : 0)} das decisões foram unânimes.`;
+	});
 	const titulo = (doc: string) => {
 		const i = tabela?.indice.get(doc);
 		return i === undefined ? doc : tabela!.titulos[i];
@@ -138,10 +169,17 @@
 	<nav class="pares" aria-label="Pares comparados">
 		{#each pares as [r, c] (`${r}|${c}`)}
 			<button type="button" aria-pressed={`${r}|${c}` === chavePar} onclick={() => ((escolhido = `${r}|${c}`), (variavelEscolhida = null))} data-testid="par">
-				{quem(r)} × {quem(c)}
+				{quem(r)} × {quem(c)}{#if circular(r, c)} <span class="circular" title="Os dois são da mesma família de modelo">circular</span>{/if}
 			</button>
 		{/each}
 	</nav>
+
+	{#if parCircular}
+		<p class="nota-referencia" data-testid="aviso-circular">
+			{quem(ref)} e {comp} são da mesma família de modelo: esta concordância é um limite superior, e não uma medida
+			independente da qualidade.
+		</p>
+	{/if}
 
 	<Figura
 		id="concordancia"
@@ -273,6 +311,67 @@
 		</Figura>
 	{/if}
 
+	{#if juri}
+		<section class="juri" aria-labelledby="titulo-juri" data-testid="secao-juri">
+			<h2 id="titulo-juri">Júri de modelos locais</h2>
+			<p class="lide">
+				Membros: {juri.membros.join(', ')}.
+				{#if juri.supervisor}O que ficou sem maioria depois da deliberação foi decidido pelo supervisor ({juri.supervisor}), que escolheu entre os votos dos membros.{/if}
+				Os participantes <strong>juri-r1</strong> (a votação) e <strong>juri</strong> (depois da deliberação) aparecem nos pares acima.
+			</p>
+			<Figura
+				id="juri-etapas"
+				titulo="Como o júri decidiu"
+				resumo={resumoJuri}
+				colunas={['Variável', 'Unânime', 'Maioria', 'Na deliberação', 'Sem maioria', 'Mudou na deliberação']}
+				linhas={linhasJuri}
+				dados={dadosJuri}
+			>
+				<div class="rolagem-lateral">
+				<table class="metricas" data-testid="tabela-juri">
+					<thead>
+						<tr>
+							<th scope="col">Variável</th>
+							{#each Object.values(ETAPAS_JURI) as rotulo (rotulo)}<th scope="col" class="num">{rotulo}</th>{/each}
+							<th scope="col" class="num">Mudou na deliberação</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each Object.entries(juri.etapas) as [v, e] (v)}
+							<tr>
+								<th scope="row">{nomeVariavel(v)}</th>
+								{#each Object.keys(ETAPAS_JURI) as k (k)}<td class="num">{formatarInteiro(e[k] ?? 0)}</td>{/each}
+								<td class="num">{formatarInteiro(juri.virou?.[v] ?? 0)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+				</div>
+			</Figura>
+			{#if juri.referencia && Object.keys(juri.concordancia_por_etapa ?? {}).length}
+				<p class="creditos">
+					Concordância com {quem(juri.referencia)} por estágio:
+					{#each Object.entries(juri.concordancia_por_etapa ?? {}) as [etapa, c], i (etapa)}{i ? '; ' : ''}{ETAPAS_JURI[etapa as keyof typeof ETAPAS_JURI] ?? etapa}, {formatarPorcentagem(c.n ? c.acertos / c.n : 0)} de {formatarInteiro(c.n)}{/each}
+					(a decisão do júri sem o supervisor).
+					{#if juri.concordancia_supervisor}
+						{@const s = juri.concordancia_supervisor}
+						<span data-testid="concordancia-supervisor">
+							Com a escolha do supervisor, nas {formatarInteiro(s.n)} decisões sem maioria que ele arbitrou:
+							{formatarPorcentagem(s.n ? s.acertos / s.n : 0)}{#if s.circular}
+								<span class="circular" title="O supervisor e a referência são da mesma família de modelo">circular</span>{/if}.
+						</span>
+					{/if}
+				</p>
+			{/if}
+			{#if juri.auditoria}
+				<p class="creditos" data-testid="auditoria-juri">
+					Auditoria: o supervisor conferiu {formatarInteiro(juri.auditoria.n)} decisões unânimes sorteadas e discordou de {formatarInteiro(juri.auditoria.erros)}{#if juri.auditoria.ic95}
+						(erro estimado entre {formatarPorcentagem(juri.auditoria.ic95[0])} e {formatarPorcentagem(juri.auditoria.ic95[1])}, IC 95% de Wilson){/if}.
+				</p>
+			{/if}
+		</section>
+	{/if}
+
 	{#if Object.keys(validacao.evidencia_literal ?? {}).length}
 		<p class="creditos">
 			Evidência literal na amostra:
@@ -345,6 +444,21 @@
 		font: inherit;
 		font-size: 0.86rem;
 		cursor: pointer;
+	}
+
+	.circular {
+		margin-left: 0.2rem;
+		padding: 0 0.35rem;
+		border: 1px dashed var(--linha-forte);
+		border-radius: 999px;
+		font-size: 0.72rem;
+		color: var(--texto-suave);
+	}
+
+	.juri {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr); /* a tabela rola na própria caixa, sem alargar a página no celular */
+		gap: 0.8rem;
 	}
 
 	.pares button[aria-pressed='true'] {

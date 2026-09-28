@@ -15,7 +15,7 @@ Convenções:
 - Nenhum arquivo do contrato pode conter e-mails ou codificações humanas individuais (as divergências de
   `validacao.json` vêm só de codificadores de referência; as de pessoas ficam na API local do painel).
 
-Versão atual: **1.4**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
+Versão atual: **1.5**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
 
 | Arquivo | Modelo |
 |---|---|
@@ -39,7 +39,7 @@ a interface lê.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `api` | sim/não | **obrigatório** | True no painel local (há API); False no site estático publicado. |
 | `gerado_em` | datetime | **obrigatório** |  |
 | `projeto` | [ProjetoInfo](#projetoinfo) | **obrigatório** | Identificação do projeto. |
@@ -115,7 +115,7 @@ Revistas presentes no corpus, com o número de documentos de cada uma.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `revistas` | lista de [Revista](#revista) | **obrigatório** | Uma revista do corpus. |
 
 ### Revista
@@ -138,7 +138,7 @@ Tabela principal: um documento por posição, com coordenadas no mapa, tópico e
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
 | `colunas` | [ColunasDocumentos](#colunasdocumentos) | **obrigatório** | Colunas da tabela de documentos (todas com `n` itens, na mesma ordem). |
 | `dicionarios` | [DicionariosDocumentos](#dicionariosdocumentos) | **obrigatório** | Valores por trás dos índices das colunas categóricas. |
@@ -182,7 +182,7 @@ Afiliações com contagem fracionária, base da vista de geografia.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
 | `colunas` | [ColunasAfiliacoes](#colunasafiliacoes) | **obrigatório** | Colunas da tabela longa de afiliações: uma linha por documento × (instituição, UF, país), pesos somados. |
 | `dicionarios` | [DicionariosAfiliacoes](#dicionariosafiliacoes) | **obrigatório** | Instituições, UFs e países por trás dos índices. |
@@ -229,7 +229,7 @@ Um dos 64 fragmentos de detalhes, carregados sob demanda.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `fragmento` | texto | **obrigatório** |  |
 | `documentos` | mapa de texto para [Detalhe](#detalhe) | **obrigatório** | O que a interface mostra ao abrir um documento: resumo, autores, licença e evidências. |
 
@@ -249,6 +249,7 @@ O que a interface mostra ao abrir um documento: resumo, autores, licença e evid
 | `evidencias` | mapa de texto para [Evidencia](#evidencia) | vazio | Valor de uma variável do codebook e o trecho do resumo que o justifica. |
 | `idioma_analise` | texto ou vazio | vazio | Idioma do texto usado nos embeddings e nos tópicos. |
 | `fonte_analise` | `"resumo"` \\| `"reserva"` \\| `"so_titulo"` ou vazio | vazio | `resumo`: título e resumo no idioma de análise; `reserva`: resumo em outro idioma (não havia no de análise); `so_titulo`: o documento não tem resumo. O texto em si não é publicado. |
+| `juri` | mapa de texto para [DecisaoJuri](#decisaojuri) | vazio | Variável → decisão do júri (só nos documentos da amostra, com júri). |
 
 ### Evidencia
 
@@ -263,6 +264,33 @@ Valor de uma variável do codebook e o trecho do resumo que o justifica.
 | `fim` | inteiro ou vazio | vazio |  |
 | `campo` | `"titulo"` \\| `"resumo"` ou vazio | vazio | Onde o trecho foi localizado; `inicio` e `fim` são posições nesse texto. |
 
+### DecisaoJuri
+
+Como o júri decidiu uma variável de um documento da amostra de validação.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `etapa` | `"unanime"` \\| `"maioria"` \\| `"deliberacao"` \\| `"sem_maioria"` | **obrigatório** |  |
+| `virou` | sim/não | `false` | A deliberação mudou a decisão (outra maioria, ou antes não havia). |
+| `valor` | texto ou sim/não ou lista de texto ou vazio | **obrigatório** | A decisão final (com o supervisor, se ele decidiu). |
+| `valor_sem_supervisor` | texto ou sim/não ou lista de texto ou vazio | **obrigatório** |  |
+| `supervisor` | texto ou vazio | vazio | Quem arbitrou, quando não houve maioria. |
+| `justificativa` | texto ou vazio | vazio | A justificativa do supervisor (vazia no site publicado). |
+| `votos` | lista de [VotoJuri](#votojuri) | vazio | O voto de um membro do júri numa variável, numa rodada (1: votação; 2: deliberação). |
+
+### VotoJuri
+
+O voto de um membro do júri numa variável, numa rodada (1: votação; 2: deliberação).
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `membro` | texto | **obrigatório** |  |
+| `rodada` | `1` \\| `2` | **obrigatório** |  |
+| `valor` | texto ou sim/não ou lista de texto ou vazio | **obrigatório** |  |
+| `evidencia` | texto | **obrigatório** | Vazia no site publicado quando a licença do resumo não é aberta. |
+| `status` | `"literal"` \\| `"aproximada"` \\| `"ausente"` \\| `"dispensada"` | **obrigatório** |  |
+| `revisou` | sim/não | `false` | Na rodada 2: o membro mudou de valor na deliberação. |
+
 ## `topicos.json`
 
 ### Topicos
@@ -271,7 +299,7 @@ Tópicos e macrotemas do corpus, com as séries por ano.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `anos` | lista de inteiro | **obrigatório** |  |
 | `total_por_ano` | lista de inteiro | **obrigatório** |  |
 | `parametros` | mapa de texto para número ou inteiro ou texto | **obrigatório** |  |
@@ -375,7 +403,7 @@ Cópia publicada do codebook, com o hash que identifica a versão usada.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `nome` | texto | **obrigatório** |  |
 | `versao` | texto | **obrigatório** |  |
 | `hash` | texto | **obrigatório** |  |
@@ -413,7 +441,7 @@ Resumo da classificação por codebook: modelo, cobertura e contagens por catego
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `modelo` | texto | **obrigatório** |  |
 | `hash_codebook` | texto | **obrigatório** |  |
 | `cobertura` | número | **obrigatório** | Fração dos documentos com classificação válida. |
@@ -444,7 +472,7 @@ Resultados da validação da classificação: concordância por variável e por 
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `amostra` | [AmostraInfo](#amostrainfo) | **obrigatório** | Como a amostra de validação foi sorteada. |
 | `metricas` | lista de [MetricaVariavel](#metricavariavel) | **obrigatório** | Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável. |
 | `modelos` | lista de texto | **obrigatório** |  |
@@ -454,6 +482,7 @@ Resultados da validação da classificação: concordância por variável e por 
 | `hash_codebook` | texto ou vazio | vazio |  |
 | `comparacoes_modelos` | lista de [ComparacaoModelos](#comparacaomodelos) | vazio | McNemar exato entre dois modelos, contra a mesma referência, numa variável. |
 | `evidencia_literal` | mapa de texto para número | vazio | Modelo → fração das evidências literais na amostra. |
+| `juri` | [ResumoJuri](#resumojuri) ou vazio | vazio | O júri de modelos locais, quando o projeto tem um. |
 
 ### AmostraInfo
 
@@ -484,6 +513,7 @@ Nas de múltipla escolha, `variavel` é `id:categoria` (uma variável sim/não p
 | `referencia` | texto | `""` | Participante tomado como referência (linhas da matriz). |
 | `comparado` | texto | `""` |  |
 | `por_classe` | lista de [MetricaClasse](#metricaclasse) | vazio | Precisão, revocação e F1 de uma categoria, tomando o primeiro do par como referência. |
+| `circular` | sim/não | `false` | Os dois participantes são da mesma família de modelo (a referência e o supervisor do júri, por exemplo): um limite superior, e não uma medida independente. |
 
 ### Matriz
 
@@ -530,6 +560,7 @@ Quem respondeu na amostra: um codificador (`humano` ou `referencia`, que não é
 | `nome` | texto | **obrigatório** |  |
 | `tipo` | `"humano"` \\| `"referencia"` \\| `"modelo"` | **obrigatório** |  |
 | `n` | inteiro | **obrigatório** | Documentos da amostra com resposta. |
+| `familia` | texto ou vazio | vazio | Família de modelo, quando se conhece (ver `circular`). |
 
 ### ComparacaoModelos
 
@@ -546,6 +577,46 @@ McNemar exato entre dois modelos, contra a mesma referência, numa variável.
 | `acertos_b` | inteiro | **obrigatório** |  |
 | `p` | número | **obrigatório** |  |
 
+### ResumoJuri
+
+O júri de modelos locais na amostra: estágios, deliberação, concordância por estágio e auditoria.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `referencia` | texto ou vazio | **obrigatório** | O codificador tomado como referência nas contagens. |
+| `membros` | lista de texto | **obrigatório** |  |
+| `supervisor` | texto ou vazio | **obrigatório** |  |
+| `familia_supervisor` | texto ou vazio | **obrigatório** |  |
+| `documentos` | inteiro | **obrigatório** |  |
+| `etapas` | mapa de texto para mapa de texto para inteiro | **obrigatório** | Variável → estágio → decisões. |
+| `virou` | mapa de texto para inteiro | vazio | Variável → decisões que a deliberação mudou. |
+| `concordancia_por_etapa` | mapa de texto para mapa de texto para inteiro | vazio | Estágio → {n, acertos} contra a referência, com a decisão do júri sem o supervisor (no estágio `sem_maioria`, o voto do primeiro membro). |
+| `concordancia_supervisor` | [ConcordanciaSupervisor](#concordanciasupervisor) ou vazio | vazio | Nas decisões sem maioria arbitradas, a concordância com a escolha do supervisor. |
+| `deliberacao` | mapa de texto para mapa de texto para inteiro | vazio | Membro → {votos, mudou, para_referencia, contra}: votos revistos na deliberação e a direção. |
+| `auditoria` | [AuditoriaJuri](#auditoriajuri) ou vazio | vazio | A conferência, pelo supervisor, de uma amostra das decisões unânimes do júri. |
+
+### ConcordanciaSupervisor
+
+A concordância com a referência nas decisões sem maioria que o supervisor arbitrou, com a escolha dele.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `n` | inteiro | **obrigatório** |  |
+| `acertos` | inteiro | **obrigatório** |  |
+| `circular` | sim/não | **obrigatório** | O supervisor e a referência são da mesma família: não é medida independente. |
+
+### AuditoriaJuri
+
+A conferência, pelo supervisor, de uma amostra das decisões unânimes do júri.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `n` | inteiro | **obrigatório** |  |
+| `erros` | inteiro | **obrigatório** |  |
+| `taxa` | número ou vazio | **obrigatório** |  |
+| `ic95` | par de número e número ou vazio | **obrigatório** | Intervalo de Wilson de 95% da taxa de erro. |
+| `por_variavel` | mapa de texto para par de inteiro e inteiro | vazio | Variável → (erros, n). |
+
 ## `agregados.json`
 
 ### Agregados
@@ -554,7 +625,7 @@ Gabarito calculado no Python para testar o filtro cruzado do frontend.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.4"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `topico_ano_revista` | lista de tupla | **obrigatório** | (tópico, ano, revista, n). |
 | `uf` | mapa de texto para número | **obrigatório** | Contagem fracionária por UF (sigla). |
 | `pais` | mapa de texto para número | **obrigatório** | Contagem fracionária por país (ISO alfa-2). |
