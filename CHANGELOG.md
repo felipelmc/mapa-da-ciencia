@@ -25,6 +25,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - deslizes menores: o link das fontes para a geografia levava ao guia do painel; a calibração dos tópicos pede o código-fonte (o script não vem no *wheel*); a primeira coleta do piloto leva uns 30 minutos, e não "alguns minutos"; a escolha dos modelos cita também o ADR 0005.
 - "Modelos locais" e "Reprodutibilidade" falavam da classificação no futuro ("o marco M5 vai") e com a projeção de 14 horas do M0: agora no presente, com os 9,6 s por resumo do piloto, cerca de 12 horas para os 4.247 resumos.
 - os exemplos de `rotulos.yaml` (explicação dos tópicos, guia e parte 2 do tutorial) trazem a `descricao` e avisam que uma entrada só com o rótulo deixa o tópico sem descrição.
+- as frases das histórias da abertura, em português e em inglês: os +4,1 pontos do tópico em alta são da tendência ajustada (o gráfico mostra a participação observada); os 79% dos autores no Brasil são da produção com país conhecido, e não de toda a produção; a BPSR, só em inglês, está entre as "outras oito", em que o inglês ficou entre 14% e 20% de 2019 a 2025; a abordagem teórica caiu quase pela metade, e o cartão diz que o modelo a marca mais que a referência (40% contra 27% na validação), com a queda nas duas leituras.
 
 ## [1.0.1] - 2026-09-27
 
