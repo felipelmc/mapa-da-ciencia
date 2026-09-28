@@ -21,6 +21,9 @@ ollama pull qwen3.5:4b          # 3,4 GB
 juri:
   membros: [qwen3.5:9b, gemma4:12b-it-qat, qwen3.5:4b]
   auditoria: 40          # decisões unânimes que o supervisor confere
+  supervisor:
+    nome: opus-supervisor
+    familia: claude      # o supervisor é um modelo da família Claude (sem família: uma pessoa)
 validacao:
   familias:
     claude-opus: claude  # o codificador de referência é um modelo da família Claude
@@ -51,7 +54,10 @@ A pasta `juri/` do projeto recebe:
 - `auditoria-01.jsonl`…: as decisões unânimes sorteadas para conferir.
 
 Entregue as instruções e os lotes a quem vai supervisionar (uma pessoa ou uma sessão de um modelo maior) e ponha
-cada resposta de volta em `juri/` com o nome do lote terminado em `.respostas.jsonl`. Depois:
+cada resposta de volta em `juri/` com o nome do lote terminado em `.respostas.jsonl`. Se o supervisor for um modelo,
+declare a família dele em `juri.supervisor.familia`: é o que marca como circular a comparação com uma referência da
+mesma família. Sem família (ou com `humano`), o supervisor é tratado como uma pessoa: as escolhas e as justificativas
+dele entram nos números agregados, mas não saem documento a documento no painel publicado. Depois:
 
 ```bash
 mapa juri importar-respostas   # confere e guarda todas as respostas da pasta juri/

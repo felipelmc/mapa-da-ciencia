@@ -202,10 +202,12 @@ class SupervisorJuri(_Base):
         pattern=r"^[a-z][a-z0-9_-]*$",
         description="Nome gravado nas decisões do supervisor (minúsculas, números, - e _).",
     )
-    familia: str = Field(
-        "claude",
-        description="Família do modelo supervisor. Se for a mesma de um codificador de referência "
-        "(`validacao.familias`), a comparação entre os dois é marcada como circular.",
+    familia: str | None = Field(
+        None,
+        description="Família do modelo supervisor (por exemplo, `claude`). Se for a mesma de um codificador de "
+        "referência (`validacao.familias`), a comparação entre os dois é marcada como circular. Sem família (ou com "
+        "`humano`), o supervisor é tratado como uma pessoa: as escolhas dele não saem documento a documento no painel "
+        "publicado. No modo `api`, o padrão é `claude`.",
     )
     modelo: str = Field("claude-opus-5-5", description="Modelo da API da Anthropic, no modo `api`.")
     esforco: Literal["low", "medium", "high"] = Field(
@@ -218,6 +220,16 @@ class SupervisorJuri(_Base):
     limite_gasto_usd: float = Field(
         5.0, ge=0, description="Gasto máximo estimado por execução, em dólares; acima dele a etapa não começa."
     )
+
+    @property
+    def familia_efetiva(self) -> str | None:
+        """A família declarada; no modo `api`, `claude` se nada foi declarado."""
+        return self.familia or ("claude" if self.modo == "api" else None)
+
+    @property
+    def e_modelo(self) -> bool:
+        """O supervisor é um modelo (com família conhecida), e não uma pessoa."""
+        return self.familia_efetiva not in (None, "humano")
 
 
 class ConfigJuri(_Base):

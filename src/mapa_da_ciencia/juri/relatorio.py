@@ -78,7 +78,7 @@ def numeros(projeto: Projeto, resumo: ResumoJuri, v: Validacao) -> NumerosJuri:
         referencia=ref,
         membros=resumo.membros,
         supervisor=resumo.supervisor,
-        familia_supervisor=cfg.supervisor.familia if resumo.supervisor else None,
+        familia_supervisor=cfg.supervisor.familia_efetiva if resumo.supervisor else None,
         documentos=resumo.documentos,
         etapas=resumo.etapas,
         virou=resumo.virou,
@@ -161,7 +161,14 @@ def gerar(projeto: Projeto) -> tuple[Path, NumerosJuri]:
         "",
         f"Membros: {', '.join(f'`{m}`' for m in nums.membros)}. Documentos: {nums.documentos} (a amostra de "
         f"validação). Supervisor: {nums.supervisor or 'ainda sem respostas'}"
-        + (f" (família `{nums.familia_supervisor}`)." if nums.supervisor else "."),
+        + (
+            ""
+            if not nums.supervisor
+            else f" (família `{nums.familia_supervisor}`)"
+            if nums.familia_supervisor
+            else " (sem família de modelo declarada: tratado como uma pessoa)"
+        )
+        + ".",
         "",
     ]
     if ref:

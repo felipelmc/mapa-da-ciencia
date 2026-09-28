@@ -106,3 +106,42 @@ def test_escolha_precisa_ser_um_numero_de_candidato(projeto):
     ]
     r = importar_respostas(projeto, [_responder(projeto, "b.respostas.jsonl", respostas)])
     assert r.aceitas == 0 and len(r.recusadas) == 3 and all("escolha" in m for m in r.recusadas)
+
+
+def test_supervisor_pessoa_nao_sai_documento_a_documento(projeto):
+    from mapa_da_ciencia.config import SupervisorJuri
+    from mapa_da_ciencia.contrato.classificacao import juri_contrato
+    from mapa_da_ciencia.validacao import amostra as va
+    from mapa_da_ciencia.validacao.metricas import calcular
+
+    assert SupervisorJuri().familia_efetiva is None and not SupervisorJuri().e_modelo
+    assert SupervisorJuri(modo="api").familia_efetiva == "claude" and SupervisorJuri(modo="api").e_modelo
+    assert not SupervisorJuri(familia="humano").e_modelo
+
+    arquivo = projeto.raiz / "mapa.yaml"
+    cfg = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
+    cfg["juri"]["supervisor"] = {"nome": "maria"}  # uma pessoa: sem família de modelo
+    arquivo.write_text(yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8")
+    p = Projeto.abrir(projeto.raiz)
+    linhas = _pronto(p)
+    respostas = [{"id": x["id"], "escolha": 2, "evidencia": _ev(x), "justificativa": "li o método"} for x in linhas]
+    importar_respostas(p, [_responder(p, "a.respostas.jsonl", respostas)])
+    assert ler_resumo(p).arbitrados == len(linhas)
+
+    referencia = p.raiz / "ref.jsonl"
+    with referencia.open("w", encoding="utf-8") as f:
+        for doc in va.ler(p).docs:
+            valores = {
+                v.id: {"valor": "2010–2020" if v.tipo == "texto" else True if v.tipo == "booleana" else
+                       [v.categorias[0].valor] if v.tipo == "multipla" else v.categorias[0].valor}
+                for v in p.codebook.variaveis
+            }  # fmt: skip
+            f.write(json.dumps({"doc": doc, "respostas": valores}, ensure_ascii=False) + "\n")
+    va.importar(p, referencia, "claude-opus", tipo="referencia")
+    v = calcular(p)
+    assert not v.metrica("abordagem", "claude-opus", "juri-supervisor").circular
+    resumo, por_doc = juri_contrato(p, v)
+    assert resumo.supervisor == "maria" and resumo.familia_supervisor is None
+    decisoes = [d for doc in por_doc.values() for d in doc.values() if d.etapa == "sem_maioria"]
+    assert decisoes and all(d.supervisor is None and d.justificativa is None for d in decisoes)
+    assert all(d.valor == d.valor_sem_supervisor for d in decisoes)

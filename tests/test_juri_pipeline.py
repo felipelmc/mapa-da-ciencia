@@ -58,7 +58,7 @@ def projeto(tmp_path, apis_falsas):
     )
     arquivo = p.raiz / "mapa.yaml"
     cfg = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
-    cfg["juri"] = {"membros": MEMBROS, "auditoria": 3}
+    cfg["juri"] = {"membros": MEMBROS, "auditoria": 3, "supervisor": {"familia": "claude"}}
     cfg.setdefault("validacao", {})["familias"] = {"claude-opus": "claude"}
     arquivo.write_text(yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8")
     coletar(p)
