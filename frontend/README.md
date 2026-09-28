@@ -214,7 +214,7 @@ Um só sistema de tokens (`src/lib/estilos/tokens.css`) com dois temas, escolhid
 | `dados/documentos.test.ts` | decodificação do `documentos.json`: NDC com a mesma escala nos dois eixos, enquadramento que resiste a ilhas, vizinhos, índice |
 | `estado/url.test.ts` | `rota()`, `lerHash()` e a ida e volta dos filtros, inclusive `laco` e `vista` |
 | `estado/sem-resolve.test.ts` | nenhum `resolve()` nem link absoluto em `src/` |
-| `estilos/contraste.test.ts` | contraste AA dos tokens nos dois temas |
+| `estilos/contraste.test.ts` | contraste AA dos tokens nos dois temas; `--texto-fraco` pintando só o texto de itens desativados (varre os `.svelte`); a diagonal da matriz de confusão com texto AA |
 | `graficos/geometria.test.ts` | simplificação do laço (RDP) e ponto no polígono |
 | `mapa/busca.test.ts` | busca por título e autor sem diferença de acentos |
 | `mapa/contornos.test.ts` | contornos que envolvem o núcleo de cada tópico, banda adaptada, ~80% dentro |

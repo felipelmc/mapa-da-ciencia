@@ -371,7 +371,7 @@
 	}
 
 	.estado {
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.parabens {
@@ -410,7 +410,7 @@
 	.dica {
 		margin: 0.8rem 0 0;
 		font-size: 0.78rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.variaveis {
@@ -541,7 +541,7 @@
 	.limpar {
 		border: 0;
 		background: none;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 		cursor: pointer;
 	}
 

@@ -162,7 +162,7 @@
 	.suave {
 		margin: 0.6rem 0 0;
 		font-size: 0.85rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.licencas,

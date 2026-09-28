@@ -405,7 +405,7 @@
 	}
 
 	.suave {
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 		font-size: 0.82rem;
 	}
 
@@ -471,7 +471,7 @@
 	.creditos {
 		margin: 0;
 		font-size: 0.8rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.lado-a-lado.largo {

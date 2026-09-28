@@ -310,7 +310,7 @@
 	.creditos {
 		margin: 0;
 		font-size: 0.78rem;
-		color: var(--texto-fraco);
+		color: var(--texto-suave);
 	}
 
 	.creditos a {
