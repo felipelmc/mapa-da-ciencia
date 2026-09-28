@@ -108,7 +108,36 @@ test('os links da abertura levam a páginas do site ou às vistas da demo', asyn
 	for (const h of internos) expect((await request.get(h)).status(), h).toBe(200);
 	const demo = hrefs.filter((h) => h.includes('/demo/'));
 	expect(demo.length).toBeGreaterThan(10);
-	for (const h of demo) expect(h, h).toMatch(/\/demo\/(#\/(mapa|topicos|geografia|classificacao|validacao)(\?.*)?)?$/);
+	for (const h of demo) expect(h, h).toMatch(/\/demo\/(#\/(mapa|topicos|geografia|classificacao|validacao|redes)(\?.*)?)?$/);
+});
+
+test('a colaboração: os dois períodos, os denominadores e o gráfico com os números, em PT e EN', async ({ page }) => {
+	const col = dados.historias.colaboracao;
+	test.skip(!col, 'o projeto não tem redes');
+	const [pt, en] = [new Intl.NumberFormat('pt-BR'), new Intl.NumberFormat('en-US')];
+	const [p0, p1] = col.periodos;
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await page.goto(url());
+	const cartao = page.locator('.historia', { hasText: 'Mais artigos em coautoria' });
+	await expect(cartao.locator('.historia__numero')).toHaveText(`${col.varios[0]}% → ${col.varios[1]}%`);
+	await expect(cartao.locator('.historia__texto')).toContainText(`Em ${p0}, ${col.varios[0]}% dos artigos tinham mais de um autor; em ${p1}, ${col.varios[1]}%.`);
+	await expect(cartao.locator('.historia__texto')).toContainText(`mais de uma UF foram de ${col.ufs[0]}% para ${col.ufs[1]}%`);
+	await expect(cartao.locator('.historia__texto')).toContainText(`no exterior${col.exterior_difere ? ',' : ' mudaram pouco,'} de ${col.exterior[0]}% para ${col.exterior[1]}%`);
+	// os denominadores, visíveis: a autoria conhecida e a afiliação localizada
+	const nota = cartao.locator('.historia__nota');
+	await expect(nota).toBeVisible();
+	await expect(nota).toContainText(`autoria conhecida (${pt.format(col.autoria[0])} em ${p0} e ${pt.format(col.autoria[1])} em ${p1})`);
+	await expect(nota).toContainText(`afiliação localizada, numa UF ou fora do Brasil (${pt.format(col.localizados[0])} e ${pt.format(col.localizados[1])})`);
+	const [primeiro, ultimo] = [Math.round(col.serie_varios[0]), Math.round(col.serie_varios.at(-1))];
+	await expect(cartao.locator('svg')).toHaveAttribute('aria-label', `Artigos com mais de um autor, por ano: ${primeiro}% em ${col.anos[0]} e ${ultimo}% em ${col.anos.at(-1)}. Com autores de mais de uma UF: ${Math.round(col.serie_ufs[0])}% e ${Math.round(col.serie_ufs.at(-1))}%.`);
+	await expect(cartao.getByRole('link')).toHaveAttribute('href', /#\/redes\?rede=estados$/);
+
+	await page.getByRole('button', { name: 'EN', exact: true }).click();
+	const card = page.locator('.historia', { hasText: 'More co-authored articles' });
+	await expect(card.locator('.historia__texto')).toContainText(`In ${p0}, ${col.varios[0]}% of articles had more than one author; in ${p1}, ${col.varios[1]}%.`);
+	await expect(card.locator('.historia__texto')).toContainText(`more than one Brazilian state went from ${col.ufs[0]}% to ${col.ufs[1]}%`);
+	await expect(card.locator('.historia__nota')).toContainText(`known authorship (${en.format(col.autoria[0])} in ${p0} and ${en.format(col.autoria[1])} in ${p1})`);
+	await expect(card.locator('svg')).toHaveAttribute('aria-label', new RegExp(`^Articles with more than one author, per year: ${primeiro}% in ${col.anos[0]}`));
 });
 
 test('a seção "Como citar" traz o DOI e copia o BibTeX', async ({ page, context }) => {

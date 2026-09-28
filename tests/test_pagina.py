@@ -55,6 +55,38 @@ def test_numeros_e_historias(pagina, projeto):
     assert h["ingles"] is None  # sem o corpus (Parquet), não há a história do idioma
 
 
+def test_historia_da_colaboracao_reconta_a_serie_do_redes_json(pagina, projeto, capsys):
+    """A recontagem por artigo (para ter os denominadores) reproduz a série publicada, ano a ano."""
+    col = pagina.gerar(projeto)["historias"]["colaboracao"]
+    assert "aviso" not in capsys.readouterr().err
+    redes = json.loads((projeto / "saida" / "dados" / "redes.json").read_text(encoding="utf-8"))
+    serie = {s["ano"]: s for s in redes["colaboracao"]}
+    assert col["anos"] == sorted(serie)
+    # a série publicada tem 4 casas; a recontagem, a fração exata
+    assert col["serie_varios"] == pytest.approx([100 * serie[a]["com_coautoria"] for a in col["anos"]], abs=0.1)
+    assert col["serie_ufs"] == pytest.approx([100 * serie[a]["entre_ufs"] for a in col["anos"]], abs=0.1)
+    assert col["periodos"] == ["2010–2014", "2021–2025"]
+    primeiro = [s["documentos"] for a, s in serie.items() if 2010 <= a <= 2014]
+    assert col["autoria"][0] == sum(primeiro)
+    assert all(0 < n <= m for n, m in zip(col["localizados"], col["autoria"], strict=True))
+    assert isinstance(col["exterior_difere"], bool)
+
+
+def test_colaboracao_sem_geografia_e_sem_redes(pagina, projeto, capsys):
+    (projeto / "saida" / "dados" / "afiliacoes.json").unlink()
+    col = pagina.gerar(projeto)["historias"]["colaboracao"]
+    assert col["varios"] and col["ufs"] is None and col["serie_ufs"] is None  # só a autoria
+    assert "aviso" not in capsys.readouterr().err
+    (projeto / "saida" / "dados" / "redes.json").unlink()
+    assert pagina.gerar(projeto)["historias"]["colaboracao"] is None
+
+
+def test_diferenca_entre_proporcoes(pagina):
+    assert pagina._difere(53, 1100, 94, 1333)  # o exterior no piloto: 4,8% → 7,1% (z ≈ 2,3)
+    assert not pagina._difere(50, 1000, 55, 1000)
+    assert not pagina._difere(0, 10, 0, 10)
+
+
 def test_arvore_geradora_minima(pagina):
     assert sorted(pagina._arvore([(0, 0), (3, 0), (1, 0), (2, 0)])) == [(0, 2), (2, 3), (3, 1)]
     assert pagina._arvore([(0, 0)]) == []

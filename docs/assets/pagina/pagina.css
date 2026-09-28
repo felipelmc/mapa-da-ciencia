@@ -463,6 +463,14 @@
   overflow: visible;
 }
 
+/* a base da conta (os denominadores), sob o gráfico */
+.historia__nota {
+  margin: 0;
+  color: var(--ceu-fraco);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
 .historia__link {
   margin-top: auto;
   padding-top: 0.3rem;

@@ -38,7 +38,7 @@
     de_novo: 'Watch again',
     numeros_titulo: 'The pilot in numbers',
     historias_titulo: 'Stories from the pilot',
-    historias_lide: 'Six things the map shows about the political science published in SciELO Brazil. Each one leads to the demo view behind it. Topic labels are in Portuguese, as written by the model.',
+    historias_lide: 'What the map shows about the political science published in SciELO Brazil. Each story leads to the demo view behind it. Topic labels are in Portuguese, as written by the model.',
     metodo_titulo: 'How it was made',
     metodo_lide: 'Six steps, all with open models running locally. The whole method, with its parameters, is in <a href="' + DOCS + 'explicacoes/metodologia/">Metodologia em uma página</a> (in Portuguese).',
     busca_titulo: 'Look for a subject',
@@ -546,10 +546,18 @@
     return '<svg viewBox="0 0 ' + largura + ' ' + altura + '" role="img" aria-label="' + esc(rotulo) + '">' + corpo + '</svg>';
   }
 
+  /** O caminho da linha; um valor que falta (null) interrompe o traço. */
   function linha(valores, x, y) {
+    var novo = true;
     return valores
       .map(function (v, i) {
-        return (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(v).toFixed(1);
+        if (v === null || v === undefined) {
+          novo = true;
+          return '';
+        }
+        var ponto = (novo ? 'M' : 'L') + x(i).toFixed(1) + ',' + y(v).toFixed(1);
+        novo = false;
+        return ponto;
       })
       .join('');
   }
@@ -624,8 +632,9 @@
     return svg(360, 8 * (lado + folga), corpo, rotulo);
   }
 
-  function duasLinhas(a, b, anos, rotulo, nomes) {
-    var L = 320, A = 104, m = { e: 4, d: 44, c: 8, b: 18 };
+  /** Duas séries em porcentagem (0 a 100); `direita` é a margem para os nomes no fim das linhas. */
+  function duasLinhas(a, b, anos, rotulo, nomes, direita) {
+    var L = 320, A = 104, m = { e: 4, d: direita || 44, c: 8, b: 18 };
     var x = function (i) { return m.e + (i / (anos.length - 1)) * (L - m.e - m.d); };
     var y = function (v) { return A - m.b - (v / 100) * (A - m.c - m.b); };
     return svg(
@@ -698,6 +707,7 @@
       '<h3>' + esc(h.titulo) + '</h3>' +
       '<p class="historia__texto">' + h.texto + '</p>' +
       '<div class="historia__grafico">' + h.grafico + '</div>' +
+      (h.nota ? '<p class="historia__nota">' + h.nota + '</p>' : '') +
       '<a class="historia__link" href="' + esc(h.link) + '">' + esc(h.chamada) + ' <span aria-hidden="true">→</span></a>' +
       '</article>';
   }
@@ -745,6 +755,42 @@
       link: demo('/geografia'),
       chamada: t('Ver na Geografia', 'See it in Geography')
     });
+    var col = h.colaboracao;
+    if (col) {
+      var p0 = esc(col.periodos[0]), p1 = esc(col.periodos[1]);
+      var comUfs = col.ufs !== null && col.ufs !== undefined;
+      var pct = function (v) { return numOuTraco(v) + '%'; };
+      var exterior = !comUfs ? '' : col.exterior_difere
+        ? t(', e os com autores no Brasil e no exterior, de ' + pct(col.exterior[0]) + ' para ' + pct(col.exterior[1]),
+          ', and those with authors both in Brazil and abroad, from ' + pct(col.exterior[0]) + ' to ' + pct(col.exterior[1]))
+        : t('; os com autores no Brasil e no exterior mudaram pouco, de ' + pct(col.exterior[0]) + ' para ' + pct(col.exterior[1]),
+          '; those with authors both in Brazil and abroad changed little, from ' + pct(col.exterior[0]) + ' to ' + pct(col.exterior[1]));
+      var sv = col.serie_varios, su = col.serie_ufs || [];
+      var anoIni = ano(col.anos[0]), anoFim = ano(col.anos[col.anos.length - 1]);
+      var rotuloCol = t(
+        'Artigos com mais de um autor, por ano: ' + pct(sv[0]) + ' em ' + anoIni + ' e ' + pct(sv[sv.length - 1]) + ' em ' + anoFim + (comUfs ? '. Com autores de mais de uma UF: ' + pct(su[0]) + ' e ' + pct(su[su.length - 1]) : '') + '.',
+        'Articles with more than one author, per year: ' + pct(sv[0]) + ' in ' + anoIni + ' and ' + pct(sv[sv.length - 1]) + ' in ' + anoFim + (comUfs ? '. With authors in more than one state: ' + pct(su[0]) + ' and ' + pct(su[su.length - 1]) : '') + '.'
+      );
+      cartoes.push({
+        tema: t('Colaboração', 'Collaboration'),
+        numero: num(col.varios[0]) + '% → ' + num(col.varios[1]) + '<small>%</small>',
+        titulo: t('Mais artigos em coautoria', 'More co-authored articles'),
+        texto: t(
+          'Em ' + p0 + ', ' + pct(col.varios[0]) + ' dos artigos tinham mais de um autor; em ' + p1 + ', ' + pct(col.varios[1]) + '.' + (comUfs ? ' Os com autores de mais de uma UF foram de ' + pct(col.ufs[0]) + ' para ' + pct(col.ufs[1]) + exterior + '.' : ''),
+          'In ' + p0 + ', ' + pct(col.varios[0]) + ' of articles had more than one author; in ' + p1 + ', ' + pct(col.varios[1]) + '.' + (comUfs ? ' Those with authors in more than one Brazilian state went from ' + pct(col.ufs[0]) + ' to ' + pct(col.ufs[1]) + exterior + '.' : '')
+        ),
+        grafico: comUfs
+          ? duasLinhas(sv, su, col.anos, rotuloCol, [t('2+ autores', '2+ authors'), t('2+ UFs', '2+ states')], 72)
+          : sparkline(sv, col.anos, '%', rotuloCol),
+        // os denominadores: a autoria conhecida e, nas UFs, a afiliação localizada (menos artigos nos primeiros anos)
+        nota: t(
+          'Entram na conta os artigos com autoria conhecida (' + num(col.autoria[0]) + ' em ' + p0 + ' e ' + num(col.autoria[1]) + ' em ' + p1 + ')' + (comUfs ? ' e, nas UFs e no exterior, os com afiliação localizada, numa UF ou fora do Brasil (' + num(col.localizados[0]) + ' e ' + num(col.localizados[1]) + ')' : '') + '.',
+          'Counted: articles with known authorship (' + num(col.autoria[0]) + ' in ' + p0 + ' and ' + num(col.autoria[1]) + ' in ' + p1 + ')' + (comUfs ? ' and, for states and abroad, those with a located affiliation, in a state or outside Brazil (' + num(col.localizados[0]) + ' and ' + num(col.localizados[1]) + ')' : '') + '.'
+        ),
+        link: demo('/redes?rede=' + (comUfs ? 'estados' : 'coautoria')),
+        chamada: t('Ver nas Redes', 'See it in Networks')
+      });
+    }
     var en = h.ingles;
     // nas outras oito, a faixa dos últimos sete anos: o último ano sozinho parece uma alta
     var recentes = en ? en.outras.slice(-7) : [];
