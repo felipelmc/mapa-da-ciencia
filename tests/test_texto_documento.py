@@ -116,12 +116,11 @@ def test_documento_texto_em_idioma_preferido():
         "Univ. X. fulana (arroba) exemplo (ponto) ac (ponto) id",
         "Univ. X. fulana@exemplo (ponto) es",
         "UNAH, Honduras. juan.perez @exemplo.edu.hn",
-        # o arroba largo, um (ponto) que não é o último, o primeiro rótulo de uma letra só
+        # o arroba largo, um (ponto) que não é o último
         "Univ. X. fulana＠exemplo.br",
         "Univ. X. chen﹫exemplo.edu.tw",
         "Univ. X. fulana@exemplo (ponto) ufrj.br",
         "Univ. X. fulana@dcc.exemplo (ponto) br",
-        "Univ. X. fulana@e. exemplo. br",
     ],
 )
 def test_emails_com_espacos_e_disfarces(texto):
@@ -146,6 +145,13 @@ def test_emails_com_espacos_e_disfarces(texto):
         "Recall@10. results show",
         "entre tod@s. em seguida",
         "@frente.pe publicou",  # sem palavra antes do @, não há endereço
+        # a linguagem neutra e as métricas com @, seguidas de ponto e de uma palavra que também é domínio de país
+        "entre tod@s. no entanto, o grupo",
+        "para tod@s. de acordo com",
+        "amig@s. com isso",
+        "alun@s. na escola",
+        "com P@10. de acordo",
+        "Recall@5. com base",
     ],
 )
 def test_arroba_que_nao_e_email(texto):

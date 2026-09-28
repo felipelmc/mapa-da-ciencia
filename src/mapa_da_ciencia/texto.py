@@ -65,7 +65,9 @@ EMAIL = re.compile(
     rf"|[ \t]*{_AT_DISFARCADO}[ \t]*{_DOMINIO}"  # fulana [at] exemplo [dot] br
     # fulana@exemplo (ponto) br, fulana@dcc.ufmg (ponto) br: um (ponto) em qualquer lugar do domínio
     rf"|[ \t]*{_ARROBA}{_ROTULO}(?:\.{_ROTULO})*{_DOT_DISFARCADO}(?:{_ROTULO}{_DOT})*{_TLD}"
-    rf"|{_ARROBA}{_ROTULO}(?:\. ?{_ROTULO})*\. ?{_TLD}"  # fulana@exemplo. br
+    # fulana@exemplo. br: o primeiro rótulo com duas letras ou mais e uma letra, para não apagar texto em "entre
+    # tod@s. no entanto", "P@10. de acordo" ou "Recall@5. com base" (e "fulana@a. br" escapa)
+    rf"|{_ARROBA}(?=[\w-]*[^\W\d_])[\w-]{{2,}}(?:\. ?{_ROTULO})*\. ?{_TLD}"
     r")"
     # por último, o comum (fulana@exemplo.br, fulana＠exemplo.br), com qualquer final: se viesse antes, pegaria só o
     # começo de "fulana@dcc.ufmg (ponto) br"
