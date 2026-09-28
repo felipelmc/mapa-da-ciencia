@@ -181,7 +181,6 @@
 	});
 
 	function validarPasso(): string | null {
-		if (passo === 0 && !revistas.length) return 'Escolha pelo menos uma revista.';
 		if (passo === 1 && (!Number.isInteger(anos[0]) || !Number.isInteger(anos[1]) || anos[0] > anos[1]))
 			return 'O período precisa de dois anos, o primeiro antes do segundo.';
 		if (passo === 1 && !tipos.length) return 'Escolha pelo menos um tipo de documento.';
@@ -199,7 +198,10 @@
 		try {
 			await fonte.mudarConfiguracao({
 				fontes: {
-					scielo: { ...(original.fontes.scielo ?? { colecao: 'scl' }), revistas, tipos },
+					// um projeto só de importação (ou da busca do OpenAlex) não ganha uma fonte do SciELO vazia
+					...(original.fontes.scielo || revistas.length
+						? { scielo: { ...(original.fontes.scielo ?? { colecao: 'scl' }), revistas, tipos } }
+						: {}),
 					openalex: { enriquecer }
 				},
 				recorte: { anos, idioma_analise: idiomaAnalise, idioma_exibicao: idiomaExibicao },
@@ -242,6 +244,12 @@
 		<div class="conteudo" data-testid="passo-{passo + 1}">
 			{#if passo === 0}
 				<h3>As revistas do SciELO Brasil</h3>
+				{#if !revistas.length}
+					<p class="suave" data-testid="sem-revistas">
+						Sem revistas, o corpus vem só dos arquivos importados (a pasta <code>importados/</code> do projeto ou
+						<code>fontes.importar</code>) ou da busca do OpenAlex; veja o guia Importar. As revistas são opcionais.
+					</p>
+				{/if}
 				<ul class="escolhidas" data-testid="revistas-escolhidas">
 					{#each revistas as issn (issn)}
 						<li>

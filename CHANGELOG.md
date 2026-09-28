@@ -18,6 +18,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Corrigido
 
+- painel, assistente do projeto: um projeto só de importação (ou da busca do OpenAlex) configura sem revistas do SciELO; antes o assistente exigia uma revista e, ao salvar, criava uma fonte do SciELO que o projeto não tinha.
 - codebook: o assistente do painel e o guia diziam que os rótulos "só mudam o que o painel mostra". O rótulo de uma variável o modelo lê: mudá-lo refaz a classificação inteira. O de uma categoria ele não lê, mas deixa a classificação desatualizada até a próxima `mapa classificar`, que a monta das respostas guardadas. A revisão do assistente agora diz qual dos dois casos vale.
 - júri: depois de mudar um rótulo de categoria, `mapa juri votar` pulava todos os membros (tudo estava no cache) e não regravava os votos do codebook novo, que são os que o júri lê. Agora os monta do cache, sem chamar os modelos. `mapa juri status` conta os votos por esses resultados, sem depender do Ollama: antes, com o Ollama fora do ar, mostrava "0 de 200" e mandava votar, e com um resumo vazio mandava gerar o relatório. O resumo escreve os estágios por extenso.
 - júri: o cartão do documento lista os votos na ordem do júri, e diz qual é o primeiro membro (o voto dele vale sem maioria até o supervisor decidir); a Validação do painel mostra a seção do júri, como o site publicado.
