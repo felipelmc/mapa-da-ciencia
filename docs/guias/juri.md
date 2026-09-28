@@ -46,6 +46,9 @@ outros descarregados.
 mapa juri exportar-pedidos   # grava em juri/ as instruções e os lotes de pedidos
 ```
 
+O comando só exporta depois da deliberação: se alguma decisão em disputa ainda não passou por ela (uma deliberação
+interrompida, por exemplo), ele pede para rodar `mapa juri deliberar` antes.
+
 A pasta `juri/` do projeto recebe:
 
 - `instrucoes-supervisor.md`: o que o supervisor deve fazer e o formato da resposta;
@@ -65,8 +68,9 @@ mapa juri importar-respostas   # confere e guarda todas as respostas da pasta ju
 
 Cada resposta é conferida: a escolha precisa ser um dos candidatos, a evidência precisa estar no texto e o pedido
 precisa ainda valer. O id de cada pedido muda junto com os candidatos: se a votação mudou depois, a resposta ao pedido
-antigo é reconhecida e ignorada, e o pedido novo aparece na próxima exportação. Importar de novo um arquivo já
-importado não conta nada duas vezes. O que for recusado aparece na tela; rodar `mapa juri exportar-pedidos` de novo
+antigo (ou de antes de uma mudança no codebook) é reconhecida e ignorada, e o pedido novo aparece na próxima
+exportação. Importar de novo um arquivo já importado não conta nada duas vezes; se dois arquivos respondem diferente
+ao mesmo pedido, vale o último em ordem alfabética, e a tela avisa. O que for recusado aparece na tela; rodar `mapa juri exportar-pedidos` de novo
 pede só o que falta.
 
 Só valem as respostas do supervisor de `juri.supervisor.nome`. Trocar o nome (outra pessoa, outro modelo) começa a

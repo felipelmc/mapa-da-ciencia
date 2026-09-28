@@ -152,6 +152,7 @@ def exportar_pedidos(projeto: Projeto, *, lote: int = 20, todos: bool = False) -
             "`mapa juri deliberar` antes de pedir ao supervisor."
         )
     arbitragem, auditoria = pedidos(projeto, todos=todos)
+    codebook_hash = projeto.codebook.hash()
     pasta = pasta_pedidos(projeto)
     pasta.mkdir(exist_ok=True)
     for antigo in list(pasta.glob("arbitragem-*.jsonl")) + list(pasta.glob("auditoria-*.jsonl")):
@@ -172,6 +173,7 @@ def exportar_pedidos(projeto: Projeto, *, lote: int = 20, todos: bool = False) -
                         "doc": p["_doc"],
                         "variavel": p["variavel"]["id"],
                         "chave": p["_chave"],
+                        "codebook": codebook_hash,
                     }
                     publico = {k: v for k, v in p.items() if not k.startswith("_")}
                     f.write(json.dumps(publico, ensure_ascii=False) + "\n")
@@ -191,6 +193,7 @@ class ResumoRespostas:
     recusadas: list[str] = field(default_factory=list)  # "id: motivo"
     antigas: int = 0  # respostas a pedidos cujos candidatos mudaram depois: ignoradas
     repetidas: int = 0  # já importadas antes, iguais
+    conflitos: list[str] = field(default_factory=list)  # pedidos com respostas diferentes nesta importação
 
     def __str__(self) -> str:
         texto = f"{self.aceitas} resposta(s) do supervisor aceitas"
@@ -200,6 +203,11 @@ class ResumoRespostas:
             texto += f", {self.antigas} a pedido(s) antigo(s) ignorada(s) (os candidatos mudaram depois)"
         if self.recusadas:
             texto += f", {len(self.recusadas)} recusada(s) (por exemplo: {'; '.join(self.recusadas[:3])})"
+        if self.conflitos:
+            texto += (
+                f"; {len(self.conflitos)} pedido(s) com respostas diferentes em arquivos diferentes (valeu a do último "
+                f"arquivo, em ordem alfabética: {', '.join(self.conflitos[:3])})"
+            )
         return texto + "."
 
 
@@ -236,14 +244,19 @@ def importar_respostas(projeto: Projeto, arquivos: list[Path], *, origem: str = 
                 "SELECT * FROM juri_supervisor WHERE hash_codebook = ? AND supervisor = ?", (hash_cb, nome)
             ).fetchall()
         }
-    linhas = []
-    for r in _ler_respostas(arquivos):
+    finais: dict[tuple[str, str, str], dict[str, Any]] = {}  # a última resposta válida de cada pedido
+    for r in _ler_respostas(sorted(arquivos)):
         rid = str(r.get("id", ""))
         pedido = indice.get(rid)
         if pedido is None:
             resumo.recusadas.append(f"{rid or '(sem id)'}: pedido desconhecido")
             continue
-        tarefa, doc, var_id = pedido["tarefa"], pedido["doc"], pedido["variavel"]
+        # índices gravados antes de o id levar a variável e o codebook: a variável sai do id
+        tarefa, doc = pedido["tarefa"], pedido["doc"]
+        var_id = pedido.get("variavel") or rid.split(":")[2]
+        if pedido.get("codebook", hash_cb) != hash_cb:
+            resumo.antigas += 1  # pedido de outro codebook: as definições mudaram
+            continue
         v, d, texto = variaveis.get(var_id), decisoes.get((doc, var_id)), textos.get(doc)
         if v is None or d is None or texto is None:
             resumo.recusadas.append(f"{rid}: o documento ou a variável não estão mais no júri")
@@ -286,21 +299,26 @@ def importar_respostas(projeto: Projeto, arquivos: list[Path], *, origem: str = 
         if c.status == "ausente":
             resumo.recusadas.append(f"{rid}: a evidência não está no título nem no resumo")
             continue
+        registro = {
+            **linha,
+            "chave_pedido": pedido["chave"],
+            "evidencia": evidencia,
+            "status": c.status,
+            "justificativa": justificativa,
+            "nenhum_adequado": int(bool(r.get("nenhum_adequado"))) if tarefa == "arbitragem" else None,
+            "custo_usd": r.get("custo_usd"),
+        }
+        chave_item = (tarefa, doc, var_id)
+        if (anterior := finais.get(chave_item)) and _resposta(anterior) != _resposta(registro):
+            resumo.conflitos.append(rid)
+        finais[chave_item] = registro
+
+    # compara a resposta final de cada pedido (e não cada linha) com o que já estava guardado: reimportar os mesmos
+    # arquivos não muda nada, mesmo quando dois deles respondem diferente ao mesmo pedido
+    linhas = []
+    for (tarefa, doc, var_id), registro in finais.items():
         antes = guardadas.get((tarefa, doc, var_id))
-        if (
-            antes
-            and antes["chave_pedido"] == pedido["chave"]
-            and all(
-                antes[k] == x
-                for k, x in (
-                    ("escolha", linha["escolha"]),
-                    ("correto", linha["correto"]),
-                    ("valor_sugerido", linha["valor_sugerido"]),
-                    ("evidencia", evidencia),
-                    ("justificativa", justificativa),
-                )
-            )
-        ):
+        if antes and antes["chave_pedido"] == registro["chave_pedido"] and _resposta(antes) == _resposta(registro):
             resumo.repetidas += 1
             continue
         linhas.append(
@@ -311,16 +329,16 @@ def importar_respostas(projeto: Projeto, arquivos: list[Path], *, origem: str = 
                 var_id,
                 nome,
                 origem,
-                pedido["chave"],
-                linha["escolha"],
-                linha["valor"],
-                linha["correto"],
-                linha["valor_sugerido"],
-                evidencia,
-                c.status,
-                justificativa,
-                int(bool(r.get("nenhum_adequado"))) if tarefa == "arbitragem" else None,
-                r.get("custo_usd"),
+                registro["chave_pedido"],
+                registro["escolha"],
+                registro["valor"],
+                registro["correto"],
+                registro["valor_sugerido"],
+                registro["evidencia"],
+                registro["status"],
+                registro["justificativa"],
+                registro["nenhum_adequado"],
+                registro["custo_usd"],
                 agora,
             )
         )
@@ -334,6 +352,11 @@ def importar_respostas(projeto: Projeto, arquivos: list[Path], *, origem: str = 
         )
     consolidar(projeto)
     return resumo
+
+
+def _resposta(x: dict[str, Any]) -> tuple:
+    """O que distingue uma resposta de outra ao mesmo pedido."""
+    return tuple(x[k] for k in ("escolha", "correto", "valor_sugerido", "evidencia", "justificativa"))
 
 
 @dataclass
