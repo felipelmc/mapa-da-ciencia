@@ -222,6 +222,40 @@ def classificar(
             velha.apagar(projeto.dados / PASTA)
         return resultado
 
+    def registrar(resultado: Resultado, *, interrompida: bool = False) -> None:
+        """O manifesto da execução: no fim e, se ela gravou algo, também numa interrupção (sem ele, o status mostraria
+        a execução anterior para os dados desta)."""
+        registrar_execucao(
+            projeto,
+            "classificacao",
+            inicio=inicio,
+            fim=datetime.now(UTC),
+            contagens={
+                "classificados": resultado.classificados,
+                "documentos": len(textos),
+                "novos": k.novos,
+                "chamadas": k.chamadas,
+                "falhas": len(k.falhas),
+                "sem_resumo": len(sem_resumo),
+            },
+            modelos={"classificacao": classificador.modelo},
+            parametros={
+                "num_ctx": modelo_cfg.num_ctx,
+                "temperatura": modelo_cfg.temperatura,
+                "semente": modelo_cfg.semente,
+                "pensar": modelo_cfg.pensar,
+                "concorrencia": modelo_cfg.concorrencia,
+                "versao_prompt": VERSAO_PROMPT,
+                "parcial": resultado.parcial,
+                "somente_amostra": opcoes.somente_amostra,
+                "interrompida": interrompida,
+                # False quando o resultado completo anterior foi mantido: esta execução não é a dos dados
+                "gravado": gravou,
+                "execucao": execucao,  # a do resultado: o status escolhe por ela (`manifesto.ultima_classificacao`)
+            },
+            hash_codebook=resultado.hash_codebook,  # o do começo da etapa, mesmo que o arquivo mude no meio dela
+        )
+
     resultados: list[Classificacao] = []
     try:
         for c in classificador.classificar(alvo):
@@ -234,7 +268,7 @@ def classificar(
     except BaseException:
         if k.novos:  # o cache já tem tudo; o resultado parcial deixa o painel em dia com ele
             with contextlib.suppress(Exception):
-                gravar(resultados, parcial=True)
+                registrar(gravar(resultados, parcial=True), interrompida=True)
         raise
     finally:
         classificador.fim()
@@ -294,35 +328,7 @@ def classificar(
             f"nova ficam num resultado à parte, que `mapa validar metricas` compara com ele como {versao_nova}. "
             + conselho
         )
-    registrar_execucao(
-        projeto,
-        "classificacao",
-        inicio=inicio,
-        fim=datetime.now(UTC),
-        contagens={
-            "classificados": classificados,
-            "documentos": len(textos),
-            "novos": k.novos,
-            "chamadas": k.chamadas,
-            "falhas": len(k.falhas),
-            "sem_resumo": len(sem_resumo),
-        },
-        modelos={"classificacao": classificador.modelo},
-        parametros={
-            "num_ctx": modelo_cfg.num_ctx,
-            "temperatura": modelo_cfg.temperatura,
-            "semente": modelo_cfg.semente,
-            "pensar": modelo_cfg.pensar,
-            "concorrencia": modelo_cfg.concorrencia,
-            "versao_prompt": VERSAO_PROMPT,
-            "parcial": resultado.parcial,
-            "somente_amostra": opcoes.somente_amostra,
-            # False quando o resultado completo anterior foi mantido: esta execução não é a dos dados
-            "gravado": gravou,
-            "execucao": execucao,  # a mesma do resultado: o status escolhe por ela (`manifesto.ultima_classificacao`)
-        },
-        hash_codebook=resultado.hash_codebook,  # o do começo da etapa, mesmo que o arquivo mude no meio dela
-    )
+    registrar(resultado)
     if principal and gravou:  # a versão à parte não muda o contrato (ver `validacao.metricas.calcular`)
         resumo.avisos += exportar(projeto)
     return resumo

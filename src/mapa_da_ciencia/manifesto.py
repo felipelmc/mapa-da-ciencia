@@ -94,8 +94,8 @@ def da_classificacao_principal(projeto: Projeto) -> Callable[[dict[str, Any]], b
 def ultima_classificacao(projeto: Projeto) -> dict[str, Any] | None:
     """O manifesto da execução que gerou o resultado principal da classificação (o que o painel e o status mostram):
     o mais recente com a mesma execução do resultado (`parametros.execucao`) e que o gravou, de preferência uma rodada
-    que não foi só a amostra (a duração e as contagens da rodada completa). Sem essa marca (manifestos ou resultados
-    anteriores a ela), vale o filtro `da_classificacao_principal`."""
+    que não foi só a amostra (a duração e as contagens da rodada completa); `None` se ela não deixou manifesto. Sem
+    essa marca (resultados anteriores a ela), vale o filtro `da_classificacao_principal`."""
     from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado
 
     if (projeto.raiz / ARQUIVO_CODEBOOK).exists():
@@ -109,6 +109,7 @@ def ultima_classificacao(projeto: Projeto) -> dict[str, Any] | None:
             ]
             if dessa:
                 return next((m for m in dessa if not m["parametros"].get("somente_amostra")), dessa[0])
+            return None  # a execução dos dados não deixou manifesto (o processo morreu): nenhum, e não o de outra
     return ultima_execucao(projeto, "classificacao", da_classificacao_principal(projeto))
 
 

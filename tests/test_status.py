@@ -135,3 +135,37 @@ def test_o_status_mostra_a_execucao_que_gerou_o_resultado(projeto, apis_falsas):
     mapa.classificar(projeto, somente_amostra=True, progresso=False)  # só a amostra, tudo do cache
     m = ultima_classificacao(projeto)
     assert not m["parametros"]["somente_amostra"] and m["contagens"]["novos"] == completa.novos > 0
+
+
+def test_rodada_interrompida_que_grava_o_resultado_deixa_manifesto(projeto, apis_falsas, monkeypatch):
+    """Uma rodada interrompida que grava o resultado principal (o anterior era parcial) registra a execução: o status
+    mostra a dos dados, e não a anterior. Se nem assim houver manifesto dela, nenhum é mostrado."""
+    import mapa_da_ciencia.classificacao.pipeline as pipeline
+    from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado
+    from mapa_da_ciencia.manifesto import estados_das_etapas, ultima_classificacao
+
+    mapa.classificar(projeto, limite=12, progresso=False)  # parcial, versão 1
+    time.sleep(1.05)
+    apis_falsas.digests["qwen3.5:4b"] = "v2000000000000000"
+    monkeypatch.setattr(pipeline, "GRAVAR_A_CADA", 3)
+    original, chamadas = apis_falsas.responder_chat, []
+
+    def responder(corpo):
+        chamadas.append(1)
+        if len(chamadas) > 7:
+            raise KeyboardInterrupt
+        return original(corpo)
+
+    apis_falsas.responder_chat = responder
+    with pytest.raises(KeyboardInterrupt):
+        mapa.classificar(projeto, progresso=False)
+    dados = Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
+    m = ultima_classificacao(projeto)
+    assert dados.modelo.endswith("@v20000000000") and m["parametros"]["execucao"] == dados.execucao
+    assert m["parametros"]["interrompida"] and m["contagens"]["classificados"] == dados.classificados
+    assert estados_das_etapas(projeto)["classificacao"]["ultima"]["contagens"]["classificados"] == dados.classificados
+
+    for arquivo in projeto.execucoes.glob("*-classificacao.json"):  # o processo morreu sem registrar nada
+        if json.loads(arquivo.read_text(encoding="utf-8"))["parametros"].get("execucao") == dados.execucao:
+            arquivo.unlink()
+    assert ultima_classificacao(projeto) is None
