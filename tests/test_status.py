@@ -117,11 +117,11 @@ def test_o_status_mostra_a_execucao_que_gerou_o_resultado(projeto, apis_falsas):
     def dados():
         return Resultado.ler(projeto.dados / PASTA, "qwen3.5:4b", projeto.codebook.hash())
 
-    mapa.classificar(projeto, limite=3, progresso=False)  # parcial, versão 1
     va.sortear(projeto)
+    mapa.classificar(projeto, limite=3, progresso=False)  # parcial, versão 1: os 3 primeiros da amostra
     time.sleep(1.05)
     apis_falsas.digests["qwen3.5:4b"] = "novo0000000000000"
-    # grava o principal: o anterior tinha menos documentos classificados que a amostra
+    # grava o principal: a amostra inteira contém os documentos que o anterior tinha
     mapa.classificar(projeto, somente_amostra=True, progresso=False)
     m = ultima_classificacao(projeto)
     assert dados().modelo.endswith("@novo00000000") and m["modelos"]["classificacao"] == dados().modelo

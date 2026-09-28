@@ -112,6 +112,13 @@ def ler_linhas(pasta: Path, modelo: str, hash_codebook: str, *, a_parte: bool = 
     return ler_tabela(arquivo) if arquivo.exists() else []
 
 
+def documentos_classificados(pasta: Path, modelo: str, hash_codebook: str) -> set[str] | None:
+    """Os documentos com classificação no resultado principal (a coluna `doc` do Parquet), ou `None` se ele não
+    existe. Vale também para um Parquet que ficou sem o JSON."""
+    arquivo = pasta / f"{nome_do_arquivo(modelo, hash_codebook)}.parquet"
+    return {linha["doc"] for linha in ler_tabela(arquivo)} if arquivo.exists() else None
+
+
 def resultados(pasta: Path) -> list[Resultado]:
     """Todas as execuções gravadas (um modelo e um codebook cada, e os resultados à parte da versão nova), da mais
     recente à mais antiga."""

@@ -31,7 +31,7 @@ from ..topicos.resultado import assinatura_corpus
 from ..validacao.amostra import ler as ler_amostra
 from .executor import Classificacao, Classificador, textos_para_classificar
 from .prompt import VERSAO_PROMPT
-from .resultado import PASTA, Resultado, resultados, valor_como_texto
+from .resultado import PASTA, Resultado, documentos_classificados, resultados, valor_como_texto
 
 AMOSTRA_ESTIMATIVA = 5
 GRAVAR_A_CADA = 50
@@ -150,23 +150,30 @@ def classificar(
     # 1. uma rodada que cobre o corpus atual (todos os textos, do cache ou do modelo, sem --estimar, --limite ou
     #    --somente-amostra, sem ser interrompida) e com falhas até o limite substitui o principal, seja de que execução
     #    for, mesmo que ele tenha um documento a mais ou a menos;
-    # 2. qualquer outra rodada nunca o diminui: grava no principal só se não houver principal ou se não reduz o número
-    #    de documentos classificados dele (a retomada da mesma execução, com o mesmo corpus e os mesmos textos). Senão,
-    #    as respostas vão para o resultado à parte, que as métricas da validação comparam com o principal.
+    # 2. qualquer outra rodada (inclusive a que cobre o corpus com falhas demais) nunca o diminui: grava no principal
+    #    só se não houver principal ou se todo documento classificado nele que ainda está no corpus continua
+    #    classificado no resultado novo (a retomada da mesma execução, com o mesmo corpus e os mesmos textos). Conta o
+    #    conjunto, e não o número: uma rodada com a mesma contagem pode trocar documentos. Senão, as respostas vão para
+    #    o resultado à parte, que as métricas da validação comparam com o principal.
     # Um modelo que devolve JSON inválido em tudo, depois de um `ollama pull`, apagaria horas de classificação, e as
     # respostas antigas ficam no cache com a chave do digest antigo, que o Ollama não devolve mais.
     anterior = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
+    # os documentos do principal saem do Parquet: um Parquet que ficou sem o JSON também é um principal
+    no_principal = documentos_classificados(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
+    exigidos = (no_principal or set()) & {t.doc for t in textos}  # os que ainda estão no corpus
     rodada_completa = not (opcoes.estimar or opcoes.limite is not None or opcoes.somente_amostra)
     limite_falhas = max(1, int(len(textos) * LIMITE_FALHAS))
     gravou = False  # a última chamada de `gravar` gravou o resultado principal?
+    classificados_agora: set[str] = set()  # e os documentos que ela tinha
     principal = not opcoes.modelo or opcoes.modelo == cfg.modelos.classificacao.modelo
     assinatura = assinatura_corpus([d.id for d in docs])
 
     def gravar(resultados: list[Classificacao], *, parcial: bool) -> Resultado:
         """Grava o resultado com o que já foi classificado: no fim, e a cada `GRAVAR_A_CADA` documentos novos,
         com uma exportação para o painel (assim a rodada longa aparece enquanto corre)."""
-        nonlocal gravou
+        nonlocal gravou, classificados_agora
         resultados = resultados + fora_do_alvo
+        classificados_agora = {c.doc for c in resultados}
         # regra 1: a rodada cobre o corpus atual (chegou ao fim sem opções que o recortam, e cada texto foi
         # classificado ou falhou nas duas tentativas) e as falhas não passam do limite
         cobre = (
@@ -175,8 +182,8 @@ def classificar(
             and len(resultados) + len(k.falhas) >= len(textos)
             and len(k.falhas) <= limite_falhas
         )
-        # regra 2: qualquer outra gravação não diminui o principal
-        gravou = cobre or anterior is None or len(resultados) >= anterior.classificados
+        # regra 2: qualquer outra gravação não tira documentos do principal
+        gravou = cobre or (anterior is None and no_principal is None) or exigidos <= classificados_agora
         parcial = parcial or len(resultados) < len(textos)
         linhas = [linha for c in sorted(resultados, key=lambda c: c.doc) for linha in _linhas(c, variaveis)]
         status = Counter(linha["status"] for linha in linhas if linha["status"] != "dispensada")
@@ -301,7 +308,8 @@ def classificar(
             "tende a se repetir: veja “Documentos que falham sempre” no guia Classificar os resumos."
         )
     if resultado.a_parte:
-        nome = anterior.modelo.split("@", 1)[0]
+        nome = modelo_cfg.modelo
+        n_anterior = anterior.classificados if anterior else len(no_principal or ())
         versao_nova = f'"{nome.removesuffix(":latest")} (versão nova)"'
         if rodada_completa and len(k.falhas) > limite_falhas:
             motivo = (
@@ -313,13 +321,14 @@ def classificar(
                 "tudo de novo."
             )
         else:
+            fora = len(exigidos - classificados_agora)
             motivo = (
-                f"esta rodada não cobre o corpus e deixaria o resultado com menos documentos classificados "
-                f"({num(resultado.classificados, 0)}, e não {num(anterior.classificados, 0)})"
+                f"esta rodada não cobre o corpus e deixaria sem classificação {num(fora, 0)} documento(s) que o "
+                "resultado anterior tem"
             )
             conselho = "Rode `mapa classificar` sem --somente-amostra, --limite ou --estimar para substituí-lo."
         resumo.avisos.append(
-            f"O resultado anterior ({nome}, {num(anterior.classificados, 0)} documentos classificados) foi mantido: "
+            f"O resultado anterior ({nome}, {num(n_anterior, 0)} documentos classificados) foi mantido: "
             f"{motivo}. As respostas desta rodada ficam num resultado à parte, que `mapa validar metricas` compara "
             f"com ele como {versao_nova}. " + conselho
         )

@@ -1,11 +1,13 @@
-"""Sequências de rodadas da classificação que não podem perder o resultado principal (checagem c4 da revisao-geral).
+"""Sequências de rodadas da classificação que não podem perder o resultado principal (checagens c4 e c5 da
+revisao-geral).
 
 Cada sequência mistura rodadas completas, parciais (`--somente-amostra`, `--estimar`, `--limite`), interrompidas,
 com falhas, com o modelo atualizado (`ollama pull`), com parâmetros ou textos que mudam, e resultados gravados pela
 1.0.1. As respostas de uma versão antiga ficam no cache com a chave do digest antigo, que o Ollama não devolve mais:
 um principal trocado por um menor depois de um `ollama pull` não tem volta. Por isso valem duas regras, decididas pelo
 que a rodada fez: só uma rodada que cobre o corpus atual (com falhas até o limite) substitui o principal; qualquer
-outra nunca o diminui.
+outra só grava nele se todo documento que ele classificava, e que ainda está no corpus, continua classificado. As
+sequências `n…` conferem o conjunto de documentos, e não só a contagem.
 """
 
 import json
@@ -17,7 +19,7 @@ import pytest
 import mapa_da_ciencia.api as mapa
 from mapa_da_ciencia.armazenamento import ARQUIVO, gravar_documentos, ler_documentos
 from mapa_da_ciencia.classificacao.executor import textos_para_classificar
-from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado
+from mapa_da_ciencia.classificacao.resultado import PASTA, Resultado, ler_linhas
 from mapa_da_ciencia.coleta import coletar
 from mapa_da_ciencia.llm.perfis import PERFIS
 from mapa_da_ciencia.projeto import Projeto
@@ -73,6 +75,21 @@ def _interromper_depois(falsas, n):
 
     falsas.responder_chat = responder
     return lambda: setattr(falsas, "responder_chat", original)
+
+
+def _docs(proj, a_parte=False):
+    return {
+        x["doc"] for x in ler_linhas(proj.dados / PASTA, MODELO, Projeto(proj.raiz).codebook.hash(), a_parte=a_parte)
+    }
+
+
+def _trocar_idioma(proj):
+    cfg = proj.raiz / "mapa.yaml"
+    texto = cfg.read_text(encoding="utf-8")
+    atual = re.search(r"idioma_exibicao: *(\w+)", texto).group(1)
+    novo = "en" if atual != "en" else "pt"
+    cfg.write_text(re.sub(r"idioma_exibicao: *\w+", f"idioma_exibicao: {novo}", texto, count=1), encoding="utf-8")
+    return Projeto(proj.raiz)
 
 
 def _fora_da_amostra(proj, amostra):
@@ -292,6 +309,205 @@ def s13_sem_manifesto_da_execucao_dos_dados(proj, falsas, monkeypatch):
     assert ultima_classificacao(proj) is None and estados_das_etapas(proj)["classificacao"]["ultima"] is None
 
 
+def n01_corpus_encolhe(proj, falsas, monkeypatch):
+    arq = proj.dados / ARQUIVO
+    todos = ler_documentos(arq)
+    mapa.classificar(proj, progresso=False)
+    completo = _principal(proj)
+    gravar_documentos(todos[:20], arq)
+    falsas.digests[MODELO] = "v2000000000000000"
+    mapa.classificar(proj, estimar=True, progresso=False)
+    assert _principal(proj) == completo
+    mapa.classificar(proj, progresso=False)
+    p = _principal(proj)
+    assert p.modelo.endswith("@v20000000000") and p.classificados == 20 and _a_parte(proj) is None
+
+
+def n02_idioma_estimar_depois_completa(proj, falsas, monkeypatch):
+    mapa.classificar(proj, progresso=False)
+    completo = _principal(proj)
+    p = _trocar_idioma(proj)
+    mapa.classificar(p, estimar=True, progresso=False)
+    assert _principal(p) == completo
+    mapa.classificar(p, progresso=False)
+    assert _principal(p).classificados == 25 and _a_parte(p) is None
+
+
+def n03_idioma_limite_igual(proj, falsas, monkeypatch):
+    mapa.classificar(proj, progresso=False)
+    p = _trocar_idioma(proj)
+    mapa.classificar(p, limite=25, progresso=False)
+    assert _principal(p).classificados == 25
+
+
+def n04_conjunto_corpus_cresce_limite_igual(proj, falsas, monkeypatch):
+    arq = proj.dados / ARQUIVO
+    todos = sorted(ler_documentos(arq), key=lambda d: d.id)
+    gravar_documentos(todos[::2], arq)  # a coleta de antes: os documentos de índice par
+    mapa.classificar(proj, progresso=False)
+    completo, antes = _principal(proj), _docs(proj)
+    gravar_documentos(todos, arq)  # a coleta nova traz os de índice ímpar
+    falsas.digests[MODELO] = "v2000000000000000"
+    mapa.classificar(proj, limite=completo.classificados, progresso=False)
+    assert _principal(proj).classificados >= completo.classificados and not antes - _docs(proj)
+
+
+def n05_conjunto_falha_limite_igual(proj, falsas, monkeypatch):
+    desfazer = _falhar_docs(falsas, proj, {_textos(proj)[0].doc})  # o primeiro da fila falha sempre na v1
+    mapa.classificar(proj, progresso=False)
+    antes = _docs(proj)
+    desfazer()
+    falsas.digests[MODELO] = "v2000000000000000"
+    mapa.classificar(proj, limite=24, progresso=False)
+    assert not antes - _docs(proj)
+
+
+def n06_trocas_seguidas_regra_1(proj, falsas, monkeypatch):
+    textos = _textos(proj)
+    desfazer = _falhar_docs(falsas, proj, {textos[0].doc})
+    mapa.classificar(proj, progresso=False)
+    desfazer()
+    for i, versao in enumerate(("v2000000000000000", "v3000000000000000"), start=1):
+        falsas.digests[MODELO] = versao
+        desfazer = _falhar_docs(falsas, proj, {textos[i].doc})
+        mapa.classificar(proj, progresso=False)
+        desfazer()
+        p = _principal(proj)
+        assert p.modelo.endswith(versao[:12]) and p.classificados == 24
+    falsas.digests[MODELO] = "v4000000000000000"
+    _falhar_docs(falsas, proj, {t.doc for t in textos})
+    mapa.classificar(proj, progresso=False)
+    p = _principal(proj)
+    assert p.modelo.endswith("@v30000000000") and p.classificados == 24
+
+
+def n07_parcial_depois_interrompida_maior(proj, falsas, monkeypatch):
+    import mapa_da_ciencia.classificacao.pipeline as pipeline
+
+    mapa.classificar(proj, limite=10, progresso=False)
+    antes = _docs(proj)
+    falsas.digests[MODELO] = "v2000000000000000"
+    monkeypatch.setattr(pipeline, "GRAVAR_A_CADA", 5)
+    desfazer = _interromper_depois(falsas, 15)
+    with pytest.raises(KeyboardInterrupt):
+        mapa.classificar(proj, progresso=False)
+    desfazer()
+    assert _principal(proj).classificados >= 10 and antes <= _docs(proj)
+
+
+def n08_conjunto_amostra_muda_a_fila(proj, falsas, monkeypatch):
+    mapa.classificar(proj, limite=10, progresso=False)
+    completo, antes = _principal(proj), _docs(proj)
+    mapa.amostra_de_validacao(proj, n=5)  # a amostra vai para o começo da fila
+    falsas.digests[MODELO] = "v2000000000000000"
+    mapa.classificar(proj, limite=10, progresso=False)
+    assert _principal(proj).classificados >= completo.classificados and not antes - _docs(proj)
+
+
+def n09_modelo_de_comparacao_protegido(proj, falsas, monkeypatch):
+    mapa.amostra_de_validacao(proj, n=5)
+    mapa.classificar(proj, progresso=False)
+    mapa.classificar(proj, modelo="qwen3.5:9b", progresso=False)
+    hash_cb = Projeto(proj.raiz).codebook.hash()
+    antes = Resultado.ler(proj.dados / PASTA, "qwen3.5:9b", hash_cb)
+    falsas.digests["qwen3.5:9b"] = "v2000000000000000"
+    mapa.classificar(proj, modelo="qwen3.5:9b", somente_amostra=True, progresso=False)
+    assert Resultado.ler(proj.dados / PASTA, "qwen3.5:9b", hash_cb) == antes
+
+
+def n10_codebook_vai_e_volta(proj, falsas, monkeypatch):
+    mapa.classificar(proj, progresso=False)
+    completo = _principal(proj)
+    cb = proj.raiz / "codebook.yaml"
+    cb_a = cb.read_text(encoding="utf-8")
+    cb.write_text(re.sub(r"(pergunta: *)(.+)", r"\1\2 Leia com atenção.", cb_a, count=1), encoding="utf-8")
+    mapa.classificar(Projeto(proj.raiz), estimar=True, progresso=False)
+    cb.write_text(cb_a, encoding="utf-8")
+    mapa.classificar(Projeto(proj.raiz), estimar=True, progresso=False)
+    assert _principal(proj).classificados == completo.classificados
+
+
+def n11_json_do_principal_sumiu(proj, falsas, monkeypatch):
+    """O Parquet do principal sem o JSON (um `kill -9` no meio de uma gravação antiga): os documentos dele continuam
+    protegidos, e a rodada parcial da versão nova vai para o resultado à parte. (O JSON apagado pelo teste não
+    volta: a checagem original lia o principal pelo JSON.)"""
+    from mapa_da_ciencia.classificacao.resultado import nome_do_arquivo
+
+    mapa.classificar(proj, progresso=False)
+    antes = _docs(proj)
+    (proj.dados / PASTA / f"{nome_do_arquivo(MODELO, Projeto(proj.raiz).codebook.hash())}.json").unlink()
+    falsas.digests[MODELO] = "v2000000000000000"
+    mapa.classificar(proj, estimar=True, progresso=False)
+    assert _docs(proj) == antes and len(antes) == 25 and _a_parte(proj).classificados == 5
+
+
+def n12_limite_maior_que_o_corpus(proj, falsas, monkeypatch):
+    mapa.classificar(proj, progresso=False)
+    completo = _principal(proj)
+    falsas.digests[MODELO] = "v2000000000000000"
+    _falhar_docs(falsas, proj, {_textos(proj)[3].doc})
+    mapa.classificar(proj, limite=1000, progresso=False)
+    assert _principal(proj) == completo
+
+
+def n13_legado_parcial(proj, falsas, monkeypatch):
+    mapa.amostra_de_validacao(proj, n=5)
+    mapa.classificar(proj, limite=10, progresso=False)
+    for arq in (proj.dados / PASTA).glob("*.json"):
+        d = json.loads(arq.read_text(encoding="utf-8"))
+        d.pop("execucao", None), d.pop("a_parte", None)
+        arq.write_text(json.dumps(d), encoding="utf-8")
+    completo = _principal(proj)
+    falsas.digests[MODELO] = "v2000000000000000"
+    mapa.classificar(proj, somente_amostra=True, progresso=False)
+    mapa.classificar(proj, estimar=True, progresso=False)
+    assert _principal(proj).classificados >= completo.classificados
+
+
+def n14_mesma_versao_parciais_depois_da_troca(proj, falsas, monkeypatch):
+    mapa.amostra_de_validacao(proj, n=5)
+    mapa.classificar(proj, progresso=False)
+    falsas.digests[MODELO] = "v2000000000000000"
+    _falhar_docs(falsas, proj, {_textos(proj)[-1].doc})
+    mapa.classificar(proj, progresso=False)
+    completo = _principal(proj)
+    mapa.classificar(proj, somente_amostra=True, progresso=False)
+    mapa.amostra_de_validacao(proj, n=5, refazer=True)
+    mapa.classificar(proj, limite=3, progresso=False)
+    assert _principal(proj).classificados >= completo.classificados
+
+
+def n15_rotulo_da_parte_mesma_versao(proj, falsas, monkeypatch):
+    mapa.amostra_de_validacao(proj, n=5)
+    mapa.classificar(proj, progresso=False)
+    p = _trocar_idioma(proj)
+    mapa.classificar(p, somente_amostra=True, progresso=False)
+    principal, a = _principal(p), _a_parte(p)
+    assert a is not None and a.modelo == principal.modelo
+
+
+def n16_conjunto_completa_com_falhas_demais_corpus_cresceu(proj, falsas, monkeypatch):
+    arq = proj.dados / ARQUIVO
+    todos = sorted(ler_documentos(arq), key=lambda d: d.id)
+    gravar_documentos(todos[:15], arq)
+    mapa.classificar(proj, progresso=False)
+    completo, antes = _principal(proj), _docs(proj)
+    gravar_documentos(todos, arq)  # coleta nova: 10 documentos
+    falsas.digests[MODELO] = "v2000000000000000"
+    _falhar_docs(falsas, proj, set(sorted(antes)[:3]))  # a v2 falha em 3 documentos antigos (limite: 1)
+    mapa.classificar(proj, progresso=False)
+    assert _principal(proj).classificados >= completo.classificados and not antes - _docs(proj)
+
+
+def n17_conjunto_parcial_depois_completa_com_falhas(proj, falsas, monkeypatch):
+    mapa.classificar(proj, limite=10, progresso=False)
+    antes = _docs(proj)
+    falsas.digests[MODELO] = "v2000000000000000"
+    _falhar_docs(falsas, proj, set(sorted(antes)[:5]))
+    mapa.classificar(proj, progresso=False)
+    assert _principal(proj).classificados >= 10 and not antes - _docs(proj)
+
+
 SEQUENCIAS = {f.__name__: f for f in (
     s01_completo_com_falha_somente_amostra_mesma_versao_depois_pull,
     s02_completo_com_falha_limite_mesma_versao_depois_estimar,
@@ -306,6 +522,23 @@ SEQUENCIAS = {f.__name__: f for f in (
     s11_mesma_versao_interrompida,
     s12_corpus_cresce_estimar_pull_estimar,
     s13_sem_manifesto_da_execucao_dos_dados,
+    n01_corpus_encolhe,
+    n02_idioma_estimar_depois_completa,
+    n03_idioma_limite_igual,
+    n04_conjunto_corpus_cresce_limite_igual,
+    n05_conjunto_falha_limite_igual,
+    n06_trocas_seguidas_regra_1,
+    n07_parcial_depois_interrompida_maior,
+    n08_conjunto_amostra_muda_a_fila,
+    n09_modelo_de_comparacao_protegido,
+    n10_codebook_vai_e_volta,
+    n11_json_do_principal_sumiu,
+    n12_limite_maior_que_o_corpus,
+    n13_legado_parcial,
+    n14_mesma_versao_parciais_depois_da_troca,
+    n15_rotulo_da_parte_mesma_versao,
+    n16_conjunto_completa_com_falhas_demais_corpus_cresceu,
+    n17_conjunto_parcial_depois_completa_com_falhas,
 )}  # fmt: skip
 
 
