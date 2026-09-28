@@ -38,7 +38,7 @@ describe('ficha', () => {
 		expect(escolher(multipla, m, 1).valor).toEqual(['surveys']);
 	});
 
-	it('sabe o que falta e só grava o respondido', () => {
+	it('sabe o que falta; grava o respondido e manda como nulo o que foi tocado e ficou sem resposta', () => {
 		const texto = por('texto');
 		const vazio = { valor: '  ', evidencia: '', incerto: false, nota: '' };
 		expect(respondida(texto, vazio)).toBe(false);
@@ -47,7 +47,12 @@ describe('ficha', () => {
 		expect(faltando(codebook, respostas)).toEqual(
 			codebook.variaveis.map((v) => v.id).filter((id) => id !== por('categorica').id)
 		);
-		expect(Object.keys(paraGravar(codebook, respostas))).toEqual([por('categorica').id]);
+		const gravar = paraGravar(codebook, respostas);
+		// a categórica, respondida; o texto apagado vai com valor nulo (o painel apaga a resposta antiga); as
+		// variáveis nunca tocadas nem vão
+		expect(Object.keys(gravar).sort()).toEqual([por('categorica').id, texto.id].sort());
+		expect(gravar[por('categorica').id].valor).not.toBeNull();
+		expect(gravar[texto.id].valor).toBeNull();
 	});
 
 	it('retoma na primeira ficha incompleta', () => {

@@ -18,6 +18,8 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Corrigido
 
+- painel, codificação: um codificador de referência (importado, como o `claude-opus`) não abre mais na codificação, que mostrava as respostas dele e as sobrescrevia; os nomes `juri`, `juri-r1` e `juri-supervisor` ficam reservados (um codificador com um deles escondia a fonte do júri nas métricas); apagar uma resposta de texto a apaga de fato (ela voltava no reload), e uma marca antes de qualquer valor não registra um codificador sem respostas (que entrava nas métricas com n = 0).
+- painel: a escrita só é aceita de uma página do próprio painel, com a mesma porta; antes, uma página aberta em outro servidor local (outra porta) conseguia disparar uma etapa.
 - nas redes, abrir um nó com um clique não rola mais a página até o cartão (o foco só vai para o cartão quando a escolha vem do teclado); no celular, um botão leva ao cartão, que fica embaixo do grafo.
 - nas redes, a dica e o nome do nó aberto não saem mais cortados nas bordas do grafo, e o texto de abertura conta as pessoas desenhadas de fato (sem as duplas e os trios escondidos).
 - o raio dos nós vai de 1 documento (o raio mínimo) ao nó com mais documentos; antes o menor nó saía bem maior que o mínimo, e os nós se sobrepunham mais.

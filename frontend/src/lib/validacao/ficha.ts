@@ -51,13 +51,18 @@ export function faltando(codebook: CodebookContrato, respostas: Record<string, R
 	return codebook.variaveis.filter((v) => !respondida(v, respostas[v.id])).map((v) => v.id);
 }
 
-/** Só as variáveis respondidas (o que vai para a API). */
+/**
+ * O que vai para a API: as variáveis respondidas e, com o valor nulo, as que a pessoa tocou mas deixou sem resposta
+ * (um texto apagado, uma marca antes do valor): o painel apaga a resposta antiga delas, em vez de ela voltar no reload.
+ */
 export function paraGravar(
 	codebook: CodebookContrato,
 	respostas: Record<string, RespostaVariavel>
 ): Record<string, RespostaVariavel> {
 	return Object.fromEntries(
-		codebook.variaveis.filter((v) => respondida(v, respostas[v.id])).map((v) => [v.id, respostas[v.id]])
+		codebook.variaveis
+			.filter((v) => respostas[v.id] !== undefined)
+			.map((v) => [v.id, respondida(v, respostas[v.id]) ? respostas[v.id] : { ...respostas[v.id], valor: null }])
 	);
 }
 

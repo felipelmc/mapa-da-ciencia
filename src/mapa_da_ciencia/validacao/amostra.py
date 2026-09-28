@@ -35,6 +35,7 @@ TipoCodificador = Literal["humano", "referencia"]
 PASTA_EXPORTACAO = "validacao"
 ARQUIVO_AMOSTRA = "amostra.jsonl"
 _NOME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,39}")
+_RESERVADO = re.compile(r"juri(-.*)?", re.IGNORECASE)  # as fontes do júri na validação
 
 _ESQUEMA = """
 CREATE TABLE IF NOT EXISTS validacao_amostra (
@@ -229,6 +230,12 @@ def nome_valido(nome: str) -> str:
             f"Nome de codificador inválido: {nome!r}. Use letras sem acento, números, `-`, `_` e `.` "
             "(até 40 caracteres), como `felipe` ou `claude-opus`."
         )
+    if _RESERVADO.fullmatch(nome):
+        # um codificador com esse nome esconderia a fonte do júri de mesmo nome nas métricas
+        raise ErroConfig(
+            f"O nome {nome!r} é reservado: `juri`, `juri-r1` e `juri-supervisor` são as respostas do júri de modelos "
+            "na validação. Escolha outro nome para o codificador."
+        )
     return nome
 
 
@@ -262,6 +269,8 @@ def salvar(
     problemas = [p for p in r.problemas if completa or not p.endswith("faltou a variável")]
     if problemas:
         return problemas
+    if not r.valores:  # nada respondido ainda (uma marca antes do valor): nem o codificador é registrado
+        return []
     agora = datetime.now(UTC).isoformat(timespec="seconds")
     with conectar(projeto) as con:
         con.execute("INSERT OR IGNORE INTO codificadores (nome, tipo) VALUES (?, ?)", (codificador, tipo))
@@ -283,6 +292,15 @@ def salvar(
             ],
         )
     return []
+
+
+def apagar_respostas(projeto: Projeto, codificador: str, doc: str, variaveis: list[str]) -> None:
+    """Tira as respostas de um codificador a essas variáveis de um documento (a pessoa as apagou na ficha)."""
+    with conectar(projeto) as con:
+        con.executemany(
+            "DELETE FROM codificacoes WHERE codificador = ? AND doc = ? AND variavel = ?",
+            [(codificador, doc, v) for v in variaveis],
+        )
 
 
 def importar(
