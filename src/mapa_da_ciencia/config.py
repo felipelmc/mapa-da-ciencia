@@ -179,6 +179,66 @@ class Validacao(_Base):
     )
     semente: int = Field(7, description="Semente do sorteio da amostra.")
     codificadores: list[str] = Field(default_factory=list, description="Nomes de quem vai codificar.")
+    familias: dict[str, str] = Field(
+        default_factory=dict,
+        description="Família de modelo de cada codificador que não é uma pessoa (por exemplo, `claude-opus: claude`). "
+        "Uma comparação entre dois participantes da mesma família (o codificador de referência e o supervisor do "
+        "júri, por exemplo) é marcada como circular: a concordância entre eles superestima a qualidade.",
+    )
+
+
+class SupervisorJuri(_Base):
+    """O supervisor do júri: arbitra o que os modelos locais não decidiram e audita uma amostra das decisões
+    unânimes. Por padrão trabalha por arquivos (`mapa juri exportar-pedidos` / `importar-respostas`), com quem o
+    usuário quiser; `modo: api` chama a API da Anthropic, o que envia os títulos e resumos para fora da máquina."""
+
+    modo: Literal["arquivo", "api"] = Field(
+        "arquivo",
+        description="`arquivo`: pedidos e respostas em JSONL, para um supervisor externo; `api`: a API da Anthropic "
+        "(precisa de `ANTHROPIC_API_KEY` no `.env`, de `enviar_textos: true` e do pacote extra `anthropic`).",
+    )
+    nome: Slug = Field("supervisor", description="Nome gravado nas decisões do supervisor.")
+    familia: str = Field(
+        "claude",
+        description="Família do modelo supervisor. Se for a mesma de um codificador de referência "
+        "(`validacao.familias`), a comparação entre os dois é marcada como circular.",
+    )
+    modelo: str = Field("claude-opus-5-5", description="Modelo da API da Anthropic, no modo `api`.")
+    esforco: Literal["low", "medium", "high"] = Field(
+        "medium", description="Esforço de raciocínio pedido ao modelo da API (mais esforço, mais tokens)."
+    )
+    enviar_textos: bool = Field(
+        False,
+        description="Consentimento para enviar títulos e resumos à API. Sem ele, o modo `api` se recusa a rodar.",
+    )
+    limite_gasto_usd: float = Field(
+        5.0, ge=0, description="Gasto máximo estimado por execução, em dólares; acima dele a etapa não começa."
+    )
+
+
+class ConfigJuri(_Base):
+    """Júri de modelos locais: cada membro classifica a amostra (ou o corpus), os que discordam deliberam vendo as
+    respostas anônimas dos outros, e o que continuar sem maioria vai para o supervisor. Ver "Júri e supervisor"."""
+
+    membros: list[str] = Field(
+        default_factory=list,
+        description="Modelos do Ollama que votam, em ordem: o primeiro preside (desempata quando não há maioria nem "
+        "supervisor). Vazio: sem júri. Use modelos de famílias diferentes; três é o mínimo para haver maioria.",
+    )
+    deliberar: bool = Field(True, description="Fazer a rodada de deliberação nas variáveis sem unanimidade.")
+    auditoria: int = Field(
+        40, ge=0, description="Decisões unânimes sorteadas para o supervisor conferir (estimativa do erro)."
+    )
+    supervisor: SupervisorJuri = SupervisorJuri()
+
+    @field_validator("membros")
+    @classmethod
+    def _membros_distintos(cls, membros: list[str]) -> list[str]:
+        if len(membros) != len(set(membros)):
+            raise ValueError("os membros do júri precisam ser modelos diferentes")
+        if len(membros) == 1:
+            raise ValueError("um júri precisa de pelo menos 2 membros (3 para haver maioria)")
+        return membros
 
 
 class ConfigProjeto(_Base):
@@ -193,6 +253,7 @@ class ConfigProjeto(_Base):
     modelos: Modelos = Modelos()
     topicos: ConfigTopicos = ConfigTopicos()
     validacao: Validacao = Validacao()
+    juri: ConfigJuri = ConfigJuri()
 
 
 # ---------------------------------------------------------------- codebook.yaml
