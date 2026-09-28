@@ -368,6 +368,62 @@ def test_canone_soma_registros_da_mesma_obra_e_ignora_a_obra_apagada():
     assert c.cobertura["resenhas_no_canone"] == 1 and c.cobertura["sem_metadados"] == 0
 
 
+_CANONE_NUM_PROCESSO = """
+import json, sys
+from mapa_da_ciencia.redes import citacoes as cit
+dados = json.loads(sys.stdin.read())
+c = cit.calcular(**dados)
+print(json.dumps([[o.id, o.autores, o.ano, o.n, o.edicoes] for o in c.canone]))
+"""
+
+
+def test_canone_nao_depende_da_semente_de_hash():
+    import json
+    import os
+    import subprocess
+    import sys
+
+    # "Democratic Brazil Revisited": nenhum primeiro autor tem a maioria, e Kingstone e Power empatam em todas as
+    # referências (o desempate dependia da ordem de um set, que muda com a semente de hash)
+    refs = [{"obra": f"W{k}", "citada": "W90"} for k in range(8)]
+    refs += [{"obra": f"W{k}", "citada": "W91"} for k in range(4)]
+    listas = [
+        ["KINGSTONE", "POWER"],
+        ["POWER", "KINGSTONE"],
+        ["SILVA", "KINGSTONE", "POWER"],
+        ["SOUZA", "POWER", "KINGSTONE"],
+    ]
+    am = {f"d{k}": [_ref(listas[k % 4], "Democratic Brazil revisited", 2008)] for k in range(8)}
+    citadas = [
+        {"id": "W90", "titulo": "Democratic Brazil Revisited", "autores": [], "ano": 2008},
+        {"id": "W91", "titulo": "Democratic Brazil Revisited", "autores": ["Peter Kingstone"], "ano": 2008},
+    ]
+    dados = {
+        "referencias": refs,
+        "citadas": citadas,
+        "doc_da_obra": {f"W{k}": f"d{k}" for k in range(8)},
+        "anos": {f"d{k}": 2015 for k in range(8)},
+        "topico_do_doc": {},
+        "macro_do_topico": {},
+        "referencias_articlemeta": am,
+    }
+    saidas = {
+        semente: subprocess.run(
+            [sys.executable, "-c", _CANONE_NUM_PROCESSO],
+            input=json.dumps(dados),
+            capture_output=True,
+            text=True,
+            check=True,
+            env={**os.environ, "PYTHONHASHSEED": semente},
+        ).stdout
+        for semente in ("0", "1", "2", "3", "7", "12345")
+    }
+    assert len(set(saidas.values())) == 1, saidas
+    # o empate vai para o menor sobrenome, e os dois registros da mesma obra somam
+    ((_, autores, _, n, edicoes),) = json.loads(saidas["0"])
+    assert autores == ["Kingstone", "Power"] and n == 8 and len(edicoes) == 1
+
+
 def test_registros_da_mesma_obra_com_titulos_quase_iguais():
     citadas = {
         "W1": {"titulo": "Critical citizens: global support for democratic government", "autores": ["Pippa Norris"]},

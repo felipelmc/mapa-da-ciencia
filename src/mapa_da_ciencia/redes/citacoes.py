@@ -89,6 +89,12 @@ def _partes(nome: str) -> set[str]:
     return set(normalizar_titulo(nome).split())
 
 
+def _mais_comum(contagem: Counter) -> tuple[Any, int]:
+    """O item mais frequente, com o empate decidido pelo menor valor (e não pela ordem de inserção, que num `set`
+    muda com a semente de hash do Python e mudava o cânone de uma execução para outra)."""
+    return min(contagem.items(), key=lambda kv: (-kv[1], kv[0]))
+
+
 def conferir_autoria(meta: dict[str, Any], referencias: list[dict[str, Any]], n_citantes: int) -> dict[str, Any]:
     """Autores e ano de uma obra conferidos nas referências da ArticleMeta que a citam pelo mesmo título.
 
@@ -118,11 +124,11 @@ def conferir_autoria(meta: dict[str, Any], referencias: list[dict[str, Any]], n_
     ultimos = [[p for nome in r["sobrenomes"] if (p := normalizar_titulo(nome).split()[-1:])] for r in achadas]
     ultimos = [[x[0] for x in u] for u in ultimos]
     primeiros = Counter(u[0] for u in ultimos if u)
-    todos = Counter(x for u in ultimos for x in set(u))
-    if primeiros and primeiros.most_common(1)[0][1] >= 0.5 * n:
-        principal = primeiros.most_common(1)[0][0]
-    elif todos and todos.most_common(1)[0][1] >= 0.6 * n:
-        principal = todos.most_common(1)[0][0]
+    todos = Counter(x for u in ultimos for x in dict.fromkeys(u))
+    if primeiros and _mais_comum(primeiros)[1] >= 0.5 * n:
+        principal = _mais_comum(primeiros)[0]
+    elif todos and _mais_comum(todos)[1] >= 0.6 * n:
+        principal = _mais_comum(todos)[0]
     else:
         return saida
     presentes = {x for x, k in todos.items() if k >= max(2, 0.1 * n)}
@@ -130,9 +136,9 @@ def conferir_autoria(meta: dict[str, Any], referencias: list[dict[str, Any]], n_
     mantidos.sort(key=lambda a: principal not in _partes(a))  # o principal vai na frente
     if not mantidos:
         mantidos = [_das_referencias(achadas, principal)]
-        outros = Counter(x for u in ultimos for x in set(u) if x != principal)
-        if outros and outros.most_common(1)[0][1] >= 0.5 * n:
-            mantidos.append(_das_referencias(achadas, outros.most_common(1)[0][0]))
+        outros = Counter(x for u in ultimos for x in dict.fromkeys(u) if x != principal)
+        if outros and _mais_comum(outros)[1] >= 0.5 * n:
+            mantidos.append(_das_referencias(achadas, _mais_comum(outros)[0]))
     primeiro_saiu = bool(autores_oa) and not (_partes(autores_oa[0]) & presentes)
     saida["autores"] = mantidos
     saida["autoria_das_referencias"] = [normalizar_titulo(a) for a in mantidos] != [
@@ -141,8 +147,8 @@ def conferir_autoria(meta: dict[str, Any], referencias: list[dict[str, Any]], n_
     saida["resenha"] = resenha or primeiro_saiu
     if saida["resenha"] or not autores_oa:
         anos = Counter(r["ano"] for r in achadas if r.get("ano"))
-        if anos and anos.most_common(1)[0][1] >= 0.3 * n:
-            saida["ano"] = anos.most_common(1)[0][0]
+        if anos and _mais_comum(anos)[1] >= 0.3 * n:
+            saida["ano"] = _mais_comum(anos)[0]
     return saida
 
 
