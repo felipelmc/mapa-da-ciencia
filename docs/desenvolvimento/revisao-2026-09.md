@@ -1,0 +1,110 @@
+# Revisão geral (setembro de 2026)
+
+Entre a versão 1.0.1 e a 2.0.0, o projeto passou por uma revisão geral e sistemática, feita por agentes independentes
+(Claude Opus 5.5), cada um sem ver o trabalho dos outros. Esta página registra o método, as notas e o que foi feito
+com cada achado, para que a próxima revisão possa repetir o processo e comparar.
+
+## Método
+
+1. **Linha de base automática:** lint, testes (pytest, vitest, svelte-check, e2e), geradores com `--checar`,
+   `mkdocs --strict`, o *wheel* testado sem Node, `npm audit`, `pip-audit`, links do site montado e os números do
+   piloto.
+2. **Sete revisores, um por dimensão**, só com leitura do repositório e cópias do piloto:
+
+    | # | Dimensão |
+    |---|---|
+    | 1 | Backend: correção |
+    | 2 | Frontend: correção, acessibilidade e desempenho |
+    | 3 | Metodologia (cada número da metodologia recalculado do zero) |
+    | 4 | Segurança e privacidade |
+    | 5 | Documentação (inclusive uma "pessoa de fora" seguindo o tutorial num clone limpo) |
+    | 6 | Dados do piloto e textos públicos (rótulos, macrotemas, instituições, histórias da abertura) |
+    | 7 | Experiência de uso (demo e abertura no Playwright, em 1440 px e 375 px, temas claro e escuro, CLI) |
+
+3. **Formato fixo dos achados:** severidade, arquivo e linha (ou comando), **evidência reproduzível**, impacto e
+   correção sugerida. Achado sem evidência reproduzível não conta.
+4. **Verificação adversarial:** cada achado foi para um verificador que não viu o revisor original e tentou
+   reproduzi-lo e refutá-lo (confirmado, refutado ou inconclusivo, com a prova).
+5. **Correção com teste:** só o que foi confirmado virou correção, cada uma com um teste que falhava antes. Correções
+   que invalidariam horas de modelo (codebook, parâmetros dos tópicos) viraram recomendações.
+6. **Re-revisão:** cada branch de correção passou por um revisor novo antes do merge, com o CI verde.
+
+## Rubrica e notas
+
+De 0 a 3 por critério (— quando o critério não se aplica à dimensão):
+
+| Dimensão | Correção | Robustez | Testes | Clareza | Coerência | Privacidade | Reprodutibilidade |
+|---|---|---|---|---|---|---|---|
+| 1. Backend | 2 | 2 | 2 | 3 | 1 | 3 | 2 |
+| 2. Frontend | 2 | 2 | 2 | 3 | 2 | 3 | 2 |
+| 3. Metodologia | 2 | 2 | 2 | 2 | 2 | 3 | 3 |
+| 4. Segurança e privacidade | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+| 5. Documentação | 2 | — | 2 | 2 | 2 | 3 | 3 |
+| 6. Dados e textos públicos | 2 | 2 | — | 2 | 2 | — | 3 |
+| 7. Experiência de uso | 2 | 1 | 2 | 2 | 2 | 2 | — |
+
+As notas mais baixas: a **coerência do backend** (o estado das etapas e o que o painel mostra divergiam em casos de
+borda) e a **robustez da experiência de uso** (vistas que transbordavam no celular, exportações que falhavam).
+
+## O funil dos achados
+
+| | Altos | Médios | Baixos | Total |
+|---|---|---|---|---|
+| Encontrados pelos revisores | 7 | 39 | 31 | 77 |
+| Novos, achados pelos verificadores | — | — | — | 2 |
+| **Confirmados** (severidade depois da verificação) | 5 | 38 | 36 | 79 |
+| Refutados ou inconclusivos | | | | 0 |
+
+Nenhum achado foi refutado: a exigência de evidência reproduzível filtrou antes. Os verificadores rebaixaram a
+severidade de parte deles (por exemplo, o e-mail com espaço em volta do `@`, que nunca chegou ao site publicado, foi
+de alto para médio) e acharam dois problemas novos nos dados.
+
+**O que foi feito:**
+
+- **Código (backend, segurança, CLI):** os 11 achados do backend, os 8 de segurança e privacidade e os 4 de código da
+  documentação, corrigidos com testes (branch `revisao-geral`). A re-revisão achou 8 problemas nas próprias
+  correções, e seis checagens seguintes acharam mais 22, entre eles quatro caminhos pelos quais uma rodada de
+  classificação podia apagar a anterior. Eles foram fechados por duas regras (só uma rodada que cobre o corpus
+  substitui o resultado guardado; qualquer outra não tira documentos dele), conferidas em 32 sequências de rodadas.
+- **Interface:** os 12 achados do frontend e 12 dos 13 de uso, com 28 testes e2e novos (branch `revisao-frontend`);
+  o revisor das correções achou mais 6 problemas baixos, também corrigidos.
+- **Textos:** os achados de texto da metodologia, da documentação e da abertura (branch `revisao-docs`), revistos por
+  um revisor independente, que achou mais 5 frases a corrigir.
+- **Dados do piloto:** 21 rótulos de tópico e os 7 macrotemas corrigidos à mão (`rotulos.yaml`), 5 siglas que o
+  casamento mandava para universidades estrangeiras (a "USP" que ia para a Universidad San Pedro, no Peru) e a UF da
+  FGV (`instituicoes.yaml`), aplicados na rodada final do piloto.
+- **Recomendações, não aplicadas:** o quantil t e a marca de tendência frágil (mudariam a lista publicada de
+  tendências e exigem um ADR), métricas de concordância por idioma e entre respostas informativas, a validação do
+  resumo na coleta e a correção da UF da FGV na coleta (hoje um paliativo no `instituicoes.yaml`).
+- **Para o autor decidir:** 7 rótulos de tópico com propostas, a caixa de 11 rótulos, as siglas de estilo, o que fazer
+  com os encartes de dados que entraram como artigos, as fontes do Google e a API do GitHub no site da documentação.
+
+## Os incrementos da v2.0 passaram pelo mesmo processo
+
+Antes de cada merge, três validadores independentes (código, metodologia e uso) revisaram os incrementos:
+
+- **Júri de modelos:** o revisor de código achou 13 problemas (entre eles, uma resposta antiga do supervisor que caía
+  sobre candidatos novos e um limite de gasto que a API podia ultrapassar); corrigidos, e a re-revisão achou mais 9,
+  também corrigidos.
+- **Redes:** os três validadores reprovaram a primeira versão, e cada um achou, de forma independente, os mesmos dois
+  bugs que os testes com o exemplo sintético escondiam: os ids das instituições diferentes entre dois arquivos do
+  contrato e a matriz de fluxo que usava o id do macrotema como posição. O auditor metodológico recalculou todos os
+  números do zero, e o revisor de código recuperou 58 dos 66 ORCIDs a partir dos ids publicados das pessoas (um hash
+  sem segredo). As correções passaram por mais duas rodadas dos três validadores, e a última aprovou com ressalvas
+  baixas: nenhuma fusão errada de pessoas em 80 julgadas à mão.
+
+## Uma decisão na rodada final do piloto
+
+As correções de privacidade tiraram dos textos do corpus cinco e-mails que a coleta da 1.0.1 deixava passar (nenhum
+chegou ao site publicado). Com isso, quatro resumos mudaram, e refazer os tópicos com eles mudaria o agrupamento
+inteiro (62 tópicos em vez de 57, e 27 tópicos com mais de 5 documentos de diferença): o HDBSCAN é sensível a pequenas
+mudanças na entrada. Para a 2.0.0, os tópicos do piloto continuam os da 1.0.1, calculados com os textos anteriores
+(os mesmos embeddings do cache), com os rótulos corrigidos à mão. O corpus publicado já é o novo, sem os e-mails. Um
+recálculo dos tópicos fica para quando o piloto for coletado de novo.
+
+## Como repetir
+
+Os prompts dos revisores e verificadores, a rubrica e os formatos de saída estão no plano da revisão; os pareceres, com
+os scripts de reprodução, ficaram fora do repositório (alguns usam dados do piloto). Para a próxima revisão, a
+lição principal: **testar com dados reais**. O exemplo sintético do contrato é bem-comportado demais (ids contíguos,
+os mesmos identificadores em todos os arquivos), e os bugs mais graves da v2.0 só apareceram com o piloto.
