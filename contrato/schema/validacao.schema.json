@@ -25,6 +25,79 @@
       "title": "AmostraInfo",
       "type": "object"
     },
+    "AuditoriaJuri": {
+      "additionalProperties": false,
+      "description": "A conferência, pelo supervisor, de uma amostra das decisões unânimes do júri.",
+      "properties": {
+        "erros": {
+          "title": "Erros",
+          "type": "integer"
+        },
+        "ic95": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Intervalo de Wilson de 95% da taxa de erro.",
+          "title": "Ic95"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "por_variavel": {
+          "additionalProperties": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array"
+          },
+          "description": "Variável → (erros, n).",
+          "title": "Por Variavel",
+          "type": "object"
+        },
+        "taxa": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Taxa"
+        }
+      },
+      "required": [
+        "n",
+        "erros",
+        "taxa",
+        "ic95"
+      ],
+      "title": "AuditoriaJuri",
+      "type": "object"
+    },
     "ComparacaoModelos": {
       "additionalProperties": false,
       "description": "McNemar exato entre dois modelos, contra a mesma referência, numa variável.",
@@ -243,6 +316,12 @@
           ],
           "title": "Alfa"
         },
+        "circular": {
+          "default": false,
+          "description": "Os dois participantes são da mesma família de modelo (a referência e o supervisor do júri, por exemplo): um limite superior, e não uma medida independente.",
+          "title": "Circular",
+          "type": "boolean"
+        },
         "comparacao": {
           "description": "Ex.: `claude-opus × qwen3.5:9b` (referência primeiro).",
           "title": "Comparacao",
@@ -350,6 +429,19 @@
       "additionalProperties": false,
       "description": "Quem respondeu na amostra: um codificador (`humano` ou `referencia`, que não é uma pessoa) ou um modelo.",
       "properties": {
+        "familia": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Família de modelo, quando se conhece (ver `circular`).",
+          "title": "Familia"
+        },
         "n": {
           "description": "Documentos da amostra com resposta.",
           "title": "N",
@@ -375,6 +467,119 @@
         "n"
       ],
       "title": "Participante",
+      "type": "object"
+    },
+    "ResumoJuri": {
+      "additionalProperties": false,
+      "description": "O júri de modelos locais na amostra: estágios, deliberação, concordância por estágio e auditoria.",
+      "properties": {
+        "auditoria": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AuditoriaJuri"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "concordancia_por_etapa": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "description": "Estágio → {n, acertos} contra a referência.",
+          "title": "Concordancia Por Etapa",
+          "type": "object"
+        },
+        "deliberacao": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "description": "Membro → {votos, mudou, para_referencia, contra}: votos revistos na deliberação e a direção.",
+          "title": "Deliberacao",
+          "type": "object"
+        },
+        "documentos": {
+          "title": "Documentos",
+          "type": "integer"
+        },
+        "etapas": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "description": "Variável → estágio → decisões.",
+          "title": "Etapas",
+          "type": "object"
+        },
+        "familia_supervisor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Familia Supervisor"
+        },
+        "membros": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Membros",
+          "type": "array"
+        },
+        "referencia": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "O codificador tomado como referência nas contagens.",
+          "title": "Referencia"
+        },
+        "supervisor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Supervisor"
+        },
+        "virou": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Variável → decisões que a deliberação mudou.",
+          "title": "Virou",
+          "type": "object"
+        }
+      },
+      "required": [
+        "referencia",
+        "membros",
+        "supervisor",
+        "familia_supervisor",
+        "documentos",
+        "etapas"
+      ],
+      "title": "ResumoJuri",
       "type": "object"
     }
   },
@@ -426,6 +631,18 @@
       "default": null,
       "title": "Hash Codebook"
     },
+    "juri": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ResumoJuri"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "O júri de modelos locais, quando o projeto tem um."
+    },
     "metricas": {
       "items": {
         "$ref": "#/$defs/MetricaVariavel"
@@ -453,7 +670,7 @@
       "type": "array"
     },
     "versao_contrato": {
-      "default": "1.4",
+      "default": "1.5",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",

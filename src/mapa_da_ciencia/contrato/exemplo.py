@@ -587,7 +587,8 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
         documentos=len(docs),
         por_variavel=por_variavel,
     )
-    validacao = _validacao_sintetica(rng, docs, vars_cls, dic_cls)
+    validacao, amostra = _validacao_sintetica(rng, docs, vars_cls, dic_cls)
+    _juri_sintetico(rng, validacao, amostra, vars_cls, dic_cls, detalhes)
 
     # ---- agregados (gabarito do filtro cruzado)
     tar = Counter((d["topico"], d["ano"], d["revista"]) for d in docs)
@@ -662,7 +663,7 @@ def _kappa(a: list[str], b: list[str]) -> tuple[float, float, float]:
 REFERENCIA = "referencia-exemplo"  # um codificador de referência fictício (não humano)
 
 
-def _validacao_sintetica(rng, docs, vars_cls, dic_cls) -> m.Validacao:
+def _validacao_sintetica(rng, docs, vars_cls, dic_cls) -> tuple[m.Validacao, list[dict]]:
     amostra = rng.sample(docs, 60)
     metricas, divergencias = [], []
     for v in vars_cls:
@@ -723,4 +724,85 @@ def _validacao_sintetica(rng, docs, vars_cls, dic_cls) -> m.Validacao:
         ],
         modelo_principal="exemplo",
         evidencia_literal={"exemplo": 0.95},
+    ), amostra
+
+
+MEMBROS_EXEMPLO = ["exemplo", "modelo-b", "modelo-c"]
+
+
+def _juri_sintetico(rng, validacao: m.Validacao, amostra: list[dict], vars_cls, dic_cls, detalhes) -> None:
+    """Um júri fictício de três membros na amostra: votos, deliberação, supervisor e auditoria, para a interface."""
+    from mapa_da_ciencia.juri.agregacao import Voto, agregar
+    from mapa_da_ciencia.juri.supervisor import wilson
+
+    etapas = {v.id: {"unanime": 0, "maioria": 0, "deliberacao": 0, "sem_maioria": 0} for v in vars_cls}
+    virou = dict.fromkeys(etapas, 0)
+    deliberacao = {x: {"votos": 0, "mudou": 0, "para_referencia": 0, "contra": 0} for x in MEMBROS_EXEMPLO}
+    for d in amostra:
+        decisoes = {}
+        for v in vars_cls:
+            certo = d["cls"][v.id]
+            valores = [certo] + [certo if rng.random() < q else rng.choice(dic_cls[v.id]) for q in (0.85, 0.7)]
+            if v.tipo == "booleana":
+                valores = [x if isinstance(x, bool) else str(x).lower() == "true" for x in valores]
+            r1 = [
+                Voto(membro, x, "(ver resumo)", "literal") for membro, x in zip(MEMBROS_EXEMPLO, valores, strict=True)
+            ]
+            d1 = agregar(v, r1)
+            votos = [m.VotoJuri(membro=x.membro, rodada=1, valor=x.valor, evidencia=x.evidencia, status="literal")
+                     for x in r1]  # fmt: skip
+            etapa, valor, supervisor, justificativa = d1.etapa, d1.valor, None, None
+            if d1.etapa != "unanime":
+                r2 = [
+                    x if x.valor == d1.valor or rng.random() < 0.5 else Voto(x.membro, certo, x.evidencia) for x in r1
+                ]
+                d2 = agregar(v, r2)
+                for a, b in zip(r1, r2, strict=True):
+                    deliberacao[a.membro]["votos"] += 1
+                    mudou = a.valor != b.valor
+                    deliberacao[a.membro]["mudou"] += mudou
+                    deliberacao[a.membro]["para_referencia"] += mudou
+                    votos.append(m.VotoJuri(membro=b.membro, rodada=2, valor=b.valor, evidencia=b.evidencia,
+                                            status="literal", revisou=mudou))  # fmt: skip
+                etapa = "deliberacao" if d2.decidida else "sem_maioria"
+                virou[v.id] += d2.decidida and (not d1.decidida or d1.valor != d2.valor)
+                valor = d2.valor if d2.decidida else r2[0].valor
+                if not d2.decidida:
+                    supervisor, justificativa = "supervisor", "Exemplo: o resumo descreve o desenho da pesquisa."
+                    valor = certo
+            etapas[v.id][etapa] += 1
+            decisoes[v.id] = m.DecisaoJuri(
+                etapa=etapa,
+                virou=bool(virou[v.id]) and etapa == "deliberacao",
+                valor=valor,
+                valor_sem_supervisor=valor if supervisor is None else r1[0].valor,
+                supervisor=supervisor,
+                justificativa=justificativa,
+                votos=votos,
+            )
+        if d["id"] in detalhes:
+            detalhes[d["id"]].juri = decisoes
+    validacao.juri = m.ResumoJuri(
+        referencia=REFERENCIA,
+        membros=MEMBROS_EXEMPLO,
+        supervisor="supervisor",
+        familia_supervisor="exemplo",
+        documentos=len(amostra),
+        etapas=etapas,
+        virou=virou,
+        concordancia_por_etapa={"unanime": {"n": 240, "acertos": 221}, "sem_maioria": {"n": 20, "acertos": 12}},
+        deliberacao=deliberacao,
+        auditoria=m.AuditoriaJuri(n=12, erros=1, taxa=round(1 / 12, 4), ic95=wilson(1, 12), por_variavel={}),
     )
+    for x in list(validacao.metricas):
+        for nome, circular in (("juri", False), ("juri-supervisor", True)):
+            validacao.metricas.append(
+                x.model_copy(update={"comparacao": f"{REFERENCIA} × {nome}", "comparado": nome, "circular": circular})
+            )
+    validacao.modelos += ["juri", "juri-supervisor"]
+    validacao.codificadores = [
+        m.Participante(nome=REFERENCIA, tipo="referencia", n=len(amostra), familia="exemplo"),
+        m.Participante(nome="exemplo", tipo="modelo", n=len(amostra)),
+        m.Participante(nome="juri", tipo="modelo", n=len(amostra)),
+        m.Participante(nome="juri-supervisor", tipo="modelo", n=len(amostra), familia="exemplo"),
+    ]

@@ -336,6 +336,12 @@ export interface Detalhe {
 	 * Idioma do texto usado nos embeddings e nos tópicos.
 	 */
 	idioma_analise?: string | null;
+	/**
+	 * Variável → decisão do júri (só nos documentos da amostra, com júri).
+	 */
+	juri?: {
+		[k: string]: DecisaoJuri;
+	};
 	licenca: string;
 	licenca_fonte: string;
 	palavras_chave?: string[];
@@ -362,6 +368,47 @@ export interface Evidencia {
 	/**
 	 * `literal`: o trecho está no texto; `aproximada`: quase (90% dos caracteres); `ausente`: não está; `dispensada`: vazia numa resposta sem informação.
 	 */
+	status: 'literal' | 'aproximada' | 'ausente' | 'dispensada';
+	valor: string | boolean | string[] | null;
+}
+/**
+ * Como o júri decidiu uma variável de um documento da amostra de validação.
+ */
+export interface DecisaoJuri {
+	etapa: 'unanime' | 'maioria' | 'deliberacao' | 'sem_maioria';
+	/**
+	 * A justificativa do supervisor (vazia no site publicado).
+	 */
+	justificativa?: string | null;
+	/**
+	 * Quem arbitrou, quando não houve maioria.
+	 */
+	supervisor?: string | null;
+	/**
+	 * A decisão final (com o supervisor, se ele decidiu).
+	 */
+	valor: string | boolean | string[] | null;
+	valor_sem_supervisor: string | boolean | string[] | null;
+	/**
+	 * A deliberação mudou a decisão (outra maioria, ou antes não havia).
+	 */
+	virou?: boolean;
+	votos?: VotoJuri[];
+}
+/**
+ * O voto de um membro do júri numa variável, numa rodada (1: votação; 2: deliberação).
+ */
+export interface VotoJuri {
+	/**
+	 * Vazia no site publicado quando a licença do resumo não é aberta.
+	 */
+	evidencia: string;
+	membro: string;
+	/**
+	 * Na rodada 2: o membro mudou de valor na deliberação.
+	 */
+	revisou?: boolean;
+	rodada: 1 | 2;
 	status: 'literal' | 'aproximada' | 'ausente' | 'dispensada';
 	valor: string | boolean | string[] | null;
 }
@@ -664,6 +711,10 @@ export interface Validacao {
 		[k: string]: number;
 	};
 	hash_codebook?: string | null;
+	/**
+	 * O júri de modelos locais, quando o projeto tem um.
+	 */
+	juri?: ResumoJuri | null;
 	metricas: MetricaVariavel[];
 	modelo_principal?: string | null;
 	modelos: string[];
@@ -684,6 +735,10 @@ export interface AmostraInfo {
  * Quem respondeu na amostra: um codificador (`humano` ou `referencia`, que não é uma pessoa) ou um modelo.
  */
 export interface Participante {
+	/**
+	 * Família de modelo, quando se conhece (ver `circular`).
+	 */
+	familia?: string | null;
 	/**
 	 * Documentos da amostra com resposta.
 	 */
@@ -727,11 +782,81 @@ export interface Divergencia {
 	variavel: string;
 }
 /**
+ * O júri de modelos locais na amostra: estágios, deliberação, concordância por estágio e auditoria.
+ */
+export interface ResumoJuri {
+	auditoria?: AuditoriaJuri | null;
+	/**
+	 * Estágio → {n, acertos} contra a referência.
+	 */
+	concordancia_por_etapa?: {
+		[k: string]: {
+			[k: string]: number;
+		};
+	};
+	/**
+	 * Membro → {votos, mudou, para_referencia, contra}: votos revistos na deliberação e a direção.
+	 */
+	deliberacao?: {
+		[k: string]: {
+			[k: string]: number;
+		};
+	};
+	documentos: number;
+	/**
+	 * Variável → estágio → decisões.
+	 */
+	etapas: {
+		[k: string]: {
+			[k: string]: number;
+		};
+	};
+	familia_supervisor: string | null;
+	membros: string[];
+	/**
+	 * O codificador tomado como referência nas contagens.
+	 */
+	referencia: string | null;
+	supervisor: string | null;
+	/**
+	 * Variável → decisões que a deliberação mudou.
+	 */
+	virou?: {
+		[k: string]: number;
+	};
+}
+/**
+ * A conferência, pelo supervisor, de uma amostra das decisões unânimes do júri.
+ */
+export interface AuditoriaJuri {
+	erros: number;
+	/**
+	 * Intervalo de Wilson de 95% da taxa de erro.
+	 */
+	ic95: [number, number] | null;
+	n: number;
+	/**
+	 * Variável → (erros, n).
+	 */
+	por_variavel?: {
+		/**
+		 * @minItems 2
+		 * @maxItems 2
+		 */
+		[k: string]: [number, number];
+	};
+	taxa: number | null;
+}
+/**
  * Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável.
  * Nas de múltipla escolha, `variavel` é `id:categoria` (uma variável sim/não por categoria).
  */
 export interface MetricaVariavel {
 	alfa: number | null;
+	/**
+	 * Os dois participantes são da mesma família de modelo (a referência e o supervisor do júri, por exemplo): um limite superior, e não uma medida independente.
+	 */
+	circular?: boolean;
 	/**
 	 * Ex.: `claude-opus × qwen3.5:9b` (referência primeiro).
 	 */

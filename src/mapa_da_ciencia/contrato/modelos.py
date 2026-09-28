@@ -19,12 +19,14 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSAO_CONTRATO = "1.4"
+VERSAO_CONTRATO = "1.5"
 # 1.1: marcas do texto de análise, fonte do rótulo, núcleo dos tópicos, ruído por ano
 # 1.2: tendências (com o método), séries dos macrotemas, sem tópico por ano, geografia completa
 # 1.3: classificação por variável, evidência dispensada e campo da evidência, participantes da validação com o
 #      tipo, métricas por classe, comparação entre modelos
 # 1.4: publicação no manifesto (quando e o que o `mapa publicar` retirou)
+# 1.5: júri de modelos locais (votos e estágio por documento da amostra, resumo na validação), família dos
+#      participantes e comparações circulares
 N_FRAGMENTOS = 64
 SIGLAS_UF = (
     "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA",
@@ -266,6 +268,29 @@ class Evidencia(_Base):
     )
 
 
+class VotoJuri(_Base):
+    """O voto de um membro do júri numa variável, numa rodada (1: votação; 2: deliberação)."""
+
+    membro: str
+    rodada: Literal[1, 2]
+    valor: str | bool | list[str] | None
+    evidencia: str = Field(description="Vazia no site publicado quando a licença do resumo não é aberta.")
+    status: StatusEvidencia
+    revisou: bool = Field(False, description="Na rodada 2: o membro mudou de valor na deliberação.")
+
+
+class DecisaoJuri(_Base):
+    """Como o júri decidiu uma variável de um documento da amostra de validação."""
+
+    etapa: Literal["unanime", "maioria", "deliberacao", "sem_maioria"]
+    virou: bool = Field(False, description="A deliberação mudou a decisão (outra maioria, ou antes não havia).")
+    valor: str | bool | list[str] | None = Field(description="A decisão final (com o supervisor, se ele decidiu).")
+    valor_sem_supervisor: str | bool | list[str] | None
+    supervisor: str | None = Field(None, description="Quem arbitrou, quando não houve maioria.")
+    justificativa: str | None = Field(None, description="A justificativa do supervisor (vazia no site publicado).")
+    votos: list[VotoJuri] = Field(default_factory=list)
+
+
 class Detalhe(_Base):
     """O que a interface mostra ao abrir um documento: resumo, autores, licença e evidências."""
 
@@ -282,6 +307,9 @@ class Detalhe(_Base):
         None,
         description="`resumo`: título e resumo no idioma de análise; `reserva`: resumo em outro idioma (não havia "
         "no de análise); `so_titulo`: o documento não tem resumo. O texto em si não é publicado.",
+    )
+    juri: dict[str, DecisaoJuri] = Field(
+        default_factory=dict, description="Variável → decisão do júri (só nos documentos da amostra, com júri)."
     )
 
 
@@ -486,6 +514,11 @@ class MetricaVariavel(_Base):
     referencia: str = Field("", description="Participante tomado como referência (linhas da matriz).")
     comparado: str = ""
     por_classe: list[MetricaClasse] = Field(default_factory=list)
+    circular: bool = Field(
+        False,
+        description="Os dois participantes são da mesma família de modelo (a referência e o supervisor do júri, "
+        "por exemplo): um limite superior, e não uma medida independente.",
+    )
 
 
 class Divergencia(_Base):
@@ -515,6 +548,7 @@ class Participante(_Base):
     nome: str
     tipo: TipoParticipante
     n: int = Field(description="Documentos da amostra com resposta.")
+    familia: str | None = Field(None, description="Família de modelo, quando se conhece (ver `circular`).")
 
 
 class ComparacaoModelos(_Base):
@@ -528,6 +562,36 @@ class ComparacaoModelos(_Base):
     acertos_a: int
     acertos_b: int
     p: float
+
+
+class AuditoriaJuri(_Base):
+    """A conferência, pelo supervisor, de uma amostra das decisões unânimes do júri."""
+
+    n: int
+    erros: int
+    taxa: float | None
+    ic95: tuple[float, float] | None = Field(description="Intervalo de Wilson de 95% da taxa de erro.")
+    por_variavel: dict[str, tuple[int, int]] = Field(default_factory=dict, description="Variável → (erros, n).")
+
+
+class ResumoJuri(_Base):
+    """O júri de modelos locais na amostra: estágios, deliberação, concordância por estágio e auditoria."""
+
+    referencia: str | None = Field(description="O codificador tomado como referência nas contagens.")
+    membros: list[str]
+    supervisor: str | None
+    familia_supervisor: str | None
+    documentos: int
+    etapas: dict[str, dict[str, int]] = Field(description="Variável → estágio → decisões.")
+    virou: dict[str, int] = Field(default_factory=dict, description="Variável → decisões que a deliberação mudou.")
+    concordancia_por_etapa: dict[str, dict[str, int]] = Field(
+        default_factory=dict, description="Estágio → {n, acertos} contra a referência."
+    )
+    deliberacao: dict[str, dict[str, int]] = Field(
+        default_factory=dict,
+        description="Membro → {votos, mudou, para_referencia, contra}: votos revistos na deliberação e a direção.",
+    )
+    auditoria: AuditoriaJuri | None = None
 
 
 class Validacao(_Arquivo):
@@ -544,6 +608,7 @@ class Validacao(_Arquivo):
     evidencia_literal: dict[str, float] = Field(
         default_factory=dict, description="Modelo → fração das evidências literais na amostra."
     )
+    juri: ResumoJuri | None = Field(None, description="O júri de modelos locais, quando o projeto tem um.")
 
 
 # ---------------------------------------------------------------- agregados.json

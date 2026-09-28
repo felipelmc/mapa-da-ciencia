@@ -1,5 +1,108 @@
 {
   "$defs": {
+    "DecisaoJuri": {
+      "additionalProperties": false,
+      "description": "Como o júri decidiu uma variável de um documento da amostra de validação.",
+      "properties": {
+        "etapa": {
+          "enum": [
+            "unanime",
+            "maioria",
+            "deliberacao",
+            "sem_maioria"
+          ],
+          "title": "Etapa",
+          "type": "string"
+        },
+        "justificativa": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A justificativa do supervisor (vazia no site publicado).",
+          "title": "Justificativa"
+        },
+        "supervisor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Quem arbitrou, quando não houve maioria.",
+          "title": "Supervisor"
+        },
+        "valor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A decisão final (com o supervisor, se ele decidiu).",
+          "title": "Valor"
+        },
+        "valor_sem_supervisor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Valor Sem Supervisor"
+        },
+        "virou": {
+          "default": false,
+          "description": "A deliberação mudou a decisão (outra maioria, ou antes não havia).",
+          "title": "Virou",
+          "type": "boolean"
+        },
+        "votos": {
+          "items": {
+            "$ref": "#/$defs/VotoJuri"
+          },
+          "title": "Votos",
+          "type": "array"
+        }
+      },
+      "required": [
+        "etapa",
+        "valor",
+        "valor_sem_supervisor"
+      ],
+      "title": "DecisaoJuri",
+      "type": "object"
+    },
     "Detalhe": {
       "additionalProperties": false,
       "description": "O que a interface mostra ao abrir um documento: resumo, autores, licença e evidências.",
@@ -59,6 +162,14 @@
           "default": null,
           "description": "Idioma do texto usado nos embeddings e nos tópicos.",
           "title": "Idioma Analise"
+        },
+        "juri": {
+          "additionalProperties": {
+            "$ref": "#/$defs/DecisaoJuri"
+          },
+          "description": "Variável → decisão do júri (só nos documentos da amostra, com júri).",
+          "title": "Juri",
+          "type": "object"
         },
         "licenca": {
           "title": "Licenca",
@@ -199,6 +310,74 @@
       ],
       "title": "Evidencia",
       "type": "object"
+    },
+    "VotoJuri": {
+      "additionalProperties": false,
+      "description": "O voto de um membro do júri numa variável, numa rodada (1: votação; 2: deliberação).",
+      "properties": {
+        "evidencia": {
+          "description": "Vazia no site publicado quando a licença do resumo não é aberta.",
+          "title": "Evidencia",
+          "type": "string"
+        },
+        "membro": {
+          "title": "Membro",
+          "type": "string"
+        },
+        "revisou": {
+          "default": false,
+          "description": "Na rodada 2: o membro mudou de valor na deliberação.",
+          "title": "Revisou",
+          "type": "boolean"
+        },
+        "rodada": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Rodada",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "literal",
+            "aproximada",
+            "ausente",
+            "dispensada"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "valor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Valor"
+        }
+      },
+      "required": [
+        "membro",
+        "rodada",
+        "valor",
+        "evidencia",
+        "status"
+      ],
+      "title": "VotoJuri",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -216,7 +395,7 @@
       "type": "string"
     },
     "versao_contrato": {
-      "default": "1.4",
+      "default": "1.5",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",
