@@ -442,7 +442,9 @@ test('play passa ano a ano pela linha do tempo', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/mapa`);
 	await esperarMapa(page);
 	const primeiro = Math.min(...documentos.colunas.ano);
+	await expect(page.getByTestId('play')).toHaveText('Tocar');
 	await page.getByTestId('play').click();
+	await expect(page.getByTestId('play')).toHaveText('Pausar');
 	await expect(page).toHaveURL(new RegExp(`anos=${primeiro}(&|$)`));
 	await expect(page).toHaveURL(new RegExp(`anos=${primeiro + 1}(&|$)`), { timeout: 5000 });
 	await page.getByTestId('play').click(); // pausa

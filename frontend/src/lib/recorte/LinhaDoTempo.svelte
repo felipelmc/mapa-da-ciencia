@@ -66,7 +66,7 @@
 
 <div class="linha" data-testid="linha-do-tempo">
 	<button type="button" class="play" onclick={tocar} aria-pressed={tocando} data-testid="play">
-		{tocando ? 'Pausar' : 'Play'}
+		{tocando ? 'Pausar' : 'Tocar'}
 	</button>
 	<label>
 		<span class="visualmente-oculto">Primeiro ano</span>

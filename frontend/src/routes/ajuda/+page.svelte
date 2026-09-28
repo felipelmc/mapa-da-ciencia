@@ -52,7 +52,7 @@
 			(Mapa, Tópicos e Geografia) mostram. O contador à direita diz quantos passam em tudo. Entram no recorte:
 		</p>
 		<ul>
-			<li>o <strong>período</strong>, na linha do tempo (o <strong>Play</strong> anima ano a ano);</li>
+			<li>o <strong>período</strong>, na linha do tempo (o botão <strong>Tocar</strong> anima ano a ano);</li>
 			<li>as <strong>revistas</strong>, no botão ao lado;</li>
 			<li>os <strong>tópicos</strong>, a <strong>busca</strong> e o <strong>laço</strong>, escolhidos no Mapa e nos Tópicos;</li>
 			<li>
