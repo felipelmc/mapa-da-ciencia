@@ -24,6 +24,7 @@ A versão 2.0.0 traz duas frentes novas, o **júri de modelos locais com supervi
 - o repositório ignora as cópias que o iCloud Drive cria ("teste 2.py", "index 2.md") no git, no pytest e no MkDocs, e o CI falha se alguma entrar num commit (armadilha em `desenvolvimento`).
 - o resultado da classificação (`dados/classificacao/*.json`) ganha os campos `execucao` e `a_parte`, e o manifesto da classificação, os parâmetros `execucao`, `gravado` e `interrompida`: uma versão anterior do pacote (por exemplo o *wheel* 1.0.1 do caderno do Colab) que abrir um projeto classificado com esta cai com `TypeError`.
 - o piloto publicado: 21 rótulos de tópico e os 7 macrotemas corrigidos à mão (`rotulos.yaml`: rótulos que os próprios títulos dos artigos desmentiam, como "Política externa brasileira sob Lula" com Lula em 25 de 208 títulos), e, na geografia, 5 siglas que o casamento mandava para universidades estrangeiras (a "USP" que ia para a Universidad San Pedro, no Peru) e a UF da FGV, que a ArticleMeta põe em Brasília (`instituicoes.yaml`).
+- o `.gitignore` que o `mapa novo` cria cobre também `juri/` (os pedidos ao supervisor, com os resumos inteiros, e as respostas dele).
 - a geografia normaliza os hífens tipográficos (U+2010 a U+2015 e o sinal de menos) e o "ı" sem ponto, e o alinhamento 1:1 entre as afiliações das duas fontes confere o nome (versão 2 da etapa: rode `mapa geografia` de novo).
 
 ### Corrigido
