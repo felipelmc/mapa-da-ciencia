@@ -101,8 +101,22 @@ dois pares distintos também eram nomes iguais.
 
 ## Números do piloto
 
-(Preenchidos com a rodada do piloto: pessoas, com coautor, arestas, componentes e o maior, comunidades, instituições,
-citações internas, cobertura das referências e o cânone.)
+Rodada de 28/09/2026 (10 revistas, 4.275 documentos, 2010–2025), com as referências do OpenAlex coletadas uma vez
+(48 requisições; as coletas seguintes vêm do cache).
+
+| | |
+|---|---|
+| Pessoas | 4.190 (3.021 com algum coautor) |
+| Rede de coautoria | 3.837 arestas, 654 componentes; o maior tem 1.004 pessoas (33%); 37 comunidades numeradas, modularidade 0,96 |
+| Rede de instituições | 462 instituições com coautoria entre si, 1.123 arestas, 27 componentes (o maior com 406, 88%) |
+| Identidade | 17 pessoas com dois ORCIDs (a mesma pessoa, conferido à mão), 5 ORCIDs de outro nome retirados, 69 pares para revisar |
+| Citações dentro do corpus | 4.923 (nenhuma anacrônica; 7 autorreferências) |
+| Cobertura | 3.976 dos 4.275 documentos têm referências no OpenAlex; das 201.288 referências que a ArticleMeta lista, 105.602 (52%) foram resolvidas (mediana de 50% por documento) |
+| Cânone | 200 obras de fora do corpus, citadas por 1.790 documentos; 55 chegaram por um registro de resenha e 62 tiveram a autoria conferida nas referências |
+
+Uma auditoria metodológica independente recalculou esses números do zero, com scripts próprios, e julgou à mão as
+fusões e separações de pessoas: nenhuma fusão errada em 80 pessoas julgadas (IC 95% de 0 a 4,6%); dos pares de
+homônimos que eram a mesma pessoa, 7 de 9 continuam separados e vão para a revisão (`mapa redes --revisar`).
 
 ## Consequências
 

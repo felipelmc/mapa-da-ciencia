@@ -149,7 +149,7 @@ Na *Opinião Pública*, São Paulo soma 66,4 de peso em 88 artigos, Minas Gerais
 
 ## Próximos passos
 
-- **O piloto inteiro.** Com as dez revistas, a geografia fica mais rica: 639 instituições, com a USP, a UnB e a UFMG à frente.
+- **O piloto inteiro.** Com as dez revistas, a geografia fica mais rica: 636 instituições, com a USP, a UnB e a UFMG à frente.
 
     ```bash
     cd ../..

@@ -24,7 +24,7 @@ A tendência de cada tópico é a inclinação de uma regressão logística quas
 
 ## 4. Geografia
 
-Cada afiliação de autor (a normalizada da ArticleMeta, `v240`, ou o texto livre, `v70`) é ligada a uma instituição do OpenAlex/ROR, dos candidatos mais próximos (as instituições que o OpenAlex deu ao mesmo autor) aos mais distantes, com vetos contra nomes parecidos e países divergentes, e sobe até a instituição de ensino "mãe". A produção é contada de forma fracionária: cada artigo vale 1, dividido entre os autores e, para cada autor, entre as suas afiliações. No piloto: 93,9% dos vínculos ligados a uma de 639 instituições, com precisão de 99,8% numa amostra lida à mão. Veja [Geografia da produção](geografia.md) e o [ADR 0008](../decisoes/0008-geografia-casamento-das-afiliacoes.md).
+Cada afiliação de autor (a normalizada da ArticleMeta, `v240`, ou o texto livre, `v70`) é ligada a uma instituição do OpenAlex/ROR, dos candidatos mais próximos (as instituições que o OpenAlex deu ao mesmo autor) aos mais distantes, com vetos contra nomes parecidos e países divergentes, e sobe até a instituição de ensino "mãe". A produção é contada de forma fracionária: cada artigo vale 1, dividido entre os autores e, para cada autor, entre as suas afiliações. No piloto: 93,9% dos vínculos ligados a uma de 636 instituições, com precisão de 99,8% numa amostra lida à mão. Veja [Geografia da produção](geografia.md) e o [ADR 0008](../decisoes/0008-geografia-casamento-das-afiliacoes.md).
 
 ## 5. Classificação
 
