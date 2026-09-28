@@ -134,5 +134,7 @@ def resultados(pasta: Path) -> list[Resultado]:
     recente à mais antiga."""
     saida = []
     for arquivo in pasta.glob("*.json") if pasta.exists() else []:
+        if " " in arquivo.stem:  # uma cópia do iCloud ("… 2.json"), e não um resultado: os nomes não têm espaço
+            continue
         saida.append(Resultado(**json.loads(arquivo.read_text(encoding="utf-8"))))
     return sorted(saida, key=lambda r: r.gerado_em, reverse=True)

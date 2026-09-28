@@ -165,3 +165,10 @@ test('um erro ao desenhar a vista vira um aviso com "Tentar de novo", e a outra 
 	await expect(h1(page)).toHaveText('Tópicos');
 	await expect(page.getByTestId('falha-ao-abrir')).toHaveCount(0);
 });
+
+test('no painel, um erro da API de métricas aparece, em vez das métricas antigas do arquivo', async ({ page }) => {
+	await page.route('**/api/validacao/metricas', (rota) => rota.fulfill({ status: 500, json: { detail: 'falhou ao calcular' } }));
+	await page.goto(`${url('PAINEL')}#/validacao`);
+	await expect(page.getByTestId('falha-ao-abrir')).toContainText('falhou ao calcular');
+	await expect(page.getByTestId('tabela-metricas')).toHaveCount(0);
+});

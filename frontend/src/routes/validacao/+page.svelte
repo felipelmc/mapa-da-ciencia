@@ -7,14 +7,22 @@
 	import { abrirCorpus } from '$lib/dados/corpus';
 	import { rota } from '$lib/estado/url';
 	import { secao } from '$lib/secoes';
-	import { lerMetricas } from '$lib/validacao/api';
+	import { ErroDaApi, lerMetricas } from '$lib/validacao/api';
 	import VistaValidacao from '$lib/validacao/VistaValidacao.svelte';
 
 	const { fonte, manifesto } = usarProjeto();
-	// no painel local, as métricas vêm da API (calculadas agora, com as divergências de todos); no site, do contrato
+	// no painel local, as métricas vêm da API (calculadas agora, com as divergências de todos); no site, do contrato.
+	// Sem conexão com o painel, o validacao.json exportado; sem amostra (404), o estado vazio; um erro do painel
+	// aparece (com "Tentar de novo"), em vez de a vista mostrar em silêncio as métricas antigas do arquivo
 	const abrir = () => {
 		const metricas: Promise<Validacao | null> = manifesto.api
-			? lerMetricas().catch(() => fonte.validacao())
+			? lerMetricas().catch((e) => {
+					if (e instanceof ErroDaApi) {
+						if (e.status === 404) return null;
+						throw e;
+					}
+					return fonte.validacao();
+				})
 			: fonte.validacao();
 		return Promise.all([metricas, fonte.codebook(), abrirCorpus(fonte)]);
 	};

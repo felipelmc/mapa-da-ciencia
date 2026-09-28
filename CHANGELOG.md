@@ -18,6 +18,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Corrigido
 
+- painel: quando a API das métricas da validação falha, a vista mostra o erro (com "Tentar de novo"), em vez de mostrar em silêncio as métricas antigas do `validacao.json`; as cópias que o iCloud cria nos resultados da classificação (`… 2.json`) não são mais lidas como resultados.
 - painel: um pedido inválido à API (por exemplo, sortear uma amostra de 0 documentos) volta com a mensagem em português, e não "Unprocessable Entity".
 - `mapa status` e a linha das etapas do painel: as contagens com acento ("57 tópicos", "7.242 vínculos") e a duração legível ("10 h 5 min", em vez de "36.329 s").
 - painel, assistente do projeto: um projeto só de importação (ou da busca do OpenAlex) configura sem revistas do SciELO; antes o assistente exigia uma revista e, ao salvar, criava uma fonte do SciELO que o projeto não tinha.
