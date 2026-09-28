@@ -83,6 +83,14 @@ test('em alta e em queda: sem recorte, a lista é a do gabarito do Python', asyn
 	await page.screenshot({ path: join(TELAS, 'topicos-tendencias-1440x900.png'), fullPage: true });
 });
 
+test('a ajuda das tendências avisa do pico na borda do período e das marcações marginais', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(page.getByTestId('cautela-tendencias')).toContainText('primeiro ou no último ano do período');
+	await expect(page.getByTestId('cautela-tendencias')).toContainText('marginais');
+	await page.goto(`${url('RAIZ')}#/ajuda`);
+	await expect(page.getByText(/pico no primeiro ou no último ano/)).toBeVisible();
+});
+
 test('com menos de 5 anos no recorte, a lista pede um período maior', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/topicos?anos=2020-2022`);
 	await expect(page.getByTestId('tendencias-poucos-anos')).toBeVisible();

@@ -80,6 +80,8 @@
 				<strong>Em alta</strong> e <strong>em queda</strong> são os tópicos cuja participação muda de forma
 				distinguível do acaso (regressão logística com intervalo de 95%, corrigida pela dispersão). Com dezenas de
 				tópicos testados, cerca de 1 em 20 aparece por acaso: leia a lista como pistas, não como conclusões.
+				Um pico no primeiro ou no último ano do período escolhido, como um dossiê temático, também pode puxar a
+				tendência, e algumas marcações são marginais (no piloto, três das 13 somem quando se tira um só ano da série).
 			</p>
 		</section>
 
