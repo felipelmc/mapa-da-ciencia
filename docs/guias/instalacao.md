@@ -24,7 +24,7 @@ uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/
 mapa --versao
 ```
 
-Troque `0.6.0` pela versão da *release* mais recente. Com o `pip`, num ambiente virtual, é o mesmo endereço em `pip install`.
+Troque `1.0.1` (nos dois lugares do endereço) pela versão da *release* mais recente. Com o `pip`, num ambiente virtual, é o mesmo endereço em `pip install`. Se o terminal responder `command not found: mapa`, o `uv` pôs o comando numa pasta que o terminal ainda não procura (ele avisa isso no fim da instalação). Rode `uv tool update-shell`, feche o terminal e abra outro.
 
 ## 2. Ollama
 

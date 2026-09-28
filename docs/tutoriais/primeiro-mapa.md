@@ -7,7 +7,7 @@ A parte 1 não usa modelos de linguagem: só precisa de internet, para consultar
 !!! info "Antes de começar"
     Você precisa do `mapa-da-ciencia` instalado. Se ainda não instalou, siga os passos 1 e 2 de [Explorar o exemplo](explorar-exemplo.md) e volte para cá.
 
-    Os comandos abaixo são os de quem instalou **pelo código**: começam com `uv run` e rodam dentro da pasta `mapa-da-ciencia` que você baixou. Quando o próprio `mapa` sugerir um próximo passo (por exemplo, `mapa status`), ponha `uv run` na frente. Se instalou **pelo *wheel***, digite só `mapa` (sem `uv run`), em qualquer pasta.
+    Os comandos abaixo são os de quem instalou **pelo código**: começam com `uv run` e rodam dentro da pasta `mapa-da-ciencia` que você baixou. Quando o próprio `mapa` sugerir um próximo passo (por exemplo, `mapa status`), ponha `uv run` na frente. Se instalou **pelo *wheel***, digite só `mapa` (sem `uv run`), em qualquer pasta. Nos passos em Python, troque `uv run python` por `uv run --no-project --with "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v1.0.1/mapa_da_ciencia-1.0.1-py3-none-any.whl" python`, que abre um Python com o pacote (o `uv tool install` deixa o `mapa` num ambiente só dele).
 
 ## 1. Escolha a revista
 
