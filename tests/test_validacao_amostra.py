@@ -138,6 +138,26 @@ def test_exporta_sem_email_e_com_arroba_de_rede_social(projeto):
     assert f"{a.docs[0]}: um e-mail" in " ".join(r.output.split())
 
 
+def test_amostra_com_documento_que_saiu_do_corpus(projeto):
+    """Uma coleta nova com um recorte menor depois do sorteio: `mapa validar amostra` pula o que saiu e avisa, em
+    vez de cair com KeyError (r1-10)."""
+    from mapa_da_ciencia.coleta import OpcoesColeta
+
+    a = va.sortear(projeto)
+    coletar(projeto, OpcoesColeta(limite=5))
+    ids = {t.doc for t in va.textos_do_projeto(projeto)}
+    fora = [d for d in a.docs if d not in ids]
+    assert fora
+    r = runner.invoke(app, ["validar", "amostra", "-P", str(projeto.raiz)], env=ENV)
+    assert r.exit_code == 0, r.output
+    arquivo = projeto.raiz / "validacao" / "amostra.jsonl"
+    assert [json.loads(x)["doc"] for x in arquivo.read_text(encoding="utf-8").splitlines()] == [
+        d for d in a.docs if d in ids
+    ]
+    saida = " ".join(r.output.split())
+    assert all(f"{d} não está mais no corpus" in saida for d in fora), saida
+
+
 def test_importar_codificacoes(projeto, tmp_path):
     a = va.sortear(projeto)
     arquivo = tmp_path / "claude.jsonl"
