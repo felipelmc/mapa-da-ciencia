@@ -115,7 +115,7 @@ export const SECOES: readonly Secao[] = [
 		resumo:
 			'Quem escreve com quem: a coautoria entre pessoas, a colaboração entre instituições e entre estados, e as obras que o corpus mais cita.',
 		chegada: 'na versão 1.1',
-		arquivos: ['redes', 'citacoes', 'afiliacoes'],
+		arquivos: ['redes', 'citacoes'],
 		recorte: true
 	},
 	{

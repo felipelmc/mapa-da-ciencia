@@ -199,6 +199,15 @@
 				<dt>roda do mouse, arrastar</dt>
 				<dd>aproxima e move o mapa; de perto, os rótulos passam dos macrotemas para os tópicos</dd>
 			</dl>
+			<h3 id="atalhos-redes">Nas redes</h3>
+			<dl class="atalhos" data-testid="atalhos-redes">
+				<dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd></dt>
+				<dd>na busca, escolhem a pessoa ou a instituição e abrem o cartão dela</dd>
+				<dt><kbd>Esc</kbd></dt>
+				<dd>fecha o cartão</dd>
+				<dt>roda do mouse, arrastar, pinça</dt>
+				<dd>aproximam e movem o grafo; os botões + e − fazem o mesmo, e “Reiniciar” volta ao começo</dd>
+			</dl>
 			<p>
 				Tudo o que você faz no mapa (filtros, busca, laço, documento aberto e a posição da câmera) fica no endereço
 				da página: copie o link para mostrar exatamente a mesma coisa a outra pessoa.

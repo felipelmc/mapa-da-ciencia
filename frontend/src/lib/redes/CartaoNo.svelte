@@ -68,6 +68,14 @@
 	});
 </script>
 
+<svelte:window
+	onkeydown={(e) => {
+		// Esc fecha o cartão, como no Mapa; num campo de texto, o Esc é do campo (a busca limpa com ele)
+		const alvo = e.target as HTMLElement | null;
+		if (e.key === 'Escape' && !e.defaultPrevented && !alvo?.closest('input, textarea, select')) aoFechar();
+	}}
+/>
+
 <article class="cartao" aria-labelledby="titulo-no" data-testid="cartao-no">
 	<header>
 		<p class="rotulo-miudo">{sobretitulo}</p>

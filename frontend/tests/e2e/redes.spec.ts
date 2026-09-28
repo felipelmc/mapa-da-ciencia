@@ -157,6 +157,10 @@ test('a busca pelo teclado abre o cartão de uma pessoa', async ({ page }) => {
 	await expect(page.getByTestId('cartao-no').getByRole('heading', { level: 2 })).toHaveText(nome);
 	await expect(page.getByTestId('cartao-no').getByRole('heading', { level: 2 })).toBeFocused();
 	await expect(campo).toHaveAttribute('aria-expanded', 'false');
+	// Esc fecha o cartão
+	await page.keyboard.press('Escape');
+	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+	await expect(page).not.toHaveURL(/no=/);
 });
 
 test('instituições: o cartão põe a instituição no recorte', async ({ page }) => {
