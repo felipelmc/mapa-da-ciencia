@@ -74,6 +74,27 @@ test('SVG com o título, o recorte, as fontes embutidas e o tamanho do artigo', 
 	expect(problemas).toEqual([]);
 });
 
+test('SVG e PNG levam o fundo do tema do preset, e não saem transparentes', async ({ page }) => {
+	await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' }); // a tela na Prancha
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(page.getByTestId('figura-fluxo')).toHaveAttribute('data-pronto', 'sim');
+	const fundoDo = (svg: string) => svg.match(/<rect width="[\d.]+" height="[\d.]+" fill="([^"]+)"\/>/)?.[1];
+	// o Telão usa o Observatório, mesmo com a tela na Prancha; o artigo, a Prancha
+	expect(fundoDo((await baixar(page, 'fluxo', 'SVG', 'telao')).dados.toString('utf8'))).toBe('#0a0e1f');
+	expect(fundoDo((await baixar(page, 'fluxo', 'SVG', 'artigo-2')).dados.toString('utf8'))).toBe('#f6f2e9');
+	// no PNG, o canto (5, 5) é opaco
+	const png = await baixar(page, 'fluxo', 'PNG', 'telao');
+	const canto = await page.evaluate(async (b64) => {
+		const img = new Image();
+		img.src = `data:image/png;base64,${b64}`;
+		await img.decode();
+		const ctx = Object.assign(document.createElement('canvas'), { width: 10, height: 10 }).getContext('2d')!;
+		ctx.drawImage(img, 0, 0);
+		return Array.from(ctx.getImageData(5, 5, 1, 1).data);
+	}, png.dados.toString('base64'));
+	expect(canto).toEqual([10, 14, 31, 255]);
+});
+
 test('PNG na largura do preset e CSV com os dados', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/topicos`);
 	const figuras = page.locator('[data-testid^="figura-"]');

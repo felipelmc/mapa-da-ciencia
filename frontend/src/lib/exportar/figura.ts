@@ -216,7 +216,9 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 		familias.add(raiz.getPropertyValue('--fonte-interface').split(',')[0].replaceAll(/['"]/g, '').trim());
 		return {
 			clone,
-			fundo: s.backgroundColor,
+			// o fundo do tema fica no <html> (o <body> é transparente): sem ele, o PNG saía transparente, e o título
+			// quase branco do Observatório sumia num slide claro
+			fundo: raiz.getPropertyValue('--fundo').trim() || raiz.backgroundColor,
 			texto: raiz.getPropertyValue('--texto').trim() || s.color,
 			suave: raiz.getPropertyValue('--texto-suave').trim() || s.color,
 			familias
