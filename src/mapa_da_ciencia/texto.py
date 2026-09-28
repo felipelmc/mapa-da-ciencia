@@ -19,6 +19,10 @@ from typing import Any
 # domínio termine, em minúsculas, num dos domínios de topo de `_TLDS`: sem isso, eles pegariam "p @ 0.05", "o perfil
 # @fulano. Em seguida" e arrobas de rede social com ponto ("o perfil @maria.silva", "RT @fulano.oficial"), e apagariam
 # junto a palavra anterior, que o ramo toma pela parte local do endereço.
+# Os três ramos só começam no início de uma sequência de [\w.+-] (o lookbehind): sem ele, cada posição de uma
+# sequência longa sem espaço (um token de 20 mil caracteres num JSON) seria tentada até o fim dela, em tempo
+# quadrático. O resultado de uma busca não muda, porque um endereço achado no meio da sequência também seria achado
+# a partir do começo dela; na remoção, ver `remover_emails`.
 _TLDS = (
     # genéricos
     "com", "org", "net", "edu", "gov", "mil", "int", "info", "eu",
@@ -32,9 +36,11 @@ _TLD = rf"(?-i:(?:{'|'.join(_TLDS)}))(?!\w)"
 _AT = r"(?:@|＠|﹫|[\[({][ \t]*(?:at|arroba)[ \t]*[\])}])"
 _DOT = r"(?:\.|[ \t]*[\[({][ \t]*(?:dot|ponto)[ \t]*[\])}][ \t]*)"
 EMAIL = re.compile(
+    r"(?<![\w.+-])(?:"
     r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
     rf"|[\w.+-]*\w[ \t]*{_AT}[ \t]*[\w-]+(?:{_DOT}[\w-]+)*{_DOT}{_TLD}"
-    rf"|[\w.+-]*\w@[\w-]+(?:\. ?[\w-]+)*\. ?{_TLD}",
+    rf"|[\w.+-]*\w@[\w-]+(?:\. ?[\w-]+)*\. ?{_TLD}"
+    r")",
     re.IGNORECASE,
 )
 _TAG = re.compile(r"<[^>]+>")
@@ -69,7 +75,11 @@ def limpar(texto: str | None, *, prefixo_resumo: bool = False) -> str:
 
 def remover_emails(texto: str) -> str:
     """Tira endereços de e-mail de um texto (ex.: afiliações que trazem o e-mail no meio)."""
-    return _ESPACOS.sub(" ", EMAIL.sub("", texto)).strip(" ,;")
+    # de novo até não sobrar nenhum: um endereço colado ao fim de outro ("fulana @ x.br.joao@y.br") começa no meio
+    # de uma sequência, e o padrão só o acha depois que o primeiro sai
+    while (novo := EMAIL.sub("", texto)) != texto:
+        texto = novo
+    return _ESPACOS.sub(" ", texto).strip(" ,;")
 
 
 def contem_email(valor: Any) -> bool:

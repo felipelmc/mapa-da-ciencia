@@ -135,3 +135,22 @@ def test_emails_com_espacos_e_disfarces(texto):
 )
 def test_arroba_que_nao_e_email(texto):
     assert not contem_email(texto) and remover_emails(texto) == texto
+
+
+def test_email_colado_a_outro_tambem_sai():
+    """O segundo endereço começa no meio de uma sequência sem espaço: sai numa segunda passada."""
+    for texto in ("Univ. X, fulana @ exemplo.br.joao@exemplo.org", "fulana@ exemplo.br-joao@exemplo.org; Rio"):
+        limpo = remover_emails(texto)
+        assert not contem_email(limpo) and "joao" not in limpo and "exemplo" not in limpo, limpo
+
+
+def test_detector_de_email_e_linear_em_sequencias_longas_sem_espaco():
+    """Um token enorme sem espaço (num JSON do `publicar`, num resumo mal formatado) não pode travar a varredura:
+    sem a âncora no começo da sequência, 20 mil caracteres levavam ~6 s, e o dobro, quatro vezes isso."""
+    import time
+
+    for texto in ("a" * 20_000, "a.b-" * 5_000, "x" * 20_000 + " fulana@exemplo.br"):
+        inicio = time.perf_counter()
+        achado = contem_email(texto)
+        assert time.perf_counter() - inicio < 0.5, texto[:10]
+        assert achado == texto.endswith(".br")
