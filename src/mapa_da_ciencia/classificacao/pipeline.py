@@ -158,8 +158,8 @@ def classificar(
     #    --somente-amostra, sem ser interrompida) e com falhas até o limite substitui o principal, seja de que execução
     #    for, mesmo que ele tenha um documento a mais ou a menos;
     # 2. qualquer outra rodada (inclusive a que cobre o corpus com falhas demais) nunca o diminui: grava no principal
-    #    só se não houver principal ou se todo documento classificado nele que ainda está no corpus continua
-    #    classificado no resultado novo (a retomada da mesma execução, com o mesmo corpus e os mesmos textos). Conta o
+    #    só se não houver principal ou se todo documento classificado nele (mesmo o que saiu do corpus ou ficou
+    #    sem resumo por um tempo) continua classificado no resultado novo (a retomada da mesma execução, com o mesmo corpus e os mesmos textos). Conta o
     #    conjunto, e não o número: uma rodada com a mesma contagem pode trocar documentos. Senão, as respostas vão para
     #    o resultado à parte, que as métricas da validação comparam com o principal.
     # Um modelo que devolve JSON inválido em tudo, depois de um `ollama pull`, apagaria horas de classificação, e as
@@ -167,7 +167,9 @@ def classificar(
     anterior = Resultado.ler(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
     # os documentos do principal saem do Parquet: um Parquet que ficou sem o JSON também é um principal
     no_principal = documentos_classificados(projeto.dados / PASTA, modelo_cfg.modelo, codebook.hash())
-    exigidos = (no_principal or set()) & {t.doc for t in textos}  # os que ainda estão no corpus
+    # todos os documentos do principal, e não só os que têm texto agora: um documento que sai do corpus por uma
+    # coleta (ou fica sem resumo) e volta depois não pode perder a classificação numa rodada parcial
+    exigidos = no_principal or set()
     rodada_completa = not (opcoes.estimar or opcoes.limite is not None or opcoes.somente_amostra)
     limite_falhas = max(1, int(len(textos) * LIMITE_FALHAS))
     gravou = False  # a última chamada de `gravar` gravou o resultado principal?

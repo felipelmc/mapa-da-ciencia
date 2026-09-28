@@ -519,6 +519,38 @@ def n17_conjunto_parcial_depois_completa_com_falhas(proj, falsas, monkeypatch):
     assert _principal(proj).classificados >= 10 and not antes - _docs(proj)
 
 
+def m01_corpus_encolhe_e_volta(proj, falsas, monkeypatch):
+    """Uma coleta devolve menos documentos por um tempo: a rodada parcial não tira os que saíram do principal."""
+    arq = proj.dados / ARQUIVO
+    todos = ler_documentos(arq)
+    mapa.classificar(proj, progresso=False)
+    antes = _docs(proj)
+    gravar_documentos(todos[:20], arq)
+    mapa.classificar(proj, estimar=True, progresso=False)
+    assert _docs(proj) == antes
+    gravar_documentos(todos, arq)
+    falsas.digests[MODELO] = "v2000000000000000"
+    mapa.classificar(proj, estimar=True, progresso=False)
+    assert _docs(proj) == antes
+
+
+def m11_documento_sem_resumo_continua_no_corpus(proj, falsas, monkeypatch):
+    """Três documentos vêm sem resumo numa coleta (continuam no corpus): a rodada parcial não os tira do principal."""
+    arq = proj.dados / ARQUIVO
+    todos = ler_documentos(arq)
+    amostra = mapa.amostra_de_validacao(proj, n=5)
+    mapa.classificar(proj, progresso=False)
+    antes = _docs(proj)
+    sem = [d.id for d in todos if d.id not in amostra.docs][:3]
+    gravar_documentos([d.model_copy(update={"resumos": []}) if d.id in sem else d for d in todos], arq)
+    mapa.classificar(proj, estimar=True, progresso=False)
+    assert _docs(proj) == antes
+    gravar_documentos(todos, arq)
+    falsas.digests[MODELO] = "v2000000000000000"
+    mapa.classificar(proj, somente_amostra=True, progresso=False)
+    assert _docs(proj) == antes
+
+
 SEQUENCIAS = {f.__name__: f for f in (
     s01_completo_com_falha_somente_amostra_mesma_versao_depois_pull,
     s02_completo_com_falha_limite_mesma_versao_depois_estimar,
@@ -550,6 +582,8 @@ SEQUENCIAS = {f.__name__: f for f in (
     n15_rotulo_da_parte_mesma_versao,
     n16_conjunto_completa_com_falhas_demais_corpus_cresceu,
     n17_conjunto_parcial_depois_completa_com_falhas,
+    m01_corpus_encolhe_e_volta,
+    m11_documento_sem_resumo_continua_no_corpus,
 )}  # fmt: skip
 
 
