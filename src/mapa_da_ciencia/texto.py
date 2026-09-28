@@ -14,7 +14,17 @@ import unicodedata
 from difflib import SequenceMatcher
 from typing import Any
 
-EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+# E-mails, com as variações que aparecem em afiliações: espaço em volta do @ ou depois do ponto, e "[at]"/"(arroba)"
+# e "[dot]"/"(ponto)" entre colchetes ou parênteses. O primeiro ramo é o padrão comum; os outros dois exigem o
+# domínio final em minúsculas e só com letras, para não pegar "p @ 0.05" nem "o perfil @fulano. Em seguida".
+_AT = r"(?:@|＠|﹫|[\[({][ \t]*(?:at|arroba)[ \t]*[\])}])"
+_DOT = r"(?:\.|[ \t]*[\[({][ \t]*(?:dot|ponto)[ \t]*[\])}][ \t]*)"
+EMAIL = re.compile(
+    r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
+    rf"|[\w.+-]*\w[ \t]*{_AT}[ \t]*[\w-]+(?:{_DOT}[\w-]+)*{_DOT}(?-i:[a-z]{{2,24}})(?!\w)"
+    r"|[\w.+-]*\w@[\w-]+(?:\. ?[\w-]+)*\. ?(?-i:[a-z]{2,24})(?!\w)",
+    re.IGNORECASE,
+)
 _TAG = re.compile(r"<[^>]+>")
 _ESPACOS = re.compile(r"\s+")
 _PREFIXO_RESUMO = re.compile(r"^\s*(resumo|abstract|resumen|résumé)\s*[:.\-–—]?\s+", re.IGNORECASE)

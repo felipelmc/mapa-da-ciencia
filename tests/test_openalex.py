@@ -218,3 +218,14 @@ def test_autorias_da_obra_sem_prefixos_sem_emails_e_com_linhagem():
 def test_enriquecer_guarda_as_autorias(casados):
     com = [d for d in casados.values() if d.openalex_id]
     assert com and all(d.autorias_openalex for d in com if d.autores)
+
+
+def test_resumo_e_titulo_do_openalex_sem_emails():
+    from mapa_da_ciencia.fontes.openalex import documento_de_obra, reconstruir_resumo
+
+    indice = {"Contato:": [0], "fulana": [1], "@": [2], "exemplo.br.": [3], "Resultados": [4]}
+    assert "exemplo" not in reconstruir_resumo(indice)
+    obra = {"id": "https://openalex.org/W1", "title": "Um título fulana@exemplo.br", "publication_year": 2020,
+            "type": "article", "abstract_inverted_index": indice}  # fmt: skip
+    doc = documento_de_obra(obra, "teste")
+    assert "@" not in doc.titulos[0].texto and all("exemplo" not in r.texto for r in doc.resumos)

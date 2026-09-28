@@ -91,3 +91,29 @@ def test_documento_texto_em_idioma_preferido():
     assert d.texto_em("resumos", ["pt"]) is None
     with pytest.raises(ValueError):
         Documento(id="x", fonte="articlemeta", tipo=None, ano=2024, email="a@b.c")
+
+
+@pytest.mark.parametrize(
+    "texto",
+    [
+        "Univ. X, fulana @ exemplo.br",
+        "Univ. X, fulana @exemplo.br",
+        "Univ. X, fulana@exemplo. br",
+        "beltrano [at] exemplo [dot] br",
+        "ciclano {at} exemplo.br",
+        "joao (arroba) exemplo (ponto) br",
+        "maria@exemplo.com.br",
+    ],
+)
+def test_emails_com_espacos_e_disfarces(texto):
+    """As variações de e-mail que aparecem em afiliações reais (espaço em volta do @ ou depois do ponto, [at])."""
+    assert contem_email(texto)
+    assert not contem_email(remover_emails(texto)) and "exemplo" not in remover_emails(texto)
+
+
+@pytest.mark.parametrize(
+    "texto",
+    ["p @ 0.05 no teste", "O perfil @fulano. Em seguida", "looking at data. Results", "RT @usuario: texto"],
+)
+def test_arroba_que_nao_e_email(texto):
+    assert not contem_email(texto) and remover_emails(texto) == texto
