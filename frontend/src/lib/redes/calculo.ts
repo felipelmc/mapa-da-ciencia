@@ -402,7 +402,8 @@ export function canoneNoRecorte(c: TabelaCitacoes, passa: Passa, macro: Int32Arr
 	return saida;
 }
 
-/** As `k` obras mais citadas no recorte (empates pela ordem do cânone, que é a do corpus inteiro). */
+/** As `k` obras mais citadas no recorte (empates pela posição no cânone, que vem ordenado por citantes no corpus
+ * inteiro e, no empate, pelo id). */
 export function maisCitadas(lista: ObraNoRecorte[], k = 30): ObraNoRecorte[] {
 	return lista
 		.filter((o) => o.n > 0)

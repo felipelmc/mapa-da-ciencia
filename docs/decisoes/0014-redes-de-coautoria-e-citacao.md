@@ -8,8 +8,9 @@
 
 A versão 1 deixou a vista Redes reservada ("na versão 2"). O cache da coleta já tinha o necessário para a
 coautoria: os ids de autor e os ORCIDs do OpenAlex, que eram descartados na normalização, e as afiliações casadas pela
-geografia. Para as citações, as referências da ArticleMeta estão no cache bruto, mas só 3% a 9% delas trazem DOI; o
-OpenAlex tem as referências já resolvidas (`referenced_works`), a 1 crédito por 100 obras.
+geografia. Para as citações, as referências da ArticleMeta estão no cache bruto, mas quase nunca trazem DOI (no
+piloto, 2,2% no campo próprio, `v237`, e 5,3% em qualquer campo; de 0,3% a 17% conforme a revista); o OpenAlex tem
+as referências já resolvidas (`referenced_works`), a 1 crédito por 100 obras.
 
 ## Decisões
 
@@ -30,8 +31,15 @@ OpenAlex tem as referências já resolvidas (`referenced_works`), a 1 crédito p
    O exemplo sintético do contrato usa um desenho determinístico mais simples, porque o `spring_layout` varia na
    quarta casa decimal entre plataformas, e o exemplo é conferido byte a byte no CI.
 5. **Citações pelo OpenAlex** (`referenced_works`, em lotes de 100), e os metadados das 500 obras de fora mais
-   citadas (o cânone). A coleta guarda as duas tabelas, e a segunda coleta faz 0 requisições. As referências da
-   ArticleMeta entram só na cobertura; o casamento aproximado por título fica para depois.
+   citadas, das quais o cânone guarda as 200 primeiras. A coleta guarda as duas tabelas, e a segunda coleta faz 0
+   requisições. As referências da ArticleMeta (autores, título e ano, lidas do cache) entram na cobertura por
+   referência e na **conferência da autoria do cânone**: o OpenAlex casa muitas referências a livros com o registro
+   de uma resenha, com o resenhista como autor (11 das 60 primeiras obras do piloto, como "Theory of International
+   Politics" atribuída a Joseph Frankel, 1980). Com três ou mais referências de mesmo título, o autor que as
+   referências não citam sai, e o autor e o ano vêm delas; registros da mesma obra (mesmo primeiro sobrenome, título
+   igual, sem o subtítulo ou quase igual) somam. Alternativa descartada: tirar do cânone os registros de resenha (o
+   livro sumiria, e ele é o mais citado). O casamento aproximado das referências da ArticleMeta por título, para as
+   obras que o OpenAlex não resolve, fica para depois.
 6. **Contrato 1.5:** `redes.json` traz as pessoas (com id publicado; **nenhum ORCID**), as autorias por
    índice de documento (o navegador recalcula as arestas dentro do recorte, sem mandar uma lista de documentos por
    aresta), as instituições com o desenho, as comunidades, as métricas e as séries da colaboração. `citacoes.json`

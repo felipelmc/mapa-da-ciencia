@@ -51,14 +51,25 @@ As referências vêm do OpenAlex (`referenced_works`), em lotes de 100 obras por
 - **citações internas**: um artigo do corpus citando outro. Uma citação a um artigo publicado mais de um ano depois
   (um erro de casamento no OpenAlex) é descartada e contada;
 - **fluxos**: quantas citações internas vão de um macrotema a outro;
-- **cânone**: as obras de fora do corpus citadas pelo maior número de artigos, com os metadados buscados no OpenAlex.
-  Edições da mesma obra (mesmo título normalizado e mesmo primeiro sobrenome) somam.
+- **cânone**: as obras de fora do corpus citadas pelo maior número de artigos, com os metadados buscados no OpenAlex
+  (a coleta busca os das 500 mais citadas; o cânone guarda as 200 primeiras). O OpenAlex casa muitas referências a
+  livros com o registro de uma **resenha** do livro, com o resenhista como primeiro autor e o ano da resenha: no
+  piloto, "Theory of International Politics" saía como de Joseph Frankel (1980), e não de Waltz (1979). Por isso a
+  autoria e o ano de cada obra são conferidos nas referências que a ArticleMeta lista nos artigos que a citam (o que
+  os próprios autores escreveram): o autor do OpenAlex que não aparece nelas sai, e, se nenhum aparece, o autor e o
+  ano vêm delas. Registros da mesma obra (o mesmo primeiro sobrenome e o mesmo título, com ou sem o subtítulo) somam.
+  A obra que o OpenAlex usa no lugar de registros apagados (`W4285719527`) não conta.
 
 ## Limitações
 
-- **O cânone é enviesado para o que o OpenAlex indexa**: artigos com DOI e livros em inglês entram bem; livros,
-  capítulos e teses em português, muitas vezes, não. A coleta também guarda as referências da ArticleMeta, mas só
-  3% a 9% delas trazem DOI, e o casamento aproximado por título fica para uma versão futura.
+- **O cânone e as citações se apoiam em cerca de metade das referências.** Por documento, o OpenAlex resolve a
+  mediana de cerca de 50% das referências que a ArticleMeta lista (no piloto, também perto de metade no total, e
+  menos nos anos mais recentes); a nota do cânone traz o número do projeto. Ficam de fora sobretudo livros, capítulos, teses e textos em português
+  sem DOI. As referências da ArticleMeta quase nunca trazem DOI (2,2% no campo próprio e 5,3% em qualquer campo, no
+  piloto; de 0,3% a 17% conforme a revista), e o casamento aproximado por título fica para uma versão futura.
+- **Livros entram muitas vezes por uma resenha.** A conferência nas referências corrige o autor e o ano quando há
+  pelo menos três referências com o mesmo título; com menos, o registro fica como o OpenAlex o deu, e a tabela do
+  cânone mostra quando o registro é uma resenha. No piloto, mais de um quarto das 200 obras chegou por uma resenha.
 - A identidade das pessoas erra mais por **fragmentação** do que por fusão: homônimos e grafias variantes sem
   coautor nem instituição em comum ficam separados (5 dos 30 pares de homônimos do piloto que eram a mesma pessoa),
   e a revisão manual corrige. Um id do OpenAlex que junte duas pessoas de mesmo nome só se separa no `pessoas.yaml`.

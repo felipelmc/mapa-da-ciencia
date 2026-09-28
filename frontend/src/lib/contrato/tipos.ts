@@ -171,6 +171,9 @@ export interface Agregados {
 export interface Citacoes {
 	canone: ObraCitada[];
 	canone_citantes: CitantesCanone;
+	/**
+	 * Documentos (`documentos`, `com_referencias`), referências resolvidas (`referencias`) e, nos documentos casados, as listadas na ArticleMeta (`referencias_listadas`), as resolvidas entre elas (`referencias_resolvidas`) e a mediana por documento da fração resolvida (`resolvidas_mediana_pct`); citações internas, anacrônicas e autorreferências; referências a obras apagadas (`a_obras_apagadas`); citantes, resenhas e autorias corrigidas do cânone; obras sem metadados entre as mais citadas.
+	 */
 	cobertura?: {
 		[k: string]: number;
 	};
@@ -180,7 +183,7 @@ export interface Citacoes {
 	fluxo_macrotemas: number[][];
 	internas: ArestasCitacao;
 	/**
-	 * Referências de cada documento no OpenAlex; -1: sem casamento.
+	 * Referências de cada documento resolvidas no OpenAlex (0: casado, sem nenhuma); -1: sem casamento.
 	 */
 	n_referencias: number[];
 	/**
@@ -189,17 +192,20 @@ export interface Citacoes {
 	versao_contrato?: string;
 }
 /**
- * Uma obra de fora do corpus entre as mais citadas (o cânone).
+ * Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate).
  */
 export interface ObraCitada {
+	/**
+	 * O ano da obra (o das referências, quando o registro do OpenAlex é uma resenha).
+	 */
 	ano: number | null;
 	/**
-	 * Até três autores.
+	 * Até três autores, conferidos nas referências da ArticleMeta.
 	 */
 	autores: string[];
 	doi: string | null;
 	/**
-	 * Outras edições somadas a esta.
+	 * Outros registros da mesma obra, somados a este.
 	 */
 	edicoes?: string[];
 	/**
@@ -210,6 +216,14 @@ export interface ObraCitada {
 	 * Documentos do corpus que a citam.
 	 */
 	n: number;
+	/**
+	 * Autores e ano do registro do OpenAlex, quando diferem dos mostrados (a conferência os mudou).
+	 */
+	registro_openalex?: string | null;
+	/**
+	 * O registro do OpenAlex é uma resenha da obra (tipo `book-review`, Choice Reviews, ou um primeiro autor que as referências não citam): autores e ano vêm das referências.
+	 */
+	resenha?: boolean;
 	tipo: string | null;
 	titulo: string | null;
 	veiculo: string | null;

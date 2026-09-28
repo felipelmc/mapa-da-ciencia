@@ -258,6 +258,10 @@ test('citações: o cânone do gabarito, a nota da cobertura e a matriz entre ma
 	const nota = page.getByTestId('nota-cobertura');
 	await expect(nota).toContainText('sem DOI');
 	await expect(nota).toContainText(inteiro(citacoes.cobertura.com_referencias));
+	// a cobertura por referência e o aviso das resenhas (o exemplo tem uma obra que chega por uma resenha)
+	await expect(nota).toContainText(`das ${inteiro(citacoes.cobertura.referencias_listadas)} referências que a ArticleMeta lista`);
+	expect(citacoes.canone.some((o: { resenha: boolean }) => o.resenha)).toBe(true);
+	await expect(nota).toContainText('registro de uma resenha');
 	// a matriz é a do Python
 	const celulas = await page.getByTestId('celula-fluxo').evaluateAll((els) =>
 		els.map((e) => [Number(e.getAttribute('data-de')), Number(e.getAttribute('data-para')), Number(e.getAttribute('data-n'))])

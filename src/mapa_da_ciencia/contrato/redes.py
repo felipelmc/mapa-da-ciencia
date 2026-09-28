@@ -36,6 +36,14 @@ def fluxo_por_posicao(fluxo: dict[tuple[int, int], int], ids_macrotemas: list[in
     return matriz
 
 
+def _registro(o: dict[str, Any]) -> str | None:
+    """ "Autor, Autor (ano)" do registro do OpenAlex, quando a conferência mudou os autores ou o ano."""
+    if not o["autoria_das_referencias"] and o["ano"] == o["ano_openalex"]:
+        return None
+    autores = ", ".join(o["autores_openalex"] or []) or "sem autor"
+    return f"{autores} ({o['ano_openalex'] or 's.d.'})"
+
+
 def _numero(x: Any) -> float | None:
     return None if x is None else round(float(x), 4)
 
@@ -101,21 +109,25 @@ def redes_contrato(
     }
     citacoes = None
     if (pasta / "canone.parquet").exists() and resultado and resultado.cobertura_citacoes:
-        from ..armazenamento import ARQUIVO, ler_documentos
+        from ..armazenamento import ARQUIVO, ARQUIVO_REFERENCIAS, ler_documentos
+        from ..redes.citacoes import OBRAS_APAGADAS
         from ..topicos.resultado import PASTA as PASTA_TOPICOS
         from ..topicos.resultado import Resultado as ResultadoTopicos
         from ..topicos.resultado import ler_atribuicoes
 
         internas = [c for c in ler_tabela(pasta / "citacoes.parquet") if c["de"] in indice and c["para"] in indice]
-        canone = ler_tabela(pasta / "canone.parquet")
-        n_refs = {d: -1 for d in ids_documentos}
-        from ..armazenamento import ARQUIVO_REFERENCIAS
-
+        # na ordem do cânone: mais citantes primeiro, e o id no empate (o navegador desempata pela posição)
+        canone = sorted(ler_tabela(pasta / "canone.parquet"), key=lambda o: (-o["n"], o["id"]))
+        # -1: sem casamento com o OpenAlex; 0: casado, e o OpenAlex não resolveu nenhuma referência
         obra_do_doc = {d.openalex_id: d.id for d in ler_documentos(projeto.dados / ARQUIVO) if d.openalex_id}
+        n_refs = {d: -1 for d in ids_documentos}
+        for doc in obra_do_doc.values():
+            if doc in n_refs:
+                n_refs[doc] = 0
         for r in ler_tabela(projeto.dados / ARQUIVO_REFERENCIAS):
             doc = obra_do_doc.get(r["obra"])
-            if doc in n_refs:
-                n_refs[doc] = max(n_refs[doc], 0) + 1
+            if doc in n_refs and r["citada"] not in OBRAS_APAGADAS:
+                n_refs[doc] += 1
         topicos = ResultadoTopicos.ler(projeto.dados / PASTA_TOPICOS)
         macro_do_topico = {t.id: t.macro for t in topicos.topicos} if topicos else {}
         macro_do_doc = {
@@ -147,6 +159,8 @@ def redes_contrato(
                     doi=o["doi"],
                     n=o["n"],
                     edicoes=list(o["edicoes"] or []),
+                    resenha=bool(o["resenha"]),
+                    registro_openalex=_registro(o),
                 )
                 for o in canone
             ],

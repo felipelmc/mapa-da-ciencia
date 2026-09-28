@@ -19,7 +19,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from ..armazenamento import ARQUIVO, ARQUIVO_CITADAS, ARQUIVO_REFERENCIAS, gravar_tabela, ler_documentos, ler_tabela
+from ..armazenamento import (
+    ARQUIVO,
+    ARQUIVO_CITADAS,
+    ARQUIVO_REFERENCIAS,
+    ARQUIVO_REFERENCIAS_AM,
+    gravar_tabela,
+    ler_documentos,
+    ler_tabela,
+)
 from ..config import ErroConfig
 from ..contrato.modelos import NAO_IDENTIFICADA
 from ..manifesto import registrar_execucao
@@ -50,6 +58,7 @@ def assinatura_entradas(projeto: Projeto) -> str:
         projeto.dados / ARQUIVO,
         projeto.dados / ARQUIVO_REFERENCIAS,
         projeto.dados / ARQUIVO_CITADAS,
+        projeto.dados / ARQUIVO_REFERENCIAS_AM,
         projeto.raiz / ARQUIVO_PESSOAS,
         projeto.dados / "geografia" / "resultado.json",
         projeto.dados / PASTA_TOPICOS / "resultado.json",
@@ -162,6 +171,10 @@ COLUNAS = {
         "n": "INTEGER",
         "citantes": "VARCHAR[]",
         "edicoes": "VARCHAR[]",
+        "resenha": "BOOLEAN",
+        "autoria_das_referencias": "BOOLEAN",
+        "autores_openalex": "VARCHAR[]",
+        "ano_openalex": "INTEGER",
     },
     "candidatos": {"a": "VARCHAR", "b": "VARCHAR", "nome": "VARCHAR", "tipo": "VARCHAR"},
     "colaboracao": {
@@ -291,17 +304,34 @@ def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoR
     c_res = None
     if (projeto.dados / ARQUIVO_REFERENCIAS).exists():
         doc_da_obra = {d.openalex_id: d.id for d in docs if d.openalex_id}
+        citadas = ler_tabela(projeto.dados / ARQUIVO_CITADAS) if (projeto.dados / ARQUIVO_CITADAS).exists() else []
+        refs_am: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        if (projeto.dados / ARQUIVO_REFERENCIAS_AM).exists():
+            for r in ler_tabela(projeto.dados / ARQUIVO_REFERENCIAS_AM):
+                refs_am[r["doc"]].append(r)
         c_res = cit.calcular(
             ler_tabela(projeto.dados / ARQUIVO_REFERENCIAS),
-            ler_tabela(projeto.dados / ARQUIVO_CITADAS) if (projeto.dados / ARQUIVO_CITADAS).exists() else [],
+            citadas,
             doc_da_obra,
             anos,
             {d: t for d, t in topico_do_doc.items() if t is not None},
             macro_do_topico,
+            referencias_articlemeta=refs_am,
+            listadas={d.id: d.n_referencias for d in docs if d.openalex_id and d.n_referencias},
         )
         cobertura = c_res.cobertura
         linhas_cit = [{"de": a, "para": b} for a, b in c_res.internas]
         linhas_canone = [asdict(o) for o in c_res.canone]
+        if not citadas:
+            avisos.append(
+                "Sem os metadados das obras mais citadas, o cânone fica vazio (as citações dentro do corpus valem): "
+                "rode `mapa coletar` de novo."
+            )
+        elif c_res.sem_metadados:
+            avisos.append(
+                f"{len(c_res.sem_metadados)} obra(s) entre as mais citadas vieram sem metadados do OpenAlex e ficaram "
+                f"fora do cânone (por exemplo, {c_res.sem_metadados[0]})."
+            )
     else:
         avisos.append("Sem as referências do OpenAlex, a rede de citação fica de fora: rode `mapa coletar`.")
     progresso.avancar()

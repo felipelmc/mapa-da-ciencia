@@ -742,12 +742,12 @@ A rede de citação pelas referências do OpenAlex e o cânone.
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
-| `n_referencias` | lista de inteiro | **obrigatório** | Referências de cada documento no OpenAlex; -1: sem casamento. |
+| `n_referencias` | lista de inteiro | **obrigatório** | Referências de cada documento resolvidas no OpenAlex (0: casado, sem nenhuma); -1: sem casamento. |
 | `internas` | [ArestasCitacao](#arestascitacao) | **obrigatório** | Citações dentro do corpus: índices de documentos (quem cita → quem é citado). |
-| `canone` | lista de [ObraCitada](#obracitada) | **obrigatório** | Uma obra de fora do corpus entre as mais citadas (o cânone). |
+| `canone` | lista de [ObraCitada](#obracitada) | **obrigatório** | Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate). |
 | `canone_citantes` | [CitantesCanone](#citantescanone) | **obrigatório** |  |
 | `fluxo_macrotemas` | lista de lista de inteiro | **obrigatório** | Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` (pela posição, e não pelo id, que não é contíguo). |
-| `cobertura` | mapa de texto para inteiro | vazio |  |
+| `cobertura` | mapa de texto para inteiro | vazio | Documentos (`documentos`, `com_referencias`), referências resolvidas (`referencias`) e, nos documentos casados, as listadas na ArticleMeta (`referencias_listadas`), as resolvidas entre elas (`referencias_resolvidas`) e a mediana por documento da fração resolvida (`resolvidas_mediana_pct`); citações internas, anacrônicas e autorreferências; referências a obras apagadas (`a_obras_apagadas`); citantes, resenhas e autorias corrigidas do cânone; obras sem metadados entre as mais citadas. |
 
 ### ArestasCitacao
 
@@ -760,19 +760,21 @@ Citações dentro do corpus: índices de documentos (quem cita → quem é citad
 
 ### ObraCitada
 
-Uma obra de fora do corpus entre as mais citadas (o cânone).
+Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate).
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `id` | texto | **obrigatório** | Id do OpenAlex (`W…`). |
 | `titulo` | texto ou vazio | **obrigatório** |  |
-| `ano` | inteiro ou vazio | **obrigatório** |  |
-| `autores` | lista de texto | **obrigatório** | Até três autores. |
+| `ano` | inteiro ou vazio | **obrigatório** | O ano da obra (o das referências, quando o registro do OpenAlex é uma resenha). |
+| `autores` | lista de texto | **obrigatório** | Até três autores, conferidos nas referências da ArticleMeta. |
 | `veiculo` | texto ou vazio | **obrigatório** |  |
 | `tipo` | texto ou vazio | **obrigatório** |  |
 | `doi` | texto ou vazio | **obrigatório** |  |
 | `n` | inteiro | **obrigatório** | Documentos do corpus que a citam. |
-| `edicoes` | lista de texto | vazio | Outras edições somadas a esta. |
+| `edicoes` | lista de texto | vazio | Outros registros da mesma obra, somados a este. |
+| `resenha` | sim/não | `false` | O registro do OpenAlex é uma resenha da obra (tipo `book-review`, Choice Reviews, ou um primeiro autor que as referências não citam): autores e ano vêm das referências. |
+| `registro_openalex` | texto ou vazio | vazio | Autores e ano do registro do OpenAlex, quando diferem dos mostrados (a conferência os mudou). |
 
 ### CitantesCanone
 

@@ -938,8 +938,13 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
          "veiculo": "Editora Exemplo", "tipo": "book", "doi": None, "citacoes": 1000 - k}
         for k, w in enumerate(classicas)
     ]  # fmt: skip
+    # uma delas chega pelo registro de uma resenha, como muitos livros no OpenAlex
+    citadas[1] |= {"tipo": "book-review", "veiculo": "Choice Reviews Online"}
     topico_do_doc = {d["id"]: d["topico"] for d in docs}
-    c = calcular(referencias, citadas, doc_da_obra, anos, topico_do_doc, macro_do_topico)
+    # a ArticleMeta lista mais referências do que o OpenAlex resolve (no piloto, cerca do dobro)
+    resolvidas = Counter(doc_da_obra[r["obra"]] for r in referencias)
+    listadas = {d: 2 * n + 1 for d, n in resolvidas.items()}
+    c = calcular(referencias, citadas, doc_da_obra, anos, topico_do_doc, macro_do_topico, listadas=listadas)
     indice = {d: i for i, d in enumerate(ids)}
     fluxo = fluxo_por_posicao(c.fluxo_macrotemas, ids_macros)
     citacoes = m.Citacoes(
@@ -956,6 +961,7 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
                 doi=o.doi,
                 n=o.n,
                 edicoes=o.edicoes,
+                resenha=o.resenha,
             )
             for o in c.canone
         ],

@@ -724,17 +724,28 @@ class Redes(_Arquivo):
 
 
 class ObraCitada(_Base):
-    """Uma obra de fora do corpus entre as mais citadas (o cânone)."""
+    """Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate)."""
 
     id: str = Field(description="Id do OpenAlex (`W…`).")
     titulo: str | None
-    ano: int | None
-    autores: list[str] = Field(description="Até três autores.")
+    ano: int | None = Field(
+        description="O ano da obra (o das referências, quando o registro do OpenAlex é uma resenha)."
+    )
+    autores: list[str] = Field(description="Até três autores, conferidos nas referências da ArticleMeta.")
     veiculo: str | None
     tipo: str | None
     doi: str | None
     n: int = Field(description="Documentos do corpus que a citam.")
-    edicoes: list[str] = Field(default_factory=list, description="Outras edições somadas a esta.")
+    edicoes: list[str] = Field(default_factory=list, description="Outros registros da mesma obra, somados a este.")
+    resenha: bool = Field(
+        False,
+        description="O registro do OpenAlex é uma resenha da obra (tipo `book-review`, Choice Reviews, ou um primeiro "
+        "autor que as referências não citam): autores e ano vêm das referências.",
+    )
+    registro_openalex: str | None = Field(
+        None,
+        description="Autores e ano do registro do OpenAlex, quando diferem dos mostrados (a conferência os mudou).",
+    )
 
 
 class ArestasCitacao(_Base):
@@ -752,7 +763,9 @@ class CitantesCanone(_Base):
 class Citacoes(_Arquivo):
     """A rede de citação pelas referências do OpenAlex e o cânone."""
 
-    n_referencias: list[int] = Field(description="Referências de cada documento no OpenAlex; -1: sem casamento.")
+    n_referencias: list[int] = Field(
+        description="Referências de cada documento resolvidas no OpenAlex (0: casado, sem nenhuma); -1: sem casamento."
+    )
     internas: ArestasCitacao
     canone: list[ObraCitada]
     canone_citantes: CitantesCanone
@@ -760,7 +773,14 @@ class Citacoes(_Arquivo):
         description="Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` "
         "(pela posição, e não pelo id, que não é contíguo)."
     )
-    cobertura: dict[str, int] = Field(default_factory=dict)
+    cobertura: dict[str, int] = Field(
+        default_factory=dict,
+        description="Documentos (`documentos`, `com_referencias`), referências resolvidas (`referencias`) e, nos "
+        "documentos casados, as listadas na ArticleMeta (`referencias_listadas`), as resolvidas entre elas "
+        "(`referencias_resolvidas`) e a mediana por documento da fração resolvida (`resolvidas_mediana_pct`); citações "
+        "internas, anacrônicas e autorreferências; referências a obras apagadas (`a_obras_apagadas`); citantes, "
+        "resenhas e autorias corrigidas do cânone; obras sem metadados entre as mais citadas.",
+    )
 
 
 ARQUIVOS: dict[str, type[_Arquivo]] = {

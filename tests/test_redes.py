@@ -257,6 +257,83 @@ def test_citacoes_e_canone():
     assert c.cobertura["com_referencias"] == 3
 
 
+def _ref(sobrenomes, titulo, ano, prenomes=None, fonte=None):
+    """Uma referência da ArticleMeta (como em `referencias_articlemeta.parquet`)."""
+    return {"titulo": titulo, "titulo_fonte": fonte, "sobrenomes": sobrenomes, "prenomes": prenomes or [], "ano": ano}
+
+
+def test_autoria_do_canone_conferida_nas_referencias():
+    # o OpenAlex casou a referência com a resenha: o resenhista (Frankel) em primeiro, e o ano da resenha
+    waltz = {"titulo": "Theory of International Politics", "ano": 1980, "tipo": "article",
+             "autores": ["Joseph Frankel", "Kenneth N. Waltz"]}  # fmt: skip
+    refs = [_ref(["WALTZ"], "Theory of international politics", 1979, ["Kenneth"]) for _ in range(5)]
+    c = cit.conferir_autoria(waltz, refs, 6)
+    assert (c["autores"], c["ano"], c["resenha"], c["autoria_das_referencias"]) == (
+        ["Kenneth N. Waltz"],
+        1979,
+        True,
+        True,
+    )
+    # os dois autores são da obra: só a ordem muda, e o ano fica
+    exec_leg = {"titulo": "Executivo e legislativo na nova ordem constitucional", "ano": 1999, "tipo": "article",
+                "autores": ["Fernando Limongi", "Argelina Cheibub Figueiredo"]}  # fmt: skip
+    refs = [
+        _ref(["FIGUEIREDO", "LIMONGI"], None, 1999, fonte="Executivo e legislativo na nova ordem constitucional")
+    ] * 4
+    c = cit.conferir_autoria(exec_leg, refs, 4)
+    assert c["autores"] == ["Argelina Cheibub Figueiredo", "Fernando Limongi"] and c["ano"] == 1999
+    assert not c["resenha"]
+    # resenha do Choice sem autor: o autor e o ano vêm das referências (o título sem o subtítulo também casa)
+    choice = {"titulo": "Parties without partisans: political change in advanced industrial democracies", "ano": 2001,
+              "tipo": "book-review", "veiculo": "Choice Reviews Online", "autores": []}  # fmt: skip
+    refs = [_ref(["DALTON", "WATTENBERG"], "Parties without partisans", 2000, ["Russell J.", "Martin P."])] * 3
+    c = cit.conferir_autoria(choice, refs, 3)
+    assert c["autores"] == ["Russell J. Dalton", "Martin P. Wattenberg"] and c["ano"] == 2000 and c["resenha"]
+    # pouca evidência: fica como o OpenAlex deu (mas a resenha do Choice continua marcada)
+    c = cit.conferir_autoria(choice, refs[:2], 10)
+    assert c["autores"] == [] and c["ano"] == 2001 and c["resenha"] and not c["autoria_das_referencias"]
+
+
+def test_canone_soma_registros_da_mesma_obra_e_ignora_a_obra_apagada():
+    refs = [{"obra": f"W{k}", "citada": "W91"} for k in (1, 2, 3)]
+    refs += [{"obra": f"W{k}", "citada": "W92"} for k in (4, 5, 6)]
+    refs += [{"obra": "W1", "citada": "W4285719527"}, {"obra": "W2", "citada": "W4285719527"}]
+    refs += [{"obra": "W3", "citada": "W3"}]  # autorreferência
+    citadas = [
+        {"id": "W91", "titulo": "An Economic Theory of Democracy.", "autores": ["Edward C. Banfield", "Anthony Downs"]},
+        {"id": "W92", "titulo": "An Economic Theory of Democracy", "autores": ["Dwaine Marvick"]},
+        {"id": "W4285719527", "titulo": None, "autores": []},
+    ]
+    doc = {f"W{k}": f"d{k}" for k in range(1, 7)}
+    downs = {f"d{k}": [_ref(["DOWNS"], "An economic theory of democracy", 1957, ["Anthony"])] for k in range(1, 7)}
+    anos = {f"d{k}": 2020 for k in range(1, 7)}
+    listadas = {"d1": 4, "d2": 2, "d3": 2, "d4": 1, "d5": 1, "d6": 2}
+    c = cit.calcular(refs, citadas, doc, anos, {}, {}, referencias_articlemeta=downs, listadas=listadas)
+    (obra,) = c.canone
+    assert (obra.n, obra.autores, obra.ano, obra.resenha) == (6, ["Anthony Downs"], 1957, True)
+    assert obra.edicoes in (["W92"], ["W91"])
+    # a obra apagada não conta como referência, nem entra no cânone; a autorreferência é contada à parte
+    assert c.cobertura["a_obras_apagadas"] == 2 and c.cobertura["referencias"] == 7
+    assert c.cobertura["autorreferencias"] == 1 and c.n_referencias["d1"] == 1
+    # cobertura por referência: 7 resolvidas de 12 listadas; por documento, 1/4, 1/2, 2/2, 1, 1 e 1/2: mediana 75%
+    assert (c.cobertura["referencias_listadas"], c.cobertura["referencias_resolvidas"]) == (12, 7)
+    assert c.cobertura["resolvidas_mediana_pct"] == 75
+    assert c.cobertura["resenhas_no_canone"] == 1 and c.cobertura["sem_metadados"] == 0
+
+
+def test_registros_da_mesma_obra_com_titulos_quase_iguais():
+    citadas = {
+        "W1": {"titulo": "Critical citizens: global support for democratic government", "autores": ["Pippa Norris"]},
+        "W2": {"titulo": "Critical Citizens. Global Support for Democratic Governance", "autores": ["Pippa Norris"]},
+        "W3": {"titulo": "Making Votes Count: Coordination in the World’s Systems", "autores": ["Gary W. Cox"]},
+        "W4": {"titulo": "Making votes count: coordination in the world's systems", "autores": ["Gary Cox"]},
+        "W5": {"titulo": "Democratic Deficit: Critical Citizens Revisited", "autores": ["Pippa Norris"]},
+        "W6": {"titulo": "Critical citizens: global support for democratic government", "autores": ["Outra Pessoa"]},
+    }
+    conferidas = {w: {"autores": m["autores"]} for w, m in citadas.items()}
+    assert sorted(cit._mesma_obra(citadas, conferidas)) == [["W1", "W2"], ["W3", "W4"], ["W5"], ["W6"]]
+
+
 def test_fluxo_pela_posicao_dos_macrotemas():
     # ids não contíguos, como os do piloto: o 7 e o 8 não somem, e não aparece um "macrotema 3" vazio
     fluxo = {(0, 7): 2, (7, 7): 5, (8, 2): 1, (5, 0): 3, (-1, 0): 4}
@@ -385,6 +462,8 @@ def test_redes_de_ponta_a_ponta(projeto):
     # citações: dentro do corpus, sem laços; o cânone tem os citantes
     assert all(a != b for a, b in zip(citacoes.internas.de, citacoes.internas.para, strict=True))
     assert citacoes.canone[0].n == len(set(citacoes.canone_citantes.doc))
+    # todos os documentos casaram com o OpenAlex: os sem referência resolvida têm 0, e nenhum tem -1
+    assert 0 in citacoes.n_referencias and -1 not in citacoes.n_referencias
     topicos = m.Topicos.model_validate_json((dados / "topicos.json").read_text(encoding="utf-8"))
     com_topico = [
         (a, b)
