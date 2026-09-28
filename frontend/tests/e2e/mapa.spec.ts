@@ -229,6 +229,34 @@ test('busca com "/" e sem acentos; um resultado abre o cartão', async ({ page }
 	expect(problemas).toEqual([]);
 });
 
+test('o link de uma busca com "&" reabre a mesma busca', async ({ page }) => {
+	// duas palavras do mesmo título: a mais comum do corpus e uma rara, para "a & b" achar menos que "a"
+	const palavras = (t: string) => t.toLowerCase().split(/[^\p{L}]+/u).filter((p) => p.length >= 5);
+	const titulos: string[] = documentos.colunas.titulo;
+	const freq = new Map<string, number>();
+	for (const t of titulos) for (const p of new Set(palavras(t))) freq.set(p, (freq.get(p) ?? 0) + 1);
+	const [comum] = [...freq.entries()].sort((a, b) => b[1] - a[1])[0];
+	const rara = palavras(titulos.find((t) => palavras(t).includes(comum))!)
+		.filter((p) => p !== comum)
+		.sort((a, b) => freq.get(a)! - freq.get(b)!)[0];
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	await page.getByTestId('busca-mapa').fill(`${comum} & ${rara}`);
+	await expect(page).toHaveURL(/busca=/);
+	const contador = page.getByTestId('contador-recorte');
+	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBeLessThan(n);
+	const visiveis = await page.evaluate(() => window.__mapaDebug!.visiveis);
+	await expect(contador).toContainText(inteiro(visiveis));
+
+	// o link, aberto numa aba nova (a carga do SvelteKit decodifica o hash), mostra a mesma busca
+	const outra = await page.context().newPage();
+	await outra.goto(page.url());
+	const d = await esperarMapa(outra);
+	expect(d.visiveis).toBe(visiveis);
+	await expect(outra.getByTestId('busca-mapa')).toHaveValue(`${comum} ${rara}`);
+	await outra.close();
+});
+
 test('fechar o cartão devolve o foco ao resultado da busca que o abriu', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/mapa`);
 	await esperarMapa(page);

@@ -161,6 +161,8 @@ A interface esconde o que a fonte não pode fazer. Por exemplo, a seção **Proj
 
 O **recorte** (`CHAVES_RECORTE`: `anos`, `revistas`, `topicos`, `busca`, `laco`, `uf`, `pais`, `inst`) é o que as vistas de análise compartilham: o trilho o leva de uma seção a outra (seções com `recorte: true` em `secoes.ts`). Os demais parâmetros são de cada vista e ficam para trás.
 
+A busca vai para o link sem `&`, `%` e `+`, que viram espaço (`normalizarBusca`): na carga, o SvelteKit decodifica o hash inteiro antes de a interface lê-lo, e `%26`, `%25` e `%2B` voltariam como separador de parâmetros, escape e espaço. Na busca, esses sinais já separam palavras, então o resultado não muda.
+
 `escreverFiltros()` omite os valores padrão e usa ordem fixa, então o mesmo estado gera sempre o mesmo link. `lerFiltros()` ignora valores inválidos sem erro. O teste de ida e volta (`url.test.ts`) cobre filtros → URL → filtros, URL canônica → filtros → mesma URL e 300 combinações aleatórias com semente fixa.
 
 ## Tipos do contrato
