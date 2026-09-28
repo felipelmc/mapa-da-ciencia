@@ -52,3 +52,11 @@ def test_api_topicos_e_view_atribuicoes(projeto):
     assert "tópicos em" in str(resumo) and resumo.documentos == 300
     linhas = mapa.consultar(projeto, "SELECT count(*) AS n, count(DISTINCT topico) AS t FROM atribuicoes")
     assert linhas[0]["n"] == 300 and linhas[0]["t"] >= resumo.topicos
+
+
+def test_topicos_num_projeto_sem_coleta(tmp_path, apis_falsas):
+    """Rodar os tópicos antes da coleta é um erro comum de quem começa: a mensagem diz o que fazer."""
+    p = Projeto.criar(tmp_path / "novo", modelo="vazio", perfil=PERFIS["leve"])
+    r = runner.invoke(app, ["topicos", "-P", str(p.raiz), "--sem-rotulos"], env={"COLUMNS": "200"})
+    assert r.exit_code == 1 and "Rode `mapa coletar` antes" in r.output, r.output
+    assert r.exception is None or isinstance(r.exception, SystemExit)

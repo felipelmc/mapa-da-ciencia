@@ -197,9 +197,10 @@ def test_opcoes_das_etapas_reais_sao_validadas(tmp_path):
         assert r.status_code == 422 and r.json()["detail"]["problemas"]
         assert c.post("/api/etapas/coleta", json={"desconhecida": True}).status_code == 422
         # sem corpus, a etapa começa e falha com a mensagem da CLI
-        job = c.post("/api/etapas/geografia").json()["id"]
-        j = esperar_estado(c, job, {"falhou"})
-        assert "mapa coletar" in j["erro"]
+        for etapa in ("geografia", "topicos"):
+            job = c.post(f"/api/etapas/{etapa}").json()["id"]
+            j = esperar_estado(c, job, {"falhou"})
+            assert "Rode `mapa coletar`" in j["erro"], (etapa, j["erro"])
 
 
 def test_site_estatico_nao_tem_rotas_de_escrita(tmp_path):

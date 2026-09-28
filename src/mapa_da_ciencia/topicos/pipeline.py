@@ -122,6 +122,8 @@ def gerar_topicos(
 
     from mapa_da_ciencia.embeddings import texto_de_analise
 
+    if not (projeto.dados / ARQUIVO).exists():  # sem coleta: a mensagem, e não o erro do DuckDB ao ler o corpus
+        raise ErroConfig("O projeto ainda não tem documentos. Rode `mapa coletar` antes.")
     analisaveis = [
         d for d in ler_documentos(projeto.dados / ARQUIVO) if texto_de_analise(d, cfg.recorte.idioma_analise)
     ]
