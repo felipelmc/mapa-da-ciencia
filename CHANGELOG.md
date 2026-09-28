@@ -12,6 +12,18 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 ### Mudado
 
 - o repositório ignora as cópias que o iCloud Drive cria ("teste 2.py", "index 2.md") no git, no pytest e no MkDocs, e o CI falha se alguma entrar num commit (armadilha em `desenvolvimento`).
+- o resultado da classificação (`dados/classificacao/*.json`) ganha os campos `execucao` e `a_parte`, e o manifesto da classificação, os parâmetros `execucao` e `gravado`: uma versão anterior do pacote (por exemplo o *wheel* 1.0.1 do caderno do Colab) que abrir um projeto classificado com esta cai com `TypeError`.
+
+### Corrigido
+
+- depois de atualizar o modelo ou mudar um parâmetro, a rodada completa substitui o resultado completo anterior mesmo com alguns documentos sem resposta válida (até 2%, no mínimo 1), em vez de nunca gravá-lo nem exportá-lo; com mais falhas que isso, o anterior fica, e a saída diz por quê;
+- enquanto a versão nova do modelo ou dos parâmetros não substitui o resultado completo (`--somente-amostra`, `--estimar`, `--limite`, rodada interrompida ou com falhas demais), as respostas dela ficam num resultado à parte (`<modelo>__<hash do codebook>__a-parte`), que `mapa validar metricas`, o relatório e a vista Validação do painel comparam com o completo como "<modelo> (versão nova)"; ele não entra no `validacao.json` nem no site publicado, e sai quando o resultado completo é gravado de novo;
+- o `mapa status` mostra a versão à parte e os documentos sem resposta válida, e o guia "Classificar os resumos" explica o que fazer com um documento que falha sempre (com temperatura 0 e semente fixa, rodar de novo repete a falha);
+- o status, o painel e a duração publicada mostram a execução que gerou o resultado principal da classificação (`parametros.execucao`), e não uma rodada que manteve o resultado anterior nem uma anterior à que o gravou; o manifesto registra o hash do codebook que a etapa usou, mesmo que o `codebook.yaml` seja editado no meio dela;
+- `mapa topicos` num projeto sem coleta volta a dizer "Rode `mapa coletar` antes", na CLI e no job do painel, sem o erro cru do DuckDB;
+- um `mapa.yaml` ou `codebook.yaml` salvo com erro dá o erro em toda leitura até ser corrigido, e não volta em silêncio à versão anterior;
+- o detector de e-mails não pega arrobas de rede social com ponto (`@maria.silva`, `@frente.pe`) nem apaga a palavra anterior, continua pegando os e-mails com espaço ou disfarçados de qualquer domínio de país (`maria@ up.ac.pa`, `[at] … [dot] io`) e roda em tempo linear;
+- `mapa validar amostra` tira do arquivo um e-mail que tenha ficado no texto do corpus, com aviso, em vez de cair com `AssertionError`.
 
 ## [1.0.1] - 2026-09-27
 
