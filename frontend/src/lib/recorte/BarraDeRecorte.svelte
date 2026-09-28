@@ -10,6 +10,7 @@
 	import type { Revistas } from '$lib/contrato/tipos';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { abrirCubo, aoReabrir, versaoDoMapa, type Aberto } from '$lib/dados/corpus';
+	import { D } from '$lib/dados/cubo';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { lerHash, limparRecorte, temRecorte } from '$lib/estado/url';
 	import { formatarInteiro } from '$lib/formato';
@@ -36,6 +37,8 @@
 
 	const falhas = $derived(aberto ? aberto.cubo.falhas(filtros) : null);
 	const n = $derived(aberto && falhas ? aberto.cubo.contar(falhas) : 0);
+	// o chip do laço conta o próprio laço (ignorando as outras dimensões), e não repete o contador do recorte
+	const noLaco = $derived(aberto && falhas && filtros.laco ? aberto.cubo.contar(falhas, ~D.LACO & 0xff) : 0);
 	const total = $derived(aberto?.tabela.n ?? 0);
 
 	// contador animado; o anúncio para leitores de tela vem depois de uma pausa, com o valor final
@@ -130,7 +133,7 @@
 			<ul class="chips" aria-label="Filtros ativos">
 				{#if filtros.laco}
 					<li class="chip laco" data-testid="chip-laco">
-						Laço: {formatarInteiro(n)} documentos
+						Laço: {formatarInteiro(noLaco)} documentos
 						<button type="button" aria-label="Tirar o laço" onclick={() => mudar({ laco: null })}>×</button>
 					</li>
 				{/if}

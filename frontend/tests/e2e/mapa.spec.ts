@@ -343,6 +343,21 @@ test('o laço fica no link e reproduz os mesmos documentos', async ({ page }) =>
 	await expect.poll(() => page.evaluate(() => window.__mapaDebug?.visiveis)).toBe(n);
 });
 
+test('o chip do laço conta o laço, e não o recorte inteiro', async ({ page }) => {
+	const xs: number[] = documentos.colunas.x;
+	const centro = (Math.min(...xs) + Math.max(...xs)) / 2;
+	const noLaco = xs.filter((x) => x > centro).length;
+	const c = documentos.colunas;
+	const revista = documentos.dicionarios.revista[0];
+	const noRecorte = xs.filter((x, i) => x > centro && c.ano[i] >= 2012 && c.ano[i] <= 2018 && c.revista[i] === 0).length;
+	await page.goto(`${url('RAIZ')}#/mapa?anos=2012-2018&revistas=${revista}`);
+	await esperarMapa(page);
+	await page.evaluate(() => window.__mapaDebug!.laco!([[0, -1.2], [1.2, -1.2], [1.2, 1.2], [0, 1.2]]));
+	await expect(page).toHaveURL(/laco=/);
+	await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(noRecorte));
+	await expect(page.getByTestId('chip-laco')).toContainText(`Laço: ${inteiro(noLaco)} documentos`);
+});
+
 test('laço desenhado com o mouse depois do "L"', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/mapa`);
 	await esperarMapa(page);
