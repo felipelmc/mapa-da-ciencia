@@ -187,3 +187,21 @@ test('numa tela larga, a tabela do par acompanha a rolagem ao lado do detalhe', 
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await expect(page.getByTestId('figura-concordancia')).toHaveCSS('position', 'static');
 });
+
+test('numa tela larga, escolher outra variável com a página rolada traz o detalhe dela de volta à vista', async ({ page }) => {
+	await page.setViewportSize({ width: 1920, height: 700 });
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	await expect(page.getByTestId('detalhe-variavel')).toBeVisible();
+	// a tabela grudada rola por dentro, se não couber na altura da janela
+	expect(await page.locator('.tabela-do-par').evaluate((el) => getComputedStyle(el).overflowY)).toBe('auto');
+	await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+	const titulo = page.locator('#titulo-detalhe');
+	expect((await titulo.boundingBox())!.y).toBeLessThan(0); // o título do detalhe ficou lá em cima
+	await page.getByTestId('linha-variavel').nth(1).click();
+	await expect
+		.poll(async () => {
+			const caixa = (await titulo.boundingBox())!;
+			return caixa.y >= 0 && caixa.y < 700;
+		})
+		.toBe(true);
+});

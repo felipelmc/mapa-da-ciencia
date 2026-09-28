@@ -11,7 +11,7 @@ fracionário: dois autores que escreveram vários artigos a dois têm uma linha 
 45 linhas fracas, de peso 1/9 cada.
 
 - **O que dá para ler:** grupos que publicam juntos, pessoas que ligam grupos (pontes), o peso da colaboração ao
-  longo do tempo (as séries ao lado: a fração de artigos com coautoria e o número médio de autores).
+  longo do tempo (as séries de "A colaboração por ano": a fração de artigos com coautoria e o número médio de autores).
 - **O que não dá:** importância ou qualidade. Mais coautores não é mais relevância, e a rede só vê o que está no
   corpus.
 
@@ -26,8 +26,9 @@ comunidades têm o mesmo primeiro; se o segundo também se repetir, o tamanho da
 Passe o mouse num nó: ele, os coautores dele e as ligações entre eles acendem, o resto esmaece, e os nomes dos
 coautores aparecem. Um clique abre o cartão da pessoa, com os artigos dela no recorte e os coautores mais fortes, cada
 um com o peso da parceria no recorte e os documentos em comum; a vizinhança fica acesa, e "Enquadrar o nó" leva o zoom
-até ela. Com o cartão aberto, "A colaboração por ano" desce para baixo do grafo, e o cartão acompanha a rolagem ao lado
-dele. Esc (ou o ×) fecha o cartão e devolve o foco para onde ele estava. Aberto pela busca ou por um link, o nó já
+até ela. Numa tela larga, a colaboração por ano fica ao lado do grafo; com o cartão aberto, ela desce para baixo dele,
+e o cartão acompanha a rolagem ao lado do grafo (numa tela mais estreita, tudo fica numa coluna, com o cartão logo
+embaixo do grafo). Esc (ou o ×) fecha o cartão e devolve o foco para onde ele estava. Aberto pela busca ou por um link, o nó já
 vem enquadrado, mesmo quando está numa dupla ou num trio escondido (que passa a aparecer).
 
 Escolha uma comunidade no seletor da barra do grafo (ou clique nela na lista da legenda) para acendê-la e

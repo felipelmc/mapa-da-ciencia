@@ -71,12 +71,19 @@
 	let titulo_: HTMLElement;
 	// quem tinha o foco quando o cartão abriu (a busca, um parceiro…): ao fechar, o foco volta para lá
 	let voltarPara: HTMLElement | null = null;
+	// um parceiro escolhido no próprio cartão: o botão dele some com a troca, e o foco iria para o <body>
+	let peloParceiro = false;
 
 	// aberto pela busca ou por um parceiro, o foco vai para o título (quem usa o teclado sabe que o cartão mudou);
 	// aberto pelo link ou por um clique no grafo, o foco fica onde está
 	$effect(() => {
 		void titulo;
 		todos = false;
+		if (peloParceiro) {
+			peloParceiro = false;
+			titulo_?.focus({ preventScroll: true });
+			return;
+		}
 		const ativo = document.activeElement;
 		if (!ativo || ativo === document.body || ativo === titulo_ || untrack(() => peloPonteiro)) return;
 		// um clique no grafo (ou no fundo da página) põe o foco na área do grafo ou no <main>: não é o teclado, e o
@@ -124,7 +131,7 @@
 		<ul class="parceiros">
 			{#each parceiros as p (p.i)}
 				<li>
-					<button type="button" onclick={() => aoAbrir(p.i)}>{p.nome}</button>
+					<button type="button" onclick={() => ((peloParceiro = true), aoAbrir(p.i))}>{p.nome}</button>
 					<span class="numero" title="Peso da parceria no recorte: soma de 1/(n−1) em cada documento em comum com n autores">
 						peso {formatarDecimal(p.peso)} · {contar(p.documentos, 'doc.', 'docs.')}
 					</span>

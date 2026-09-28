@@ -532,8 +532,8 @@
 		{/if}
 	</Figura>
 
-	<aside class="lado">
-		{#if cartao}
+	{#if cartao}
+		<aside class="lado">
 			<CartaoNo
 				titulo={cartao.titulo}
 				sobretitulo={cartao.sobretitulo}
@@ -550,28 +550,23 @@
 				filtro={pessoas ? null : { ativo: filtros.inst.includes(nos.ids[cartao.i]), alternar: () => alternarInstituicao(nos.ids[cartao.i]) }}
 				{peloPonteiro}
 			/>
-		{:else}
-			{@render colaboracao()}
-		{/if}
-	</aside>
+		</aside>
+	{/if}
+
+	<!-- sem cartão, a colaboração fica ao lado do grafo; com ele, desce para baixo (o cartão acompanha a rolagem e a
+	     cobriria). Só muda de lugar na grade, sem ser recriada: a tabela e a exportação dela continuam abertas -->
+	<div class="colaboracao">
+		<Colaboracao
+			quais={pessoas ? ['coautoria', 'autores'] : ['instituicoes', 'exterior']}
+			{aberto}
+			redes={r}
+			afiliacoes={af}
+			{filtros}
+			{falhas}
+			n={noRecorte}
+		/>
+	</div>
 </div>
-
-<!-- com o cartão aberto, a colaboração desce para baixo do grafo: o cartão acompanha a rolagem e a cobriria (VR-02) -->
-{#if cartao}
-	<div class="colaboracao-embaixo">{@render colaboracao()}</div>
-{/if}
-
-{#snippet colaboracao()}
-	<Colaboracao
-		quais={pessoas ? ['coautoria', 'autores'] : ['instituicoes', 'exterior']}
-		{aberto}
-		redes={r}
-		afiliacoes={af}
-		{filtros}
-		{falhas}
-		n={noRecorte}
-	/>
-{/snippet}
 
 <style>
 	.lide {
@@ -587,13 +582,31 @@
 		align-items: start;
 	}
 
+	.grafo-e-lado > :global(.figura) {
+		grid-column: 1;
+		grid-row: 1;
+	}
+
 	.lado {
 		display: grid;
+		grid-column: 2;
+		grid-row: 1;
 		align-content: start;
-		gap: 1rem;
 		min-width: 0;
 		/* a coluna vai até o fim do grafo, para o cartão acompanhar a rolagem ao longo dele */
 		align-self: stretch;
+	}
+
+	.colaboracao {
+		grid-column: 2;
+		grid-row: 1;
+		min-width: 0;
+	}
+
+	.com-cartao > .colaboracao {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		max-width: 60rem;
 	}
 
 	/* o cartão acompanha a rolagem da página: com o grafo à vista, ele também está (e não com o nome acima da tela) */
@@ -607,11 +620,6 @@
 		scroll-margin-top: calc(var(--altura-barra, 4rem) + var(--altura-recorte, 3rem) + 1rem);
 	}
 
-	.colaboracao-embaixo {
-		max-width: 60rem;
-		margin-top: 1.5rem;
-	}
-
 	/* em tela cheia, o grafo e a coluna do cartão juntos */
 	.grafo-e-lado:fullscreen {
 		padding: 1rem;
@@ -622,6 +630,7 @@
 	.grafo-e-lado:fullscreen .lado > :global(.cartao) {
 		top: 0;
 		max-height: calc(100dvh - 2rem);
+		scroll-margin-top: 1rem;
 	}
 
 	/* em tela cheia, o título e o resumo da figura do grafo saem, e o grafo cabe na altura da tela (os da colaboração,
@@ -771,6 +780,21 @@
 	@media (max-width: 1100px) {
 		.grafo-e-lado {
 			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.lado,
+		.colaboracao {
+			grid-column: 1;
+			grid-row: 2;
+		}
+
+		.com-cartao > .colaboracao {
+			grid-row: 3;
+		}
+
+		/* em tela cheia com um cartão aberto, o grafo deixa à vista, embaixo dele, o botão que leva ao cartão */
+		.grafo-e-lado.com-cartao:fullscreen :global(.grafo.tela-cheia) {
+			height: calc(100dvh - 5.5rem);
 		}
 
 		.lado > :global(.cartao) {

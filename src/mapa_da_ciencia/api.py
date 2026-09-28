@@ -14,6 +14,7 @@ Funciona dentro do Jupyter e do Colab: a coleta roda numa thread quando já há 
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -417,10 +418,17 @@ class Painel:
     _fio: Any = field(default=None, repr=False)
 
     def parar(self) -> None:
-        """Derruba o servidor do painel e espera ele sair (a thread solta o projeto para outro painel ao terminar)."""
+        """Derruba o servidor do painel e espera ele sair (a thread solta o projeto para outro painel ao terminar).
+        Uma etapa em andamento continua até o fim, mas a página que a acompanha é desligada."""
         self._servidor.should_exit = True
         if self._fio is not None:
             self._fio.join(timeout=10)
+            if self._fio.is_alive():
+                warnings.warn(
+                    "O painel ainda não saiu depois de 10 s (uma etapa em andamento?): o projeto fica travado até "
+                    "ele sair.",
+                    stacklevel=2,
+                )
 
     def _repr_html_(self) -> str:  # num notebook, o painel aparece como um link
         return f'<a href="{self.url}" target="_blank">Painel do mapa-da-ciencia em {self.url}</a>'
@@ -461,7 +469,10 @@ def painel(projeto: Projeto | str | Path = ".", *, porta: int = 8765, colab: boo
     trava = travar(p, porta)  # um painel por projeto, como o `mapa painel` (um segundo não abre)
     try:
         app = criar_app(pasta_dados=p.saida / "dados", projeto=p, api=True, so_local=not colab)
-        servidor = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning"))
+        # `parar()` não espera mais que 1 s pelas conexões abertas (a página que acompanha uma etapa mantém uma)
+        servidor = uvicorn.Server(
+            uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning", timeout_graceful_shutdown=1)
+        )
     except BaseException:
         if trava is not None:
             trava.close()

@@ -90,3 +90,45 @@ def test_o_painel_que_nao_sobe_solta_a_trava(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError, match="falhou ao montar"):
         mapa.painel(p, porta=8793, colab=False)
     travar(p, 8793).close()  # o projeto não ficou preso
+
+
+def _app_com_eventos_sem_fim(**_):
+    """Um app com uma rota de eventos que nunca termina, como a da página que acompanha uma etapa."""
+    import asyncio
+
+    from fastapi import FastAPI
+    from fastapi.responses import StreamingResponse
+
+    app = FastAPI()
+
+    @app.get("/eventos")
+    async def eventos():
+        async def fluxo():
+            while True:
+                yield ": batimento\n\n"
+                await asyncio.sleep(0.1)
+
+        return StreamingResponse(fluxo(), media_type="text/event-stream")
+
+    return app
+
+
+def test_parar_nao_espera_uma_conexao_que_nao_termina(tmp_path, monkeypatch):
+    import socket
+
+    import mapa_da_ciencia.api as mapa
+    from mapa_da_ciencia.servidor import app as modulo_app
+
+    monkeypatch.setattr(modulo_app, "criar_app", _app_com_eventos_sem_fim)
+    p = Projeto.criar(tmp_path / "p", modelo="vazio", perfil=PERFIS["leve"])
+    aberto = mapa.painel(p, porta=8792, colab=False)
+    conexao = socket.create_connection(("127.0.0.1", 8792))
+    try:
+        conexao.sendall(b"GET /eventos HTTP/1.1\r\nHost: 127.0.0.1:8792\r\n\r\n")
+        assert conexao.recv(64)  # a resposta começou, e não termina
+        inicio = time.monotonic()
+        aberto.parar()
+        assert time.monotonic() - inicio < 5
+        travar(p, 8791).close()  # a trava já foi solta
+    finally:
+        conexao.close()

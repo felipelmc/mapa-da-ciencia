@@ -785,8 +785,11 @@ test('com o cartão aberto, a colaboração desce para baixo do grafo, sem nada 
 	await page.goto(`${url('RAIZ')}#/redes?no=${redes.pessoas.id[central()]}`);
 	await esperarRedes(page, 'coautoria');
 	await expect(page.getByTestId('cartao-no')).toBeVisible();
-	await expect(page.locator('aside.lado').getByTestId('figura-colaboracao')).toHaveCount(0);
 	const figura = page.getByTestId('figura-colaboracao');
+	const canvas = page.getByTestId('canvas-rede');
+	// embaixo do grafo, e não na coluna do cartão
+	const abaixo = async () => (await figura.boundingBox())!.y >= (await canvas.boundingBox())!.y + (await canvas.boundingBox())!.height;
+	expect(await abaixo()).toBe(true);
 	await figura.scrollIntoViewIfNeeded();
 	// o cartão acompanha a rolagem só ao lado do grafo: nos cantos e no meio da figura, o que está na tela é ela
 	const descoberta = () =>
@@ -815,7 +818,10 @@ test('com o cartão aberto, a colaboração desce para baixo do grafo, sem nada 
 	})).toBe(true);
 	// fechado o cartão, a colaboração volta para o lado do grafo
 	await page.getByRole('button', { name: 'Fechar o cartão' }).click();
-	await expect(page.locator('aside.lado').getByTestId('figura-colaboracao')).toHaveCount(1);
+	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+	const [f, c] = [(await figura.boundingBox())!, (await canvas.boundingBox())!];
+	expect(f.x).toBeGreaterThanOrEqual(c.x + c.width);
+	expect(await figura.count()).toBe(1);
 });
 
 test('no toque, depois de usar um botão do grafo, tocar num nó não faz a página pular', async ({ browser }) => {
@@ -936,6 +942,63 @@ test('tela cheia numa janela estreita: o grafo cabe na altura da tela, embaixo d
 			const barra = (await page.getByRole('toolbar', { name: 'Controles do grafo' }).boundingBox())!;
 			const altura = await page.evaluate(() => innerHeight);
 			return canvas.y >= barra.y + barra.height - 1 && canvas.y + canvas.height <= altura + 1;
+		})
+		.toBe(true);
+	await page.keyboard.press('Escape');
+});
+
+test('a tabela da colaboração continua aberta quando um nó abre ou fecha (a figura só muda de lugar)', async ({ page }) => {
+	await page.setViewportSize({ width: 1920, height: 1080 });
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	await page.getByTestId('figura-colaboracao').getByRole('button', { name: 'Ver como tabela' }).click();
+	await expect(page.getByTestId('tabela-colaboracao')).toBeVisible();
+	const id = redes.pessoas.id[central()];
+	await page.getByTestId('canvas-rede').scrollIntoViewIfNeeded();
+	const [x, y] = (await naTela(page, id))!;
+	await page.getByTestId('canvas-rede').click({ position: { x, y } });
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	await expect(page.getByTestId('tabela-colaboracao')).toBeVisible();
+	await page.getByRole('button', { name: 'Fechar o cartão' }).click();
+	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+	await expect(page.getByTestId('tabela-colaboracao')).toBeVisible();
+});
+
+test('pelo teclado, abrir um parceiro no cartão põe o foco no título do cartão novo', async ({ page }) => {
+	const id = redes.pessoas.id[central()];
+	await page.goto(`${url('RAIZ')}#/redes?no=${id}`);
+	await esperarRedes(page, 'coautoria');
+	const cartao = page.getByTestId('cartao-no');
+	const antes = await cartao.getByRole('heading', { level: 2 }).textContent();
+	const parceiro = cartao.locator('.parceiros button').first();
+	const nome = (await parceiro.textContent())!.trim();
+	await parceiro.focus();
+	await page.keyboard.press('Enter');
+	await expect(cartao.getByRole('heading', { level: 2 })).toHaveText(nome);
+	expect(nome).not.toBe(antes);
+	expect(await page.evaluate(() => document.activeElement?.id)).toBe('titulo-no');
+});
+
+test('tela cheia numa janela estreita, com o cartão aberto: o botão que leva ao cartão fica à vista', async ({ page }) => {
+	await page.setViewportSize({ width: 800, height: 900 });
+	await page.goto(`${url('RAIZ')}#/redes?no=${redes.pessoas.id[central()]}`);
+	await esperarRedes(page, 'coautoria');
+	const botao = page.getByTestId('tela-cheia');
+	test.skip((await botao.count()) === 0, 'navegador sem a API de tela cheia');
+	await botao.click();
+	await expect.poll(async () => (await estadoDoGrafo(page)).telaCheia).toBe(true);
+	const ir = page.getByTestId('ir-ao-cartao');
+	await expect
+		.poll(async () => {
+			const caixa = (await ir.boundingBox())!;
+			return caixa.y + caixa.height <= (await page.evaluate(() => innerHeight));
+		})
+		.toBe(true);
+	await ir.click();
+	await expect
+		.poll(async () => {
+			const caixa = (await page.getByTestId('cartao-no').boundingBox())!;
+			return caixa.y >= 0 && caixa.y < (await page.evaluate(() => innerHeight)) / 2;
 		})
 		.toBe(true);
 	await page.keyboard.press('Escape');

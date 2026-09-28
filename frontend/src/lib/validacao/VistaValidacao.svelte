@@ -8,6 +8,7 @@
 	 *   evidência que o modelo citou (no painel local, de todos os codificadores; no site, só das referências);
 	 * - a comparação entre modelos (McNemar) e a evidência literal de cada modelo na amostra.
 	 */
+	import { tick } from 'svelte';
 	import type { CodebookContrato, MetricaVariavel, Validacao } from '$lib/contrato/tipos';
 	import type { TabelaDocumentos } from '$lib/dados/documentos';
 	import { escreverFiltros, rota } from '$lib/estado/url';
@@ -44,6 +45,14 @@
 	const doPar = $derived(validacao.metricas.filter((m) => par(m).join('|') === chavePar));
 	let variavelEscolhida = $state<string | null>(null);
 	const metrica = $derived(doPar.find((m) => m.variavel === variavelEscolhida) ?? doPar[0]);
+	/** Numa tela larga, a tabela acompanha a rolagem: escolhida outra variável lá embaixo, o detalhe dela volta à vista. */
+	async function escolherVariavel(v: string) {
+		variavelEscolhida = v;
+		await tick();
+		const titulo = document.getElementById('titulo-detalhe');
+		const barra = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--altura-barra')) || 0;
+		if (titulo && titulo.getBoundingClientRect().top < barra) titulo.scrollIntoView({ block: 'start' });
+	}
 
 	// ---- nomes
 	const variaveis = $derived(new Map((codebook?.variaveis ?? []).map((v) => [v.id, v])));
@@ -193,7 +202,7 @@
 			linhas={linhasPar}
 			dados={dadosPar}
 		>
-			<div class="rolagem-lateral">
+			<div class="rolagem-lateral tabela-do-par">
 				<table class="metricas" data-testid="tabela-metricas">
 					<thead>
 						<tr>
@@ -209,7 +218,7 @@
 						{#each doPar as m (m.variavel)}
 							<tr class:escolhida={m === metrica}>
 								<th scope="row">
-									<button type="button" onclick={() => (variavelEscolhida = m.variavel)} aria-pressed={m === metrica} data-testid="linha-variavel">
+									<button type="button" onclick={() => escolherVariavel(m.variavel)} aria-pressed={m === metrica} data-testid="linha-variavel">
 										{nomeVariavel(m.variavel)}
 									</button>
 								</th>
@@ -648,6 +657,12 @@
 		.par-e-detalhe > :global(:first-child) {
 			position: sticky;
 			top: calc(var(--altura-barra, 4rem) + 1rem);
+		}
+
+		/* com muitas variáveis, a tabela grudada rola por dentro, para a última linha não ficar abaixo da tela */
+		.tabela-do-par {
+			max-height: max(14rem, calc(100dvh - var(--altura-barra, 4rem) - 18rem));
+			overflow-y: auto;
 		}
 	}
 </style>

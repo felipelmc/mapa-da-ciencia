@@ -143,13 +143,17 @@ só em parte e 2 não, e as próprias correções criaram dois problemas. No cel
 acima dele, e o seletor das comunidades, com um rótulo de corpus real ("Federalismo, capacidades estatais…"),
 alargava a página para 732 px. E o cartão, que agora acompanha a rolagem, cobria "A colaboração por ano" (com o
 cartão de uma pessoa com muitos documentos, 96% da figura). O exemplo do contrato, com rótulos curtos ("Comunidade
-1") e cartões pequenos, não pegava nenhum dos dois. Corrigidos com testes que imitam os dados do piloto (rótulos
-longos por `page.route`), a re-revisão foi repetida antes do merge.
+1") e cartões pequenos, não pegava nenhum dos dois. Corrigidos com testes (o da largura com rótulos longos, como os do
+piloto, por `page.route`; o do cartão, conferindo que nada cobre a figura), a re-revisão foi repetida e aprovou com
+ressalvas baixas, das quais as de conserto direto entraram antes do merge: a tabela da Validação, grudada, rola por
+dentro com muitas variáveis; a colaboração muda de lugar sem ser recriada; e o `parar()` do painel no notebook não
+espera mais de 1 s pelas conexões abertas.
 
 Ficaram para depois, registrados: a cor dos nós por comunidade (hoje é a do macrotema, e várias comunidades dividem
 a mesma cor); o cartão do documento, que cobre parte do mapa numa tela de 1440 px; o kappa de uma pessoa, que conta
 fichas ainda não confirmadas; o editor do codebook, que acrescenta listas vazias ao YAML; o histórico das etapas, que
-mostra "na fila" durante a execução; e o júri, que ainda não aparece na linha das etapas nem no `mapa status`.
+mostra "na fila" durante a execução; o júri, que ainda não aparece na linha das etapas nem no `mapa status`; e, nas
+redes, um link com `comunidade=` e `no=` juntos, que enquadra a comunidade (o nó pode ficar fora da tela).
 
 ## Como repetir
 
