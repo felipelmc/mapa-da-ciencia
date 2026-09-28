@@ -12,6 +12,7 @@
 	import type { TabelaDocumentos } from '$lib/dados/documentos';
 	import { escreverFiltros, rota } from '$lib/estado/url';
 	import { formatarDecimal, formatarInteiro, formatarPorcentagem } from '$lib/formato';
+	import { numeroCru } from '$lib/exportar/figura';
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { KAPPA_FRACO } from '$lib/classificacao/agregar';
 	import MatrizConfusao from './MatrizConfusao.svelte';
@@ -87,6 +88,20 @@
 			m.alfa === null ? '—' : formatarDecimal(m.alfa, 2)
 		])
 	);
+	const cru = (v: number | null | undefined, casas = 6) => (v === null || v === undefined ? null : numeroCru(v, casas));
+	const dadosPar = $derived({
+		colunas: ['Variável', 'n', 'Concordância', 'Kappa', 'IC 95% do kappa (inferior)', 'IC 95% do kappa (superior)', 'PABAK', 'Alfa'],
+		linhas: doPar.map((m) => [
+			nomeVariavel(m.variavel),
+			m.n,
+			cru(m.concordancia),
+			cru(m.kappa),
+			cru(m.kappa_ic95?.[0]),
+			cru(m.kappa_ic95?.[1]),
+			cru(m.pabak),
+			cru(m.alfa)
+		])
+	});
 	const divergencias = $derived(
 		metrica
 			? validacao.divergencias.filter(
@@ -135,6 +150,7 @@
 		resumo={resumoPar}
 		colunas={['Variável', 'n', 'Concordância', 'Kappa', 'IC 95%', 'PABAK', 'Alfa']}
 		linhas={linhasPar}
+		dados={dadosPar}
 	>
 		<div class="rolagem-lateral">
 			<table class="metricas" data-testid="tabela-metricas">
@@ -243,6 +259,10 @@
 			resumo="Teste de McNemar exato: só os documentos em que um modelo acertou e o outro errou, contra a mesma referência. Com muitas variáveis, alguma diferença com p < 0,05 aparece por acaso."
 			colunas={['Variável', 'Referência', 'Modelos', 'n', 'Acertos', 'p']}
 			linhas={validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), c.referencia, `${c.modelo_a} × ${c.modelo_b}`, formatarInteiro(c.n), `${c.acertos_a} × ${c.acertos_b}`, formatarDecimal(c.p, 3)])}
+			dados={{
+				colunas: ['Variável', 'Referência', 'Modelo A', 'Modelo B', 'n', 'Acertos de A', 'Acertos de B', 'p'],
+				linhas: validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), c.referencia, c.modelo_a, c.modelo_b, c.n, c.acertos_a, c.acertos_b, c.p])
+			}}
 		>
 			<ul class="mcnemar">
 				{#each validacao.comparacoes_modelos.filter((c) => c.p < 0.05) as c (c.variavel + c.referencia)}

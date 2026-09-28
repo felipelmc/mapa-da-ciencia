@@ -247,7 +247,7 @@ Os testes cobrem:
 - na Geografia (`geografia.spec.ts`): o peso de cada UF igual ao gabarito do Python, o ranking pela instituição de maior peso, o Brasil fora da escala do mundo, o clique numa UF que vai para o recorte e dali para o Mapa, o teclado, "Ver como tabela", "Mostrar mais", a cobertura por ano (o aviso dos anos com muito peso sem afiliação) e o projeto vazio.
 - na Classificação, na Validação e na codificação (`classificacao.spec.ts`, `validacao.spec.ts`, `codificar.spec.ts`): as barras e o cruzamento conferidos com o exemplo, a lista com a evidência marcada, os selos de kappa, a matriz de confusão e 20 fichas codificadas só pelo teclado que sobrevivem a um reload.
 - no Projeto (`projeto.spec.ts`): a linha de metrô, o job ao vivo que sobrevive à queda proposital da primeira conexão SSE, cancelar, retomar depois de um reload, baixar um modelo, o assistente e o editor do codebook; no site estático, a Metodologia.
-- na exportação (`exportar.spec.ts`): SVG com as fontes embutidas e a largura do artigo, PNG na largura do preset, CSV com BOM e o modo apresentação.
+- na exportação (`exportar.spec.ts`): SVG com as fontes embutidas e a largura do artigo, PNG na largura do preset, CSV com BOM e números crus (os pesos das UFs iguais ao gabarito do Python, proporções como fração, a variação das tendências com sinal ASCII) e o modo apresentação.
 - no site publicado (`publicado.spec.ts`): nenhuma chamada à API, a Metodologia com o que a publicação retirou e o cartão de um artigo sem licença aberta, com os valores da classificação e sem o resumo nem os trechos citados.
 
 As capturas ficam em `test-results/` (ignorado pelo git): `tema-observatorio-1440x900.png`, `tema-prancha-1440x900.png` e `estreita-observatorio-390x844.png`.

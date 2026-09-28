@@ -5,7 +5,9 @@
  *   escolhido, que pode não ser o da tela), ganha um cabeçalho (título, recorte) e um rodapé (fonte, n, modelo,
  *   data), e leva as fontes embutidas (`@font-face` com `data:`), para abrir igual em qualquer programa.
  * - **PNG:** o mesmo SVG rasterizado num `canvas`, na resolução do preset.
- * - **CSV:** as colunas e as linhas da tabela da figura ("Ver como tabela"), em UTF-8 com BOM (abre no Excel).
+ * - **CSV:** os dados da figura em números crus (ponto decimal, sem separador de milhar, proporções como fração,
+ *   intervalos em duas colunas, vazio onde não há valor), para o R, o pandas ou uma planilha refazerem as contas;
+ *   em UTF-8 com BOM. Sem esses dados, sai a tabela da figura ("Ver como tabela") como está na tela.
  *
  * Presets: **Artigo** (85 ou 174 mm, 300 ou 600 dpi, tema Prancha), **Slide** (1920 px de largura) e **Telão**
  * (3840 px, tema Observatório).
@@ -66,12 +68,24 @@ export function larguraPx(p: Preset): number {
 }
 
 // ---------------------------------------------------------------- CSV
-function campo(v: string | number): string {
-	const texto = String(v);
+/** Uma célula do CSV: texto, número cru ou vazio (`null`, sem valor). */
+export type Celula = string | number | null;
+
+/** As colunas e as linhas que vão para o CSV de uma figura. */
+export interface DadosCsv {
+	colunas: string[];
+	linhas: Celula[][];
+}
+
+/** Número para o CSV: sem o ruído do ponto flutuante (929.5912000000001 → 929.5912). */
+export const numeroCru = (v: number, casas = 4): number => Number(v.toFixed(casas));
+
+function campo(v: Celula): string {
+	const texto = v === null ? '' : String(v);
 	return /[",;\n]/.test(texto) ? `"${texto.replaceAll('"', '""')}"` : texto;
 }
 
-export function paraCsv(colunas: string[], linhas: (string | number)[][]): string {
+export function paraCsv(colunas: string[], linhas: Celula[][]): string {
 	return '﻿' + [colunas, ...linhas].map((l) => l.map(campo).join(',')).join('\r\n') + '\r\n';
 }
 

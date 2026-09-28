@@ -14,6 +14,7 @@
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { CRUZAR, type Cruzar } from '$lib/estado/url';
 	import { formatarInteiro, formatarPorcentagem } from '$lib/formato';
+	import { numeroCru } from '$lib/exportar/figura';
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { coresDosValores, cruzamento, documentosDaCelula, porAno, referenciaDe, variaveisDaVista } from './agregar';
 	import BarrasPorAno from './BarrasPorAno.svelte';
@@ -95,6 +96,17 @@
 			)
 		])
 	);
+	// no CSV, as proporções vão como fração (0 a 1); ano sem classificado fica vazio
+	const dadosAnoCsv = $derived({
+		colunas: ['Ano', 'Classificados', ...v.rotulos],
+		linhas: anos.map((ano, j) => [
+			ano,
+			dadosAno.classificados[j],
+			...v.valores.map((_, x) =>
+				dadosAno.classificados[j] ? numeroCru(dadosAno.n[j * v.valores.length + x] / dadosAno.classificados[j], 6) : null
+			)
+		])
+	});
 	const resumoCruz = $derived.by(() => {
 		const k = v.valores.length;
 		let melhor = { l: -1, x: -1, p: 0 };
@@ -121,6 +133,13 @@
 				...v.valores.map((_, x) => formatarInteiro(cruz.n[i * v.valores.length + x]))
 			])
 	);
+	const dadosCruzCsv = $derived({
+		colunas: [NOMES_CRUZAR[filtros.cruzar], 'Classificados', ...v.rotulos],
+		linhas: cruz.linhas
+			.map((l, i) => ({ l, i }))
+			.filter(({ i }) => cruz.classificados[i] > 0)
+			.map(({ l, i }) => [l.rotulo, cruz.classificados[i], ...v.valores.map((_, x) => cruz.n[i * v.valores.length + x])])
+	});
 	const modelo = $derived(classificacoes.modelo.split('@')[0]);
 </script>
 
@@ -179,6 +198,7 @@
 		resumo={resumoAno}
 		colunas={['Ano', 'Classificados', ...v.rotulos]}
 		linhas={linhasAno}
+		dados={dadosAnoCsv}
 	>
 		<BarrasPorAno
 			dados={dadosAno}
@@ -197,6 +217,7 @@
 		resumo={resumoCruz}
 		colunas={[NOMES_CRUZAR[filtros.cruzar], 'Classificados', ...v.rotulos]}
 		linhas={linhasCruz}
+		dados={dadosCruzCsv}
 	>
 		{#snippet controles()}
 			<div class="segmentado" role="group" aria-label="Cruzar com">

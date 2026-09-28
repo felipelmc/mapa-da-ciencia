@@ -10,6 +10,7 @@
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { MODOS, type Modo } from '$lib/estado/url';
 	import { formatarDecimal, formatarInteiro, formatarPeriodo, formatarPorcentagem, formatarPp } from '$lib/formato';
+	import { numeroCru } from '$lib/exportar/figura';
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { ordemDentroFora } from '$lib/graficos/fluxo';
 	import Fluxo from './Fluxo.svelte';
@@ -137,6 +138,30 @@
 		if (!partes.length) partes.push('Nenhum tópico com tendência distinguível do acaso no recorte.');
 		return partes.join(' ');
 	});
+	const dadosTendencia = $derived({
+		colunas: [
+			'Tópico',
+			'Tendência',
+			'Variação (p.p.)',
+			'Participação no início',
+			'Participação no fim',
+			'Primeiro ano',
+			'Último ano',
+			'IC 95% da inclinação (inferior)',
+			'IC 95% da inclinação (superior)'
+		],
+		linhas: [...grupos.alta, ...grupos.queda].map((t) => [
+			rotulosTopicos.get(t.id) ?? String(t.id),
+			t.direcao,
+			numeroCru(t.pp_periodo!),
+			numeroCru(t.prop_inicio!, 6),
+			numeroCru(t.prop_fim!, 6),
+			t.anos![0],
+			t.anos![1],
+			numeroCru(t.ic95![0], 6),
+			numeroCru(t.ic95![1], 6)
+		])
+	});
 	const linhasTendencia = $derived(
 		[...grupos.alta, ...grupos.queda].map((t) => [
 			rotulosTopicos.get(t.id) ?? String(t.id),
@@ -195,6 +220,16 @@
 			formatarInteiro(nivel.matriz[k].reduce((a, b) => a + b, 0))
 		])
 	);
+	const dadosFluxo = $derived({
+		colunas,
+		linhas: nivel.ids.map((id, k) => [
+			nivel.rotulos.get(id) ?? String(id),
+			...nivel.matriz[k],
+			nivel.matriz[k].reduce((a, b) => a + b, 0)
+		])
+	});
+	const colunasRevista = $derived(['Revista', ...topicos.macrotemas.map((m) => m.rotulo), 'Sem tópico', 'Documentos']);
+	const somaDe = (l: Float64Array) => l.reduce((a, b) => a + b, 0);
 </script>
 
 <svelte:head>
@@ -224,6 +259,7 @@
 		{resumo}
 		{colunas}
 		{linhas}
+		dados={dadosFluxo}
 	>
 		{#snippet controles()}
 			<div class="modos" role="group" aria-label="Modo">
@@ -273,6 +309,7 @@
 		resumo={resumoTendencias}
 		colunas={['Tópico', 'Tendência', 'Variação', 'Participação ajustada', 'IC 95% da inclinação']}
 		linhas={linhasTendencia}
+		dados={dadosTendencia}
 	>
 		{#if anosNoRecorte < minimoAnos}
 			<p class="nota" data-testid="tendencias-poucos-anos">
@@ -304,8 +341,9 @@
 			id="por-revista"
 			titulo="Os macrotemas em cada revista"
 			resumo="A participação de cada macrotema nos artigos de cada revista, ano a ano (cada ano soma 100%). Clique numa revista para filtrar o recorte por ela."
-			colunas={['Revista', ...topicos.macrotemas.map((m) => m.rotulo), 'Sem tópico', 'Documentos']}
-			linhas={porRevista.map((r) => [r.id, ...r.matriz.map((l) => formatarInteiro(l.reduce((a, b) => a + b, 0))), formatarInteiro(r.total)])}
+			colunas={colunasRevista}
+			linhas={porRevista.map((r) => [r.id, ...r.matriz.map((l) => formatarInteiro(somaDe(l))), formatarInteiro(r.total)])}
+			dados={{ colunas: colunasRevista, linhas: porRevista.map((r) => [r.id, ...r.matriz.map(somaDe), r.total]) }}
 		>
 			<div class="multiplos">
 				{#each porRevista as r (r.id)}

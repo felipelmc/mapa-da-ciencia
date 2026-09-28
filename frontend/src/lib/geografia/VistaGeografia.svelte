@@ -15,6 +15,7 @@
 	import { D } from '$lib/dados/cubo';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { formatarDecimal, formatarInteiro, formatarPorcentagem } from '$lib/formato';
+	import { numeroCru } from '$lib/exportar/figura';
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { NOME_UF, nomePais } from './lugares';
 	import { malhaMundo, malhaUF, projecaoBrasil, projecaoMundo, type PropsPais, type PropsUF, type Regiao } from './malhas';
@@ -95,12 +96,18 @@
 					'a geografia desses anos é mais incompleta, e comparações com os outros pedem cuidado.'
 			: `Em todos os anos, pelo menos ${formatarPorcentagem(1 - LIMIAR_AVISO)} do peso tem afiliação informada.`
 	);
-	const linhasCobertura = $derived(
+	const colunasCobertura = ['Ano', 'Instituição identificada', 'Afiliação não identificada', 'Sem afiliação'];
+	const fracoesCobertura = $derived(
 		cobertura.map((c) => {
 			const soma = c.identificada + c.naoIdentificada + c.semAfiliacao || 1;
-			return [String(c.ano), ...[c.identificada, c.naoIdentificada, c.semAfiliacao].map((v) => formatarPorcentagem(v / soma))];
+			return { ano: c.ano, fracoes: [c.identificada, c.naoIdentificada, c.semAfiliacao].map((v) => v / soma) };
 		})
 	);
+	const linhasCobertura = $derived(fracoesCobertura.map((c) => [String(c.ano), ...c.fracoes.map(formatarPorcentagem)]));
+	const dadosCobertura = $derived({
+		colunas: colunasCobertura,
+		linhas: fracoesCobertura.map((c) => [c.ano, ...c.fracoes.map((f) => numeroCru(f, 6))])
+	});
 
 	// ---- malhas (carregadas quando a vista abre)
 	let malhaUfs = $state<Regiao<PropsUF>[] | null>(null);
@@ -154,6 +161,11 @@
 	);
 	const tabela = (m: Map<string, number>, docs: Map<string, number>, nome: (k: string) => string) =>
 		[...m.entries()].sort((x, y) => y[1] - x[1]).map(([k, v]) => [nome(k), formatarDecimal(v, 2), formatarInteiro(docs.get(k) ?? 0)]);
+	// o mesmo, com os números crus para o CSV
+	const tabelaCsv = (colunas: string[], m: Map<string, number>, docs: Map<string, number>, nome: (k: string) => string) => ({
+		colunas,
+		linhas: [...m.entries()].sort((x, y) => y[1] - x[1]).map(([k, v]) => [nome(k), numeroCru(v), docs.get(k) ?? 0])
+	});
 	const nomeUf = (k: string) => NOME_UF[k] ?? k;
 	const selUf = $derived(new Set(filtros.uf));
 	const selPais = $derived(new Set(filtros.pais));
@@ -186,6 +198,7 @@
 			resumo={resumoUf}
 			colunas={['UF', 'Peso fracionário', 'Documentos']}
 			linhas={tabela(ufs, docsUf, nomeUf)}
+			dados={tabelaCsv(['UF', 'Peso fracionário', 'Documentos'], ufs, docsUf, nomeUf)}
 			pronto={!!malhaUfs}
 		>
 			{#if malhaUfs}
@@ -212,6 +225,10 @@
 			resumo={resumoRanking}
 			colunas={['Instituição', 'Lugar', 'Peso fracionário', 'Documentos']}
 			linhas={ranking.map((i) => [i.sigla ? `${i.nome} (${i.sigla})` : i.nome, i.lugar, formatarDecimal(i.peso, 2), formatarInteiro(i.documentos)])}
+			dados={{
+				colunas: ['Instituição', 'Lugar', 'Peso fracionário', 'Documentos'],
+				linhas: ranking.map((i) => [i.sigla ? `${i.nome} (${i.sigla})` : i.nome, i.lugar, numeroCru(i.peso), i.documentos])
+			}}
 		>
 			<RankingInstituicoes itens={ranking} selecionados={selInst} aoEscolher={(id) => alternar('inst', id)} />
 		</Figura>
@@ -224,6 +241,7 @@
 		resumo={resumoMundo}
 		colunas={['País', 'Peso fracionário', 'Documentos']}
 		linhas={tabela(paises, docsPais, nomePais)}
+		dados={tabelaCsv(['País', 'Peso fracionário', 'Documentos'], paises, docsPais, nomePais)}
 		pronto={!!malhaPaises}
 	>
 		{#if malhaPaises}
@@ -249,8 +267,9 @@
 		id="cobertura"
 		titulo="Cobertura por ano"
 		resumo={resumoCobertura}
-		colunas={['Ano', 'Instituição identificada', 'Afiliação não identificada', 'Sem afiliação']}
+		colunas={colunasCobertura}
 		linhas={linhasCobertura}
+		dados={dadosCobertura}
 	>
 		<CoberturaAnos anos={cobertura} />
 		<p class="nota">

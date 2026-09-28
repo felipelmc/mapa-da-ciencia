@@ -6,19 +6,22 @@
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { filtrosDaPagina } from '$lib/estado/filtros';
 	import { formatarPeriodo } from '$lib/formato';
-	import { baixar, larguraPx, montarSvg, nomeDeArquivo, paraCsv, paraPng, PRESETS, type Formato } from './figura';
+	import { baixar, larguraPx, montarSvg, nomeDeArquivo, paraCsv, paraPng, PRESETS, type DadosCsv, type Formato } from './figura';
 
 	let {
 		figura,
 		titulo,
 		colunas,
 		linhas,
+		dados = null,
 		n = null
 	}: {
 		figura: HTMLElement | null;
 		titulo: string;
 		colunas: string[];
 		linhas: (string | number)[][];
+		/** Os números crus do CSV; sem eles, o CSV repete a tabela da tela (com os números já formatados). */
+		dados?: DadosCsv | null;
 		n?: number | null;
 	} = $props();
 
@@ -49,7 +52,8 @@
 		const nome = nomeDeArquivo(titulo);
 		try {
 			if (formato === 'csv') {
-				baixar(paraCsv(colunas, linhas), `${nome}.csv`, 'text/csv;charset=utf-8');
+				const csv = dados ?? { colunas, linhas };
+				baixar(paraCsv(csv.colunas, csv.linhas), `${nome}.csv`, 'text/csv;charset=utf-8');
 				return;
 			}
 			const p = PRESETS.find((x) => x.id === preset)!;

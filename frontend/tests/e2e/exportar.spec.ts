@@ -2,11 +2,45 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { TELAS, url, vigiar } from './comum';
+import { ler, TELAS, url, vigiar } from './comum';
+
+const agregados = ler('agregados.json');
+const afiliacoes = ler('afiliacoes.json');
 
 test.beforeEach(async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: 'reduce' });
 });
+
+/** Lê um CSV (vírgula, aspas duplas, CRLF, BOM), como o `read.csv` do R. */
+function lerCsv(texto: string): string[][] {
+	const linhas: string[][] = [];
+	let campo = '';
+	let linha: string[] = [];
+	let aspas = false;
+	const t = texto.replace(/^﻿/, '');
+	for (let i = 0; i < t.length; i += 1) {
+		const c = t[i];
+		if (aspas && c === '"' && t[i + 1] === '"') {
+			campo += '"';
+			i += 1;
+		} else if (c === '"') {
+			aspas = !aspas;
+		} else if (!aspas && c === ',') {
+			linha.push(campo);
+			campo = '';
+		} else if (!aspas && c === '\r' && t[i + 1] === '\n') {
+			linha.push(campo);
+			linhas.push(linha);
+			linha = [];
+			campo = '';
+			i += 1;
+		} else {
+			campo += c;
+		}
+	}
+	return linhas;
+}
+const NUMERO = /^-?\d+(\.\d+)?(e-?\d+)?$/;
 
 async function baixar(page: Page, figura: string, formato: 'SVG' | 'PNG' | 'CSV (dados)', preset?: string) {
 	const f = page.getByTestId(`figura-${figura}`);
@@ -55,6 +89,50 @@ test('PNG na largura do preset e CSV com os dados', async ({ page }) => {
 	const texto = csv.dados.toString('utf8');
 	expect(texto.charCodeAt(0)).toBe(0xfeff);
 	expect(texto.split('\r\n').length).toBeGreaterThan(2);
+});
+
+test('o CSV sai com números crus, que o R e o pandas leem sem limpeza', async ({ page }) => {
+	const csvDe = async (figura: string) => lerCsv((await baixar(page, figura, 'CSV (dados)')).dados.toString('utf8'));
+
+	// Geografia: o peso de cada UF é o do gabarito do Python; os documentos, os que têm alguma afiliação nela
+	await page.goto(`${url('RAIZ')}#/geografia`);
+	await expect(page.getByTestId('figura-ufs')).toHaveAttribute('data-pronto', 'sim');
+	const [cabUf, ...ufs] = await csvDe('ufs');
+	expect(cabUf).toEqual(['UF', 'Peso fracionário', 'Documentos']);
+	for (const l of ufs) for (const c of l.slice(1)) expect(c, l.join(',')).toMatch(NUMERO);
+	const pesos = Object.values(agregados.uf as Record<string, number>).sort((a, b) => b - a);
+	expect(ufs.map((l) => Number(l[1]))).toEqual(pesos.map((p) => Number(p.toFixed(4))));
+	const docsPorUf = afiliacoes.dicionarios.uf.map(
+		(_: string, u: number) =>
+			new Set(afiliacoes.colunas.doc.filter((_d: number, k: number) => afiliacoes.colunas.uf[k] === u)).size
+	);
+	const soma = (l: number[]) => l.reduce((a, b) => a + b, 0);
+	expect(soma(ufs.map((l) => Number(l[2])))).toBe(soma(docsPorUf));
+
+	// Classificação: as proporções vão como fração, e um ano sem classificados fica vazio
+	await page.goto(`${url('RAIZ')}#/classificacao`);
+	const [cabAno, ...anos] = await csvDe('por-ano');
+	expect(cabAno.slice(0, 2)).toEqual(['Ano', 'Classificados']);
+	for (const l of anos) {
+		for (const c of l.slice(0, 2)) expect(c).toMatch(/^\d+$/);
+		for (const c of l.slice(2)) {
+			if (c === '') continue;
+			expect(c, l.join(',')).toMatch(NUMERO);
+			expect(Number(c)).toBeLessThanOrEqual(1);
+		}
+	}
+
+	// Tópicos: a variação em pontos percentuais com sinal ASCII e o intervalo em duas colunas
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(page.getByTestId('figura-tendencias')).toBeVisible();
+	const [cabTend, ...tendencias] = await csvDe('tendencias');
+	expect(cabTend).toContain('IC 95% da inclinação (inferior)');
+	expect(tendencias.length).toBeGreaterThan(0);
+	for (const l of tendencias) {
+		expect(l[1]).toMatch(/^(alta|queda)$/);
+		for (const c of l.slice(2)) expect(c, l.join(',')).toMatch(NUMERO);
+		expect(Math.sign(Number(l[2]))).toBe(l[1] === 'alta' ? 1 : -1);
+	}
 });
 
 test('uma figura sem gráfico em SVG só exporta CSV', async ({ page }) => {
