@@ -191,3 +191,47 @@ def test_coleta_sem_openalex_nao_deixa_registros_antigos_das_instituicoes(projet
     assert (projeto.dados / ARQUIVO_INSTITUICOES).exists()
     coletar(projeto, OpcoesColeta(sem_openalex=True))
     assert not (projeto.dados / ARQUIVO_INSTITUICOES).exists()
+
+
+@pytest.fixture
+def canone_falha(monkeypatch):
+    """O OpenAlex recusa só os lotes das obras citadas (os ids W9… do ApisFalsas); antes de `apis_falsas`."""
+    import conftest
+
+    original = conftest.ApisFalsas._obras
+
+    def obras(self, request):
+        filtro = request.url.params.get("filter", "")
+        if filtro.startswith("openalex:") and any(w.startswith("W9") for w in filtro[9:].split("|")):
+            return httpx.Response(400, text="erro de teste")
+        return original(self, request)
+
+    monkeypatch.setattr(conftest.ApisFalsas, "_obras", obras)
+
+
+def test_falha_so_no_lote_do_canone_avisa_o_que_ficou_de_fora(canone_falha, projeto, apis_falsas):
+    from mapa_da_ciencia.armazenamento import ARQUIVO_CITADAS, ARQUIVO_REFERENCIAS, ler_tabela
+
+    resumo = coletar(projeto)
+    # as referências valem (as citações dentro do corpus); só o cânone fica de fora, e o aviso diz isso
+    assert ler_tabela(projeto.dados / ARQUIVO_REFERENCIAS)
+    assert not ler_tabela(projeto.dados / ARQUIVO_CITADAS)
+    (aviso,) = [a for a in resumo.avisos if "obras mais citadas" in a]
+    assert "o cânone fica de fora" in aviso and "citações dentro do corpus valem" in aviso
+    assert not any("as redes de citação ficam de fora" in a for a in resumo.avisos)
+
+
+def test_referencias_da_articlemeta_vem_do_cache_sem_email(projeto, apis_falsas):
+    from mapa_da_ciencia.armazenamento import ARQUIVO_REFERENCIAS_AM, ler_tabela
+
+    coletar(projeto)
+    antes = dict(apis_falsas.chamadas)
+    refs = ler_tabela(projeto.dados / ARQUIVO_REFERENCIAS_AM)
+    docs = {d.id: d for d in ler_documentos(projeto.dados / ARQUIVO)}
+    assert refs and {r["doc"] for r in refs} <= set(docs)
+    # uma linha por referência listada na ArticleMeta (o `n_referencias` do documento)
+    por_doc = {d: sum(r["doc"] == d for r in refs) for d in {r["doc"] for r in refs}}
+    assert all(docs[d].n_referencias == n for d, n in por_doc.items())
+    assert any(r["sobrenomes"] and (r["titulo"] or r["titulo_fonte"]) for r in refs)
+    assert not any(contem_email(str(r)) for r in refs)
+    assert dict(apis_falsas.chamadas) == antes  # ler a tabela não pede nada

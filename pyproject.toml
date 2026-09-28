@@ -1,6 +1,6 @@
 [project]
 name = "mapa-da-ciencia"
-version = "1.0.1"
+version = "2.0.0"
 description = "Observatório da literatura científica: tópicos no tempo, classificação por codebook com validação humana e geografia da produção, com modelos de linguagem locais."
 readme = "README.md"
 license = "MIT"
@@ -40,6 +40,7 @@ dependencies = [
     "scikit-learn>=1.6",
     "umap-learn>=0.5.9",
     "ruamel-yaml>=0.18",
+    "networkx>=3.4",
 ]
 
 [project.optional-dependencies]

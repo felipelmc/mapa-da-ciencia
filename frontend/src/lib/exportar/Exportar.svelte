@@ -54,7 +54,9 @@
 
 	function recorteEmPalavras(): string {
 		const f = filtrosDaPagina();
-		const partes = [formatarPeriodo(f.anos ?? manifesto.recorte.anos)];
+		// sem filtro de anos, o período só entra se o título do projeto já não o disser ("…, 2010–2025 · 2010–2025")
+		const periodo = formatarPeriodo(f.anos ?? manifesto.recorte.anos);
+		const partes = f.anos || !manifesto.projeto.titulo.includes(periodo) ? [periodo] : [];
 		if (f.revistas.length) partes.push(`revistas: ${f.revistas.join(', ')}`);
 		if (f.topicos.length) partes.push(`${f.topicos.length} tópico(s)`);
 		if (f.busca) partes.push(`busca: "${f.busca}"`);
@@ -62,7 +64,7 @@
 		if (f.uf.length) partes.push(`UF: ${f.uf.join(', ')}`);
 		if (f.pais.length) partes.push(`país: ${f.pais.join(', ')}`);
 		if (f.inst.length) partes.push(`${f.inst.length} instituição(ões)`);
-		return `${manifesto.projeto.titulo} · ${partes.join(' · ')}`;
+		return [manifesto.projeto.titulo, ...partes].join(' · ');
 	}
 
 	async function exportar() {

@@ -48,6 +48,7 @@ Enriquecimento (citações, licença) e busca por termo no OpenAlex.
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `enriquecer` | sim/não | `true` | Casar cada artigo com o OpenAlex para obter citações e licença. |
+| `referencias` | sim/não | `true` | Buscar no OpenAlex as referências de cada artigo e os dados das obras mais citadas (as redes de citação e o cânone): cerca de 1 crédito a cada 100 artigos, mais 5 créditos, só na primeira coleta. |
 | `consulta` | texto ou vazio | vazio | Busca por termo no título e no resumo, via OpenAlex. Com revistas no recorte, busca só nelas; sem revistas, em todo o SciELO. O corpus passa a ser os resultados da busca, e não as revistas inteiras. |
 
 ### Recorte

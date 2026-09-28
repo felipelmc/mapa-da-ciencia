@@ -141,6 +141,20 @@ mapa classificar [OPÇÕES]
 | `--modelo` | Outro modelo do Ollama, para comparar (o painel mostra só o principal). |  |
 | `--somente-amostra` | Classifica só os documentos da amostra de validação. |  |
 
+## `mapa redes`
+
+Redes de coautoria, de colaboração entre instituições e estados, e de citação, com as comunidades.
+
+```
+mapa redes [OPÇÕES]
+```
+
+| Argumento ou opção | Descrição | Padrão |
+|---|---|---|
+| `--projeto`, `-P` | Pasta do projeto (padrão: a pasta atual ou uma acima dela). | pasta atual |
+| `--revisar` | Lista as pessoas que podem ser a mesma (homônimos, grafias variantes, dois ORCIDs), com as evidências e um bloco para o pessoas.yaml. |  |
+| `--limite` | Quantos itens listar na revisão. | `40` |
+
 ## `mapa geografia`
 
 Liga cada afiliação a uma instituição, com UF e país, e faz a contagem fracionária da produção.

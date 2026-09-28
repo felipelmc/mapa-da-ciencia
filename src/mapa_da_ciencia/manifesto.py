@@ -123,10 +123,11 @@ def status_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any] | None]:
 def estados_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any]]:
     """Cada etapa: `pendente` (nunca rodou), `em_dia`, `incompleta` (a classificação parou antes do fim, a amostra
     não foi toda codificada) ou `desatualizada` (o corpus, o codebook ou as correções mudaram depois), com a última
-    execução."""
+    execução. Nas redes desatualizadas, `mudou` diz o quê."""
     from mapa_da_ciencia.armazenamento import ARQUIVO, ler_documentos
     from mapa_da_ciencia.classificacao.pipeline import classificacao_em_dia
     from mapa_da_ciencia.geografia.pipeline import geografia_em_dia
+    from mapa_da_ciencia.redes.pipeline import o_que_mudou, redes_em_dia
     from mapa_da_ciencia.topicos.resultado import PASTA, Resultado, assinatura_corpus
     from mapa_da_ciencia.validacao.amostra import documentos_completos
     from mapa_da_ciencia.validacao.amostra import ler as ler_amostra
@@ -151,6 +152,7 @@ def estados_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any]]:
         "coleta": True if tem_corpus else None,
         "topicos": topicos,
         "geografia": geografia_em_dia(projeto) if tem_corpus else None,
+        "redes": redes_em_dia(projeto) if tem_corpus else None,
         "classificacao": classificacao,
         "validacao": None if not amostra else (True if codificados >= len(amostra.docs) else "incompleta"),
     }
@@ -166,4 +168,6 @@ def estados_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any]]:
         }
     if amostra:
         saida["validacao"]["amostra"] = {"n": len(amostra.docs), "codificados": codificados}
+    if em_dia["redes"] is False:
+        saida["redes"]["mudou"] = o_que_mudou(projeto)
     return saida

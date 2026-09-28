@@ -16,11 +16,13 @@
 import type {
 	Afiliacoes,
 	Agregados,
+	Citacoes,
 	Classificacoes,
 	CodebookContrato,
 	Detalhe,
 	Documentos,
 	Manifesto,
+	Redes,
 	Revistas,
 	Topicos,
 	Validacao
@@ -45,6 +47,8 @@ export type NomeArquivo =
 	| 'classificacoes'
 	| 'validacao'
 	| 'agregados'
+	| 'redes'
+	| 'citacoes'
 	| 'detalhes';
 
 export interface FonteDeDados {
@@ -61,6 +65,10 @@ export interface FonteDeDados {
 	validacao(): Promise<Validacao | null>;
 	/** O gabarito dos agregados, calculado no Python (os testes conferem o cubo contra ele). */
 	agregados(): Promise<Agregados | null>;
+	/** Coautoria, instituições e as séries da colaboração (só depois de `mapa redes`). */
+	redes(): Promise<Redes | null>;
+	/** Citações internas e o cânone (só depois de `mapa redes`, com as referências do OpenAlex). */
+	citacoes(): Promise<Citacoes | null>;
 	/** Resumo, autores, licença e evidências de um documento, ou `null` se não houver. */
 	detalhe(id: string): Promise<Detalhe | null>;
 }

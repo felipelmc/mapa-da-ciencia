@@ -38,7 +38,7 @@
     de_novo: 'Watch again',
     numeros_titulo: 'The pilot in numbers',
     historias_titulo: 'Stories from the pilot',
-    historias_lide: 'Six things the map shows about the political science published in SciELO Brazil. Each one leads to the demo view behind it. Topic labels are in Portuguese, as written by the model.',
+    historias_lide: 'What the map shows about the political science published in SciELO Brazil. Each story leads to the demo view behind it. Topic labels are in Portuguese, as written by the model.',
     metodo_titulo: 'How it was made',
     metodo_lide: 'Six steps, all with open models running locally. The whole method, with its parameters, is in <a href="' + DOCS + 'explicacoes/metodologia/">Metodologia em uma página</a> (in Portuguese).',
     busca_titulo: 'Look for a subject',
@@ -546,10 +546,18 @@
     return '<svg viewBox="0 0 ' + largura + ' ' + altura + '" role="img" aria-label="' + esc(rotulo) + '">' + corpo + '</svg>';
   }
 
+  /** O caminho da linha; um valor que falta (null) interrompe o traço. */
   function linha(valores, x, y) {
+    var novo = true;
     return valores
       .map(function (v, i) {
-        return (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(v).toFixed(1);
+        if (v === null || v === undefined) {
+          novo = true;
+          return '';
+        }
+        var ponto = (novo ? 'M' : 'L') + x(i).toFixed(1) + ',' + y(v).toFixed(1);
+        novo = false;
+        return ponto;
       })
       .join('');
   }
@@ -624,8 +632,9 @@
     return svg(360, 8 * (lado + folga), corpo, rotulo);
   }
 
-  function duasLinhas(a, b, anos, rotulo, nomes) {
-    var L = 320, A = 104, m = { e: 4, d: 44, c: 8, b: 18 };
+  /** Duas séries em porcentagem (0 a 100); `direita` é a margem para os nomes no fim das linhas. */
+  function duasLinhas(a, b, anos, rotulo, nomes, direita) {
+    var L = 320, A = 104, m = { e: 4, d: direita || 44, c: 8, b: 18 };
     var x = function (i) { return m.e + (i / (anos.length - 1)) * (L - m.e - m.d); };
     var y = function (v) { return A - m.b - (v / 100) * (A - m.c - m.b); };
     return svg(
@@ -689,6 +698,31 @@
     return svg(L, kappas.length * passo + 10, corpo, rotulo);
   }
 
+  /** Quantas obras: "1 obra", "10 obras". */
+  function nomeObras(k) {
+    return num(k) + ' ' + (k === 1 ? t('obra', 'work') : t('obras', 'works'));
+  }
+
+  /** O alcance das obras mais citadas: barras sobre um trilho de 0 a 100% dos artigos, com o núcleo (`destaque`) em
+   * cor e a metade marcada; os números ficam numa coluna à direita, longe da linha. */
+  function degraus(itens, destaque, rotulo) {
+    var L = 320, passo = 22, m = 72, h = 13;
+    var x = function (v) { return m + (v / 100) * (L - m - 32); };
+    var corpo = itens
+      .map(function (d, i) {
+        var forte = d.obras === destaque;
+        var classe = 'grafico-texto' + (forte ? ' grafico-texto--forte' : '');
+        return '<text class="' + classe + '" x="0" y="' + (i * passo + 10) + '">' + esc(nomeObras(d.obras)) + '</text>' +
+          '<rect class="grafico-trilho" x="' + m + '" y="' + i * passo + '" width="' + (x(100) - m).toFixed(1) + '" height="' + h + '" rx="1.5"/>' +
+          '<rect class="grafico-barra' + (forte ? '' : ' grafico-barra--apagada') + '" x="' + m + '" y="' + i * passo + '" width="' + (x(d.pct) - m).toFixed(1) + '" height="' + h + '" rx="1.5"/>' +
+          '<text class="' + classe + '" x="' + L + '" y="' + (i * passo + 10) + '" text-anchor="end">' + num(d.pct) + '%</text>';
+      })
+      .join('') +
+      '<line class="grafico-limiar" x1="' + x(50) + '" x2="' + x(50) + '" y1="-4" y2="' + (itens.length * passo - 4) + '"/>' +
+      '<text class="grafico-texto" x="' + x(50) + '" y="' + (itens.length * passo + 8) + '" text-anchor="middle">' + t('metade', 'half') + '</text>';
+    return svg(L, itens.length * passo + 10, corpo, rotulo);
+  }
+
   // ------------------------------------------------------------------ histórias
 
   function cartao(h) {
@@ -697,7 +731,9 @@
       '<p class="historia__numero">' + h.numero + '</p>' +
       '<h3>' + esc(h.titulo) + '</h3>' +
       '<p class="historia__texto">' + h.texto + '</p>' +
+      (h.ressalva ? '<p class="historia__ressalva">' + h.ressalva + '</p>' : '') +
       '<div class="historia__grafico">' + h.grafico + '</div>' +
+      (h.nota ? '<p class="historia__nota">' + h.nota + '</p>' : '') +
       '<a class="historia__link" href="' + esc(h.link) + '">' + esc(h.chamada) + ' <span aria-hidden="true">→</span></a>' +
       '</article>';
   }
@@ -745,6 +781,42 @@
       link: demo('/geografia'),
       chamada: t('Ver na Geografia', 'See it in Geography')
     });
+    var col = h.colaboracao;
+    if (col) {
+      var p0 = esc(col.periodos[0]), p1 = esc(col.periodos[1]);
+      var comUfs = col.ufs !== null && col.ufs !== undefined;
+      var pct = function (v) { return numOuTraco(v) + '%'; };
+      var exterior = !comUfs ? '' : col.exterior_difere
+        ? t(', e os com autores no Brasil e no exterior, de ' + pct(col.exterior[0]) + ' para ' + pct(col.exterior[1]),
+          ', and those with authors both in Brazil and abroad, from ' + pct(col.exterior[0]) + ' to ' + pct(col.exterior[1]))
+        : t('; os com autores no Brasil e no exterior mudaram pouco, de ' + pct(col.exterior[0]) + ' para ' + pct(col.exterior[1]),
+          '; those with authors both in Brazil and abroad changed little, from ' + pct(col.exterior[0]) + ' to ' + pct(col.exterior[1]));
+      var sv = col.serie_varios, su = col.serie_ufs || [];
+      var anoIni = ano(col.anos[0]), anoFim = ano(col.anos[col.anos.length - 1]);
+      var rotuloCol = t(
+        'Artigos com mais de um autor, por ano: ' + pct(sv[0]) + ' em ' + anoIni + ' e ' + pct(sv[sv.length - 1]) + ' em ' + anoFim + (comUfs ? '. Com autores de mais de uma UF: ' + pct(su[0]) + ' e ' + pct(su[su.length - 1]) : '') + '.',
+        'Articles with more than one author, per year: ' + pct(sv[0]) + ' in ' + anoIni + ' and ' + pct(sv[sv.length - 1]) + ' in ' + anoFim + (comUfs ? '. With authors in more than one state: ' + pct(su[0]) + ' and ' + pct(su[su.length - 1]) : '') + '.'
+      );
+      cartoes.push({
+        tema: t('Colaboração', 'Collaboration'),
+        numero: num(col.varios[0]) + '% → ' + num(col.varios[1]) + '<small>%</small>',
+        titulo: t('Mais artigos em coautoria', 'More co-authored articles'),
+        texto: t(
+          'Em ' + p0 + ', ' + pct(col.varios[0]) + ' dos artigos tinham mais de um autor; em ' + p1 + ', ' + pct(col.varios[1]) + '.' + (comUfs ? ' Os com autores de mais de uma UF foram de ' + pct(col.ufs[0]) + ' para ' + pct(col.ufs[1]) + exterior + '.' : ''),
+          'In ' + p0 + ', ' + pct(col.varios[0]) + ' of articles had more than one author; in ' + p1 + ', ' + pct(col.varios[1]) + '.' + (comUfs ? ' Those with authors in more than one Brazilian state went from ' + pct(col.ufs[0]) + ' to ' + pct(col.ufs[1]) + exterior + '.' : '')
+        ),
+        grafico: comUfs
+          ? duasLinhas(sv, su, col.anos, rotuloCol, [t('2+ autores', '2+ authors'), t('2+ UFs', '2+ states')], 72)
+          : sparkline(sv, col.anos, '%', rotuloCol),
+        // os denominadores: a autoria conhecida e, nas UFs, a afiliação localizada (menos artigos nos primeiros anos)
+        nota: t(
+          'Entram na conta os artigos com autoria conhecida (' + num(col.autoria[0]) + ' em ' + p0 + ' e ' + num(col.autoria[1]) + ' em ' + p1 + ')' + (comUfs ? ' e, nas UFs e no exterior, os com afiliação localizada, numa UF ou fora do Brasil (' + num(col.localizados[0]) + ' e ' + num(col.localizados[1]) + ')' : '') + '.',
+          'Counted: articles with known authorship (' + num(col.autoria[0]) + ' in ' + p0 + ' and ' + num(col.autoria[1]) + ' in ' + p1 + ')' + (comUfs ? ' and, for states and abroad, those with a located affiliation, in a state or outside Brazil (' + num(col.localizados[0]) + ' and ' + num(col.localizados[1]) + ')' : '') + '.'
+        ),
+        link: demo('/redes?rede=' + (comUfs ? 'estados' : 'coautoria')),
+        chamada: t('Ver nas Redes', 'See it in Networks')
+      });
+    }
     var en = h.ingles;
     // nas outras oito, a faixa dos últimos sete anos: o último ano sozinho parece uma alta
     var recentes = en ? en.outras.slice(-7) : [];
@@ -794,6 +866,38 @@
         grafico: empilhadas(ab, t('Abordagem dos artigos por período', 'Approach of the articles by period')) + legendaCategorias(ab),
         link: demo('/classificacao?variavel=abordagem'),
         chamada: t('Ver na Classificação', 'See it in Classification')
+      });
+    }
+    var can = h.canone;
+    if (can) {
+      var todas = can.degraus[can.degraus.length - 1];
+      var existe = function (v) { return v !== null && v !== undefined; };
+      var perfil = [];
+      if (existe(can.antes_2000)) perfil.push(t(num(can.antes_2000) + ' são de antes de 2000', num(can.antes_2000) + ' were published before 2000'));
+      if (existe(can.ingles)) perfil.push(t(num(can.ingles) + ' estão em inglês', num(can.ingles) + ' are in English'));
+      var alcanceTodas = todas.pct < 50
+        ? t(', e nem as ' + num(todas.obras) + ' mais citadas chegam à metade deles (' + num(todas.pct) + '%)', ', and not even the ' + num(todas.obras) + ' most cited reach half of them (' + num(todas.pct) + '%)')
+        : t(', e as ' + num(todas.obras) + ' mais citadas, ' + num(todas.pct) + '%', ', and the ' + num(todas.obras) + ' most cited, ' + num(todas.pct) + '%');
+      var limitacoes = '<a href="' + DOCS + 'explicacoes/redes/#limitacoes">';
+      cartoes.push({
+        tema: t('Cânone', 'Canon'),
+        numero: num(can.pct) + '<small>%</small>',
+        titulo: t('O cânone que o OpenAlex vê', 'The canon OpenAlex can see'),
+        texto: t(
+          num(can.pct) + '% dos artigos citam ao menos uma das ' + num(can.topo) + ' obras de fora do corpus mais citadas' + alcanceTodas + '.' + (perfil.length ? ' Das ' + num(can.topo) + ', ' + perfil.join(', e ') + '.' : ''),
+          num(can.pct) + '% of articles cite at least one of the ' + num(can.topo) + ' most cited works from outside the corpus' + alcanceTodas + '.' + (perfil.length ? ' Of the ' + num(can.topo) + ', ' + perfil.join(', and ') + '.' : '')
+        ),
+        // a cobertura muda a leitura do número: fica à vista, antes do gráfico
+        ressalva: t(
+          '<strong>Ressalva:</strong> o cânone só vê obras que o OpenAlex indexa, e livros e capítulos em português ficam de fora com frequência. Só entram na conta os ' + num(can.base) + ' artigos (de ' + num(can.documentos) + ') com referências no OpenAlex. Veja as ' + limitacoes + 'limitações</a>.',
+          '<strong>Caveat:</strong> the canon only sees works indexed by OpenAlex, which often misses books and chapters in Portuguese. Only the ' + num(can.base) + ' articles (of ' + num(can.documentos) + ') with references in OpenAlex are counted. See the ' + limitacoes + 'limitations</a> (in Portuguese).'
+        ),
+        grafico: degraus(can.degraus, can.topo, t(
+          'Artigos que citam ao menos uma das obras de fora do corpus mais citadas: ' + can.degraus.map(function (d) { return nomeObras(d.obras) + ', ' + num(d.pct) + '%'; }).join('; ') + '.',
+          'Articles citing at least one of the most cited works from outside the corpus: ' + can.degraus.map(function (d) { return nomeObras(d.obras) + ', ' + num(d.pct) + '%'; }).join('; ') + '.'
+        )),
+        link: demo('/redes?rede=citacoes'),
+        chamada: t('Ver nas Redes', 'See it in Networks')
       });
     }
     var val = h.validacao;

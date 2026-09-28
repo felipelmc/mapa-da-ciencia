@@ -80,7 +80,8 @@ supervisão do zero, sem misturar as respostas dos dois.
 
 Com a API, os **títulos e resumos saem da máquina**. Para usar:
 
-1. Instale o pacote extra: `pip install 'mapa-da-ciencia[anthropic]'` (ou `uv add anthropic`).
+1. Instale o pacote extra: quem instalou pelo *wheel*, `uv tool install --with anthropic <endereço do wheel>` (o mesmo endereço do
+   guia de instalação); num clone do código, `uv sync --extra anthropic`.
 2. Ponha a chave no `.env` do projeto (que não vai para o git): `ANTHROPIC_API_KEY=...`.
 3. No `mapa.yaml`:
 
@@ -102,7 +103,8 @@ mapa juri supervisionar
 O comando mostra quantos pedidos serão enviados e o custo estimado, e pergunta antes de enviar (`--sim` pula a
 pergunta). Se a estimativa passar do limite, ele não começa. Antes de cada pedido, ele confere se o pior caso (a
 resposta mais longa possível, com o raciocínio do modelo) ainda cabe no que sobra do limite; se não couber, para e
-guarda o que já respondeu. Assim, o gasto nunca passa do limite, e pode parar um pouco antes dele. As respostas
+guarda o que já respondeu. Assim, o gasto estimado não passa do limite, e pode parar um pouco antes dele (a conta dos
+tokens é uma estimativa). As respostas
 passam pela mesma conferência do protocolo por arquivos.
 
 ## O relatório
@@ -114,5 +116,5 @@ mapa juri relatorio   # grava validacao/juri.md e atualiza o painel
 O relatório começa pelo **resultado principal** (kappa de cada membro, da votação e do júri contra a referência, e o
 McNemar entre o júri e o modelo principal), depois o **limite superior** com o supervisor (marcado "circular" quando o
 supervisor e a referência são da mesma família), os estágios de cada variável, a concordância por estágio, as
-mudanças na deliberação e a auditoria. No painel, a vista Concordância ganha a seção "Júri", e o cartão de cada
+mudanças na deliberação e a auditoria. No painel, a vista Validação ganha a seção "Júri", e o cartão de cada
 documento da amostra mostra os votos.

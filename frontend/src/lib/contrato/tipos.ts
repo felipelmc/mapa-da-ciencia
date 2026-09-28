@@ -5,11 +5,13 @@
  * Tipos do contrato de dados v1, gerados a partir de:
  *   contrato/schema/afiliacoes.schema.json
  *   contrato/schema/agregados.schema.json
+ *   contrato/schema/citacoes.schema.json
  *   contrato/schema/classificacoes.schema.json
  *   contrato/schema/codebook.schema.json
  *   contrato/schema/documentos.schema.json
  *   contrato/schema/fragmento.schema.json
  *   contrato/schema/manifesto.schema.json
+ *   contrato/schema/redes.schema.json
  *   contrato/schema/revistas.schema.json
  *   contrato/schema/topicos.schema.json
  *   contrato/schema/validacao.schema.json
@@ -22,11 +24,13 @@
 export interface ContratoDeDados {
 	afiliacoes: Afiliacoes;
 	agregados: Agregados;
+	citacoes: Citacoes;
 	classificacoes: Classificacoes;
 	codebook: CodebookContrato;
 	documentos: Documentos;
 	fragmento: Fragmento;
 	manifesto: Manifesto;
+	redes: Redes;
 	revistas: Revistas;
 	topicos: Topicos;
 	validacao: Validacao;
@@ -103,6 +107,14 @@ export interface Instituicao {
  */
 export interface Agregados {
 	/**
+	 * Pares de coautores no corpus inteiro.
+	 */
+	arestas_coautoria?: number;
+	/**
+	 * Documentos que citam cada obra do cânone.
+	 */
+	canone_n?: number[];
+	/**
 	 * Contagem fracionária por instituição.
 	 */
 	instituicao?: {
@@ -145,9 +157,90 @@ export interface Agregados {
 		[k: string]: number;
 	};
 	/**
+	 * (UF, UF ou EX, peso, documentos) na colaboração entre estados.
+	 */
+	uf_pares?: [string, string, number, number][];
+	/**
 	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
 	 */
 	versao_contrato?: string;
+}
+/**
+ * A rede de citação pelas referências do OpenAlex e o cânone.
+ */
+export interface Citacoes {
+	canone: ObraCitada[];
+	canone_citantes: CitantesCanone;
+	/**
+	 * Documentos (`documentos`, `com_referencias`), referências resolvidas (`referencias`) e, nos documentos casados, as listadas na ArticleMeta (`referencias_listadas`), as resolvidas entre elas (`referencias_resolvidas`) e a mediana por documento da fração resolvida (`resolvidas_mediana_pct`); citações internas, anacrônicas e autorreferências; referências a obras apagadas (`a_obras_apagadas`); citantes, resenhas e autorias corrigidas do cânone; obras sem metadados entre as mais citadas.
+	 */
+	cobertura?: {
+		[k: string]: number;
+	};
+	/**
+	 * Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` (pela posição, e não pelo id, que não é contíguo).
+	 */
+	fluxo_macrotemas: number[][];
+	internas: ArestasCitacao;
+	/**
+	 * Referências de cada documento resolvidas no OpenAlex (0: casado, sem nenhuma); -1: sem casamento.
+	 */
+	n_referencias: number[];
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
+}
+/**
+ * Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate).
+ */
+export interface ObraCitada {
+	/**
+	 * O ano da obra (o das referências, quando o registro do OpenAlex é uma resenha).
+	 */
+	ano: number | null;
+	/**
+	 * Até três autores, conferidos nas referências da ArticleMeta.
+	 */
+	autores: string[];
+	doi: string | null;
+	/**
+	 * Outros registros da mesma obra, somados a este.
+	 */
+	edicoes?: string[];
+	/**
+	 * Id do OpenAlex (`W…`).
+	 */
+	id: string;
+	/**
+	 * Documentos do corpus que a citam.
+	 */
+	n: number;
+	/**
+	 * Autores e ano do registro do OpenAlex, quando diferem dos mostrados (a conferência os mudou).
+	 */
+	registro_openalex?: string | null;
+	/**
+	 * O registro do OpenAlex é uma resenha da obra (tipo `book-review`, Choice Reviews, ou um primeiro autor que as referências não citam): autores e ano vêm das referências.
+	 */
+	resenha?: boolean;
+	tipo: string | null;
+	titulo: string | null;
+	veiculo: string | null;
+}
+export interface CitantesCanone {
+	doc: number[];
+	/**
+	 * Índice em `canone`.
+	 */
+	obra: number[];
+}
+/**
+ * Citações dentro do corpus: índices de documentos (quem cita → quem é citado).
+ */
+export interface ArestasCitacao {
+	de: number[];
+	para: number[];
 }
 /**
  * Resumo da classificação por codebook: modelo, cobertura e contagens por categoria.
@@ -426,6 +519,10 @@ export interface Manifesto {
 	 */
 	arquivos: string[];
 	contagens: Contagens;
+	/**
+	 * Etapas com resultado desatualizado (as entradas mudaram depois), que por isso ficou fora destes dados: `topicos`, `geografia`, `redes` ou `classificacao`. A interface diz o que rodar de novo.
+	 */
+	desatualizadas?: string[];
 	execucao: ExecucaoInfo;
 	gerado_em: string;
 	/**
@@ -433,6 +530,12 @@ export interface Manifesto {
 	 */
 	licencas?: {
 		[k: string]: number;
+	};
+	/**
+	 * Para cada etapa desatualizada, o que mudou desde a última execução, quando se sabe (nas redes: "o pessoas.yaml", "a geografia"…).
+	 */
+	mudancas?: {
+		[k: string]: string[];
 	};
 	projeto: ProjetoInfo;
 	/**
@@ -519,6 +622,117 @@ export interface RecorteInfo {
 	fontes: string[];
 	idioma_analise: string;
 	idioma_exibicao: string;
+}
+/**
+ * Coautoria (pessoas), colaboração entre instituições e as séries da colaboração.
+ */
+export interface Redes {
+	autorias: AutoriasRede;
+	colaboracao?: ColaboracaoAno[];
+	comunidades?: ComunidadeRede[];
+	instituicoes?: ColunasInstituicoesRede | null;
+	metricas?: {
+		[k: string]: MetricasRede;
+	};
+	parametros?: {
+		[k: string]: unknown;
+	};
+	pessoas: ColunasPessoas;
+	/**
+	 * Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.
+	 */
+	versao_contrato?: string;
+}
+/**
+ * Quem escreveu cada documento: pares (índice do documento em `documentos.json`, índice da pessoa).
+ */
+export interface AutoriasRede {
+	doc: number[];
+	pessoa: number[];
+}
+/**
+ * A colaboração num ano, em frações dos documentos do ano.
+ */
+export interface ColaboracaoAno {
+	ano: number;
+	autores_medio: number;
+	com_coautoria: number;
+	/**
+	 * Brasil e exterior no mesmo documento.
+	 */
+	com_exterior?: number | null;
+	/**
+	 * Duas ou mais instituições identificadas.
+	 */
+	com_instituicoes?: number | null;
+	documentos: number;
+	/**
+	 * Duas ou mais UFs brasileiras.
+	 */
+	entre_ufs?: number | null;
+}
+export interface ComunidadeRede {
+	documentos: number;
+	id: number;
+	/**
+	 * Macrotema mais frequente nos documentos da comunidade.
+	 */
+	macro: number | null;
+	/**
+	 * Nós da comunidade.
+	 */
+	n: number;
+	rede: 'coautoria' | 'instituicoes';
+	/**
+	 * Os dois tópicos mais frequentes (a comunidade não recebe nome de pessoa).
+	 */
+	rotulo: string;
+	/**
+	 * Os tópicos mais frequentes, em ordem.
+	 */
+	topicos: number[];
+}
+/**
+ * As instituições que colaboraram com outra, com o desenho da rede (os ids são os de `afiliacoes.json`).
+ */
+export interface ColunasInstituicoesRede {
+	comunidade: number[];
+	grau: number[];
+	id: string[];
+	x: number[];
+	y: number[];
+}
+export interface MetricasRede {
+	agrupamento: number;
+	arestas: number;
+	componentes: number;
+	densidade: number;
+	fracao_maior: number;
+	grau_medio: number;
+	maior_componente: number;
+	modularidade: number | null;
+	nos: number;
+}
+/**
+ * As pessoas (autores identificados), em colunas. `x` e `y` só para quem teve coautor (o desenho da rede).
+ */
+export interface ColunasPessoas {
+	/**
+	 * Índice em `comunidades` da rede de coautoria; -1 nas pequenas.
+	 */
+	comunidade: number[];
+	documentos: number[];
+	/**
+	 * Coautores distintos.
+	 */
+	grau: number[];
+	/**
+	 * Id publicado: um HMAC curto do id interno com o segredo do projeto (o site não publica ORCIDs nem ids do OpenAlex, e o id não se liga a eles sem o segredo).
+	 */
+	id: string[];
+	nome: string[];
+	x: (number | null)[];
+	y: (number | null)[];
 }
 /**
  * Revistas presentes no corpus, com o número de documentos de cada uma.

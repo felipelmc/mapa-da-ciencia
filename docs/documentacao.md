@@ -8,8 +8,8 @@ O **mapa-da-ciencia** é um observatório da literatura científica. Ele coleta 
 
 Tudo aparece num painel interativo, que pode ser publicado como site estático para acompanhar um artigo ou uma apresentação.
 
-!!! info "Versão 1.0"
-    O projeto chegou à **versão 1.0**: a coleta de artigos do SciELO e do OpenAlex, os tópicos com rótulos em português escritos por um modelo local, o mapa navegável dos documentos, a evolução dos tópicos no tempo, a geografia da produção, com contagem fracionária, e a classificação dos resumos por um codebook, com a evidência de cada resposta e a validação numa amostra. Tudo também roda pela interface, com o progresso ao vivo, e o projeto vira um site estático, com figuras prontas para artigo e slides. A [demo](https://felipelamarca.com/mapa-da-ciencia/demo/) é o piloto publicado, e a [abertura do site](index.md) conta o que ele mostra. Veja o [plano de marcos](desenvolvimento/index.md#marcos).
+!!! info "Versão 2.0"
+    A **versão 2.0** trouxe o [júri de modelos locais com supervisor](explicacoes/juri.md) e as [redes de coautoria e de citação](explicacoes/redes.md), e passou por uma [revisão geral](desenvolvimento/revisao-2026-09.md). Desde a 1.0, o projeto tem a coleta de artigos do SciELO e do OpenAlex, os tópicos com rótulos em português escritos por um modelo local, o mapa navegável dos documentos, a evolução dos tópicos no tempo, a geografia da produção, com contagem fracionária, e a classificação dos resumos por um codebook, com a evidência de cada resposta e a validação numa amostra. Tudo também roda pela interface, com o progresso ao vivo, e o projeto vira um site estático, com figuras prontas para artigo e slides. A [demo](https://felipelamarca.com/mapa-da-ciencia/demo/) é o piloto publicado, e a [abertura do site](index.md) conta o que ele mostra. Veja o [plano de marcos](desenvolvimento/index.md#marcos).
 
 ## Por onde começar
 

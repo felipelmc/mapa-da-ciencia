@@ -15,7 +15,7 @@ Convenções:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -26,7 +26,7 @@ VERSAO_CONTRATO = "1.5"
 #      tipo, métricas por classe, comparação entre modelos
 # 1.4: publicação no manifesto (quando e o que o `mapa publicar` retirou)
 # 1.5: júri de modelos locais (votos e estágio por documento da amostra, resumo na validação), família dos
-#      participantes e comparações circulares
+#      participantes e comparações circulares; redes (`redes.json`) e citações (`citacoes.json`)
 N_FRAGMENTOS = 64
 SIGLAS_UF = (
     "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA",
@@ -132,6 +132,16 @@ class Manifesto(_Arquivo):
     execucao: ExecucaoInfo
     licencas: dict[str, int] = Field(default_factory=dict, description="Licença → número de documentos.")
     publicacao: PublicacaoInfo | None = Field(None, description="Presente só no site publicado (`mapa publicar`).")
+    desatualizadas: list[str] = Field(
+        default_factory=list,
+        description="Etapas com resultado desatualizado (as entradas mudaram depois), que por isso ficou fora destes "
+        "dados: `topicos`, `geografia`, `redes` ou `classificacao`. A interface diz o que rodar de novo.",
+    )
+    mudancas: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="Para cada etapa desatualizada, o que mudou desde a última execução, quando se sabe (nas redes: "
+        '"o pessoas.yaml", "a geografia"…).',
+    )
 
 
 # ---------------------------------------------------------------- revistas.json
@@ -637,6 +647,150 @@ class Agregados(_Arquivo):
     instituicao_inteiro: dict[str, int] = Field(default_factory=dict)
     sem_afiliacao: float = Field(0, description="Peso dos autores sem afiliação informada.")
     sem_pais: float = Field(0, description="Peso das afiliações de país desconhecido (inclui `sem_afiliacao`).")
+    arestas_coautoria: int = Field(0, description="Pares de coautores no corpus inteiro.")
+    uf_pares: list[tuple[str, str, float, int]] = Field(
+        default_factory=list, description="(UF, UF ou EX, peso, documentos) na colaboração entre estados."
+    )
+    canone_n: list[int] = Field(default_factory=list, description="Documentos que citam cada obra do cânone.")
+
+
+# ---------------------------------------------------------------- redes.json e citacoes.json
+class ColunasPessoas(_Base):
+    """As pessoas (autores identificados), em colunas. `x` e `y` só para quem teve coautor (o desenho da rede)."""
+
+    id: list[str] = Field(
+        description="Id publicado: um HMAC curto do id interno com o segredo do projeto (o site não publica ORCIDs "
+        "nem ids do OpenAlex, e o id não se liga a eles sem o segredo)."
+    )
+    nome: list[str]
+    documentos: list[int]
+    grau: list[int] = Field(description="Coautores distintos.")
+    comunidade: list[int] = Field(description="Índice em `comunidades` da rede de coautoria; -1 nas pequenas.")
+    x: list[float | None]
+    y: list[float | None]
+
+
+class AutoriasRede(_Base):
+    """Quem escreveu cada documento: pares (índice do documento em `documentos.json`, índice da pessoa)."""
+
+    doc: list[int]
+    pessoa: list[int]
+
+
+class ColunasInstituicoesRede(_Base):
+    """As instituições que colaboraram com outra, com o desenho da rede (os ids são os de `afiliacoes.json`)."""
+
+    id: list[str]
+    grau: list[int]
+    comunidade: list[int]
+    x: list[float]
+    y: list[float]
+
+
+class ComunidadeRede(_Base):
+    rede: Literal["coautoria", "instituicoes"]
+    id: int
+    n: int = Field(description="Nós da comunidade.")
+    documentos: int
+    macro: int | None = Field(description="Macrotema mais frequente nos documentos da comunidade.")
+    topicos: list[int] = Field(description="Os tópicos mais frequentes, em ordem.")
+    rotulo: str = Field(description="Os dois tópicos mais frequentes (a comunidade não recebe nome de pessoa).")
+
+
+class MetricasRede(_Base):
+    nos: int
+    arestas: int
+    componentes: int
+    maior_componente: int
+    fracao_maior: float
+    densidade: float
+    grau_medio: float
+    agrupamento: float
+    modularidade: float | None
+
+
+class ColaboracaoAno(_Base):
+    """A colaboração num ano, em frações dos documentos do ano."""
+
+    ano: int
+    documentos: int
+    com_coautoria: float
+    autores_medio: float
+    com_instituicoes: float | None = Field(None, description="Duas ou mais instituições identificadas.")
+    entre_ufs: float | None = Field(None, description="Duas ou mais UFs brasileiras.")
+    com_exterior: float | None = Field(None, description="Brasil e exterior no mesmo documento.")
+
+
+class Redes(_Arquivo):
+    """Coautoria (pessoas), colaboração entre instituições e as séries da colaboração."""
+
+    pessoas: ColunasPessoas
+    autorias: AutoriasRede
+    instituicoes: ColunasInstituicoesRede | None = None
+    comunidades: list[ComunidadeRede] = Field(default_factory=list)
+    metricas: dict[str, MetricasRede] = Field(default_factory=dict)
+    colaboracao: list[ColaboracaoAno] = Field(default_factory=list)
+    parametros: dict[str, Any] = Field(default_factory=dict)
+
+
+class ObraCitada(_Base):
+    """Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate)."""
+
+    id: str = Field(description="Id do OpenAlex (`W…`).")
+    titulo: str | None
+    ano: int | None = Field(
+        description="O ano da obra (o das referências, quando o registro do OpenAlex é uma resenha)."
+    )
+    autores: list[str] = Field(description="Até três autores, conferidos nas referências da ArticleMeta.")
+    veiculo: str | None
+    tipo: str | None
+    doi: str | None
+    n: int = Field(description="Documentos do corpus que a citam.")
+    edicoes: list[str] = Field(default_factory=list, description="Outros registros da mesma obra, somados a este.")
+    resenha: bool = Field(
+        False,
+        description="O registro do OpenAlex é uma resenha da obra (tipo `book-review`, Choice Reviews, ou um primeiro "
+        "autor que as referências não citam): autores e ano vêm das referências.",
+    )
+    registro_openalex: str | None = Field(
+        None,
+        description="Autores e ano do registro do OpenAlex, quando diferem dos mostrados (a conferência os mudou).",
+    )
+
+
+class ArestasCitacao(_Base):
+    """Citações dentro do corpus: índices de documentos (quem cita → quem é citado)."""
+
+    de: list[int]
+    para: list[int]
+
+
+class CitantesCanone(_Base):
+    doc: list[int]
+    obra: list[int] = Field(description="Índice em `canone`.")
+
+
+class Citacoes(_Arquivo):
+    """A rede de citação pelas referências do OpenAlex e o cânone."""
+
+    n_referencias: list[int] = Field(
+        description="Referências de cada documento resolvidas no OpenAlex (0: casado, sem nenhuma); -1: sem casamento."
+    )
+    internas: ArestasCitacao
+    canone: list[ObraCitada]
+    canone_citantes: CitantesCanone
+    fluxo_macrotemas: list[list[int]] = Field(
+        description="Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` "
+        "(pela posição, e não pelo id, que não é contíguo)."
+    )
+    cobertura: dict[str, int] = Field(
+        default_factory=dict,
+        description="Documentos (`documentos`, `com_referencias`), referências resolvidas (`referencias`) e, nos "
+        "documentos casados, as listadas na ArticleMeta (`referencias_listadas`), as resolvidas entre elas "
+        "(`referencias_resolvidas`) e a mediana por documento da fração resolvida (`resolvidas_mediana_pct`); citações "
+        "internas, anacrônicas e autorreferências; referências a obras apagadas (`a_obras_apagadas`); citantes, "
+        "resenhas e autorias corrigidas do cânone; obras sem metadados entre as mais citadas.",
+    )
 
 
 ARQUIVOS: dict[str, type[_Arquivo]] = {
@@ -650,4 +804,6 @@ ARQUIVOS: dict[str, type[_Arquivo]] = {
     "classificacoes": Classificacoes,
     "validacao": Validacao,
     "agregados": Agregados,
+    "redes": Redes,
+    "citacoes": Citacoes,
 }

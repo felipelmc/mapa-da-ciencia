@@ -160,7 +160,7 @@ def recortar_instituicoes() -> None:
 
     sys.path.insert(0, str(RAIZ / "src"))
     from mapa_da_ciencia import rede
-    from mapa_da_ciencia.fontes.openalex import CAMPOS_INSTITUICAO, LOTE_INSTITUICOES
+    from mapa_da_ciencia.fontes.openalex import CAMPOS_INSTITUICAO, LOTE_OPENALEX
 
     curto = lambda u: u.rstrip("/").rsplit("/", 1)[-1]  # noqa: E731
     ids = set()
@@ -171,8 +171,8 @@ def recortar_instituicoes() -> None:
                     ids |= {curto(inst["id"]), *(curto(x) for x in inst.get("lineage") or [])}
     faltam, registros = sorted(ids), {}
     with rede.cliente(timeout=60) as http:
-        for k in range(0, len(faltam), LOTE_INSTITUICOES):
-            lote = faltam[k : k + LOTE_INSTITUICOES]
+        for k in range(0, len(faltam), LOTE_OPENALEX):
+            lote = faltam[k : k + LOTE_OPENALEX]
             params = {"filter": "openalex:" + "|".join(lote), "select": CAMPOS_INSTITUICAO, "per-page": 100}
             r = http.get("https://api.openalex.org/institutions", params=params)
             r.raise_for_status()
@@ -181,7 +181,7 @@ def recortar_instituicoes() -> None:
     with gzip.open(DESTINO / "openalex" / "instituicoes.jsonl.gz", "wt", encoding="utf-8") as f:
         for iid in sorted(registros):
             f.write(json.dumps(registros[iid], ensure_ascii=False) + "\n")
-    lotes = -(-len(faltam) // LOTE_INSTITUICOES)
+    lotes = -(-len(faltam) // LOTE_OPENALEX)
     print(f"{len(registros)} instituições do OpenAlex ({len(faltam)} ids pedidos, {lotes} créditos)")
 
 

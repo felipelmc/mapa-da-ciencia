@@ -82,6 +82,7 @@ test('a Ajuda do site publicado não fala de marcos, do computador de quem lê n
 	await expect(page.getByText(/chega no marco/)).toHaveCount(0);
 	await expect(page.getByText(/no seu computador/)).toHaveCount(0);
 	await expect(page.getByText(/codificação humana/)).toHaveCount(0);
-	// a seção que ainda não existe continua dizendo quando chega
-	await expect(page.getByRole('main').getByText('chega na versão 2')).toBeVisible();
+	// nenhuma seção está por chegar: as Redes, a última, já têm link
+	await expect(page.getByRole('main').getByText(/^chega /)).toHaveCount(0);
+	await expect(page.getByRole('main').getByRole('link', { name: 'Redes', exact: true })).toBeVisible();
 });

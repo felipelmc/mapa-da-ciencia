@@ -31,7 +31,7 @@ MODELOS_DE_PROJETO = ("ciencia-politica", "vazio")
 
 # Etapas do pipeline, na ordem em que rodam.
 # a exportação para `saida/dados/` roda no fim de cada etapa e não é uma etapa própria
-ETAPAS = ("coleta", "embeddings", "topicos", "geografia", "classificacao", "validacao")
+ETAPAS = ("coleta", "embeddings", "topicos", "geografia", "redes", "classificacao", "validacao")
 
 _GITIGNORE = """\
 # Gerado pelo `mapa novo`. Dados e segredos ficam fora do git.
@@ -42,6 +42,8 @@ saida/
 estado.sqlite*
 # os textos da amostra e o relatório da validação, com as respostas de cada pessoa que codificou
 validacao/
+# os pedidos ao supervisor do júri (com os resumos inteiros) e as respostas dele, que podem ser de uma pessoa
+juri/
 """
 
 _ENV_EXEMPLO = """\

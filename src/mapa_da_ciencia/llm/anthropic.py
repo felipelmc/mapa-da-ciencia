@@ -2,15 +2,16 @@
 
 O resto do mapa-da-ciencia roda com modelos locais; este adaptador existe para quem quiser que o supervisor do júri
 seja um modelo da Anthropic chamado pela API, em vez do protocolo por arquivos. Ele usa o SDK oficial (`anthropic`),
-que é uma dependência opcional: `pip install 'mapa-da-ciencia[anthropic]'`.
+que é uma dependência opcional (o extra `anthropic`: `uv tool install --with anthropic <wheel>`, ou `uv sync --extra
+anthropic` num clone).
 
 - **Saída estruturada:** a resposta segue um JSON Schema (`output_config.format`), e o texto volta como JSON.
 - **Cache do prompt:** as instruções do supervisor (iguais em todos os pedidos) vão com `cache_control`, e só a
   primeira chamada paga a entrada inteira delas.
 - **Custo:** o uso de tokens de cada resposta é somado e convertido em dólares pela tabela `PRECOS`. Antes de cada
   chamada, `ErroOrcamento` para se o **pior caso** dela (a entrada, as instruções escritas no cache e `MAX_TOKENS`
-  de saída, raciocínio incluído) passaria do limite: o gasto nunca passa dele. A estimativa prévia (`estimar_custo`)
-  é a do custo esperado, com `SAIDA_ESTIMADA` tokens de saída por pedido.
+  de saída, raciocínio incluído) passaria do limite: o gasto estimado não passa dele. A estimativa prévia
+  (`estimar_custo`) é a do custo esperado, com `SAIDA_ESTIMADA` tokens de saída por pedido.
 - **Chave:** vem de `ANTHROPIC_API_KEY` (ambiente ou `.env` do projeto), nunca é gravada em lugar nenhum e fica fora
   do `repr`.
 - **Rede:** o cliente do SDK usa os certificados do sistema operacional, como o resto do pacote (ADR 0001).
@@ -104,7 +105,8 @@ class Anthropic:
             except ImportError as e:
                 raise ErroProvedor(
                     "O supervisor pela API precisa do pacote `anthropic`: instale com "
-                    "`pip install 'mapa-da-ciencia[anthropic]'` (ou `uv add anthropic`)."
+                    "`uv tool install --with anthropic <endereço do wheel>` "
+                    "(ou, num clone, `uv sync --extra anthropic`)."
                 ) from e
             if not self.chave:
                 raise ErroProvedor(

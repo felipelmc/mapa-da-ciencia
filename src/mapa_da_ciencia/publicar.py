@@ -6,7 +6,7 @@ O site é a interface compilada lendo o contrato de `saida/dados/`, com três di
   Projeto vira a página Metodologia;
 - os resumos (e o texto das evidências da classificação, que são trechos deles) só vão com licença Creative
   Commons (ADR 0003); os outros ficam `null`, com a licença à mostra. Com `--sem-resumos`, nenhum vai;
-- uma varredura final garante que nenhum arquivo tem e-mail.
+- uma varredura final garante que nenhum arquivo tem e-mail nem ORCID.
 
 Codificações de pessoas nunca estão no contrato (ver `contrato/classificacao.py`). O site é montado numa pasta nova
 e posto no lugar arquivo por arquivo, como a exportação (`pastas.substituir_conteudo`). Como a publicação apaga do
@@ -28,7 +28,7 @@ from .contrato.exportar import exportar
 from .documento import pode_publicar_resumo
 from .pastas import substituir_conteudo
 from .projeto import Projeto
-from .texto import contem_email
+from .texto import contem_email, orcids_no_texto
 
 
 @dataclass
@@ -119,6 +119,20 @@ def _conferir_destino(destino: Path, projeto: Projeto) -> None:
         )
 
 
+def conferir_privacidade(dados: Path) -> None:
+    """Varredura final dos JSON do site: nenhum e-mail e nenhum ORCID, venham de onde vierem (um título de obra, um
+    nome manual no `pessoas.yaml`…). Qualquer um deles interrompe a publicação."""
+    for arq in sorted(dados.rglob("*.json")):
+        texto = arq.read_text(encoding="utf-8")
+        if contem_email(texto):
+            raise ErroConfig(f"Um e-mail apareceu em {arq.name}; a publicação foi interrompida. Avise o projeto.")
+        if orcids := orcids_no_texto(texto):
+            raise ErroConfig(
+                f"Um ORCID ({orcids[0]}) apareceu em {arq.name}; a publicação foi interrompida. O site não publica "
+                "ORCIDs: procure-o no pessoas.yaml (nomes) ou nos títulos das obras, e avise o projeto."
+            )
+
+
 def publicar(
     projeto: Projeto, destino: Path | None = None, *, sem_resumos: bool = False, estatico: Path | None = None
 ) -> ResumoPublicacao:
@@ -147,11 +161,19 @@ def publicar(
     publicados, retirados, evid_retiradas = filtrar_dados(novo / "dados", sem_resumos=sem_resumos)
 
     manifesto = m.Manifesto.model_validate(_json(novo / "dados" / "manifesto.json"))
+    if "redes" in manifesto.desatualizadas:
+        # o site não mostra instruções de linha de comando a quem visita: sem redes em dia, a vista Redes some dele
+        mudou = " e ".join(manifesto.mudancas.get("redes", [])) or "as entradas"
+        avisos.append(
+            f"As redes estão desatualizadas (mudou {mudou}) e ficaram fora do site, que não mostra a vista Redes. "
+            "Rode `mapa redes` e publique de novo para incluí-las."
+        )
 
-    for arq in (novo / "dados").rglob("*.json"):
-        if contem_email(arq.read_text(encoding="utf-8")):
-            shutil.rmtree(novo, ignore_errors=True)
-            raise ErroConfig(f"Um e-mail apareceu em {arq.name}; a publicação foi interrompida. Avise o projeto.")
+    try:
+        conferir_privacidade(novo / "dados")
+    except ErroConfig:
+        shutil.rmtree(novo, ignore_errors=True)
+        raise
 
     substituir_conteudo(novo, destino)
     tamanho = sum(a.stat().st_size for a in destino.rglob("*") if a.is_file()) / 1e6

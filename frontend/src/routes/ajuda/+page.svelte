@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { afterNavigate } from '$app/navigation';
 	import Icone from '$lib/componentes/Icone.svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { rota } from '$lib/estado/url';
@@ -7,6 +8,19 @@
 
 	const { manifesto } = usarProjeto();
 	const secoes = secoesDoTrilho(manifesto).filter((s) => s.id !== 'inicio');
+	// um site publicado sem redes (desatualizadas na publicação) não explica uma vista que não tem
+	const temRedes = secoes.some((s) => s.id === 'redes');
+
+	// `#/ajuda?secao=redes` (o link "Como ler as redes" da vista) rola até a seção, depois que a navegação pôs a
+	// página no topo
+	afterNavigate(() => {
+		const secao = new URLSearchParams(location.hash.split('?')[1] ?? '').get('secao');
+		const alvo = secao ? document.getElementById(`ajuda-${secao}`) : null;
+		if (alvo) {
+			alvo.scrollIntoView({ block: 'start' });
+			alvo.closest('section')?.focus({ preventScroll: true });
+		}
+	});
 </script>
 
 <svelte:head>
@@ -49,7 +63,7 @@
 		<h2 id="ajuda-recorte">O recorte</h2>
 		<p>
 			A barra logo abaixo do título guarda o <strong>recorte</strong>: os documentos que as vistas de análise
-			(Mapa, Tópicos e Geografia) mostram. O contador à direita diz quantos passam em tudo. Entram no recorte:
+			(Mapa, Tópicos, Classificação, Geografia e Redes) mostram. O contador à direita diz quantos passam em tudo. Entram no recorte:
 		</p>
 		<ul>
 			<li>o <strong>período</strong>, na linha do tempo (o botão <strong>Tocar</strong> anima ano a ano);</li>
@@ -114,6 +128,61 @@
 			</p>
 		</section>
 
+		{#if temRedes}
+		<section aria-labelledby="ajuda-redes" data-testid="ajuda-redes" tabindex="-1">
+			<h2 id="ajuda-redes">Como ler as redes</h2>
+			<p>
+				Na <strong>coautoria</strong>, cada <strong>nó</strong> é uma pessoa, e uma <strong>aresta</strong> (a linha)
+				liga duas pessoas que assinaram juntas ao menos um documento do recorte. Nas <strong>instituições</strong>,
+				o nó é uma instituição, e a aresta liga duas que aparecem nas afiliações do mesmo documento.
+			</p>
+			<p>
+				O <strong>peso</strong> de uma aresta é fracionário: num artigo de n autores, cada par ganha 1/(n−1). Num
+				artigo de dois autores, o par ganha 1; num de três, cada um dos três pares ganha 0,5. Assim cada pessoa
+				distribui no máximo 1 por artigo, e um artigo de dez autores não pesa mais que um de dois. Quanto maior o
+				peso no recorte, mais forte a linha.
+			</p>
+			<p>
+				As <strong>comunidades</strong> são agrupamentos automáticos (o algoritmo de Louvain), de nós mais ligados
+				entre si que com o resto. Elas levam o nome dos tópicos mais frequentes nos documentos delas e a cor do
+				macrotema mais comum, nunca o nome de uma pessoa. O desenho é o do corpus inteiro: o recorte não move nada,
+				só apaga quem não tem documento nele. Clique num nó, ou busque pelo nome, para ver os documentos dele.
+			</p>
+			<p>
+				O maior grupo ligado fica em cima; embaixo, os grupos menores, e as duplas e os trios isolados só aparecem
+				se você pedir (o pedido vai para o link, e o desenho se reenquadra para caber todos). Duas ressalvas: <strong>a distância no desenho não é uma medida</strong> (dois nós perto
+				costumam estar no mesmo grupo, mas dois nós longe podem estar a um passo um do outro), e
+				<strong>tamanho não é importância</strong>: um nó grande tem mais documentos no corpus, e mais coautores não
+				quer dizer mais relevância. A rede só vê o que está no corpus.
+			</p>
+			<dl class="glossario" data-testid="glossario-redes">
+				<dt>Peso de uma parceria</dt>
+				<dd>A soma de 1/(n−1) em cada documento em comum de n autores (ou instituições), no recorte.</dd>
+				<dt>Componente</dt>
+				<dd>Um grupo de nós ligados por algum caminho; o maior costuma juntar um terço das pessoas com coautor.</dd>
+				<dt>Agrupamento</dt>
+				<dd>A fração de trios fechados: quanto os parceiros de alguém também são parceiros entre si.</dd>
+				<dt>Modularidade</dt>
+				<dd>Quanto das ligações fica dentro das comunidades, de 0 a 1; perto de 1, grupos bem separados.</dd>
+				<dt>Comunidades pequenas, "Fora das comunidades grandes"</dt>
+				<dd>Só os grupos com 8 pessoas (ou 5 instituições) ou mais ganham número e cor; os outros ficam cinzentos.</dd>
+			</dl>
+			<p>
+				Nos <strong>estados</strong>, cada arco liga duas UFs (ou uma UF e o <strong>Exterior</strong>, qualquer
+				afiliação fora do Brasil) que aparecem nas afiliações do mesmo documento, com o mesmo peso fracionário; clique
+				numa UF para pô-la no recorte.
+			</p>
+			<p>
+				O <strong>cânone</strong> são as obras de fora do corpus que os documentos mais citam. Ele só enxerga as
+				referências que o OpenAlex identificou: obras sem DOI ou fora do OpenAlex, como muitos livros e textos
+				antigos, ficam de fora, então a lista <strong>favorece o que tem DOI</strong> (e cobre cerca de metade das
+				referências). Muitos livros chegam pelo registro de uma resenha, com o resenhista como autor: o autor e o
+				ano mostrados vêm das referências dos próprios artigos. A matriz das citações mostra quais macrotemas citam
+				quais, só entre documentos do recorte.
+			</p>
+		</section>
+		{/if}
+
 		<section aria-labelledby="ajuda-links">
 			<h2 id="ajuda-links">Links que guardam a vista</h2>
 			<p>
@@ -171,6 +240,17 @@
 				<dt>roda do mouse, arrastar</dt>
 				<dd>aproxima e move o mapa; de perto, os rótulos passam dos macrotemas para os tópicos</dd>
 			</dl>
+			{#if temRedes}
+			<h3 id="atalhos-redes">Nas redes</h3>
+			<dl class="atalhos" data-testid="atalhos-redes">
+				<dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd></dt>
+				<dd>na busca, escolhem a pessoa ou a instituição e abrem o cartão dela</dd>
+				<dt><kbd>Esc</kbd></dt>
+				<dd>fecha o cartão</dd>
+				<dt>roda do mouse, arrastar, pinça</dt>
+				<dd>aproximam e movem o grafo; os botões + e − fazem o mesmo, e “Reiniciar” volta ao começo</dd>
+			</dl>
+			{/if}
 			<p>
 				Tudo o que você faz no mapa (filtros, busca, laço, documento aberto e a posição da câmera) fica no endereço
 				da página: copie o link para mostrar exatamente a mesma coisa a outra pessoa.
@@ -222,6 +302,29 @@
 	.resumo {
 		font-size: 1.1rem;
 		color: var(--texto-suave);
+	}
+
+	.glossario {
+		display: grid;
+		grid-template-columns: minmax(10rem, max-content) 1fr;
+		gap: 0.35rem 1rem;
+		margin: 0.5rem 0 0;
+		font-size: 0.92rem;
+	}
+
+	.glossario dt {
+		font-weight: 600;
+	}
+
+	.glossario dd {
+		margin: 0;
+		color: var(--texto-suave);
+	}
+
+	@media (max-width: 640px) {
+		.glossario {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.secoes {

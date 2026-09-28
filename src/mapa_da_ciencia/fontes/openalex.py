@@ -193,32 +193,36 @@ CAMPOS_INSTITUICAO = (
     "id,ror,display_name,display_name_acronyms,display_name_alternatives,international,country_code,geo,type,"
     "lineage,is_super_system"
 )
-LOTE_INSTITUICOES = 100
-PEDIDOS_INSTITUICOES = "openalex/instituicoes/pedidos.json.gz"
+LOTE_OPENALEX = 100
 _IDIOMAS_NOMES = ("pt", "en", "es", "fr", "de", "it")
 
 
-async def buscar_instituicoes(buscador: Buscador, ids: set[str], *, api_key: str | None = None) -> list[dict]:
-    """Registros das instituições (ids curtos, `I123`), em lotes de 100 (1 crédito por lote), com cache.
+async def _buscar_em_lotes(
+    buscador: Buscador,
+    ids: set[str],
+    *,
+    rota: str,
+    campos: str,
+    pasta: str,
+    api_key: str | None = None,
+) -> list[dict]:
+    """Registros do OpenAlex pelo filtro `openalex:id1|id2…`, em lotes de 100 (1 crédito por lote), com cache.
 
-    Um índice em `brutos/` guarda os ids já pedidos: os que o OpenAlex não devolve (instituições fundidas) não
-    são pedidos de novo, e a segunda coleta faz 0 requisições. Devolve todos os registros já baixados.
+    Um índice em `brutos/<pasta>/pedidos.json.gz` guarda os ids já pedidos: os que o OpenAlex não devolve (registros
+    fundidos ou apagados) não são pedidos de novo, e a segunda coleta faz 0 requisições. Devolve todos os registros
+    já baixados, em ordem de id.
     """
-    caminho = buscador.brutos / PEDIDOS_INSTITUICOES
+    caminho = buscador.brutos / pasta / "pedidos.json.gz"
     pedidos: dict[str, list] = ler_gz(caminho) if caminho.exists() else {"lotes": []}
     ja = {i for lote in pedidos["lotes"] for i in lote["ids"]}
     faltam = sorted(ids - ja)
-    for k in range(0, len(faltam), LOTE_INSTITUICOES):
-        lote = faltam[k : k + LOTE_INSTITUICOES]
-        arquivo = f"openalex/instituicoes/lote-{_hash(*lote, CAMPOS_INSTITUICAO)}.json.gz"
-        params: dict[str, Any] = {
-            "filter": "openalex:" + "|".join(lote),
-            "select": CAMPOS_INSTITUICAO,
-            "per-page": LOTE_INSTITUICOES,
-        }
+    for k in range(0, len(faltam), LOTE_OPENALEX):
+        lote = faltam[k : k + LOTE_OPENALEX]
+        arquivo = f"{pasta}/lote-{_hash(*lote, campos)}.json.gz"
+        params: dict[str, Any] = {"filter": "openalex:" + "|".join(lote), "select": campos, "per-page": LOTE_OPENALEX}
         if api_key:
             params["api_key"] = api_key
-        await buscador.json("openalex", f"{URL}/institutions", params, arquivo, custo=1)
+        await buscador.json("openalex", f"{URL}/{rota}", params, arquivo, custo=1)
         pedidos["lotes"].append({"arquivo": arquivo, "ids": lote})
         gravar_gz(caminho, pedidos)
     registros: dict[str, dict] = {}
@@ -227,9 +231,78 @@ async def buscar_instituicoes(buscador: Buscador, ids: set[str], *, api_key: str
         if not arquivo.exists():
             continue
         for r in ler_gz(arquivo).get("results") or []:
-            if iid := _curto(r.get("id")):
-                registros[iid] = r
+            if rid := _curto(r.get("id")):
+                registros[rid] = r
     return [registros[i] for i in sorted(registros)]
+
+
+async def buscar_instituicoes(buscador: Buscador, ids: set[str], *, api_key: str | None = None) -> list[dict]:
+    """Registros das instituições (ids curtos, `I123`)."""
+    return await _buscar_em_lotes(
+        buscador, ids, rota="institutions", campos=CAMPOS_INSTITUICAO, pasta="openalex/instituicoes", api_key=api_key
+    )
+
+
+CAMPOS_REFERENCIAS = "id,referenced_works,referenced_works_count"
+CAMPOS_CITADAS = "id,doi,display_name,publication_year,type,language,cited_by_count,authorships,primary_location"
+N_CITADAS = 500  # obras de fora do corpus mais citadas, com os metadados (o cânone)
+
+
+async def buscar_referencias(buscador: Buscador, ids: set[str], *, api_key: str | None = None) -> dict[str, list[str]]:
+    """As obras citadas por cada obra do corpus (ids curtos `W…`), pelo OpenAlex: obra → lista de ids citados."""
+    registros = await _buscar_em_lotes(
+        buscador, ids, rota="works", campos=CAMPOS_REFERENCIAS, pasta="openalex/referencias", api_key=api_key
+    )
+    return {
+        _curto(r["id"]): [x for x in (_curto(u) for u in r.get("referenced_works") or []) if x]
+        for r in registros
+        if _curto(r.get("id"))
+    }
+
+
+async def buscar_citadas(buscador: Buscador, ids: set[str], *, api_key: str | None = None) -> list[dict]:
+    """Os metadados das obras citadas pedidas (o cânone), na forma de `dados/obras_citadas_openalex.parquet`."""
+    registros = await _buscar_em_lotes(
+        buscador, ids, rota="works", campos=CAMPOS_CITADAS, pasta="openalex/citadas", api_key=api_key
+    )
+    return [linha_de_obra_citada(r) for r in registros]
+
+
+COLUNAS_REFERENCIAS = {"obra": "VARCHAR", "citada": "VARCHAR"}
+COLUNAS_CITADAS = {
+    "id": "VARCHAR",
+    "doi": "VARCHAR",
+    "titulo": "VARCHAR",
+    "ano": "INTEGER",
+    "tipo": "VARCHAR",
+    "idioma": "VARCHAR",
+    "citacoes": "INTEGER",
+    "autores": "VARCHAR[]",
+    "n_autores": "INTEGER",
+    "veiculo": "VARCHAR",
+}
+
+
+def linha_de_obra_citada(r: dict) -> dict[str, Any]:
+    """Um registro de obra citada, por lista branca: título, ano, até três autores e o veículo (sem afiliações)."""
+    autores = [
+        nome
+        for a in r.get("authorships") or []
+        if (nome := remover_emails(limpar((a.get("author") or {}).get("display_name"))))
+    ]
+    fonte = ((r.get("primary_location") or {}).get("source") or {}).get("display_name")
+    return {
+        "id": _curto(r["id"]),
+        "doi": normalizar_doi(r.get("doi")),
+        "titulo": remover_emails(limpar(r.get("display_name"))) or None,
+        "ano": r.get("publication_year"),
+        "tipo": r.get("type"),
+        "idioma": r.get("language"),
+        "citacoes": r.get("cited_by_count"),
+        "autores": autores[:3],
+        "n_autores": len(autores),
+        "veiculo": remover_emails(limpar(fonte)) or None,
+    }
 
 
 COLUNAS_INSTITUICOES = {
@@ -350,6 +423,8 @@ def autorias_da_obra(obra: dict) -> list[AutoriaOpenAlex]:
                 instituicoes=instituicoes,
                 paises=list(autoria.get("countries") or []),
                 afiliacoes=afiliacoes,
+                id=_curto(autor.get("id")),
+                orcid=normalizar_orcid(autor.get("orcid")),
             )
         )
     return saida

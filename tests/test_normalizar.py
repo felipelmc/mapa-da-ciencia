@@ -118,3 +118,9 @@ def test_municipios_com_hifen_nao_viram_cidade_e_uf():
     assert n.separar_cidade_uf("Ji-Paraná") == ("Ji-Paraná", None) and n.uf_da_cidade("Ji-Paraná") == "RO"
     assert n.separar_cidade_uf("Grão-Pará") == ("Grão-Pará", None) and n.uf_da_cidade("Grão-Pará") == "SC"
     assert n.separar_cidade_uf("Niterói-RJ") == ("Niterói", "RJ")
+
+
+def test_chave_com_hifens_tipograficos_e_i_sem_ponto():
+    assert n.chave("Bresser‐Pereira") == n.chave("Bresser-Pereira") == "bresser pereira"
+    assert n.chave("Jonathan Torres‑Tellez") == "jonathan torres tellez"  # U+2011
+    assert n.chave("Pierre Bourdıeu") == "pierre bourdieu"

@@ -50,7 +50,7 @@ instituicoes:
     sigla: CEM
     pais: BR
     uf: SP
-  I44202434:                        # uma instituição do OpenAlex: corrige campos
+  I123456789:                       # uma instituição do OpenAlex (o id I… da revisão): corrige campos
     uf: RJ
     separada: true
 ```

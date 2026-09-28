@@ -213,6 +213,14 @@
     "contagens": {
       "$ref": "#/$defs/Contagens"
     },
+    "desatualizadas": {
+      "description": "Etapas com resultado desatualizado (as entradas mudaram depois), que por isso ficou fora destes dados: `topicos`, `geografia`, `redes` ou `classificacao`. A interface diz o que rodar de novo.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Desatualizadas",
+      "type": "array"
+    },
     "execucao": {
       "$ref": "#/$defs/ExecucaoInfo"
     },
@@ -227,6 +235,17 @@
       },
       "description": "Licença → número de documentos.",
       "title": "Licencas",
+      "type": "object"
+    },
+    "mudancas": {
+      "additionalProperties": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "description": "Para cada etapa desatualizada, o que mudou desde a última execução, quando se sabe (nas redes: \"o pessoas.yaml\", \"a geografia\"…).",
+      "title": "Mudancas",
       "type": "object"
     },
     "projeto": {

@@ -4,8 +4,18 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [2.0.0] - 2026-09-28
+
+A versão 2.0.0 traz duas frentes novas, o **júri de modelos locais com supervisor** e as **redes de coautoria e de citação**, e o resultado de uma revisão geral do projeto por agentes independentes (veja a página [Revisão geral](docs/desenvolvimento/revisao-2026-09.md)). No piloto, o júri leva a `tecnica_principal` de kappa 0,37 a 0,61 (o melhor membro sozinho, o `gemma4:12b`, chega a 0,65), e as redes mostram a colaboração quase dobrando: artigos com mais de um autor eram 29% em 2010–2014 e são 57% em 2021–2025.
+
 ### Adicionado
 
+- **Júri de modelos locais e supervisor** (ADR 0015; `mapa juri votar|deliberar|exportar-pedidos|importar-respostas|supervisionar|status|relatorio`): vários modelos locais classificam a amostra de validação, os que discordam deliberam uma vez vendo as respostas anônimas dos outros, e o que continua sem maioria vai a um supervisor que escolhe entre os candidatos, com evidência do texto. O supervisor trabalha por arquivos (JSONL, sem rede) ou, opcionalmente, pela API da Anthropic (extra `[anthropic]`), com consentimento explícito, estimativa de custo e um limite de gasto que o pior caso de cada chamada respeita. Uma auditoria sorteia decisões unânimes para o supervisor conferir, com o intervalo de Wilson. As três fontes (`juri-r1`, `juri`, `juri-supervisor`) entram na validação como mais três participantes; `validacao.familias` marca como **circulares** as comparações entre codificadores da mesma família de modelo, e o número principal do relatório não passa pelo supervisor. Um supervisor que é uma pessoa não sai documento a documento no site publicado. No piloto, a `tecnica_principal` sai de kappa 0,37 (um modelo) para 0,61 (júri de três); o melhor membro sozinho chega a 0,65. As sugestões para o codebook ficam em `validacao/`.
+- **Redes de coautoria, de instituições, de estados e de citação** (ADR 0014; `mapa redes [--revisar]`, vista Redes no painel e na demo): pessoas identificadas por id do OpenAlex, ORCID conferido pelo nome e homônimos com coautor ou instituição em comum, com revisão manual (`pessoas.yaml`); pesos fracionários, comunidades (Louvain, rotuladas pelos tópicos, sem nomes de pessoas), desenho fixo no Python e o recorte comum que esmaece sem mover o desenho; citações dentro do corpus, o fluxo entre macrotemas e o cânone das obras de fora mais citadas, com a autoria conferida nas referências da ArticleMeta (o OpenAlex casa referências com resenhas). A coleta traz as referências do OpenAlex em lotes de 100 (cerca de 1 crédito a cada 100 artigos, só na primeira vez). O site não publica ORCIDs: o id de cada pessoa é um HMAC com um segredo do projeto, e `mapa publicar` recusa ORCIDs.
+- Contrato de dados **1.5** (só acréscimos): `redes.json`, `citacoes.json`, o júri em `validacao.json` e nos detalhes da amostra, `Participante.familia` e `MetricaVariavel.circular`.
+- Duas histórias na abertura do site, tiradas das redes: a colaboração (artigos com mais de um autor, com autores de mais de uma UF e com Brasil e exterior, do início ao fim do período, com os denominadores à vista) e o cânone (quantos artigos citam as obras mais citadas de fora do corpus, sem nomes nem títulos, com a ressalva da cobertura do OpenAlex no cartão).
+- A página [Revisão geral (setembro de 2026)](docs/desenvolvimento/revisao-2026-09.md): o método (revisores e verificadores independentes, rubrica, evidência reproduzível), as notas por dimensão e o funil dos achados.
+- a vista **Redes** no painel e no site (`#/redes`), recalculada no recorte comum: a coautoria e a colaboração entre instituições num grafo em canvas sobre o desenho do corpus inteiro (quem sai do recorte fica esmaecido; as arestas em faixas pelo peso fracionário), com zoom, busca pelo teclado e o cartão de cada nó com os documentos no recorte; os arcos da colaboração entre estados (e com o exterior) sobre o mapa das UFs; o cânone (as obras mais citadas, pelo macrotema de quem cita, com a nota da cobertura do OpenAlex) e a matriz das citações entre macrotemas; as séries da colaboração por ano. A Ajuda ganha "Como ler as redes".
 - o DOI de conceito do Zenodo ([10.5281/zenodo.22998585](https://doi.org/10.5281/zenodo.22998585), todas as versões) no `CITATION.cff`, no README (com o selo e uma seção "Como citar" com o BibTeX), na metodologia (também com o BibTeX) e no rodapé da abertura do site, que o lê do `CITATION.cff`.
 - a seção "Como citar" na abertura do site, com a referência, o BibTeX e um botão de copiar, gerados do `CITATION.cff` (`overrides/hooks.py`); um teste confere que o BibTeX do README e da metodologia é o mesmo.
 
@@ -13,6 +23,9 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 - o repositório ignora as cópias que o iCloud Drive cria ("teste 2.py", "index 2.md") no git, no pytest e no MkDocs, e o CI falha se alguma entrar num commit (armadilha em `desenvolvimento`).
 - o resultado da classificação (`dados/classificacao/*.json`) ganha os campos `execucao` e `a_parte`, e o manifesto da classificação, os parâmetros `execucao`, `gravado` e `interrompida`: uma versão anterior do pacote (por exemplo o *wheel* 1.0.1 do caderno do Colab) que abrir um projeto classificado com esta cai com `TypeError`.
+- o piloto publicado: 21 rótulos de tópico e os 7 macrotemas corrigidos à mão (`rotulos.yaml`: rótulos que os próprios títulos dos artigos desmentiam, como "Política externa brasileira sob Lula" com Lula em 25 de 208 títulos), e, na geografia, 5 siglas que o casamento mandava para universidades estrangeiras (a "USP" que ia para a Universidad San Pedro, no Peru) e a UF da FGV, que a ArticleMeta põe em Brasília (`instituicoes.yaml`).
+- o `.gitignore` que o `mapa novo` cria cobre também `juri/` (os pedidos ao supervisor, com os resumos inteiros, e as respostas dele).
+- a geografia normaliza os hífens tipográficos (U+2010 a U+2015 e o sinal de menos) e o "ı" sem ponto, e o alinhamento 1:1 entre as afiliações das duas fontes confere o nome (versão 2 da etapa: rode `mapa geografia` de novo).
 
 ### Corrigido
 
@@ -24,9 +37,6 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - um `mapa.yaml` ou `codebook.yaml` salvo com erro dá o erro em toda leitura até ser corrigido, e não volta em silêncio à versão anterior;
 - o detector de e-mails, que na 1.0.1 só via a forma comum (`fulana@exemplo.br`), passa a pegar também o arroba largo (`＠`, `﹫`), os endereços escondidos por um hífen suave, um espaço de largura zero ou o ponto largo, e as formas com espaço em volta do `@` ou depois do ponto, ou com `[at]`/`(arroba)` e `[dot]`/`(ponto)` (em qualquer lugar do domínio), quando o domínio termina, em minúsculas, num domínio de país ou num genérico comum (`.com`, `.org`, `.io`, `.cat`…): `maria@ up.ac.pa` e `[at] … [dot] io` saem inteiros; na forma ambígua `palavra @dominio.tld` (um e-mail com espaço antes do `@`, ou um perfil de rede social como `@frente.pe`), sai só o `@dominio.tld`, e a palavra anterior fica; um perfil que não termina num domínio de topo (`@maria.silva`) fica inteiro; na forma com espaço depois do ponto, o primeiro rótulo do domínio precisa de dois caracteres ou mais, um deles letra, para `entre tod@s. no entanto` e `P@10. de acordo` não apagarem texto (por isso `fulana@a. br` escapa); o detector roda em tempo linear;
 - `mapa validar amostra` tira do arquivo um e-mail que tenha ficado no texto do corpus, com aviso, em vez de cair com `AssertionError`.
-
-### Corrigido
-
 - as vistas cabem na tela do celular, do tablet e de 1024 px: Tópicos, Geografia, Classificação, Validação e a Início rolavam de lado (a coluna das grades crescia até o gráfico mais largo), e no celular a barra de navegação saía da tela; as tabelas da Validação rolam na própria caixa, os macrotemas e as tendências se rearranjam pela largura da seção e a linha do tempo quebra de linha.
 - o mapa acompanha a janela redimensionada, o modo apresentação (++p++) e o painel recolhido; antes, o canvas ficava no tamanho do primeiro desenho, cortado ou menor que a tela.
 - no celular, o painel e o cartão do mapa terminam acima da barra de navegação (a legenda ficava espremida atrás dela), e a lista de resultados da busca aparece inteira ao lado de uma legenda longa, dizendo quantos resultados ficaram de fora.
@@ -62,6 +72,13 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - "Modelos locais" e "Reprodutibilidade" falavam da classificação no futuro ("o marco M5 vai") e com a projeção de 14 horas do M0: agora no presente, com os 9,6 s por resumo do piloto, cerca de 12 horas para os 4.247 resumos.
 - os exemplos de `rotulos.yaml` (explicação dos tópicos, guia e parte 2 do tutorial) trazem a `descricao` e avisam que uma entrada só com o rótulo deixa o tópico sem descrição.
 - as frases das histórias da abertura, em português e em inglês: os +4,1 pontos do tópico em alta são da tendência ajustada (o gráfico mostra a participação observada); os 79% dos autores no Brasil são da produção com país conhecido, e não de toda a produção; a BPSR, só em inglês, está entre as "outras oito", em que o inglês ficou entre 14% e 20% de 2019 a 2025; a abordagem teórica caiu quase pela metade, e o cartão diz que o modelo a marca mais que a referência (40% contra 27% na validação), com a queda nas duas leituras.
+- o painel local recusa pedidos com um cabeçalho `Host` de fora em todas as rotas (e não só na API), o que fecha a leitura dos dados por *DNS rebinding*; no modo Colab, os pedidos de escrita conferem a origem.
+- um endereço de artigo que não é `http(s)` (como `javascript:`) não vai mais para um link do painel ou do site.
+- o estado de cada etapa é o mesmo no `mapa status` e na linha de metrô do painel, e só a classificação principal decide o dela (uma comparação com `--modelo` não a marca como atualizada); a validação registra a etapa, e o status conta a amostra como codificada só com todas as variáveis respondidas.
+- o painel relê o `mapa.yaml` e o `codebook.yaml` quando eles mudam no disco; chaves repetidas nesses arquivos, no `rotulos.yaml` e no `instituicoes.yaml` dão erro, em vez de a última valer em silêncio.
+- a referência da CLI inclui os subcomandos (`mapa validar …`, `mapa juri …`); os erros da CLI não perdem o texto entre colchetes; `recorte.anos` inválido diz o formato; um corpus vazio ou um documento da amostra que saiu do corpus não derrubam mais a etapa; um job interrompido pelo fim do servidor aparece como erro no painel.
+- os títulos e resumos que vêm do OpenAlex passam pelo mesmo detector de e-mails que os da ArticleMeta.
+- o workflow de CI roda com permissão só de leitura.
 
 ## [1.0.1] - 2026-09-27
 
@@ -250,7 +267,8 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.1...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.7.0...v1.0.0
 [0.7.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v0.6.0...v0.7.0

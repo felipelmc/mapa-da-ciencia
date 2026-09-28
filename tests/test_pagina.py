@@ -3,6 +3,7 @@
 import base64
 import importlib.util
 import json
+import random
 import shutil
 import struct
 from pathlib import Path
@@ -53,6 +54,72 @@ def test_numeros_e_historias(pagina, projeto):
     assert h["validacao"]["kappas"] and h["validacao"]["mediana"] is not None
     assert h["geografia"]["pct_tres"] > 0 and len(h["geografia"]["tres"]) == 3
     assert h["ingles"] is None  # sem o corpus (Parquet), não há a história do idioma
+
+
+def test_historia_da_colaboracao_reconta_a_serie_do_redes_json(pagina, projeto, capsys):
+    """A recontagem por artigo (para ter os denominadores) reproduz a série publicada, ano a ano."""
+    col = pagina.gerar(projeto)["historias"]["colaboracao"]
+    assert "aviso" not in capsys.readouterr().err
+    redes = json.loads((projeto / "saida" / "dados" / "redes.json").read_text(encoding="utf-8"))
+    serie = {s["ano"]: s for s in redes["colaboracao"]}
+    assert col["anos"] == sorted(serie)
+    # a série publicada tem 4 casas; a recontagem, a fração exata
+    assert col["serie_varios"] == pytest.approx([100 * serie[a]["com_coautoria"] for a in col["anos"]], abs=0.1)
+    assert col["serie_ufs"] == pytest.approx([100 * serie[a]["entre_ufs"] for a in col["anos"]], abs=0.1)
+    assert col["periodos"] == ["2010–2014", "2021–2025"]
+    primeiro = [s["documentos"] for a, s in serie.items() if 2010 <= a <= 2014]
+    assert col["autoria"][0] == sum(primeiro)
+    assert all(0 < n <= m for n, m in zip(col["localizados"], col["autoria"], strict=True))
+    assert isinstance(col["exterior_difere"], bool)
+
+
+def test_colaboracao_sem_geografia_e_sem_redes(pagina, projeto, capsys):
+    (projeto / "saida" / "dados" / "afiliacoes.json").unlink()
+    col = pagina.gerar(projeto)["historias"]["colaboracao"]
+    assert col["varios"] and col["ufs"] is None and col["serie_ufs"] is None  # só a autoria
+    assert "aviso" not in capsys.readouterr().err
+    (projeto / "saida" / "dados" / "redes.json").unlink()
+    assert pagina.gerar(projeto)["historias"]["colaboracao"] is None
+
+
+def test_historia_do_canone(pagina, projeto):
+    """A parte dos artigos com referências que cita uma das 10 obras mais citadas, sem títulos nem autores."""
+    citacoes = json.loads((projeto / "saida" / "dados" / "citacoes.json").read_text(encoding="utf-8"))
+    random.Random(3).shuffle(citacoes["canone"])  # o contrato não garante a ordem: o gerador ordena pelos citantes
+    (projeto / "saida" / "dados" / "citacoes.json").write_text(json.dumps(citacoes), encoding="utf-8")
+    can = pagina.gerar(projeto)["historias"]["canone"]
+    base = {i for i, n in enumerate(citacoes["n_referencias"]) if n > 0}
+    obras = citacoes["canone"]
+    topo = sorted(range(len(obras)), key=lambda k: (-obras[k]["n"], obras[k]["id"]))[:10]
+    cc = citacoes["canone_citantes"]
+    citantes = {d for d, o in zip(cc["doc"], cc["obra"], strict=True) if o in topo and d in base}
+    assert can["base"] == len(base) < can["documentos"]
+    assert can["citantes"] == len(citantes) and can["pct"] == round(100 * len(citantes) / len(base))
+    assert [d["obras"] for d in can["degraus"]] == [1, 10, len(citacoes["canone"])]  # o exemplo tem menos de 50
+    assert [d["pct"] for d in can["degraus"]] == sorted(d["pct"] for d in can["degraus"])
+    assert can["antes_2000"] == sum(citacoes["canone"][k]["ano"] < 2000 for k in topo)
+    assert can["ingles"] is None  # sem `dados/obras_citadas_openalex.parquet`, sem o idioma
+    assert set(can) == {"topo", "citantes", "pct", "degraus", "base", "documentos", "antes_2000", "ingles"}
+
+
+def test_canone_com_o_idioma_das_obras_e_sem_citacoes(pagina, projeto):
+    citacoes = json.loads((projeto / "saida" / "dados" / "citacoes.json").read_text(encoding="utf-8"))
+    (projeto / "dados").mkdir()
+    linhas = ", ".join(f"('{o['id']}', '{'en' if k % 2 else 'pt'}')" for k, o in enumerate(citacoes["canone"]))
+    duckdb.sql(f"SELECT * FROM (VALUES {linhas}) t(id, idioma)").write_parquet(
+        str(projeto / "dados" / "obras_citadas_openalex.parquet")
+    )
+    ingles = {o["id"] for k, o in enumerate(citacoes["canone"]) if k % 2}
+    topo = sorted(citacoes["canone"], key=lambda o: (-o["n"], o["id"]))[:10]
+    assert pagina.gerar(projeto)["historias"]["canone"]["ingles"] == sum(o["id"] in ingles for o in topo)
+    (projeto / "saida" / "dados" / "citacoes.json").unlink()
+    assert pagina.gerar(projeto)["historias"]["canone"] is None
+
+
+def test_diferenca_entre_proporcoes(pagina):
+    assert pagina._difere(53, 1100, 94, 1333)  # o exterior no piloto: 4,8% → 7,1% (z ≈ 2,3)
+    assert not pagina._difere(50, 1000, 55, 1000)
+    assert not pagina._difere(0, 10, 0, 10)
 
 
 def test_arvore_geradora_minima(pagina):

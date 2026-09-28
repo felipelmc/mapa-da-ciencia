@@ -23,6 +23,7 @@ const SECOES = [
 	{ rotulo: 'Classificação', caminho: '/classificacao', h1: 'Classificação' },
 	{ rotulo: 'Geografia', caminho: '/geografia', h1: 'Geografia' },
 	{ rotulo: 'Validação', caminho: '/validacao', h1: 'Validação' },
+	{ rotulo: 'Redes', caminho: '/redes', h1: 'Redes' },
 	{ rotulo: 'Metodologia', caminho: '/projeto', h1: 'Metodologia' },
 	{ rotulo: 'Início', caminho: '/', h1: manifesto.projeto.titulo }
 ];
@@ -47,10 +48,8 @@ for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 			// Tudo no cliente: nenhuma recarga completa (o problema do resolve() no ADR 0002).
 			expect(await page.evaluate(() => window.__semRecarga)).toBe(true);
 
-			// Redes aparece desativada, com selo; fora do painel, Projeto vira Metodologia.
-			await expect(trilho(page).getByRole('link', { name: /Redes/ })).toHaveCount(0);
-			await expect(trilho(page).getByText('Redes', { exact: true })).toBeVisible();
-			await expect(trilho(page).getByText('v2', { exact: true })).toBeVisible();
+			// nenhuma seção desativada com selo; fora do painel, Projeto vira Metodologia.
+			await expect(trilho(page).getByText('v2', { exact: true })).toHaveCount(0);
 			await expect(trilho(page).getByRole('link', { name: 'Projeto' })).toHaveCount(0);
 
 			await page.getByRole('banner').getByRole('link', { name: 'Ajuda' }).click();
@@ -117,6 +116,7 @@ test('o trilho leva o recorte às vistas de análise, e só o recorte', async ({
 	const link = (nome: string) => trilho(page).getByRole('link', { name: nome, exact: true });
 	await expect(link('Tópicos')).toHaveAttribute('href', '#/topicos?anos=2015-2020&revistas=dados&uf=SP');
 	await expect(link('Geografia')).toHaveAttribute('href', '#/geografia?anos=2015-2020&revistas=dados&uf=SP');
+	await expect(link('Redes')).toHaveAttribute('href', '#/redes?anos=2015-2020&revistas=dados&uf=SP');
 	await expect(link('Validação')).toHaveAttribute('href', '#/validacao');
 	await expect(link('Início')).toHaveAttribute('href', '#/');
 	await link('Geografia').click();
@@ -301,11 +301,12 @@ test.describe('acessibilidade e casos de borda', () => {
 test.describe('no celular', () => {
 	test.use({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
 
-	test('a barra de navegação mostra que rola e deixa de fora a seção desativada', async ({ page }) => {
+	test('a barra de navegação mostra que rola e traz todas as seções, com as Redes', async ({ page }) => {
 		await page.goto(url('RAIZ'));
 		await expect(h1(page)).toHaveText(manifesto.projeto.titulo);
 		const nav = trilho(page);
-		await expect(nav.getByText('Redes', { exact: true })).toBeHidden();
+		// as Redes deixaram de ser a seção desativada ("v2"): são um link como os outros
+		await expect(nav.getByRole('link', { name: 'Redes' })).toHaveCount(1);
 		// os itens não cabem em 375 px: a borda direita ganha um degradê
 		expect(await nav.evaluate((n) => n.scrollWidth > n.clientWidth)).toBe(true);
 		await expect.poll(() => nav.evaluate((n) => getComputedStyle(n).maskImage)).not.toBe('none');
@@ -325,7 +326,20 @@ test.describe('nenhuma rota rola de lado', () => {
 		{ nome: 'tablet deitado', viewport: { width: 900, height: 700 }, isMobile: false },
 		{ nome: 'notebook', viewport: { width: 1024, height: 768 }, isMobile: false }
 	];
-	const ROTAS = ['/', '/mapa', '/topicos', '/geografia', '/classificacao', '/validacao', '/ajuda', '/projeto'];
+	const ROTAS = [
+		'/',
+		'/mapa',
+		'/topicos',
+		'/geografia',
+		'/classificacao',
+		'/validacao',
+		'/redes',
+		'/redes?rede=instituicoes&no=' + encodeURIComponent(ler('redes.json').instituicoes.id[0]),
+		'/redes?rede=estados',
+		'/redes?rede=citacoes',
+		'/ajuda',
+		'/projeto'
+	];
 	// quanto a página passa da largura da tela (no celular emulado, a viewport de layout se estica com o conteúdo:
 	// por isso a conta é contra a largura pedida, e não contra o clientWidth)
 	const transbordo = (page: Page, largura: number) =>

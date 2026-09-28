@@ -304,7 +304,9 @@
 
 		ul {
 			grid-auto-flow: column;
-			grid-auto-columns: minmax(4.4rem, 1fr);
+			/* 72 px, inteiros: com as oito seções (as Redes entre elas), 70,4 px deixavam a última cortada em fração de
+			   pixel no fim da rolagem */
+			grid-auto-columns: minmax(4.5rem, 1fr);
 			gap: 0.25rem;
 		}
 

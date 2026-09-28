@@ -1,0 +1,235 @@
+{
+  "$defs": {
+    "ArestasCitacao": {
+      "additionalProperties": false,
+      "description": "Citações dentro do corpus: índices de documentos (quem cita → quem é citado).",
+      "properties": {
+        "de": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "De",
+          "type": "array"
+        },
+        "para": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Para",
+          "type": "array"
+        }
+      },
+      "required": [
+        "de",
+        "para"
+      ],
+      "title": "ArestasCitacao",
+      "type": "object"
+    },
+    "CitantesCanone": {
+      "additionalProperties": false,
+      "properties": {
+        "doc": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Doc",
+          "type": "array"
+        },
+        "obra": {
+          "description": "Índice em `canone`.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Obra",
+          "type": "array"
+        }
+      },
+      "required": [
+        "doc",
+        "obra"
+      ],
+      "title": "CitantesCanone",
+      "type": "object"
+    },
+    "ObraCitada": {
+      "additionalProperties": false,
+      "description": "Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate).",
+      "properties": {
+        "ano": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "O ano da obra (o das referências, quando o registro do OpenAlex é uma resenha).",
+          "title": "Ano"
+        },
+        "autores": {
+          "description": "Até três autores, conferidos nas referências da ArticleMeta.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Autores",
+          "type": "array"
+        },
+        "doi": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Doi"
+        },
+        "edicoes": {
+          "description": "Outros registros da mesma obra, somados a este.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Edicoes",
+          "type": "array"
+        },
+        "id": {
+          "description": "Id do OpenAlex (`W…`).",
+          "title": "Id",
+          "type": "string"
+        },
+        "n": {
+          "description": "Documentos do corpus que a citam.",
+          "title": "N",
+          "type": "integer"
+        },
+        "registro_openalex": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Autores e ano do registro do OpenAlex, quando diferem dos mostrados (a conferência os mudou).",
+          "title": "Registro Openalex"
+        },
+        "resenha": {
+          "default": false,
+          "description": "O registro do OpenAlex é uma resenha da obra (tipo `book-review`, Choice Reviews, ou um primeiro autor que as referências não citam): autores e ano vêm das referências.",
+          "title": "Resenha",
+          "type": "boolean"
+        },
+        "tipo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Tipo"
+        },
+        "titulo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Titulo"
+        },
+        "veiculo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Veiculo"
+        }
+      },
+      "required": [
+        "id",
+        "titulo",
+        "ano",
+        "autores",
+        "veiculo",
+        "tipo",
+        "doi",
+        "n"
+      ],
+      "title": "ObraCitada",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A rede de citação pelas referências do OpenAlex e o cânone.",
+  "properties": {
+    "canone": {
+      "items": {
+        "$ref": "#/$defs/ObraCitada"
+      },
+      "title": "Canone",
+      "type": "array"
+    },
+    "canone_citantes": {
+      "$ref": "#/$defs/CitantesCanone"
+    },
+    "cobertura": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "description": "Documentos (`documentos`, `com_referencias`), referências resolvidas (`referencias`) e, nos documentos casados, as listadas na ArticleMeta (`referencias_listadas`), as resolvidas entre elas (`referencias_resolvidas`) e a mediana por documento da fração resolvida (`resolvidas_mediana_pct`); citações internas, anacrônicas e autorreferências; referências a obras apagadas (`a_obras_apagadas`); citantes, resenhas e autorias corrigidas do cânone; obras sem metadados entre as mais citadas.",
+      "title": "Cobertura",
+      "type": "object"
+    },
+    "fluxo_macrotemas": {
+      "description": "Citações internas de macrotema (linha) a macrotema (coluna), na ordem de `topicos.macrotemas` (pela posição, e não pelo id, que não é contíguo).",
+      "items": {
+        "items": {
+          "type": "integer"
+        },
+        "type": "array"
+      },
+      "title": "Fluxo Macrotemas",
+      "type": "array"
+    },
+    "internas": {
+      "$ref": "#/$defs/ArestasCitacao"
+    },
+    "n_referencias": {
+      "description": "Referências de cada documento resolvidas no OpenAlex (0: casado, sem nenhuma); -1: sem casamento.",
+      "items": {
+        "type": "integer"
+      },
+      "title": "N Referencias",
+      "type": "array"
+    },
+    "versao_contrato": {
+      "default": "1.5",
+      "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
+      "pattern": "^1\\.\\d+$",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "n_referencias",
+    "internas",
+    "canone",
+    "canone_citantes",
+    "fluxo_macrotemas"
+  ],
+  "title": "Citacoes",
+  "type": "object"
+}

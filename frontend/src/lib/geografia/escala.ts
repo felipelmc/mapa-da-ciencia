@@ -48,7 +48,14 @@ export function classe(valor: number, limites: number[]): number {
  * o contrário no escuro), para duas classes não ficarem com tons vizinhos quando há poucas.
  */
 export function corDaClasse(c: number, nClasses: number): string {
-	if (c <= 0) return 'var(--seq-vazio)';
-	const tom = nClasses <= 1 ? N_CLASSES : 1 + Math.round(((c - 1) * (N_CLASSES - 1)) / (nClasses - 1));
-	return `var(--seq-${tom})`;
+	return c <= 0 ? 'var(--seq-vazio)' : `var(--seq-${tomDaClasse(c, nClasses)})`;
+}
+
+function tomDaClasse(c: number, nClasses: number): number {
+	return nClasses <= 1 ? N_CLASSES : 1 + Math.round(((c - 1) * (N_CLASSES - 1)) / (nClasses - 1));
+}
+
+/** A cor de um texto escrito sobre a cor da classe (os números da matriz das citações), com contraste AA. */
+export function textoSobreClasse(c: number, nClasses: number): string {
+	return c <= 0 ? 'var(--texto-suave)' : `var(--sobre-seq-${tomDaClasse(c, nClasses)})`;
 }

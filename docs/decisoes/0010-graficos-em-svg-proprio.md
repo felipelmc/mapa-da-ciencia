@@ -25,6 +25,7 @@ Gráficos em **SVG escrito em Svelte**, com módulos pequenos do d3 para a matem
 | `d3-shape` | 3.2.0 | empilhamento (`stack`, `stackOffsetWiggle/None/Expand`, `stackOrderInsideOut`), áreas e curvas (`curveMonotoneX`) |
 | `d3-array` | 3.2.4 | marcas dos eixos (`ticks`) |
 | `d3-geo` | 3.1.1 | projeções equivalentes (cônica para o Brasil, Equal Earth para o mundo) e caminhos SVG |
+| `d3-quadtree` | 3.0.1 | o nó sob o mouse no grafo da vista Redes |
 | `topojson-client` | 3.1.0 | TopoJSON → GeoJSON |
 | `world-atlas` | 2.0.2 | só no desenvolvimento: fonte da malha do mundo |
 
@@ -42,6 +43,10 @@ As malhas ficam versionadas em `frontend/src/lib/geografia/malhas/`, geradas por
 | `mundo.json` (177 países) | [Natural Earth](https://www.naturalearthdata.com) 1:110m, via `world-atlas` | 104 KB | domínio público (world-atlas: ISC) |
 
 O `world-atlas` identifica os países pelo código numérico da ONU; o gerador converte para o ISO 3166-1 alfa-2 do contrato com o CLDR do Node (`Intl.getCanonicalLocales("und-076")` dá `und-BR`). Kosovo, sem código numérico, vira `XK`; Chipre do Norte e Somalilândia ficam sem código. As duas projeções preservam áreas, como pede um mapa de cores por região: a cônica equivalente com paralelos em −2° e −22° para o Brasil e a Equal Earth para o mundo. A vista cita as fontes.
+
+### Adendo: o grafo das Redes em canvas
+
+A vista Redes desenha a coautoria e as instituições num `canvas` 2D (`lib/redes/Grafo.svelte`), não em SVG: o piloto tem milhares de nós e arestas, e um elemento por aresta deixaria o zoom e o arrasto lentos. O resto da decisão continua valendo: a lógica fica num módulo puro (`lib/redes/calculo.ts`), os rótulos das comunidades vão num SVG por cima, o grafo vem numa `Figura` com a tabela, e a exportação redesenha o canvas nas cores do tema do preset e o põe como imagem embaixo dos rótulos. O nó sob o mouse sai de um `d3-quadtree`.
 
 ## Consequências
 

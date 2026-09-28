@@ -5,6 +5,11 @@ constelações (os macrotemas), e conta algumas histórias do corpus com número
 arquivos do contrato do projeto (`saida/dados/`) e do corpus (`dados/documentos.parquet`, para o idioma original
 dos artigos). O piloto não está no repositório: a página versiona só o resultado.
 
+Cada história depende dos arquivos que a sustentam e some quando eles faltam: a geografia pede `agregados.json`; a
+abordagem, as colunas da classificação; a validação, `validacao.json`; a colaboração, `redes.json` (e
+`afiliacoes.json`, para as UFs e o exterior); o cânone, `citacoes.json` (e `dados/obras_citadas_openalex.parquet`, para
+o idioma das obras).
+
 Uso (da raiz do repo):
     uv run python scripts/gerar_pagina.py projetos/cp-scielo
 """
@@ -17,13 +22,15 @@ import math
 import statistics
 import struct
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
 DESTINO = RAIZ / "docs" / "assets" / "pagina" / "dados.json"
 PERIODOS = ((2010, 2014), (2015, 2020), (2021, 2025))
 QUANTOS = 65535
+EXTERIOR = "EX"  # um vínculo fora do Brasil, como em `redes.grafos.EXTERIOR`
+CANONE_TOPO = 10  # o núcleo do cânone: as obras de fora do corpus mais citadas
 
 
 def _ler(pasta: Path, arquivo: str, *, opcional: bool = False) -> dict:
@@ -159,7 +166,144 @@ def _ingles(parquet: Path, anos: list[int]) -> dict | None:
     return {"desde": desde, "pct_antes": round(100 * (antes or 0)), "ri": ri, "outras": outras}
 
 
-def historias(pasta: Path, docs: dict, topicos: dict, agregados: dict, validacao: dict, codebook: dict) -> dict:
+def _difere(a: int, n: int, b: int, m: int) -> bool:
+    """As proporções a/n e b/m diferem? Teste z de duas proporções, a 5%."""
+    p = (a + b) / (n + m)
+    if p in (0, 1):
+        return False
+    return abs(a / n - b / m) / math.sqrt(p * (1 - p) * (1 / n + 1 / m)) >= 1.96
+
+
+def _colaboracao(redes: dict, afiliacoes: dict, anos_doc: list[int]) -> dict | None:
+    """A colaboração no primeiro e no último período das histórias, e a série anual do gráfico.
+
+    Recontada por artigo, como em `redes.grafos.colaboracao_por_ano`, para ter os denominadores (a série do
+    `redes.json` traz só as frações): mais de um autor, entre os artigos com autoria conhecida; autores de mais de uma
+    UF, e no Brasil e no exterior juntos, entre os com afiliação localizada (uma UF ou um país de fora). Sem
+    `afiliacoes.json` (sem a geografia), só a autoria.
+    """
+    autorias = (redes or {}).get("autorias") or {}
+    if not autorias.get("doc"):
+        return None
+    pessoas: dict[int, set[int]] = defaultdict(set)
+    for d, p in zip(autorias["doc"], autorias["pessoa"], strict=True):
+        pessoas[d].add(p)
+    lugares: dict[int, set[str]] | None = None
+    if afiliacoes:
+        col, dic = afiliacoes["colunas"], afiliacoes["dicionarios"]
+        lugares = defaultdict(set)
+        for d, u, p in zip(col["doc"], col["uf"], col["pais"], strict=True):
+            pais = dic["pais"][p] if p >= 0 else None
+            if pais == "BR" and u >= 0:
+                lugares[d].add(dic["uf"][u])
+            elif pais and pais != "BR":
+                lugares[d].add(EXTERIOR)
+    por_ano: dict[int, Counter] = defaultdict(Counter)
+    for d, ps in pessoas.items():
+        k = por_ano[anos_doc[d]]
+        k["autoria"] += 1
+        k["varios"] += len(ps) > 1
+        if lugares is not None and d in lugares:
+            ufs = lugares[d] - {EXTERIOR}
+            k["local"] += 1
+            k["ufs"] += len(ufs) > 1
+            k["exterior"] += bool(ufs) and EXTERIOR in lugares[d]
+    # a recontagem tem de reproduzir a série publicada; se não, a definição mudou no pipeline e aqui ficou para trás
+    for s in redes.get("colaboracao") or []:
+        k = por_ano.get(s["ano"], Counter())
+        confere = k["autoria"] == s["documentos"] and round(k["varios"] / max(1, k["autoria"]), 4) == s["com_coautoria"]
+        if lugares is not None and s.get("entre_ufs") is not None:
+            confere = confere and round(k["ufs"] / max(1, k["local"]), 4) == s["entre_ufs"]
+        if not confere:
+            print(f"aviso: a colaboração de {s['ano']} não bate com a série do redes.json", file=sys.stderr)
+    periodos = (PERIODOS[0], PERIODOS[-1])
+    somas = [sum((por_ano[a] for a in range(ini, fim + 1) if a in por_ano), Counter()) for ini, fim in periodos]
+    if not all(s["autoria"] for s in somas):
+        return None
+    anos = sorted(por_ano)
+    saida = {
+        "periodos": [f"{a}–{b}" for a, b in periodos],
+        "autoria": [s["autoria"] for s in somas],
+        "varios": [_pct(s["varios"], s["autoria"]) for s in somas],
+        "anos": anos,
+        "serie_varios": [round(100 * por_ano[a]["varios"] / por_ano[a]["autoria"], 1) for a in anos],
+        "localizados": None,
+        "ufs": None,
+        "exterior": None,
+        "exterior_difere": None,
+        "serie_ufs": None,
+    }
+    if all(s["local"] for s in somas):
+        saida |= {
+            "localizados": [s["local"] for s in somas],
+            "ufs": [_pct(s["ufs"], s["local"]) for s in somas],
+            "exterior": [_pct(s["exterior"], s["local"]) for s in somas],
+            "exterior_difere": _difere(*(s[k] for s in somas for k in ("exterior", "local"))),
+            # um ano sem afiliação localizada fica sem ponto (null), e não com 0%
+            "serie_ufs": [
+                round(100 * por_ano[a]["ufs"] / por_ano[a]["local"], 1) if por_ano[a]["local"] else None for a in anos
+            ],
+        }
+    return saida
+
+
+def _idiomas(parquet: Path) -> dict[str, str | None] | None:
+    """O idioma, segundo o OpenAlex, de cada obra citada que a coleta buscou (None sem o arquivo)."""
+    import duckdb
+
+    if not parquet.exists():
+        return None
+    return dict(duckdb.connect().execute(f"SELECT id, idioma FROM '{parquet}'").fetchall())
+
+
+def _canone(citacoes: dict, n_docs: int, parquet_citadas: Path) -> dict | None:
+    """Quanto os artigos se apoiam nas obras de fora do corpus mais citadas.
+
+    A base são os artigos com referências no OpenAlex (`n_referencias` > 0): os outros não têm como citar nada aqui.
+    Sai a parte da base que cita ao menos uma das `CANONE_TOPO` obras mais citadas, os degraus do gráfico (1, 10, 50
+    e o cânone inteiro) e quantas das `CANONE_TOPO` são de antes de 2000 e estão em inglês. Nenhum título e nenhum
+    autor: a abertura não faz rankings de pessoas nem de obras.
+    """
+    canone = (citacoes or {}).get("canone") or []
+    base = {i for i, n in enumerate((citacoes or {}).get("n_referencias") or []) if n > 0}
+    if len(canone) < CANONE_TOPO or not base:
+        return None
+    # o contrato não garante a ordem do cânone (o Parquet de `dados/redes/` sai pelo id): pelos citantes
+    ordem = sorted(range(len(canone)), key=lambda k: (-canone[k]["n"], canone[k]["id"]))
+    citantes: dict[int, set[int]] = defaultdict(set)
+    for d, o in zip(citacoes["canone_citantes"]["doc"], citacoes["canone_citantes"]["obra"], strict=True):
+        if d in base:
+            citantes[o].add(d)
+    alcance = lambda k: len(set().union(*(citantes[o] for o in ordem[:k])))  # noqa: E731  (citam uma das k primeiras)
+    topo = [canone[o] for o in ordem[:CANONE_TOPO]]
+    anos = [o["ano"] for o in topo]
+    idiomas = _idiomas(parquet_citadas)
+    linguas = [idiomas.get(o["id"]) for o in topo] if idiomas is not None else [None]
+    degraus = sorted(k for k in {1, CANONE_TOPO, 50, len(canone)} if k <= len(canone))
+    return {
+        "topo": CANONE_TOPO,
+        "citantes": alcance(CANONE_TOPO),
+        "pct": _pct(alcance(CANONE_TOPO), len(base)),
+        "degraus": [{"obras": k, "pct": _pct(alcance(k), len(base))} for k in degraus],
+        "base": len(base),
+        "documentos": n_docs,
+        # só com o dado de todas as dez: "7 das 10" com uma sem ano seria um denominador escondido
+        "antes_2000": sum(a < 2000 for a in anos) if None not in anos else None,
+        "ingles": sum(lingua == "en" for lingua in linguas) if None not in linguas else None,
+    }
+
+
+def historias(
+    pasta: Path,
+    docs: dict,
+    topicos: dict,
+    agregados: dict,
+    validacao: dict,
+    codebook: dict,
+    redes: dict | None = None,
+    afiliacoes: dict | None = None,
+    citacoes: dict | None = None,
+) -> dict:
     anos = topicos["anos"]
     rotulo_var = {v["id"]: v["rotulo"] for v in codebook["variaveis"]}
     rotulo_cat = {
@@ -257,6 +401,12 @@ def historias(pasta: Path, docs: dict, topicos: dict, agregados: dict, validacao
             "modelo": (validacao.get("modelo_principal") or "").split("@", 1)[0],
         }
     )
+
+    # 7. a colaboração: mais de um autor, mais de uma UF, Brasil e exterior (redes e afiliações)
+    saida["colaboracao"] = _colaboracao(redes or {}, afiliacoes or {}, c["ano"])
+
+    # 8. o cânone: as obras de fora do corpus mais citadas, entre os artigos com referências no OpenAlex
+    saida["canone"] = _canone(citacoes or {}, docs["n"], pasta / "dados" / "obras_citadas_openalex.parquet")
     return saida
 
 
@@ -289,7 +439,9 @@ def gerar(projeto: Path) -> dict:
     manifesto, revistas = _ler(pasta, "manifesto.json"), _ler(pasta, "revistas.json")
     classificacoes = _ler(pasta, "classificacoes.json", opcional=True)
     codebook = _ler(pasta, "codebook.json", opcional=True) or {"variaveis": []}
-    hist = historias(projeto, docs, topicos, agregados, validacao, codebook)
+    redes, afiliacoes = _ler(pasta, "redes.json", opcional=True), _ler(pasta, "afiliacoes.json", opcional=True)
+    citacoes = _ler(pasta, "citacoes.json", opcional=True)
+    hist = historias(projeto, docs, topicos, agregados, validacao, codebook, redes, afiliacoes, citacoes)
     return {
         "gerado_de": manifesto["projeto"]["titulo"],
         "versao_pacote": manifesto["execucao"]["versao_pacote"],

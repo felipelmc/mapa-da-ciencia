@@ -46,7 +46,15 @@ const PARES: [string, string, number][] = [
 	['foco', 'fundo', 3],
 	['foco', 'superficie', 3],
 	['texto-fraco', 'fundo', 3],
-	['texto-fraco', 'superficie', 3]
+	['texto-fraco', 'superficie', 3],
+	// os números da matriz das citações, sobre cada tom da escala sequencial
+	['sobre-seq-1', 'seq-1', 4.5],
+	['sobre-seq-2', 'seq-2', 4.5],
+	['sobre-seq-3', 'seq-3', 4.5],
+	['sobre-seq-4', 'seq-4', 4.5],
+	['sobre-seq-5', 'seq-5', 4.5],
+	['sobre-seq-6', 'seq-6', 4.5],
+	['texto-suave', 'seq-vazio', 4.5]
 ];
 
 describe.each(Object.entries(TEMAS))('contraste no tema %s', (_, tokens) => {

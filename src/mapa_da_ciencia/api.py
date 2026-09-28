@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from mapa_da_ciencia.embeddings import Embeddings
     from mapa_da_ciencia.geografia.pipeline import ResumoGeografia
     from mapa_da_ciencia.publicar import ResumoPublicacao
+    from mapa_da_ciencia.redes.pipeline import ResumoRedes
     from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
     from mapa_da_ciencia.validacao.amostra import Amostra, ResumoImportacao
     from mapa_da_ciencia.validacao.metricas import Validacao
@@ -181,7 +182,8 @@ def documentos(projeto: Projeto | str | Path = ".") -> list[Documento]:
 def conectar(projeto: Projeto | str | Path = ".") -> duckdb.DuckDBPyConnection:
     """Conexão DuckDB com as views `documentos`, `textos`, `autores`, `afiliacoes`; depois de `topicos()`,
     `atribuicoes`; depois de `geografia()`, `vinculos`, `pesos` e `instituicoes`; depois de `classificar()`,
-    `classificacoes`.
+    `classificacoes`; depois de `redes()`, `redes_pessoas`, `redes_arestas`, `redes_canone` e as outras tabelas de
+    `dados/redes/`, com o prefixo `redes_`.
 
     Use com `with` para fechar ao fim:
 
@@ -202,7 +204,8 @@ def consultar(
     """Roda uma consulta SQL sobre o corpus e devolve o resultado já materializado.
 
     Args:
-        sql: consulta sobre as views `documentos`, `textos`, `autores` e `afiliacoes`.
+        sql: consulta sobre as views de `conectar` (`documentos`, `textos`, `autores`, `afiliacoes` e as das etapas
+            que já rodaram, como `atribuicoes`, `vinculos` e `redes_canone`).
         como: `dicts` (lista de dicionários, o padrão), `tuplas`, `pandas` ou `polars`. Os dois últimos
             precisam da biblioteca instalada.
     """
@@ -291,6 +294,23 @@ def geografia(projeto: Projeto | str | Path = ".", *, progresso: bool = True) ->
     from rich.console import Console
 
     return gerar_geografia(p, ProgressoRich(Console()))
+
+
+def redes(projeto: Projeto | str | Path = ".", *, progresso: bool = True) -> ResumoRedes:
+    """Gera as redes de coautoria, de instituições, de estados e de citação, como `mapa redes`, e devolve o resumo.
+
+    As tabelas ficam em `dados/redes/` (`pessoas`, `autorias`, `arestas`, `comunidades`, `citacoes`, `canone`,
+    `colaboracao`), em Parquet, e viram views com o prefixo `redes_` em `conectar` e `consultar` (por exemplo
+    `consultar(p, "SELECT titulo, n FROM redes_canone ORDER BY n DESC LIMIT 10")`), de qualquer pasta.
+    """
+    from mapa_da_ciencia.redes.pipeline import gerar_redes
+
+    p = _projeto(projeto)
+    if not progresso:
+        return gerar_redes(p, ProgressoNulo())
+    from rich.console import Console
+
+    return gerar_redes(p, ProgressoRich(Console()))
 
 
 def classificar(

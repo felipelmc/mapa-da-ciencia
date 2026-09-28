@@ -37,7 +37,9 @@ _HIFEN_UF = re.compile(r"-\s*([A-Za-z]{2})\s*$")  # "Niterói-RJ": só uma sigla
 
 # apóstrofos, aspas e travessões tipográficos viram espaço (senão "King’s" vira "kings", e "Iscte–Instituto",
 # uma palavra só)
-_TIPOGRAFICOS = str.maketrans({c: " " for c in "’‘`´“”–—"})
+# aspas, travessões e os hífens tipográficos (U+2010 a U+2015, o menos U+2212), que a remoção de acentos apagaria
+# ("Bresser‐Pereira" viraria "bresserpereira"), viram espaço; o "ı" sem ponto (turco), que ela também apagaria, vira i
+_TIPOGRAFICOS = str.maketrans({**{c: " " for c in "’‘`´“”–—\u2010\u2011\u2012\u2015\u2212"}, "ı": "i"})
 
 
 def chave(texto: str | None) -> str:

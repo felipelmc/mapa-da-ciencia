@@ -41,7 +41,7 @@ export interface Secao {
 }
 
 // Os marcos seguem o plano do projeto (docs/desenvolvimento/index.md): mapa no M3;
-// tópicos no tempo e geografia no M4; classificação e validação no M5.
+// tópicos no tempo e geografia no M4; classificação e validação no M5; redes depois da 1.0.
 export const SECOES: readonly Secao[] = [
 	{
 		id: 'inicio',
@@ -112,10 +112,11 @@ export const SECOES: readonly Secao[] = [
 		rotulo: 'Redes',
 		caminho: '/redes',
 		icone: 'redes',
-		resumo: 'Redes de coautoria e de citação entre documentos, autores e instituições.',
-		chegada: 'na versão 2',
-		arquivos: [],
-		selo: 'v2'
+		resumo:
+			'Quem escreve com quem: a coautoria entre pessoas, a colaboração entre instituições e entre estados, e as obras que o corpus mais cita.',
+		chegada: 'na versão 2.0',
+		arquivos: ['redes', 'citacoes'],
+		recorte: true
 	},
 	{
 		id: 'projeto',
@@ -141,8 +142,16 @@ export function secao(id: IdSecao): Secao {
 }
 
 /** As seções do trilho para este projeto: no site publicado, "Projeto" vira "Metodologia". */
-export function secoesDoTrilho(manifesto: Pick<Manifesto, 'api'>): Secao[] {
-	return SECOES.filter((s) => !s.soNoPainel || manifesto.api).map((s) =>
-		!manifesto.api && s.noSite ? { ...s, ...s.noSite } : s
-	);
+export function secoesDoTrilho(manifesto: Pick<Manifesto, 'api'> & Partial<Pick<Manifesto, 'publicacao' | 'arquivos'>>): Secao[] {
+	return SECOES.filter((s) => !s.soNoPainel || manifesto.api)
+		.filter((s) => !(s.id === 'redes' && semRedesNoSite(manifesto)))
+		.map((s) => (!manifesto.api && s.noSite ? { ...s, ...s.noSite } : s));
+}
+
+/**
+ * Um site publicado (`mapa publicar`) sem `redes.json` (redes nunca geradas, ou desatualizadas na publicação) não
+ * mostra a vista Redes: quem visita não tem o que fazer com "Rode `mapa redes`".
+ */
+export function semRedesNoSite(manifesto: Partial<Pick<Manifesto, 'publicacao' | 'arquivos'>>): boolean {
+	return !!manifesto.publicacao && !(manifesto.arquivos ?? []).includes('redes');
 }

@@ -35,7 +35,9 @@ function fonteFalsa(falhas: Partial<Record<NomeArquivo, number>> = {}) {
 		classificacoes: async () => null,
 		validacao: async () => null,
 		agregados: async () => null,
-		detalhe: async () => null
+		detalhe: async () => null,
+		redes: async () => null,
+		citacoes: async () => null
 	};
 	return { fonte, pedidos };
 }

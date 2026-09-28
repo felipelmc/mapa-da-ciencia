@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { classe, corDaClasse, quebras, redondo } from './escala';
+import { classe, corDaClasse, quebras, redondo, textoSobreClasse } from './escala';
 
 describe('escala dos mapas', () => {
 	it('números redondos', () => {
@@ -21,6 +21,7 @@ describe('escala dos mapas', () => {
 		expect(corDaClasse(0, 4)).toBe('var(--seq-vazio)');
 		expect([1, 2, 3, 4].map((c) => corDaClasse(c, 4))).toEqual(['var(--seq-1)', 'var(--seq-3)', 'var(--seq-4)', 'var(--seq-6)']);
 		expect(corDaClasse(1, 1)).toBe('var(--seq-6)');
+		expect([0, 1, 4].map((c) => textoSobreClasse(c, 4))).toEqual(['var(--texto-suave)', 'var(--sobre-seq-1)', 'var(--sobre-seq-6)']);
 	});
 });
 

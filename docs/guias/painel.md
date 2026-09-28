@@ -46,7 +46,7 @@ No Colab, o painel abre numa janela nova, pelo *proxy* do Google, e só nesse mo
 | Geografia | Produção por UF, país e instituição, com contagem fracionária, e a cobertura das afiliações por ano ([Ler a geografia](ler-a-geografia.md)) | agora |
 | Validação | A concordância do modelo com quem codificou a amostra, a matriz de confusão e as divergências; no painel local, a codificação da amostra pelo teclado ([Codificar a amostra](codificar-a-amostra.md), [Ler kappa e PABAK](ler-kappa-e-pabak.md)) | agora |
 | Projeto | As etapas do pipeline numa linha de metrô (em dia, desatualizadas ou pendentes), rodar e cancelar cada uma com o progresso ao vivo, a estimativa da classificação e os modelos do Ollama (só no painel local) | agora |
-| Redes | Coautoria e citação | v2 |
+| Redes | Coautoria entre pessoas e entre instituições, colaboração entre estados e citações (o cânone e o fluxo entre macrotemas), com o mesmo recorte das outras vistas ([Ler as redes](ler-as-redes.md)) | agora |
 
 Para projetar numa aula ou numa apresentação, aperte ++p++: o **modo apresentação** esconde o trilho e as barras e aumenta a letra; ++esc++ (ou ++p++ de novo) volta.
 
@@ -58,17 +58,18 @@ Logo depois do `mapa novo`, o painel abre, mas sem dados: a página inicial expl
 
 - depois do `mapa coletar`, a página inicial mostra quantos documentos e revistas há e o período coberto;
 - depois do `mapa topicos`, a página inicial mostra os tópicos e os macrotemas, a vista Mapa mostra cada documento como um ponto, e a vista Tópicos mostra os temas no tempo;
-- depois do `mapa geografia`, a vista Geografia mostra de onde vêm os autores.
+- depois do `mapa geografia`, a vista Geografia mostra de onde vêm os autores;
+- depois do `mapa redes`, a vista Redes mostra quem escreve com quem e o que o corpus cita;
 - depois do `mapa classificar`, a vista Classificação mostra as respostas do modelo, e o cartão do Mapa marca as evidências no resumo;
 - depois do `mapa validar amostra` e da codificação, a vista Validação mostra a concordância.
 
-Mapa, Tópicos, Classificação e Geografia dividem o **recorte**, a barra abaixo do título: período, revistas, tópicos, busca, laço, UFs, países e instituições. Ele vai junto quando você troca de vista pelo trilho, e fica no endereço da página, como tudo o que está na tela.
+Mapa, Tópicos, Classificação, Geografia e Redes dividem o **recorte**, a barra abaixo do título: período, revistas, tópicos, busca, laço, UFs, países e instituições. Ele vai junto quando você troca de vista pelo trilho, e fica no endereço da página, como tudo o que está na tela.
 
 Cada etapa grava seus arquivos em `saida/dados/`. Basta recarregar a página, sem reiniciar o `mapa painel`.
 
 ## Rodar as etapas pelo painel
 
-No painel local, a vista **Projeto** mostra as etapas numa linha, na ordem em que rodam: coleta, tópicos, geografia, classificação e validação. Cada estação diz se a etapa nunca rodou, se está em dia ou se ficou para trás (tracejada: o corpus, o codebook ou as correções mudaram depois da última execução), com a data, a duração e o que ela produziu.
+No painel local, a vista **Projeto** mostra as etapas numa linha, na ordem em que rodam: coleta, tópicos, geografia, redes, classificação e validação. Cada estação diz se a etapa nunca rodou, se está em dia ou se ficou para trás (tracejada: o corpus, o codebook ou as correções mudaram depois da última execução; nas redes, a estação diz o que mudou), com a data, a duração e o que ela produziu.
 
 - **Rodar** começa a etapa em segundo plano. O progresso aparece ao vivo, com as mensagens da etapa; você pode trocar de vista, fechar a aba ou recarregar a página, e ao voltar o acompanhamento continua de onde estava. Só uma etapa roda por vez.
 - **Cancelar** para a etapa na próxima atualização de progresso. Como as etapas guardam o que já fizeram, rodar de novo continua de onde parou.
@@ -88,7 +89,7 @@ O botão **Configurar o projeto** abre um assistente em cinco passos, sobre o pr
 
 Nada é gravado antes da revisão. Ao salvar, o `mapa.yaml` e o `codebook.yaml` mudam só no que mudou, e os comentários dos arquivos ficam. **Salvar e rodar um piloto** coleta só 20 documentos, para conferir o recorte antes da coleta inteira. Enquanto uma etapa roda, o projeto não pode ser mudado.
 
-Na CLI, as mesmas etapas são `mapa coletar`, `mapa topicos`, `mapa geografia` e `mapa classificar`, e o que uma faz a outra enxerga: uma etapa rodada no terminal aparece em dia no painel.
+Na CLI, as mesmas etapas são `mapa coletar`, `mapa topicos`, `mapa geografia`, `mapa redes` e `mapa classificar`, e o que uma faz a outra enxerga: uma etapa rodada no terminal aparece em dia no painel.
 
 ## Como funciona
 

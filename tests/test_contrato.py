@@ -95,6 +95,36 @@ def test_consistencia_interna_do_exemplo(exemplo):
         assert len(viz) == 5 and i not in viz and all(0 <= j < n for j in viz)
 
 
+def test_instituicoes_das_redes_existem_em_afiliacoes(exemplo):
+    from mapa_da_ciencia.contrato.redes import instituicoes_fora_de_afiliacoes
+
+    arquivos, _ = exemplo
+    redes, afiliacoes = arquivos["redes"], arquivos["afiliacoes"]
+    assert redes.instituicoes and instituicoes_fora_de_afiliacoes(redes, afiliacoes) == []
+    # um id interno do OpenAlex ("I…", sem o prefixo do contrato) não casa com nenhuma instituição
+    ids = ["I101100930", *redes.instituicoes.id[1:]]
+    errada = redes.model_copy(update={"instituicoes": redes.instituicoes.model_copy(update={"id": ids})})
+    assert instituicoes_fora_de_afiliacoes(errada, afiliacoes) == ["I101100930"]
+
+
+def test_fluxo_de_citacoes_pela_posicao_dos_macrotemas(exemplo):
+    arquivos, _ = exemplo
+    macrotemas, citacoes = arquivos["topicos"].macrotemas, arquivos["citacoes"]
+    topico = arquivos["documentos"].colunas.topico
+    macro_do_topico = {t.id: t.macro_id for t in arquivos["topicos"].topicos}
+    ids = [mt.id for mt in macrotemas]
+    assert max(ids) >= len(ids)  # ids não contíguos, como os do piloto
+    posicao = {mt: k for k, mt in enumerate(ids)}
+    esperado = Counter(
+        (posicao[macro_do_topico[topico[a]]], posicao[macro_do_topico[topico[b]]])
+        for a, b in zip(citacoes.internas.de, citacoes.internas.para, strict=True)
+        if topico[a] >= 0 and topico[b] >= 0
+    )
+    assert len(citacoes.fluxo_macrotemas) == len(ids)
+    matriz = citacoes.fluxo_macrotemas
+    assert {(i, j): v for i, linha in enumerate(matriz) for j, v in enumerate(linha) if v} == esperado
+
+
 def test_evidencias_literais_apontam_para_o_trecho(exemplo):
     _, fragmentos = exemplo
     for frag in fragmentos.values():

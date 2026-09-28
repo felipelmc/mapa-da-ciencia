@@ -19,11 +19,11 @@ O Felipe escolheu uma regressão logística da participação anual do tópico, 
 `scripts/tendencias.py` no piloto (57 tópicos, 2010–2025, 241 a 300 artigos por ano), em 2026-09-26:
 
 - A **dispersão** (X² de Pearson ÷ graus de liberdade) tem mediana de 1,47 e máximo de 5,48. As séries anuais variam mais do que uma binomial prevê, porque dossiês temáticos concentram artigos de um assunto num número só.
-- Com a **binomial pura**, 22 tópicos são marcados (11 em alta, 11 em queda). Entre eles, "Cooperação regional em saúde durante a pandemia" (φ = 5,48) aparece em alta por causa de um pico em 2020–2021, e "República conflitiva em Maquiavel", em queda, por causa de um dossiê no começo do período.
+- Com a **binomial pura**, 22 tópicos são marcados (11 em alta, 11 em queda). Entre eles, "Saúde global e covid-19" (φ = 5,48) aparece em alta por causa de um pico em 2022, e "República conflitiva em Maquiavel", em queda, por causa de um dossiê no começo do período.
 - Com a **quase-binomial**, que multiplica o erro-padrão por √φ, 13 são marcados (7 em alta, 6 em queda):
-  - em alta: identificação partidária e polarização (+4,1 pontos percentuais no período), capacidades estatais municipais (+3,0), comunicação política nas redes sociais (+2,5), religião e política (+2,1), alocação de ministérios em coalizões, competição eleitoral municipal, Fernando Henrique Cardoso e Gramsci;
-  - em queda: modernidade e teoria social crítica (−2,0), cobertura da imprensa (−2,0), democracia deliberativa (−1,8), representação na sociedade civil, Estado e bem-estar social, arquitetura e estética no cinema.
-- Dez desses 13 têm uma mudança que se sustenta: retirando um ano de cada vez, continuam marcados em pelo menos 12 das 16 retiradas. Três são marginais (modernidade e teoria social crítica, arquitetura e estética no cinema, Fernando Henrique Cardoso e Gramsci): passam a estáveis com o quantil t(14) no lugar do z e, retirando um só ano, em 7 a 12 das 16 retiradas.
+  - em alta: identificação partidária e polarização (+4,1 pontos percentuais no período), federalismo, capacidades estatais e implementação de políticas (+3,0), comunicação política nas redes sociais (+2,5), religião e política (+2,1), alocação de ministérios em coalizões, competição eleitoral municipal, pensamento político brasileiro e marxismo;
+  - em queda: teoria social, modernidade e teoria crítica (−2,0), cobertura da imprensa (−2,0), democracia deliberativa (−1,8), representação na sociedade civil, Estado e bem-estar social, artes, cinema e crítica cultural.
+- Dez desses 13 têm uma mudança que se sustenta: retirando um ano de cada vez, continuam marcados em pelo menos 12 das 16 retiradas. Três são marginais (teoria social, modernidade e teoria crítica; artes, cinema e crítica cultural; pensamento político brasileiro e marxismo): passam a estáveis com o quantil t(14) no lugar do z e, retirando um só ano, em 7 a 12 das 16 retiradas.
 
 ## Decisão
 

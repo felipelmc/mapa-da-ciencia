@@ -103,9 +103,9 @@ def projeto(tmp_path):
 def test_coleta_com_openalex_e_cache(projeto, apis_falsas):
     resumo = coletar(projeto)
     assert resumo.casamento == {"1_doi": 25}
-    # uma página da lista da revista e um lote de instituições
-    assert resumo.creditos_openalex == 2 and apis_falsas.chamadas["openalex"] == 1
-    assert apis_falsas.chamadas["openalex_instituicoes"] == 1
+    # uma página da lista da revista, um lote de instituições, um de referências e um de obras citadas
+    assert resumo.creditos_openalex == 4 and apis_falsas.chamadas["openalex"] == 1
+    assert apis_falsas.chamadas["openalex_instituicoes"] == 1 and apis_falsas.chamadas["openalex_obras_por_id"] == 2
     assert coletar(projeto).total_requisicoes == 0
 
 
@@ -117,7 +117,8 @@ def test_quem_sobra_e_procurado_pelo_doi(projeto, apis_falsas):
     alvo["locations"] = [{**local, "source": repositorio} for local in alvo.get("locations") or []]
     resumo = coletar(projeto)
     assert resumo.casamento == {"1_doi": 25}
-    assert apis_falsas.chamadas["openalex"] == 2 and resumo.creditos_openalex == 3  # lista, DOIs e instituições
+    # lista, DOIs, instituições, referências e obras citadas
+    assert apis_falsas.chamadas["openalex"] == 2 and resumo.creditos_openalex == 5
 
 
 def test_endereco_direto_acha_o_que_os_filtros_nao_acham(projeto, apis_falsas):
@@ -128,8 +129,8 @@ def test_endereco_direto_acha_o_que_os_filtros_nao_acham(projeto, apis_falsas):
     apis_falsas.fora_dos_filtros.add("10.1590/1807-019120243011")
     resumo = coletar(projeto)
     assert resumo.casamento == {"1_doi": 25}
-    # lista, DOIs, endereço direto (grátis) e instituições
-    assert resumo.requisicoes["openalex"] == 4 and resumo.creditos_openalex == 3
+    # lista, DOIs, endereço direto (grátis), instituições, referências e obras citadas
+    assert resumo.requisicoes["openalex"] == 6 and resumo.creditos_openalex == 5
     assert coletar(projeto).total_requisicoes == 0  # a obra achada pelo endereço direto fica no cache
 
 
@@ -218,6 +219,25 @@ def test_autorias_da_obra_sem_prefixos_sem_emails_e_com_linhagem():
 def test_enriquecer_guarda_as_autorias(casados):
     com = [d for d in casados.values() if d.openalex_id]
     assert com and all(d.autorias_openalex for d in com if d.autores)
+
+
+def test_referencias_e_obras_citadas(projeto, apis_falsas):
+    """As referências de cada obra (as redes de citação) e as obras de fora mais citadas (o cânone), por lista
+    branca: sem os textos de afiliação, e portanto sem e-mails."""
+    import json
+
+    from mapa_da_ciencia.armazenamento import ARQUIVO, ARQUIVO_CITADAS, ARQUIVO_REFERENCIAS, ler_documentos, ler_tabela
+
+    coletar(projeto)
+    refs = ler_tabela(projeto.dados / ARQUIVO_REFERENCIAS)
+    citadas = ler_tabela(projeto.dados / ARQUIVO_CITADAS)
+    assert len({r["obra"] for r in refs}) == 25 and all(r["citada"].startswith("W") for r in refs)
+    assert {c["id"] for c in citadas} >= {"W900000001", "W900000002"}
+    classicas = [c for c in citadas if c["id"].startswith("W9")]
+    assert classicas and all(c["autores"] == ["Autora Clássica"] and c["veiculo"] == "Editora Y" for c in classicas)
+    assert "@" not in json.dumps(citadas, default=str)
+    docs = ler_documentos(projeto.dados / ARQUIVO)
+    assert any(a.id and a.id.startswith("A") for d in docs for a in d.autorias_openalex)
 
 
 def test_resumo_e_titulo_do_openalex_sem_emails():
