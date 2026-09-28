@@ -128,7 +128,15 @@
 		<div class="fora-do-menu" data-testid="fora-do-menu" onclick={fecharRevistas}></div>
 	{/if}
 	<section class="recorte" class:expandida aria-label="Recorte" data-testid="barra-recorte">
-		<button type="button" class="resumo" aria-expanded={expandida} onclick={() => (expandida = !expandida)}>
+		<button
+			type="button"
+			class="resumo"
+			aria-expanded={expandida}
+			onclick={() => {
+				expandida = !expandida;
+				if (!expandida) fecharRevistas(); // recolhida, a barra esconde o menu: a camada que o fecharia sai junto
+			}}
+		>
 			Recorte{nFiltros ? ` (${nFiltros})` : ''} · {formatarInteiro(n)} docs
 		</button>
 		<div class="corpo">

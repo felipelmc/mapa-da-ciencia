@@ -340,6 +340,20 @@ test.describe('no celular', () => {
 		await expect(page.getByTestId('cartao-documento')).toBeVisible();
 		expect(await fim('.lado')).toBeLessThanOrEqual(topoDaBarra + 0.5);
 	});
+
+	test('recolher o recorte com o menu das revistas aberto não deixa uma camada engolindo o toque seguinte', async ({ page }) => {
+		await page.goto(`${url('RAIZ')}#/mapa`);
+		await esperarMapa(page);
+		const recorte = page.getByRole('button', { name: /^Recorte/ });
+		await recorte.click();
+		await page.locator('details.revistas summary').click();
+		await expect(page.getByTestId('fora-do-menu')).toHaveCount(1);
+		await recorte.click(); // recolhe a barra, com o menu ainda aberto
+		await expect(page.getByTestId('fora-do-menu')).toHaveCount(0);
+		// o toque seguinte chega ao que está na tela
+		await page.getByRole('button', { name: 'Recolher' }).click({ timeout: 5000 });
+		await expect(page.getByRole('button', { name: 'Mostrar controles' })).toBeVisible();
+	});
 });
 
 test('o laço fica no link e reproduz os mesmos documentos', async ({ page }) => {
