@@ -263,6 +263,27 @@ def _mostrar_geografia(p: Projeto) -> None:
         )
 
 
+def _mostrar_redes(p: Projeto) -> None:
+    from mapa_da_ciencia.redes.pipeline import PASTA, ResultadoRedes, redes_em_dia
+
+    r = ResultadoRedes.ler(p.dados / PASTA)
+    if r is None:
+        console.print("[dim]Redes: ainda não geradas. Rode `mapa redes`.[/]")
+        return
+    c, met = r.contagens, r.metricas.get("coautoria", {})
+    texto = (
+        f"[bold]Redes[/]: {num(c['pessoas'], 0)} pessoas, {num(c['com_coautoria'], 0)} com coautor; o maior "
+        f"componente tem {num(met.get('maior_componente', 0), 0)}"
+    )
+    if c.get("instituicoes"):
+        texto += f"; {num(c['instituicoes'], 0)} instituições colaborando"
+    if r.cobertura_citacoes:
+        texto += f"; {num(c['citacoes_internas'], 0)} citações dentro do corpus"
+    console.print(texto + ".")
+    if redes_em_dia(p) is False:
+        console.print("[yellow]As redes são de antes das últimas mudanças.[/] Rode [bold]mapa redes[/].")
+
+
 def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
     """Cobertura do corpus coletado (`dados/documentos.parquet`), se já houver coleta."""
     caminho = p.dados / ARQUIVO_DOCUMENTOS
@@ -284,6 +305,7 @@ def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
         )
     _mostrar_topicos(p)
     _mostrar_geografia(p)
+    _mostrar_redes(p)
     _mostrar_classificacao_status(p)
     if not total:
         return
@@ -1025,6 +1047,54 @@ def _mostrar_validacao(r) -> None:
             f"{num(len(r.divergencias), 0)} divergência(s) entre os codificadores e o modelo principal: veja o "
             "relatório ([bold]mapa validar relatorio[/]) ou a vista Concordância do painel."
         )
+
+
+@app.command()
+def redes(
+    projeto: OpcaoProjeto = Path("."),
+    revisar: Annotated[
+        bool,
+        typer.Option(
+            "--revisar", help="Lista os homônimos que podem ser a mesma pessoa, com um bloco para o pessoas.yaml."
+        ),
+    ] = False,
+    limite: Annotated[int, typer.Option("--limite", help="Quantos homônimos listar na revisão.", min=1)] = 20,
+) -> None:
+    """Redes de coautoria, de colaboração entre instituições e estados, e de citação, com as comunidades."""
+    from mapa_da_ciencia.progresso import ProgressoRich
+    from mapa_da_ciencia.redes.pipeline import PASTA, gerar_redes
+
+    with _erros_amigaveis():
+        p = Projeto.abrir(projeto)
+        resumo = gerar_redes(p, ProgressoRich(console))
+    if revisar:
+        from mapa_da_ciencia.armazenamento import ler_tabela
+
+        candidatos = ler_tabela(p.dados / PASTA / "candidatos.parquet")
+        if not candidatos:
+            console.print("Nenhum homônimo a revisar.")
+            return
+        tabela = Table("Nome", "Pessoa A", "Pessoa B")
+        for c in candidatos[:limite]:
+            tabela.add_row(c["nome"], c["a"], c["b"])
+        console.print(tabela)
+        console.print(
+            "Se forem a mesma pessoa, acrescente ao [bold]pessoas.yaml[/] do projeto (e rode [bold]mapa redes[/] de "
+            "novo); se não forem, use `nao_fundir` para não vê-los mais aqui:"
+        )
+        exemplo = candidatos[0]
+        console.print(
+            f"fundir:\n  - [{exemplo['a']}, {exemplo['b']}]\nnao_fundir:\n  - [{exemplo['a']}, {exemplo['b']}]"
+        )
+        return
+    console.print(f"\n[bold green]Redes prontas[/]: {resumo}")
+    if resumo.candidatos:
+        console.print(
+            f"{num(resumo.candidatos, 0)} par(es) de homônimos ficaram separados: [bold]mapa redes --revisar[/] "
+            "lista-os para conferir."
+        )
+    for aviso in resumo.avisos:
+        console.print(f"[yellow]Aviso:[/] {aviso}")
 
 
 @app.command()

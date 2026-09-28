@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from mapa_da_ciencia.embeddings import Embeddings
     from mapa_da_ciencia.geografia.pipeline import ResumoGeografia
     from mapa_da_ciencia.publicar import ResumoPublicacao
+    from mapa_da_ciencia.redes.pipeline import ResumoRedes
     from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
     from mapa_da_ciencia.validacao.amostra import Amostra, ResumoImportacao
     from mapa_da_ciencia.validacao.metricas import Validacao
@@ -291,6 +292,23 @@ def geografia(projeto: Projeto | str | Path = ".", *, progresso: bool = True) ->
     from rich.console import Console
 
     return gerar_geografia(p, ProgressoRich(Console()))
+
+
+def redes(projeto: Projeto | str | Path = ".", *, progresso: bool = True) -> ResumoRedes:
+    """Gera as redes de coautoria, de instituições, de estados e de citação, como `mapa redes`, e devolve o resumo.
+
+    As tabelas ficam em `dados/redes/` (`pessoas`, `autorias`, `arestas`, `comunidades`, `citacoes`, `canone`,
+    `colaboracao`), em Parquet, para ler com `consultar` (por exemplo
+    `consultar(p, "SELECT * FROM read_parquet('dados/redes/canone.parquet') LIMIT 10")`).
+    """
+    from mapa_da_ciencia.redes.pipeline import gerar_redes
+
+    p = _projeto(projeto)
+    if not progresso:
+        return gerar_redes(p, ProgressoNulo())
+    from rich.console import Console
+
+    return gerar_redes(p, ProgressoRich(Console()))
 
 
 def classificar(

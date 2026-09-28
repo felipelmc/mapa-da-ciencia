@@ -31,7 +31,7 @@ MODELOS_DE_PROJETO = ("ciencia-politica", "vazio")
 
 # Etapas do pipeline, na ordem em que rodam.
 # a exportação para `saida/dados/` roda no fim de cada etapa e não é uma etapa própria
-ETAPAS = ("coleta", "embeddings", "topicos", "geografia", "classificacao", "validacao")
+ETAPAS = ("coleta", "embeddings", "topicos", "geografia", "redes", "classificacao", "validacao")
 
 _GITIGNORE = """\
 # Gerado pelo `mapa novo`. Dados e segredos ficam fora do git.
