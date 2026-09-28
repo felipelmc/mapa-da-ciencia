@@ -23,6 +23,7 @@ const SECOES = [
 	{ rotulo: 'Classificação', caminho: '/classificacao', h1: 'Classificação' },
 	{ rotulo: 'Geografia', caminho: '/geografia', h1: 'Geografia' },
 	{ rotulo: 'Validação', caminho: '/validacao', h1: 'Validação' },
+	{ rotulo: 'Redes', caminho: '/redes', h1: 'Redes' },
 	{ rotulo: 'Metodologia', caminho: '/projeto', h1: 'Metodologia' },
 	{ rotulo: 'Início', caminho: '/', h1: manifesto.projeto.titulo }
 ];
@@ -47,10 +48,8 @@ for (const site of ['RAIZ', 'SUBCAMINHO'] as const) {
 			// Tudo no cliente: nenhuma recarga completa (o problema do resolve() no ADR 0002).
 			expect(await page.evaluate(() => window.__semRecarga)).toBe(true);
 
-			// Redes aparece desativada, com selo; fora do painel, Projeto vira Metodologia.
-			await expect(trilho(page).getByRole('link', { name: /Redes/ })).toHaveCount(0);
-			await expect(trilho(page).getByText('Redes', { exact: true })).toBeVisible();
-			await expect(trilho(page).getByText('v2', { exact: true })).toBeVisible();
+			// nenhuma seção desativada com selo; fora do painel, Projeto vira Metodologia.
+			await expect(trilho(page).getByText('v2', { exact: true })).toHaveCount(0);
 			await expect(trilho(page).getByRole('link', { name: 'Projeto' })).toHaveCount(0);
 
 			await page.getByRole('banner').getByRole('link', { name: 'Ajuda' }).click();
@@ -117,6 +116,7 @@ test('o trilho leva o recorte às vistas de análise, e só o recorte', async ({
 	const link = (nome: string) => trilho(page).getByRole('link', { name: nome, exact: true });
 	await expect(link('Tópicos')).toHaveAttribute('href', '#/topicos?anos=2015-2020&revistas=dados&uf=SP');
 	await expect(link('Geografia')).toHaveAttribute('href', '#/geografia?anos=2015-2020&revistas=dados&uf=SP');
+	await expect(link('Redes')).toHaveAttribute('href', '#/redes?anos=2015-2020&revistas=dados&uf=SP');
 	await expect(link('Validação')).toHaveAttribute('href', '#/validacao');
 	await expect(link('Início')).toHaveAttribute('href', '#/');
 	await link('Geografia').click();

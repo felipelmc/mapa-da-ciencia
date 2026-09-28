@@ -41,7 +41,7 @@ export interface Secao {
 }
 
 // Os marcos seguem o plano do projeto (docs/desenvolvimento/index.md): mapa no M3;
-// tópicos no tempo e geografia no M4; classificação e validação no M5.
+// tópicos no tempo e geografia no M4; classificação e validação no M5; redes depois da 1.0.
 export const SECOES: readonly Secao[] = [
 	{
 		id: 'inicio',
@@ -112,10 +112,11 @@ export const SECOES: readonly Secao[] = [
 		rotulo: 'Redes',
 		caminho: '/redes',
 		icone: 'redes',
-		resumo: 'Redes de coautoria e de citação entre documentos, autores e instituições.',
-		chegada: 'na versão 2',
-		arquivos: [],
-		selo: 'v2'
+		resumo:
+			'Quem escreve com quem: a coautoria entre pessoas, a colaboração entre instituições e entre estados, e as obras que o corpus mais cita.',
+		chegada: 'na versão 1.1',
+		arquivos: ['redes', 'citacoes', 'afiliacoes'],
+		recorte: true
 	},
 	{
 		id: 'projeto',

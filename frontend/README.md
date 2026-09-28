@@ -74,6 +74,7 @@ frontend/
 │   │   ├── componentes/              casca (Trilho, BarraSuperior…), estados vazios, carta da capa
 │   │   ├── recorte/                  barra do recorte (comum às vistas de análise) e linha do tempo
 │   │   ├── geografia/                vista Geografia: mapas das UFs e do mundo, ranking, escala de cores, malhas
+│   │   ├── redes/                    vista Redes: o cálculo no recorte, o grafo em canvas, o cartão do nó, a busca
 │   │   ├── secoes.ts                 as seções: rótulo, rota, ícone, resumo, marco, arquivos usados
 │   │   └── formato.ts                números e datas em pt-BR
 │   └── routes/                       uma pasta por seção; +layout.svelte abre o projeto
@@ -88,6 +89,7 @@ frontend/
     ├── mapa.spec.ts                  a vista Mapa
     ├── topicos.spec.ts               a vista Tópicos
     ├── geografia.spec.ts             a vista Geografia
+    ├── redes.spec.ts                 a vista Redes
     ├── classificacao.spec.ts         a vista Classificação
     ├── validacao.spec.ts             a vista Validação
     ├── codificar.spec.ts             a codificação pelo teclado
@@ -249,6 +251,7 @@ Os testes cobrem:
 - tela estreita;
 - projeto vazio, sem pedir arquivos ausentes;
 - no Mapa (`mapa.spec.ts`): o desenho dos pontos, contornos e rótulos pelo zoom, legenda, cor por revista, cartão pelo link e pelo clique, busca, laço pelo link e pelo mouse, play da linha do tempo e atalhos.
+- nas Redes (`redes.spec.ts`): a coautoria e as instituições desenhadas pela URL (via `window.__redesDebug`), com o número de pares do gabarito; um filtro de anos que reduz as arestas no recorte como uma contagem feita no próprio teste; o cartão aberto pelo clique num nó, com os documentos da pessoa no recorte; a busca pelo teclado; "Filtrar por esta instituição"; "Ver como tabela"; a exportação do grafo (o canvas vira imagem embaixo dos rótulos); o celular (375 px) sem rolagem horizontal; o movimento reduzido e o projeto vazio.
 - na Geografia (`geografia.spec.ts`): o peso de cada UF igual ao gabarito do Python, o ranking pela instituição de maior peso, o Brasil fora da escala do mundo, o clique numa UF que vai para o recorte e dali para o Mapa, o teclado, "Ver como tabela", "Mostrar mais", a cobertura por ano (o aviso dos anos com muito peso sem afiliação) e o projeto vazio.
 - na Classificação, na Validação e na codificação (`classificacao.spec.ts`, `validacao.spec.ts`, `codificar.spec.ts`): as barras e o cruzamento conferidos com o exemplo, a lista com a evidência marcada, os selos de kappa, a matriz de confusão e 20 fichas codificadas só pelo teclado que sobrevivem a um reload.
 - no Projeto (`projeto.spec.ts`): a linha de metrô, o job ao vivo que sobrevive à queda proposital da primeira conexão SSE, cancelar, retomar depois de um reload, baixar um modelo, o assistente e o editor do codebook; no site estático, a Metodologia.

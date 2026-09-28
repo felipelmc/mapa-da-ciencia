@@ -180,6 +180,12 @@ export function graficoDe(figura: HTMLElement): SVGSVGElement | null {
 	return svgs.find((s) => s.getBoundingClientRect().width >= 200) ?? null;
 }
 
+/**
+ * Um gráfico em canvas (a rede) com um SVG por cima (os rótulos): o componente pendura no canvas uma função que o
+ * redesenha nas cores do tema aplicado e devolve o PNG, que entra embaixo do SVG na figura exportada.
+ */
+type Rasterizavel = HTMLElement & { rasterizar?: () => string };
+
 export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Preset): Promise<string | null> {
 	const grafico = graficoDe(figura);
 	if (!grafico) return null;
@@ -187,7 +193,9 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 	const w = caixa.width;
 	const h = caixa.height;
 	const tema = preset.tema;
-	const { clone, fundo, texto, suave, familias } = comTema(tema, () => {
+	const raster = figura.querySelector<Rasterizavel>('.grafico [data-rasterizavel]');
+	const { clone, fundo, texto, suave, familias, imagem } = comTema(tema, () => {
+		const imagem = raster?.rasterizar?.() ?? null;
 		const clone = grafico.cloneNode(true) as SVGSVGElement;
 		fixarEstilos(grafico, clone);
 		const s = getComputedStyle(document.body);
@@ -202,6 +210,7 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 		familias.add(raiz.getPropertyValue('--fonte-interface').split(',')[0].replaceAll(/['"]/g, '').trim());
 		return {
 			clone,
+			imagem,
 			fundo: s.backgroundColor,
 			texto: raiz.getPropertyValue('--texto').trim() || s.color,
 			suave: raiz.getPropertyValue('--texto-suave').trim() || s.color,
@@ -244,6 +253,7 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 		meta.recorte
 			? `<text x="${margem}" y="${margem + 50 * k}" font-family="${escapar(fonteTexto)}" font-size="${13 * k}" fill="${suave}">${escapar(meta.recorte)}</text>`
 			: '',
+		imagem ? `<image href="${imagem}" x="${margem}" y="${topo}" width="${w}" height="${h}"/>` : '',
 		new XMLSerializer().serializeToString(clone),
 		`<text x="${margem}" y="${H - margem}" font-family="${escapar(fonteTexto)}" font-size="${11 * k}" fill="${suave}">${escapar(linhaRodape)}</text>`,
 		'</svg>'

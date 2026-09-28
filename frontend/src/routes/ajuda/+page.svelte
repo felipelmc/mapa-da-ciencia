@@ -48,7 +48,7 @@
 		<h2 id="ajuda-recorte">O recorte</h2>
 		<p>
 			A barra logo abaixo do título guarda o <strong>recorte</strong>: os documentos que as vistas de análise
-			(Mapa, Tópicos e Geografia) mostram. O contador à direita diz quantos passam em tudo. Entram no recorte:
+			(Mapa, Tópicos, Classificação, Geografia e Redes) mostram. O contador à direita diz quantos passam em tudo. Entram no recorte:
 		</p>
 		<ul>
 			<li>o <strong>período</strong>, na linha do tempo (o <strong>Play</strong> anima ano a ano);</li>
@@ -108,6 +108,27 @@
 				de validação. Com hachura, ela está abaixo de 0,6: leia aquela variável com cuidado. Com borda tracejada, a
 				comparação é com um codificador de referência, que não é uma pessoa. Escolha uma célula para ler os
 				documentos e o trecho marcado no resumo.
+			</p>
+		</section>
+
+		<section aria-labelledby="ajuda-redes" data-testid="ajuda-redes">
+			<h2 id="ajuda-redes">Como ler as redes</h2>
+			<p>
+				Na <strong>coautoria</strong>, cada <strong>nó</strong> é uma pessoa, e uma <strong>aresta</strong> (a linha)
+				liga duas pessoas que assinaram juntas ao menos um documento do recorte. Nas <strong>instituições</strong>,
+				o nó é uma instituição, e a aresta liga duas que aparecem nas afiliações do mesmo documento.
+			</p>
+			<p>
+				O <strong>peso</strong> de uma aresta é fracionário: num artigo de n autores, cada par ganha 1/(n−1). Num
+				artigo de dois autores, o par ganha 1; num de três, cada um dos três pares ganha 0,5. Assim cada pessoa
+				distribui no máximo 1 por artigo, e um artigo de dez autores não pesa mais que um de dois. Quanto maior o
+				peso no recorte, mais forte a linha.
+			</p>
+			<p>
+				As <strong>comunidades</strong> são agrupamentos automáticos (o algoritmo de Louvain), de nós mais ligados
+				entre si que com o resto. Elas levam o nome dos tópicos mais frequentes nos documentos delas e a cor do
+				macrotema mais comum, nunca o nome de uma pessoa. O desenho é o do corpus inteiro: o recorte não move nada,
+				só apaga quem não tem documento nele. Clique num nó, ou busque pelo nome, para ver os documentos dele.
 			</p>
 		</section>
 

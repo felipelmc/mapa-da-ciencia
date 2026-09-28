@@ -25,8 +25,27 @@ declare global {
 		laco?: (vertices: [number, number][]) => void;
 	}
 
+	/** Estado da vista Redes exposto para os testes e para depuração no console. */
+	interface RedesDebug {
+		/** A rede na tela (`coautoria`, `instituicoes`, `estados` ou `citacoes`). */
+		modo: string;
+		/** Nós desenhados: pessoas ou instituições com posição, lugares, obras do cânone. */
+		nos: number;
+		/** Arestas do corpus inteiro (pares, ou citações internas). */
+		arestas: number;
+		/** Arestas com ao menos um documento no recorte (nas citações, com as duas pontas nele). */
+		arestasNoRecorte: number;
+		desenhado: boolean;
+		msAtePrimeiroDesenho: number | null;
+		/** Id do nó aberto no cartão. */
+		selecionado: string | null;
+		/** Posição de um nó na tela (px, relativa ao canvas), pelo id, para os testes clicarem nele. */
+		posicaoNaTela?: (id: string) => [number, number] | undefined;
+	}
+
 	interface Window {
 		__mapaDebug?: MapaDebug;
+		__redesDebug?: RedesDebug;
 	}
 
 	namespace App {
