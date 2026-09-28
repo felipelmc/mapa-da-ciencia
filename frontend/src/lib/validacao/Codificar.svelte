@@ -351,7 +351,9 @@
 	.codificar {
 		display: grid;
 		gap: 1.2rem;
+		/* a ficha tem a largura de leitura, centrada na área de conteúdo */
 		max-width: 76rem;
+		margin-inline: auto;
 	}
 
 	.topo {

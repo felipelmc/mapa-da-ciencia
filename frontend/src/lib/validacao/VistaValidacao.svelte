@@ -383,7 +383,6 @@
 	.vista {
 		display: grid;
 		gap: 1.5rem;
-		max-width: 76rem;
 	}
 
 	.cabecalho {

@@ -22,7 +22,8 @@
 
 	--trilho-largura: 14rem;
 	--barra-altura: 4rem;
-	--conteudo-largura: 76rem;
+	/* a área de conteúdo, centrada: numa tela larga, as figuras crescem até aqui (o texto corrido fica em ~60rem) */
+	--conteudo-largura: 104rem;
 	--raio: 6px;
 	--raio-pequeno: 3px;
 

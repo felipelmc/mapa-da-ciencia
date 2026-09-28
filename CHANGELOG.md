@@ -6,6 +6,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Mudado
 
+- **A área de conteúdo fica centrada e mais larga** (até 104rem, 1.664 px): numa tela larga ou em tela cheia, as vistas não ficam mais encostadas à esquerda, e as figuras crescem com a janela (o texto corrido continua na medida de leitura). O grafo das redes ocupa quase a altura da janela.
 - **O desenho das redes de coautoria e de instituições** (`mapa redes`, adendo do ADR 0014): no maior componente, cada comunidade ganha um espaço próprio, e as comunidades muito ligadas ficam vizinhas; os componentes menores vêm à direita e embaixo do maior, e nenhum nó encosta noutro numa tela de computador. No piloto, os nós encostados caem de 57% para 0%, e o maior componente passa de 27% para 60% do desenho. As redes de um projeto ficam desatualizadas até a próxima `mapa redes`.
 
 ### Corrigido

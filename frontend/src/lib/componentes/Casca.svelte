@@ -161,6 +161,8 @@
 		grid-area: conteudo;
 		width: 100%;
 		max-width: var(--conteudo-largura);
+		/* centrado na área que o trilho deixa, e não encostado nele */
+		margin-inline: auto;
 		padding: 2.25rem clamp(1.25rem, 4vw, 3.5rem) 4rem;
 	}
 

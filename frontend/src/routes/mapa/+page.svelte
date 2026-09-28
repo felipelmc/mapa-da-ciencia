@@ -44,6 +44,7 @@
 	.vazio {
 		padding: 2.25rem clamp(1.25rem, 4vw, 3.5rem);
 		max-width: var(--conteudo-largura);
+		margin-inline: auto;
 	}
 
 	h1 {

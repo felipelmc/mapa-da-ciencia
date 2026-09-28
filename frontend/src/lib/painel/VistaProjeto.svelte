@@ -217,7 +217,6 @@
 	.vista {
 		display: grid;
 		gap: 1.8rem;
-		max-width: 76rem;
 	}
 
 	.cabecalho {
