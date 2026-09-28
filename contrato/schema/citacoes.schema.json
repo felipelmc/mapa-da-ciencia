@@ -1,0 +1,214 @@
+{
+  "$defs": {
+    "ArestasCitacao": {
+      "additionalProperties": false,
+      "description": "Citações dentro do corpus: índices de documentos (quem cita → quem é citado).",
+      "properties": {
+        "de": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "De",
+          "type": "array"
+        },
+        "para": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Para",
+          "type": "array"
+        }
+      },
+      "required": [
+        "de",
+        "para"
+      ],
+      "title": "ArestasCitacao",
+      "type": "object"
+    },
+    "CitantesCanone": {
+      "additionalProperties": false,
+      "properties": {
+        "doc": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Doc",
+          "type": "array"
+        },
+        "obra": {
+          "description": "Índice em `canone`.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Obra",
+          "type": "array"
+        }
+      },
+      "required": [
+        "doc",
+        "obra"
+      ],
+      "title": "CitantesCanone",
+      "type": "object"
+    },
+    "ObraCitada": {
+      "additionalProperties": false,
+      "description": "Uma obra de fora do corpus entre as mais citadas (o cânone).",
+      "properties": {
+        "ano": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ano"
+        },
+        "autores": {
+          "description": "Até três autores.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Autores",
+          "type": "array"
+        },
+        "doi": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Doi"
+        },
+        "edicoes": {
+          "description": "Outras edições somadas a esta.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Edicoes",
+          "type": "array"
+        },
+        "id": {
+          "description": "Id do OpenAlex (`W…`).",
+          "title": "Id",
+          "type": "string"
+        },
+        "n": {
+          "description": "Documentos do corpus que a citam.",
+          "title": "N",
+          "type": "integer"
+        },
+        "tipo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Tipo"
+        },
+        "titulo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Titulo"
+        },
+        "veiculo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Veiculo"
+        }
+      },
+      "required": [
+        "id",
+        "titulo",
+        "ano",
+        "autores",
+        "veiculo",
+        "tipo",
+        "doi",
+        "n"
+      ],
+      "title": "ObraCitada",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A rede de citação pelas referências do OpenAlex e o cânone.",
+  "properties": {
+    "canone": {
+      "items": {
+        "$ref": "#/$defs/ObraCitada"
+      },
+      "title": "Canone",
+      "type": "array"
+    },
+    "canone_citantes": {
+      "$ref": "#/$defs/CitantesCanone"
+    },
+    "cobertura": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Cobertura",
+      "type": "object"
+    },
+    "fluxo_macrotemas": {
+      "description": "Citações internas de macrotema (linha) a macrotema.",
+      "items": {
+        "items": {
+          "type": "integer"
+        },
+        "type": "array"
+      },
+      "title": "Fluxo Macrotemas",
+      "type": "array"
+    },
+    "internas": {
+      "$ref": "#/$defs/ArestasCitacao"
+    },
+    "n_referencias": {
+      "description": "Referências de cada documento no OpenAlex; -1: sem casamento.",
+      "items": {
+        "type": "integer"
+      },
+      "title": "N Referencias",
+      "type": "array"
+    },
+    "versao_contrato": {
+      "default": "1.5",
+      "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
+      "pattern": "^1\\.\\d+$",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "n_referencias",
+    "internas",
+    "canone",
+    "canone_citantes",
+    "fluxo_macrotemas"
+  ],
+  "title": "Citacoes",
+  "type": "object"
+}

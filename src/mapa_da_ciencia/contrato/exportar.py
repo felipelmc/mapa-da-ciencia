@@ -429,6 +429,26 @@ def _geografia(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[st
     return com_instituicao
 
 
+def _redes(projeto: Projeto, arquivos: dict[str, BaseModel], avisos: list[str]) -> None:
+    """Acrescenta `redes.json` e `citacoes.json` se as redes estiverem em dia com o corpus e as entradas."""
+    from mapa_da_ciencia.contrato.redes import redes_contrato
+    from mapa_da_ciencia.redes.pipeline import redes_em_dia
+
+    estado = redes_em_dia(projeto)
+    if estado is None:
+        return
+    if estado is False:
+        avisos.append("As redes foram geradas antes das últimas mudanças no corpus. Rode `mapa redes`.")
+        return
+    documentos = arquivos["documentos"]
+    n_macros = len(arquivos["topicos"].macrotemas)
+    redes, citacoes, gabarito = redes_contrato(projeto, list(documentos.colunas.id), n_macros)
+    arquivos["redes"] = redes
+    if citacoes is not None:
+        arquivos["citacoes"] = citacoes
+    arquivos["agregados"] = arquivos["agregados"].model_copy(update=gabarito)
+
+
 def exportar(projeto: Projeto) -> list[str]:
     """Reconstrói `saida/dados/` (o contrato que o painel lê) a partir de `dados/`. Devolve avisos.
 
@@ -475,6 +495,7 @@ def exportar(projeto: Projeto) -> list[str]:
             geo = _geografia(projeto, arquivos, avisos)
             if geo is not None:
                 contagens = contagens.model_copy(update={"com_instituicao": geo})
+            _redes(projeto, arquivos, avisos)
 
     from mapa_da_ciencia.contrato.classificacao import exportar_classificacao
 

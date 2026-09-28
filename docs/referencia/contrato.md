@@ -29,6 +29,8 @@ Versão atual: **1.5**. Os JSON Schemas ficam em [`contrato/schema/`](https://gi
 | `classificacoes.json` | [Classificacoes](#classificacoes) |
 | `validacao.json` | [Validacao](#validacao) |
 | `agregados.json` | [Agregados](#agregados) |
+| `redes.json` | [Redes](#redes) |
+| `citacoes.json` | [Citacoes](#citacoes) |
 
 ## `manifesto.json`
 
@@ -624,3 +626,146 @@ Gabarito calculado no Python para testar o filtro cruzado do frontend.
 | `instituicao_inteiro` | mapa de texto para inteiro | vazio |  |
 | `sem_afiliacao` | número | `0` | Peso dos autores sem afiliação informada. |
 | `sem_pais` | número | `0` | Peso das afiliações de país desconhecido (inclui `sem_afiliacao`). |
+| `arestas_coautoria` | inteiro | `0` | Pares de coautores no corpus inteiro. |
+| `uf_pares` | lista de tupla | vazio | (UF, UF ou EX, peso, documentos) na colaboração entre estados. |
+| `canone_n` | lista de inteiro | vazio | Documentos que citam cada obra do cânone. |
+
+## `redes.json`
+
+### Redes
+
+Coautoria (pessoas), colaboração entre instituições e as séries da colaboração.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `pessoas` | [ColunasPessoas](#colunaspessoas) | **obrigatório** | As pessoas (autores identificados), em colunas. `x` e `y` só para quem teve coautor (o desenho da rede). |
+| `autorias` | [AutoriasRede](#autoriasrede) | **obrigatório** | Quem escreveu cada documento: pares (índice do documento em `documentos.json`, índice da pessoa). |
+| `instituicoes` | [ColunasInstituicoesRede](#colunasinstituicoesrede) ou vazio | vazio | As instituições que colaboraram com outra, com o desenho da rede (os ids são os de `afiliacoes.json`). |
+| `comunidades` | lista de [ComunidadeRede](#comunidaderede) | vazio |  |
+| `metricas` | mapa de texto para [MetricasRede](#metricasrede) | vazio |  |
+| `colaboracao` | lista de [ColaboracaoAno](#colaboracaoano) | vazio | A colaboração num ano, em frações dos documentos do ano. |
+| `parametros` | mapa de texto para Any | vazio |  |
+
+### ColunasPessoas
+
+As pessoas (autores identificados), em colunas. `x` e `y` só para quem teve coautor (o desenho da rede).
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `id` | lista de texto | **obrigatório** | Id publicado (um hash curto; o site não publica ORCIDs). |
+| `nome` | lista de texto | **obrigatório** |  |
+| `documentos` | lista de inteiro | **obrigatório** |  |
+| `grau` | lista de inteiro | **obrigatório** | Coautores distintos. |
+| `comunidade` | lista de inteiro | **obrigatório** | Índice em `comunidades` da rede de coautoria; -1 nas pequenas. |
+| `x` | lista de número ou vazio | **obrigatório** |  |
+| `y` | lista de número ou vazio | **obrigatório** |  |
+
+### AutoriasRede
+
+Quem escreveu cada documento: pares (índice do documento em `documentos.json`, índice da pessoa).
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `doc` | lista de inteiro | **obrigatório** |  |
+| `pessoa` | lista de inteiro | **obrigatório** |  |
+
+### ColunasInstituicoesRede
+
+As instituições que colaboraram com outra, com o desenho da rede (os ids são os de `afiliacoes.json`).
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `id` | lista de texto | **obrigatório** |  |
+| `grau` | lista de inteiro | **obrigatório** |  |
+| `comunidade` | lista de inteiro | **obrigatório** |  |
+| `x` | lista de número | **obrigatório** |  |
+| `y` | lista de número | **obrigatório** |  |
+
+### ComunidadeRede
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `rede` | `"coautoria"` \\| `"instituicoes"` | **obrigatório** |  |
+| `id` | inteiro | **obrigatório** |  |
+| `n` | inteiro | **obrigatório** | Nós da comunidade. |
+| `documentos` | inteiro | **obrigatório** |  |
+| `macro` | inteiro ou vazio | **obrigatório** | Macrotema mais frequente nos documentos da comunidade. |
+| `topicos` | lista de inteiro | **obrigatório** | Os tópicos mais frequentes, em ordem. |
+| `rotulo` | texto | **obrigatório** | Os dois tópicos mais frequentes (a comunidade não recebe nome de pessoa). |
+
+### MetricasRede
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `nos` | inteiro | **obrigatório** |  |
+| `arestas` | inteiro | **obrigatório** |  |
+| `componentes` | inteiro | **obrigatório** |  |
+| `maior_componente` | inteiro | **obrigatório** |  |
+| `fracao_maior` | número | **obrigatório** |  |
+| `densidade` | número | **obrigatório** |  |
+| `grau_medio` | número | **obrigatório** |  |
+| `agrupamento` | número | **obrigatório** |  |
+| `modularidade` | número ou vazio | **obrigatório** |  |
+
+### ColaboracaoAno
+
+A colaboração num ano, em frações dos documentos do ano.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `ano` | inteiro | **obrigatório** |  |
+| `documentos` | inteiro | **obrigatório** |  |
+| `com_coautoria` | número | **obrigatório** |  |
+| `autores_medio` | número | **obrigatório** |  |
+| `com_instituicoes` | número ou vazio | vazio | Duas ou mais instituições identificadas. |
+| `entre_ufs` | número ou vazio | vazio | Duas ou mais UFs brasileiras. |
+| `com_exterior` | número ou vazio | vazio | Brasil e exterior no mesmo documento. |
+
+## `citacoes.json`
+
+### Citacoes
+
+A rede de citação pelas referências do OpenAlex e o cânone.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `versao_contrato` | texto | `"1.5"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `n_referencias` | lista de inteiro | **obrigatório** | Referências de cada documento no OpenAlex; -1: sem casamento. |
+| `internas` | [ArestasCitacao](#arestascitacao) | **obrigatório** | Citações dentro do corpus: índices de documentos (quem cita → quem é citado). |
+| `canone` | lista de [ObraCitada](#obracitada) | **obrigatório** | Uma obra de fora do corpus entre as mais citadas (o cânone). |
+| `canone_citantes` | [CitantesCanone](#citantescanone) | **obrigatório** |  |
+| `fluxo_macrotemas` | lista de lista de inteiro | **obrigatório** | Citações internas de macrotema (linha) a macrotema. |
+| `cobertura` | mapa de texto para inteiro | vazio |  |
+
+### ArestasCitacao
+
+Citações dentro do corpus: índices de documentos (quem cita → quem é citado).
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `de` | lista de inteiro | **obrigatório** |  |
+| `para` | lista de inteiro | **obrigatório** |  |
+
+### ObraCitada
+
+Uma obra de fora do corpus entre as mais citadas (o cânone).
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `id` | texto | **obrigatório** | Id do OpenAlex (`W…`). |
+| `titulo` | texto ou vazio | **obrigatório** |  |
+| `ano` | inteiro ou vazio | **obrigatório** |  |
+| `autores` | lista de texto | **obrigatório** | Até três autores. |
+| `veiculo` | texto ou vazio | **obrigatório** |  |
+| `tipo` | texto ou vazio | **obrigatório** |  |
+| `doi` | texto ou vazio | **obrigatório** |  |
+| `n` | inteiro | **obrigatório** | Documentos do corpus que a citam. |
+| `edicoes` | lista de texto | vazio | Outras edições somadas a esta. |
+
+### CitantesCanone
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `doc` | lista de inteiro | **obrigatório** |  |
+| `obra` | lista de inteiro | **obrigatório** | Índice em `canone`. |

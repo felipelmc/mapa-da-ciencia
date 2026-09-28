@@ -1,0 +1,415 @@
+{
+  "$defs": {
+    "AutoriasRede": {
+      "additionalProperties": false,
+      "description": "Quem escreveu cada documento: pares (índice do documento em `documentos.json`, índice da pessoa).",
+      "properties": {
+        "doc": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Doc",
+          "type": "array"
+        },
+        "pessoa": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Pessoa",
+          "type": "array"
+        }
+      },
+      "required": [
+        "doc",
+        "pessoa"
+      ],
+      "title": "AutoriasRede",
+      "type": "object"
+    },
+    "ColaboracaoAno": {
+      "additionalProperties": false,
+      "description": "A colaboração num ano, em frações dos documentos do ano.",
+      "properties": {
+        "ano": {
+          "title": "Ano",
+          "type": "integer"
+        },
+        "autores_medio": {
+          "title": "Autores Medio",
+          "type": "number"
+        },
+        "com_coautoria": {
+          "title": "Com Coautoria",
+          "type": "number"
+        },
+        "com_exterior": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Brasil e exterior no mesmo documento.",
+          "title": "Com Exterior"
+        },
+        "com_instituicoes": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Duas ou mais instituições identificadas.",
+          "title": "Com Instituicoes"
+        },
+        "documentos": {
+          "title": "Documentos",
+          "type": "integer"
+        },
+        "entre_ufs": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Duas ou mais UFs brasileiras.",
+          "title": "Entre Ufs"
+        }
+      },
+      "required": [
+        "ano",
+        "documentos",
+        "com_coautoria",
+        "autores_medio"
+      ],
+      "title": "ColaboracaoAno",
+      "type": "object"
+    },
+    "ColunasInstituicoesRede": {
+      "additionalProperties": false,
+      "description": "As instituições que colaboraram com outra, com o desenho da rede (os ids são os de `afiliacoes.json`).",
+      "properties": {
+        "comunidade": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Comunidade",
+          "type": "array"
+        },
+        "grau": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Grau",
+          "type": "array"
+        },
+        "id": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Id",
+          "type": "array"
+        },
+        "x": {
+          "items": {
+            "type": "number"
+          },
+          "title": "X",
+          "type": "array"
+        },
+        "y": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Y",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "grau",
+        "comunidade",
+        "x",
+        "y"
+      ],
+      "title": "ColunasInstituicoesRede",
+      "type": "object"
+    },
+    "ColunasPessoas": {
+      "additionalProperties": false,
+      "description": "As pessoas (autores identificados), em colunas. `x` e `y` só para quem teve coautor (o desenho da rede).",
+      "properties": {
+        "comunidade": {
+          "description": "Índice em `comunidades` da rede de coautoria; -1 nas pequenas.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Comunidade",
+          "type": "array"
+        },
+        "documentos": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Documentos",
+          "type": "array"
+        },
+        "grau": {
+          "description": "Coautores distintos.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Grau",
+          "type": "array"
+        },
+        "id": {
+          "description": "Id publicado (um hash curto; o site não publica ORCIDs).",
+          "items": {
+            "type": "string"
+          },
+          "title": "Id",
+          "type": "array"
+        },
+        "nome": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Nome",
+          "type": "array"
+        },
+        "x": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "X",
+          "type": "array"
+        },
+        "y": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Y",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "nome",
+        "documentos",
+        "grau",
+        "comunidade",
+        "x",
+        "y"
+      ],
+      "title": "ColunasPessoas",
+      "type": "object"
+    },
+    "ComunidadeRede": {
+      "additionalProperties": false,
+      "properties": {
+        "documentos": {
+          "title": "Documentos",
+          "type": "integer"
+        },
+        "id": {
+          "title": "Id",
+          "type": "integer"
+        },
+        "macro": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Macrotema mais frequente nos documentos da comunidade.",
+          "title": "Macro"
+        },
+        "n": {
+          "description": "Nós da comunidade.",
+          "title": "N",
+          "type": "integer"
+        },
+        "rede": {
+          "enum": [
+            "coautoria",
+            "instituicoes"
+          ],
+          "title": "Rede",
+          "type": "string"
+        },
+        "rotulo": {
+          "description": "Os dois tópicos mais frequentes (a comunidade não recebe nome de pessoa).",
+          "title": "Rotulo",
+          "type": "string"
+        },
+        "topicos": {
+          "description": "Os tópicos mais frequentes, em ordem.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Topicos",
+          "type": "array"
+        }
+      },
+      "required": [
+        "rede",
+        "id",
+        "n",
+        "documentos",
+        "macro",
+        "topicos",
+        "rotulo"
+      ],
+      "title": "ComunidadeRede",
+      "type": "object"
+    },
+    "MetricasRede": {
+      "additionalProperties": false,
+      "properties": {
+        "agrupamento": {
+          "title": "Agrupamento",
+          "type": "number"
+        },
+        "arestas": {
+          "title": "Arestas",
+          "type": "integer"
+        },
+        "componentes": {
+          "title": "Componentes",
+          "type": "integer"
+        },
+        "densidade": {
+          "title": "Densidade",
+          "type": "number"
+        },
+        "fracao_maior": {
+          "title": "Fracao Maior",
+          "type": "number"
+        },
+        "grau_medio": {
+          "title": "Grau Medio",
+          "type": "number"
+        },
+        "maior_componente": {
+          "title": "Maior Componente",
+          "type": "integer"
+        },
+        "modularidade": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Modularidade"
+        },
+        "nos": {
+          "title": "Nos",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "nos",
+        "arestas",
+        "componentes",
+        "maior_componente",
+        "fracao_maior",
+        "densidade",
+        "grau_medio",
+        "agrupamento",
+        "modularidade"
+      ],
+      "title": "MetricasRede",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Coautoria (pessoas), colaboração entre instituições e as séries da colaboração.",
+  "properties": {
+    "autorias": {
+      "$ref": "#/$defs/AutoriasRede"
+    },
+    "colaboracao": {
+      "items": {
+        "$ref": "#/$defs/ColaboracaoAno"
+      },
+      "title": "Colaboracao",
+      "type": "array"
+    },
+    "comunidades": {
+      "items": {
+        "$ref": "#/$defs/ComunidadeRede"
+      },
+      "title": "Comunidades",
+      "type": "array"
+    },
+    "instituicoes": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ColunasInstituicoesRede"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "metricas": {
+      "additionalProperties": {
+        "$ref": "#/$defs/MetricasRede"
+      },
+      "title": "Metricas",
+      "type": "object"
+    },
+    "parametros": {
+      "additionalProperties": true,
+      "title": "Parametros",
+      "type": "object"
+    },
+    "pessoas": {
+      "$ref": "#/$defs/ColunasPessoas"
+    },
+    "versao_contrato": {
+      "default": "1.5",
+      "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
+      "pattern": "^1\\.\\d+$",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "pessoas",
+    "autorias"
+  ],
+  "title": "Redes",
+  "type": "object"
+}

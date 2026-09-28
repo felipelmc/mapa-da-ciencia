@@ -2,6 +2,20 @@
   "additionalProperties": false,
   "description": "Gabarito calculado no Python para testar o filtro cruzado do frontend.",
   "properties": {
+    "arestas_coautoria": {
+      "default": 0,
+      "description": "Pares de coautores no corpus inteiro.",
+      "title": "Arestas Coautoria",
+      "type": "integer"
+    },
+    "canone_n": {
+      "description": "Documentos que citam cada obra do cânone.",
+      "items": {
+        "type": "integer"
+      },
+      "title": "Canone N",
+      "type": "array"
+    },
     "instituicao": {
       "additionalProperties": {
         "type": "number"
@@ -83,6 +97,30 @@
       "description": "Documentos com alguma afiliação na UF.",
       "title": "Uf Inteiro",
       "type": "object"
+    },
+    "uf_pares": {
+      "description": "(UF, UF ou EX, peso, documentos) na colaboração entre estados.",
+      "items": {
+        "maxItems": 4,
+        "minItems": 4,
+        "prefixItems": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "Uf Pares",
+      "type": "array"
     },
     "versao_contrato": {
       "default": "1.5",

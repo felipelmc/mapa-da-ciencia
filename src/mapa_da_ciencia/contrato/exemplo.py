@@ -601,6 +601,11 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
             for a, issn, t in REVISTAS
         ]
     )
+    macro_do_topico = {tid: mi for tid, mi, *_ in topicos_def}
+    redes, citacoes, gabarito = _redes_sinteticas(
+        random.Random(semente + 1), docs, macro_do_topico, af, insts, i_nao_identificada, len(MACROS)
+    )
+    agregados = agregados.model_copy(update=gabarito)
     licencas = Counter(det.licenca for det in detalhes.values())
     arquivos: dict[str, m.BaseModel] = {
         "revistas": revistas,
@@ -611,6 +616,8 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
         "classificacoes": classificacoes,
         "validacao": validacao,
         "agregados": agregados,
+        "redes": redes,
+        "citacoes": citacoes,
     }
     manifesto = m.Manifesto(
         api=False,
@@ -806,3 +813,161 @@ def _juri_sintetico(rng, validacao: m.Validacao, amostra: list[dict], vars_cls, 
         m.Participante(nome="juri", tipo="modelo", n=len(amostra)),
         m.Participante(nome="juri-supervisor", tipo="modelo", n=len(amostra), familia="exemplo"),
     ]
+
+
+PRENOMES = ["Ana", "Bruno", "Carla", "Diego", "Elisa", "Fábio", "Gisele", "Hugo", "Iara", "João", "Karina", "Luís"]
+SOBRENOMES = ["Almeida", "Barros", "Cardoso", "Duarte", "Esteves", "Freitas", "Gomes", "Hollanda", "Iório", "Jardim"]
+
+
+def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada, n_macros):
+    """Redes fictícias sobre os documentos do exemplo: pessoas por macrotema (com alguma mistura), a colaboração
+    entre as instituições das afiliações do exemplo, citações de documentos mais antigos e um cânone inventado."""
+    from mapa_da_ciencia.redes.citacoes import calcular
+    from mapa_da_ciencia.redes.desenho import desenhar
+    from mapa_da_ciencia.redes.grafos import colaboracao_por_ano, comunidades, grafo, metricas, pares_ponderados
+
+    ids = [d["id"] for d in docs]
+    macro_do_doc = {d["id"]: macro_do_topico.get(d["topico"], -1) for d in docs}
+    pessoas = [f"{p} {s}" for s in SOBRENOMES for p in PRENOMES]  # 120 pessoas fictícias
+    grupo = {x: i % n_macros for i, x in enumerate(pessoas)}
+    por_macro = defaultdict(list)
+    for x in pessoas:
+        por_macro[grupo[x]].append(x)
+    autores: dict[str, list[str]] = {}
+    for d in docs:
+        mi = macro_do_doc[d["id"]]
+        base = por_macro[mi if mi >= 0 else rng.randrange(n_macros)]
+        n = rng.choices([1, 2, 3, 4], [0.45, 0.33, 0.15, 0.07])[0]
+        escolhidos = rng.sample(base, min(n, len(base)))
+        if n > 1 and rng.random() < 0.15:
+            escolhidos[-1] = rng.choice(pessoas)
+        autores[d["id"]] = escolhidos
+    arestas = pares_ponderados(autores)
+    g = grafo(arestas)
+    com, particao = comunidades(g, "coautoria")
+    pos = desenhar(g)
+    ordem = sorted(pessoas)
+    pos_de = {x: i for i, x in enumerate(ordem)}
+    grau = Counter(x for par in arestas for x in par)
+    n_docs = Counter(x for lista in autores.values() for x in set(lista))
+    # instituições: as do exemplo, por documento
+    inst_do_doc: dict[str, list[str]] = defaultdict(list)
+    lugares: dict[str, list[str]] = defaultdict(list)
+    for di, ii, uf in zip(af["doc"], af["instituicao"], af["uf"], strict=True):
+        if ii >= 0 and ii != i_nao_identificada:
+            inst_do_doc[ids[di]].append(insts[ii].id)
+            if insts[ii].pais == "BR" and uf >= 0:
+                lugares[ids[di]].append(insts[ii].uf)
+            elif insts[ii].pais != "BR":
+                lugares[ids[di]].append("EX")
+    arestas_i = pares_ponderados(inst_do_doc)
+    gi = grafo(arestas_i)
+    com_i, particao_i = comunidades(gi, "instituicoes")
+    pos_i = desenhar(gi)
+    grau_i = Counter(x for par in arestas_i for x in par)
+    comunidades_c = []
+    for rede, rotulos, membros_de in (("coautoria", com, autores), ("instituicoes", com_i, inst_do_doc)):
+        for k in sorted({c for c in rotulos.values() if c >= 0}):
+            membros = {x for x, c in rotulos.items() if c == k}
+            docs_k = [d for d, lista in membros_de.items() if membros & set(lista)]
+            macros = Counter(macro_do_doc[d] for d in docs_k if macro_do_doc[d] >= 0)
+            topicos_k = Counter(d["topico"] for d in docs if d["id"] in set(docs_k) and d["topico"] >= 0)
+            comunidades_c.append(
+                m.ComunidadeRede(
+                    rede=rede,
+                    id=k,
+                    n=len(membros),
+                    documentos=len(docs_k),
+                    macro=macros.most_common(1)[0][0] if macros else None,
+                    topicos=[t for t, _ in topicos_k.most_common(3)],
+                    rotulo=f"Comunidade {k + 1}",
+                )
+            )
+    anos = {d["id"]: d["ano"] for d in docs}
+    serie = colaboracao_por_ano(anos, autores, dict(inst_do_doc), dict(lugares))
+    redes = m.Redes(
+        pessoas=m.ColunasPessoas(
+            id=[f"p{i:04d}" for i in range(len(ordem))],
+            nome=ordem,
+            documentos=[n_docs[x] for x in ordem],
+            grau=[grau.get(x, 0) for x in ordem],
+            comunidade=[com.get(x, -1) for x in ordem],
+            x=[pos[x][0] if x in pos else None for x in ordem],
+            y=[pos[x][1] if x in pos else None for x in ordem],
+        ),
+        autorias=m.AutoriasRede(
+            doc=[i for i, d in enumerate(ids) for _ in autores[d]],
+            pessoa=[pos_de[x] for d in ids for x in autores[d]],
+        ),
+        instituicoes=m.ColunasInstituicoesRede(
+            id=sorted(pos_i),
+            grau=[grau_i[i] for i in sorted(pos_i)],
+            comunidade=[com_i.get(i, -1) for i in sorted(pos_i)],
+            x=[pos_i[i][0] for i in sorted(pos_i)],
+            y=[pos_i[i][1] for i in sorted(pos_i)],
+        ),
+        comunidades=comunidades_c,
+        metricas={
+            "coautoria": m.MetricasRede(**vars(metricas(g, particao))),
+            "instituicoes": m.MetricasRede(**vars(metricas(gi, particao_i))),
+        },
+        colaboracao=[m.ColaboracaoAno(**{k: v for k, v in vars(c).items() if k != "extras"}) for c in serie],
+        parametros={"semente": 7, "exemplo": True},
+    )
+    # citações: cada documento cita até três documentos mais antigos, quase sempre do mesmo macrotema, e obras
+    # clássicas inventadas
+    obra = {d: f"W{i:06d}" for i, d in enumerate(ids)}
+    doc_da_obra = {w: d for d, w in obra.items()}
+    por_ano_macro = defaultdict(list)
+    for d in docs:
+        por_ano_macro[macro_do_doc[d["id"]]].append(d)
+    referencias = []
+    classicas = [f"W9{k:05d}" for k in range(25)]
+    for d in docs:
+        mesmos = [x for x in por_ano_macro[macro_do_doc[d["id"]]] if x["ano"] < d["ano"]]
+        for x in rng.sample(mesmos, min(len(mesmos), rng.randrange(4))):
+            referencias.append({"obra": obra[d["id"]], "citada": obra[x["id"]]})
+        for w in rng.sample(classicas, rng.randrange(3)):
+            referencias.append({"obra": obra[d["id"]], "citada": w})
+    citadas = [
+        {"id": w, "titulo": f"Obra clássica fictícia {k + 1}", "ano": 1950 + k, "autores": [f"Autor Fictício {k + 1}"],
+         "veiculo": "Editora Exemplo", "tipo": "book", "doi": None, "citacoes": 1000 - k}
+        for k, w in enumerate(classicas)
+    ]  # fmt: skip
+    topico_do_doc = {d["id"]: d["topico"] for d in docs}
+    c = calcular(referencias, citadas, doc_da_obra, anos, topico_do_doc, macro_do_topico)
+    indice = {d: i for i, d in enumerate(ids)}
+    fluxo = [[0] * n_macros for _ in range(n_macros)]
+    for (a, b), n in c.fluxo_macrotemas.items():
+        if a >= 0 and b >= 0:
+            fluxo[a][b] = n
+    citacoes = m.Citacoes(
+        n_referencias=[c.n_referencias.get(d, 0) for d in ids],
+        internas=m.ArestasCitacao(de=[indice[a] for a, _ in c.internas], para=[indice[b] for _, b in c.internas]),
+        canone=[
+            m.ObraCitada(
+                id=o.id,
+                titulo=o.titulo,
+                ano=o.ano,
+                autores=o.autores,
+                veiculo=o.veiculo,
+                tipo=o.tipo,
+                doi=o.doi,
+                n=o.n,
+                edicoes=o.edicoes,
+            )
+            for o in c.canone
+        ],
+        canone_citantes=m.CitantesCanone(
+            doc=[indice[d] for o in c.canone for d in o.citantes],
+            obra=[k for k, o in enumerate(c.canone) for _ in o.citantes],
+        ),
+        fluxo_macrotemas=fluxo,
+        cobertura={k: int(v) for k, v in c.cobertura.items()},
+    )
+    gabarito = {
+        "arestas_coautoria": len(arestas),
+        "uf_pares": [(a, b, p, n) for (a, b), (p, n) in pares_ponderados(dict(lugares)).items()],
+        "canone_n": [o.n for o in c.canone],
+    }
+    return redes, citacoes, gabarito
