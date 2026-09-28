@@ -31,7 +31,7 @@ Piloto, amostra de 200 artigos (58 estratos), `claude-opus` (referência) × `qw
 | Técnica ou fonte de dados | 44% | 0,37 (0,30 a 0,45) | 0,37 | 0,34 |
 | Período analisado (texto) | 84% | — | — | — |
 
-A técnica é a variável fraca: 44 das 112 divergências são ensaios teóricos que a referência codificou como "bibliografia" e o modelo como "não informado". O codebook de exemplo não diz o que fazer quando o resumo não fala da fonte; é um problema de definição. No tutorial (*Opinião Pública*, 40 artigos, mais empíricos), a mesma variável teve kappa 0,71.
+A técnica é a variável fraca: 44 das 111 divergências são ensaios teóricos que a referência codificou como "bibliografia" e o modelo como "não informado". O codebook de exemplo não diz o que fazer quando o resumo não fala da fonte; é um problema de definição. No tutorial (*Opinião Pública*, 40 artigos, mais empíricos), a mesma variável teve kappa 0,71.
 
 Os lotes do codificador de referência trouxeram um desvio: em alguns resumos sem ano final, o período analisado foi deduzido do ano embutido no identificador do artigo ou da data de publicação. Esses casos foram refeitos só com o título e o resumo antes da importação, e a instrução passou a proibir explicitamente o identificador e a data. O desvio mostra uma ambiguidade do codebook (períodos abertos ou relativos) que também afeta a codificação humana.
 

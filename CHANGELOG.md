@@ -16,6 +16,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 ### Corrigido
 
 - a descrição da reatribuição do ruído nos tópicos, na metodologia, no ADR 0007 e em `topicos.votos_minimos`: votam os 14 vizinhos mais próximos, porque o grafo de 15 do UMAP inclui o próprio documento (o código não muda).
+- números do piloto nas explicações e nos ADRs, conferidos com a rodada publicada: o texto de análise (4.159 com resumo em inglês, 88 em reserva, 28 só com título), a evidência literal e o tempo da classificação completa (93,4%, 9,6 s por resumo), +2,5 pontos para comunicação política nas redes sociais, 111 divergências na técnica e 16,4 s no 90º percentil da amostra.
 
 ## [1.0.1] - 2026-09-27
 
@@ -44,7 +45,7 @@ A versão 1.0.0 fecha o plano do projeto. A abertura do site, "Céu que se forma
 
 ## [0.7.0] - 2026-09-27
 
-A publicação, as figuras e a oficina: o projeto vira um site estático, com os resumos só de licença Creative Commons e nenhum e-mail; cada gráfico do painel sai em SVG, PNG ou CSV no tamanho de um artigo ou de um slide; e um caderno do Colab monta um mapa do zero numa GPU gratuita. O piloto inteiro está publicado na [demo](https://felipelamarca.com/mapa-da-ciencia/demo/): os 4.247 resumos classificados pelo `qwen3.5:9b` num notebook, em cerca de 10 horas (9,6 s por resumo), com 100% de JSON válido na primeira tentativa e 93,4% das evidências copiadas literalmente do resumo.
+A publicação, as figuras e a oficina: o projeto vira um site estático, com os resumos só de licença Creative Commons e nenhum e-mail; cada gráfico do painel sai em SVG, PNG ou CSV no tamanho de um artigo ou de um slide; e um caderno do Colab monta um mapa do zero numa GPU gratuita. O piloto inteiro está publicado na [demo](https://felipelamarca.com/mapa-da-ciencia/demo/): os 4.247 resumos classificados pelo `qwen3.5:9b` num notebook, em cerca de 10 horas (9,6 s por resumo), com 100% de JSON válido na primeira tentativa e 93,4% das evidências copiadas literalmente do título ou do resumo.
 
 ### Adicionado
 

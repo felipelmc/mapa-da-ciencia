@@ -21,7 +21,7 @@ O Felipe escolheu uma regressão logística da participação anual do tópico, 
 - A **dispersão** (X² de Pearson ÷ graus de liberdade) tem mediana de 1,47 e máximo de 5,48. As séries anuais variam mais do que uma binomial prevê, porque dossiês temáticos concentram artigos de um assunto num número só.
 - Com a **binomial pura**, 22 tópicos são marcados (11 em alta, 11 em queda). Entre eles, "Cooperação regional em saúde durante a pandemia" (φ = 5,48) aparece em alta por causa de um pico em 2020–2021, e "República conflitiva em Maquiavel", em queda, por causa de um dossiê no começo do período.
 - Com a **quase-binomial**, que multiplica o erro-padrão por √φ, 13 são marcados (7 em alta, 6 em queda). Todos têm séries com mudança sustentada:
-  - em alta: identificação partidária e polarização (+4,1 pontos percentuais no período), capacidades estatais municipais (+3,0), comunicação política nas redes sociais (+2,6), religião e política (+2,1), alocação de ministérios em coalizões, competição eleitoral municipal, Fernando Henrique Cardoso e Gramsci;
+  - em alta: identificação partidária e polarização (+4,1 pontos percentuais no período), capacidades estatais municipais (+3,0), comunicação política nas redes sociais (+2,5), religião e política (+2,1), alocação de ministérios em coalizões, competição eleitoral municipal, Fernando Henrique Cardoso e Gramsci;
   - em queda: modernidade e teoria social crítica (−2,0), cobertura da imprensa (−2,0), democracia deliberativa (−1,8), representação na sociedade civil, Estado e bem-estar social, arquitetura e estética no cinema.
 
 ## Decisão

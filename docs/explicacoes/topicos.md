@@ -16,7 +16,7 @@ Nem todo artigo tem resumo em inglês. O texto de análise nunca junta idiomas d
 | `reserva` | Não há resumo no idioma de análise | Título e resumo em outro idioma, na ordem: português, espanhol, inglês, francês |
 | `so_titulo` | O documento não tem resumo | Só o título, de preferência no idioma de análise |
 
-A reserva funciona porque o modelo de embeddings é multilíngue: no spike M0a, 99,9% dos resumos em português encontraram a própria versão em inglês como vizinho mais próximo. No piloto de ciência política (4.275 documentos), 4.161 entram com o resumo em inglês, 96 (2,2%) como reserva e 18 (0,4%) só pelo título. A marca aparece no cartão de cada documento no mapa e nas contagens da etapa. Um documento sem título nem resumo fica fora dos tópicos.
+A reserva funciona porque o modelo de embeddings é multilíngue: no spike M0a, 99,9% dos resumos em português encontraram a própria versão em inglês como vizinho mais próximo. No piloto de ciência política (4.275 documentos), 4.159 entram com o resumo em inglês, 88 (2,1%) como reserva e 28 (0,7%) só pelo título. A marca aparece no cartão de cada documento no mapa e nas contagens da etapa. Um documento sem título nem resumo fica fora dos tópicos.
 
 ## 2. Embeddings
 
@@ -144,7 +144,7 @@ Um tópico está **em alta** quando a participação dele no corpus (documentos 
 - o tópico só é marcado quando o intervalo não inclui zero; com menos de 5 anos com documentos ou menos de 10 documentos do tópico, não há tendência calculada;
 - o tamanho da mudança é dado em **pontos percentuais**: a diferença entre a participação ajustada no primeiro e no último ano.
 
-No piloto, 13 dos 57 tópicos são marcados: 7 em alta (como identificação partidária e polarização, +4,1 pontos percentuais de 2010 a 2025, e comunicação política nas redes sociais, +2,6) e 6 em queda (como modernidade e teoria social crítica, −2,0). Com 57 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço).
+No piloto, 13 dos 57 tópicos são marcados: 7 em alta (como identificação partidária e polarização, +4,1 pontos percentuais de 2010 a 2025, e comunicação política nas redes sociais, +2,5) e 6 em queda (como modernidade e teoria social crítica, −2,0). Com 57 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço).
 
 ## 13. Onde ficam os resultados
 

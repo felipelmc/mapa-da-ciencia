@@ -8,7 +8,7 @@ Os artigos são listados na ArticleMeta do SciELO, revista a revista, e filtrado
 
 ## 2. Tópicos
 
-- **Texto:** título e resumo em inglês (97% do piloto); na falta dele, no idioma disponível (2,2%) ou só o título (0,4%), com marca.
+- **Texto:** título e resumo em inglês (97,3% do piloto, 4.159); na falta dele, no idioma disponível (2,1%, 88) ou só o título (0,7%, 28), com marca.
 - **Embeddings:** `qwen3-embedding:0.6b`, rodando localmente no Ollama, com vetores normalizados.
 - **Vizinhança:** os 15 vizinhos mais próximos de cada documento (incluindo o próprio documento, como no UMAP), por similaridade de cosseno, calculados de forma exata.
 - **Redução:** UMAP para 5 dimensões (agrupamento, `min_dist` 0) e para 2 (o mapa), com semente fixa.
@@ -28,7 +28,7 @@ Cada afiliação de autor (a normalizada da ArticleMeta, `v240`, ou o texto livr
 
 ## 5. Classificação
 
-Um modelo local (`qwen3.5:9b`, temperatura 0, contexto de 8.192 *tokens*) lê o título e o resumo em português de cada artigo e responde às perguntas do codebook num JSON com esquema fixo, citando antes de cada valor o trecho do resumo que o justifica (até 200 caracteres). O `mapa` confere se o trecho está no resumo (literal, aproximado ou ausente) e, quando uma evidência obrigatória não está, pede uma nova resposta uma vez. No piloto: 100% de JSON válido na primeira tentativa, 94,8% das evidências literais, 10,8 s por resumo num notebook. Veja [Classificação ancorada em evidência](classificacao.md) e o [ADR 0011](../decisoes/0011-classificacao-ancorada-em-evidencia.md).
+Um modelo local (`qwen3.5:9b`, temperatura 0, contexto de 8.192 *tokens*) lê o título e o resumo em português de cada artigo e responde às perguntas do codebook num JSON com esquema fixo, citando antes de cada valor o trecho do resumo que o justifica (até 200 caracteres). O `mapa` confere se o trecho está no resumo (literal, aproximado ou ausente) e, quando uma evidência obrigatória não está, pede uma nova resposta uma vez. No piloto (4.247 resumos): 100% de JSON válido na primeira tentativa, 93,4% das evidências literais e 9,6 s por resumo (mediana) num notebook. Veja [Classificação ancorada em evidência](classificacao.md) e o [ADR 0011](../decisoes/0011-classificacao-ancorada-em-evidencia.md).
 
 ## 6. Validação
 
