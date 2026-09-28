@@ -67,8 +67,8 @@ export function abrirAfiliacoes(fonte: FonteDeDados, tabela: TabelaDocumentos): 
  * `erroAfiliacoes`): a falha de um arquivo que só a Geografia usa não derruba o Mapa, os Tópicos e a Classificação.
  */
 export function abrirCubo(fonte: FonteDeDados): Promise<Aberto | null> {
-	return lembrar(cubos, fonte, () =>
-		abrirCorpus(fonte).then(async (corpus) => {
+	return lembrar(cubos, fonte, () => {
+		const aberto = abrirCorpus(fonte).then(async (corpus) => {
 			if (!corpus) return null;
 			let a: TabelaAfiliacoes | null = null;
 			let erroAfiliacoes: Error | null = null;
@@ -80,13 +80,27 @@ export function abrirCubo(fonte: FonteDeDados): Promise<Aberto | null> {
 				}
 			}
 			return { ...corpus, afiliacoes: a, erroAfiliacoes, cubo: new Cubo(corpus.tabela, corpus.topicos, a) };
-		})
-	);
+		});
+		// depois de uma falha, quem abrir o cubo (uma vista pelo trilho, sem "Tentar de novo") avisa a barra do recorte
+		aberto.then(
+			() => falharam.delete(fonte) && avisar(),
+			() => falharam.add(fonte)
+		);
+		return aberto;
+	});
 }
 
+const falharam = new WeakSet<FonteDeDados>();
 const ouvintes = new Set<() => void>();
 
-/** Chama `ouvinte` quando o cubo for reaberto ("Tentar de novo"), para a barra do recorte trocar de cubo. */
+function avisar() {
+	for (const ouvinte of ouvintes) ouvinte();
+}
+
+/**
+ * Chama `ouvinte` quando o cubo for reaberto ("Tentar de novo") ou abrir depois de uma falha, para a barra do recorte
+ * trocar de cubo (ou aparecer).
+ */
 export function aoReabrir(ouvinte: () => void): () => void {
 	ouvintes.add(ouvinte);
 	return () => ouvintes.delete(ouvinte);
@@ -96,7 +110,7 @@ export function aoReabrir(ouvinte: () => void): () => void {
 export function reabrirCubo(fonte: FonteDeDados): Promise<Aberto | null> {
 	cubos.delete(fonte);
 	const p = abrirCubo(fonte);
-	for (const ouvinte of ouvintes) ouvinte();
+	avisar();
 	return p;
 }
 

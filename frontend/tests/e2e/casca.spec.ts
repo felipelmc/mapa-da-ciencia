@@ -235,6 +235,22 @@ test.describe('acessibilidade e casos de borda', () => {
 		expect(excecoes).toEqual([]);
 	});
 
+	test('depois de uma falha passageira, a barra do recorte volta quando a pessoa segue pelo trilho', async ({ page }) => {
+		let falhou = false;
+		await page.route('**/dados/documentos.json', (r) => {
+			if (falhou) return r.continue();
+			falhou = true;
+			return r.fulfill({ status: 503, body: '' });
+		});
+		await page.goto(`${url('RAIZ')}#/mapa`);
+		await expect(page.getByTestId('falha-ao-abrir')).toBeVisible();
+		await expect(page.getByTestId('barra-recorte')).toHaveCount(0);
+		// sem clicar em "Tentar de novo": vai a Tópicos pelo trilho
+		await trilho(page).getByRole('link', { name: 'Tópicos', exact: true }).click();
+		await expect(page.getByTestId('figura-fluxo')).toBeVisible();
+		await expect(page.getByTestId('contador-recorte')).toContainText(inteiro(tabelaDocumentos.n));
+	});
+
 	test('sem o arquivo das afiliações, só a Geografia falha, e "Tentar de novo" a abre', async ({ page }) => {
 		let bloqueado = true;
 		await page.route('**/dados/afiliacoes.json', (r) => (bloqueado ? r.fulfill({ status: 503, body: '' }) : r.continue()));

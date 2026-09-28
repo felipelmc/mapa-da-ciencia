@@ -52,6 +52,19 @@ describe('abrirCubo', () => {
 		expect(pedidos.documentos).toBe(2);
 	});
 
+	it('o cubo que abre depois de uma falha avisa quem ouve, mesmo sem "Tentar de novo"', async () => {
+		const { fonte } = fonteFalsa({ documentos: 1 });
+		const ouvinte = vi.fn();
+		const parar = aoReabrir(ouvinte);
+		await expect(abrirCubo(fonte)).rejects.toThrow('HTTP 503');
+		expect(ouvinte).not.toHaveBeenCalled();
+		await abrirCubo(fonte); // uma vista aberta pelo trilho
+		expect(ouvinte).toHaveBeenCalledOnce();
+		await abrirCubo(fonte); // já aberto: nada de novo
+		expect(ouvinte).toHaveBeenCalledOnce();
+		parar();
+	});
+
 	it('a falha das afiliações não derruba o cubo: ele abre sem lugares, com o erro para a Geografia', async () => {
 		const { fonte, pedidos } = fonteFalsa({ afiliacoes: 1 });
 		const aberto = await abrirCubo(fonte);
