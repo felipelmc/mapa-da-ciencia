@@ -190,3 +190,11 @@ def test_apagar_uma_resposta_e_nomes_recusados(projeto, tmp_path):
     assert c.get("/api/validacao/fila?codificador=claude-opus").status_code == 409
     assert c.put(url, json={"codificador": "claude-opus", "respostas": _respostas(projeto)}).status_code == 409
     assert va.codificadores(projeto)["claude-opus"] == "referencia"
+
+
+def test_pedido_invalido_em_portugues(projeto, tmp_path):
+    c = _cliente(projeto, tmp_path)
+    r = c.post("/api/validacao/amostra", json={"n": 0})
+    assert r.status_code == 422
+    detalhe = r.json()["detail"]
+    assert detalhe["problemas"] == ["n: precisa ser pelo menos 1"] and detalhe["mensagem"].startswith("Pedido inválido")

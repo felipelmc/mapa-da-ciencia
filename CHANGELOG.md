@@ -18,6 +18,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Corrigido
 
+- painel: um pedido inválido à API (por exemplo, sortear uma amostra de 0 documentos) volta com a mensagem em português, e não "Unprocessable Entity".
 - `mapa status` e a linha das etapas do painel: as contagens com acento ("57 tópicos", "7.242 vínculos") e a duração legível ("10 h 5 min", em vez de "36.329 s").
 - painel, assistente do projeto: um projeto só de importação (ou da busca do OpenAlex) configura sem revistas do SciELO; antes o assistente exigia uma revista e, ao salvar, criava uma fonte do SciELO que o projeto não tinha.
 - codebook: o assistente do painel e o guia diziam que os rótulos "só mudam o que o painel mostra". O rótulo de uma variável o modelo lê: mudá-lo refaz a classificação inteira. O de uma categoria ele não lê, mas deixa a classificação desatualizada até a próxima `mapa classificar`, que a monta das respostas guardadas. A revisão do assistente agora diz qual dos dois casos vale.
