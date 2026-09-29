@@ -39,7 +39,7 @@ O júri produz três classificações que a validação compara como se fossem m
 
 | Fonte | No site publicado | O que é |
 |---|---|---|
-| `juri-r1` | Júri, 1ª votação | a maioria da votação (sem maioria: o voto do primeiro membro, o "presidente") |
+| `juri-r1` | 1ª votação do júri | a maioria da votação (sem maioria: o voto do primeiro membro, o "presidente") |
 | `juri` | Júri de modelos | a maioria depois da deliberação (sem maioria: o presidente) |
 | `juri-supervisor` | Júri com supervisor | o `juri`, com a escolha do supervisor onde não houve maioria |
 

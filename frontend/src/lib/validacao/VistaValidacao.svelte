@@ -208,7 +208,7 @@
 		{@render listaDePares()}
 	{:else if pares.length > 1}
 		<details class="recolhido" data-testid="outros-pares">
-			<summary>Comparar outros pares ({formatarInteiro(pares.length - 1)})</summary>
+			<summary>Comparar outros pares (todos os {formatarInteiro(pares.length)})</summary>
 			{@render listaDePares()}
 		</details>
 	{/if}

@@ -7,7 +7,7 @@ import type { Validacao } from '$lib/contrato/tipos';
 
 const DO_JURI: Record<string, string> = {
 	juri: 'Júri de modelos',
-	'juri-r1': 'Júri, 1ª votação',
+	'juri-r1': '1ª votação do júri',
 	'juri-supervisor': 'Júri com supervisor'
 };
 

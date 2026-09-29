@@ -71,7 +71,7 @@ const LICENCAS: Record<string, string> = {
 	'implied-oa': 'acesso aberto, sem licença declarada'
 };
 
-/** Nome legível de uma licença do OpenAlex: `cc-by-nc` → `CC BY-NC`, `other-oa` → `outra licença aberta`. */
+/** Nome legível de uma licença do OpenAlex: `cc-by-nc` → `CC BY-NC`, `other-oa` → `acesso aberto, sem licença Creative Commons`. */
 export function nomeDaLicenca(codigo: string | null | undefined): string {
 	if (!codigo) return 'desconhecida';
 	if (LICENCAS[codigo]) return LICENCAS[codigo];

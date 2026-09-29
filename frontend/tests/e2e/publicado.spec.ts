@@ -117,3 +117,16 @@ test('no site publicado, uma vista sem dados diz que não faz parte da publicaç
 	await expect(page.getByRole('main')).not.toContainText('Rode');
 	await expect(page.getByRole('main')).not.toContainText('.json');
 });
+
+test('no site publicado sem tópicos, o Mapa diz que não faz parte da publicação, sem comandos', async ({ page }) => {
+	await page.route('**/dados/manifesto.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const m = await resposta.json();
+		m.arquivos = m.arquivos.filter((a: string) => a !== 'topicos');
+		await rota.fulfill({ response: resposta, json: m });
+	});
+	await page.goto(`${url('PUBLICADO')}#/mapa`);
+	await expect(page.getByTestId('fora-da-publicacao')).toBeVisible({ timeout: 15_000 });
+	await expect(page.getByRole('main')).not.toContainText('Rode');
+	await expect(page.getByRole('main')).not.toContainText('mapa topicos');
+});
