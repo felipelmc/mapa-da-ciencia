@@ -279,6 +279,12 @@ def gerar_topicos(
     modelos = {"embeddings": e.rotulo_modelo}
     if not opcoes.sem_rotulos and rotulador.resumo.chamadas + rotulador.resumo.do_cache:
         modelos["rotulos"] = rotulador.resumo.modelo
+    elif not opcoes.sem_rotulos and rotulador.resumo.reaproveitados:
+        # os rótulos do modelo vieram da execução anterior (sem chamar o modelo nem o cache): o modelo que os
+        # escreveu vem junto, senão o manifesto diria "nenhum (palavras-chave)"
+        velho = Resultado.ler(pasta)
+        if velho is not None and "rotulos" in velho.modelos:
+            modelos["rotulos"] = velho.modelos["rotulos"]
     parametros = {
         "vizinhos": k,
         "min_dist": ct.min_dist,

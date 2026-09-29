@@ -29,6 +29,26 @@ def _ler(p, nome, modelo):
     return modelo.model_validate_json((p.saida / "dados" / f"{nome}.json").read_text(encoding="utf-8"))
 
 
+def test_rotulos_sem_modelo_registrado_vem_do_modelo_configurado(projeto):
+    """Tópicos de antes da 2.1.1 com rótulos reaproveitados não registravam o modelo, e o manifesto dizia "nenhum
+    (palavras-chave)", embora os rótulos fossem do modelo. Agora diz o modelo configurado, numa execução anterior."""
+    from mapa_da_ciencia.topicos.resultado import PASTA
+
+    arquivo = projeto.dados / PASTA / "resultado.json"
+    dados = json.loads(arquivo.read_text(encoding="utf-8"))
+    del dados["modelos"]["rotulos"]
+    arquivo.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
+    exportar(projeto)
+    rotulos = _ler(projeto, "manifesto", m.Manifesto).execucao.modelos["rotulos"]
+    assert rotulos == f"{projeto.config.modelos.rotulos.modelo} (numa execução anterior)"
+    # sem nenhum rótulo do modelo, continuam as palavras-chave
+    for t in dados["topicos"]:
+        t["rotulo_fonte"] = "palavras"
+    arquivo.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
+    exportar(projeto)
+    assert _ler(projeto, "manifesto", m.Manifesto).execucao.modelos["rotulos"] == "nenhum (palavras-chave)"
+
+
 def test_contrato_completo_depois_dos_topicos(projeto):
     manifesto = _ler(projeto, "manifesto", m.Manifesto)
     assert manifesto.arquivos == [

@@ -85,6 +85,15 @@ def manifesto_do_projeto(
     )
 
 
+def _rotulos_sem_registro(projeto: Projeto, resultado: Any) -> str:
+    """O modelo dos rótulos quando a execução dos tópicos não o registrou. Sem rótulos do modelo, as palavras-chave;
+    com eles, foram reaproveitados de uma execução anterior (antes da 2.1.1, o reaproveitamento não levava o modelo
+    junto): o modelo configurado, sem o digest, que não se sabe mais."""
+    if any(t.rotulo_fonte == "llm" for t in resultado.topicos):
+        return f"{projeto.config.modelos.rotulos.modelo} (numa execução anterior)"
+    return "nenhum (palavras-chave)"
+
+
 def schemas() -> dict[str, dict]:
     """JSON Schema (forma serializada) de cada arquivo do contrato."""
     return {nome: modelo.model_json_schema(mode="serialization") for nome, modelo in ARQUIVOS.items()}
@@ -512,7 +521,7 @@ def exportar(projeto: Projeto) -> list[str]:
             )
             arquivos.update(mais)
             contagens = contagens.model_copy(update={"topicos": len(resultado.topicos)})
-            modelos = {"rotulos": "nenhum (palavras-chave)", **resultado.modelos}
+            modelos = {"rotulos": _rotulos_sem_registro(projeto, resultado), **resultado.modelos}
             sementes = {"umap": int(resultado.parametros["semente"])}
             geo = _geografia(projeto, arquivos, avisos, desatualizadas)
             if geo is not None:
