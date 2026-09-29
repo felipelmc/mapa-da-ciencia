@@ -31,7 +31,7 @@
 	}: { validacao: Validacao; codebook: CodebookContrato | null; tabela: TabelaDocumentos | null; api: boolean } =
 		$props();
 
-	const TIPOS = { humano: 'pessoa', referencia: 'referência (não humano)', modelo: 'modelo' } as const;
+	const TIPOS = { humano: 'pessoa', referencia: 'referência, não humano', modelo: 'modelo' } as const;
 	const ESTRATOS: Record<string, string> = { topico: 'tópico', ano: 'ano', revista: 'revista' };
 	const participantes = $derived(validacao.codificadores ?? []);
 	const tipo = (nome: string) => participantes.find((p) => p.nome === nome)?.tipo;
@@ -171,8 +171,8 @@
 	<header class="cabecalho">
 		<h1>Validação</h1>
 		<p class="lide" data-testid="lide-validacao">
-			Amostra de {formatarInteiro(validacao.amostra.n)} documentos, estratificada por {ESTRATOS[validacao.amostra.estratificar_por] ?? validacao.amostra.estratificar_por}
-			{#if api}(semente {validacao.amostra.semente}){/if}.
+			Amostra de {formatarInteiro(validacao.amostra.n)} documentos, estratificada por {ESTRATOS[validacao.amostra.estratificar_por] ?? validacao.amostra.estratificar_por}{#if api}{' '}(semente
+				{validacao.amostra.semente}){/if}.
 			{#each participantes as p, i (p.nome)}{i ? (i === participantes.length - 1 ? ' e ' : ', ') : 'Responderam: '}<strong>{nome(p.nome)}</strong> ({TIPOS[p.tipo]}, {formatarInteiro(p.n)}){/each}.
 		</p>
 		{#if participantes.some((p) => p.tipo === 'referencia')}

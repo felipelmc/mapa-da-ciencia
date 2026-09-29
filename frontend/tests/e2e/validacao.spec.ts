@@ -16,7 +16,8 @@ test('mostra os participantes, as métricas do par e as divergências da variáv
 	await expect(page.getByTestId('lide-validacao')).toContainText(`Amostra de ${validacao.amostra.n} documentos`);
 	// o codificador de referência é identificado como tal
 	await expect(page.getByTestId('aviso-referencia')).toBeVisible();
-	await expect(page.getByTestId('lide-validacao')).toContainText('referência (não humano)');
+	await expect(page.getByTestId('lide-validacao')).toContainText('(referência, não humano,');
+	await expect(page.getByTestId('lide-validacao')).toContainText(/estratificada por \S+\. Responderam/);
 	const doPar = validacao.metricas.filter(
 		(m: { referencia: string; comparado: string }) => m.referencia === 'referencia-exemplo' && m.comparado === 'exemplo'
 	);
