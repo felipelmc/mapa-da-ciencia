@@ -37,11 +37,11 @@ conversa; `virou` diz se ela mudou) ou `sem_maioria` (com a escolha do superviso
 
 O júri produz três classificações que a validação compara como se fossem modelos:
 
-| Fonte | O que é |
-|---|---|
-| `juri-r1` | a maioria da votação (sem maioria: o voto do primeiro membro, o "presidente") |
-| `juri` | a maioria depois da deliberação (sem maioria: o presidente) |
-| `juri-supervisor` | o `juri`, com a escolha do supervisor onde não houve maioria |
+| Fonte | No site publicado | O que é |
+|---|---|---|
+| `juri-r1` | 1ª votação do júri | a maioria da votação (sem maioria: o voto do primeiro membro, o "presidente") |
+| `juri` | Júri de modelos | a maioria depois da deliberação (sem maioria: o presidente) |
+| `juri-supervisor` | Júri com supervisor | o `juri`, com a escolha do supervisor onde não houve maioria |
 
 No piloto, o **codificador de referência** também é um modelo da família Claude, e o supervisor também. Comparar os
 dois mede, em parte, quanto uma instância do Claude concorda com outra: é **circular**. Por isso:
@@ -72,4 +72,4 @@ supervisor é um modelo da Anthropic chamado pela API: aí os títulos e resumos
 - O júri roda na amostra de validação (200 documentos, no piloto), que é onde há referência para medir o ganho.
   Levá-lo ao corpus inteiro (uma classificação completa por membro, a deliberação e o supervisor em milhares de
   documentos) fica para uma versão futura.
-- Os números do piloto e a comparação entre os membros estão no [ADR 0015](../decisoes/0015-juri-de-modelos-e-supervisor.md).
+- Os números do piloto e a comparação entre os membros estão no [registro técnico da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0015-juri-de-modelos-e-supervisor.md), no repositório.

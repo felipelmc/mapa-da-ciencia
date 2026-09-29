@@ -168,3 +168,15 @@ def test_citacao_sai_do_citation_cff_e_bate_com_o_readme():
     for arquivo in ("README.md", "docs/explicacoes/metodologia.md"):
         assert citacao["bibtex"] in (RAIZ / arquivo).read_text(encoding="utf-8"), arquivo
     assert hooks.citacao({**cff, "doi": ""}) == {}
+
+
+def test_a_referencia_aparece_pela_familia_e_nao_pelo_id(pagina):
+    def c(nome, familia, tipo="referencia"):
+        return {"nome": nome, "tipo": tipo, "familia": familia}
+
+    nome = pagina._nome_da_referencia
+    assert nome({"codificadores": [c("qwen3.5:9b", None, "modelo"), c("claude-opus", "claude")]}) == "Claude"
+    assert nome({"codificadores": [c("anotador", "openAI")]}) == "OpenAI"  # só a primeira letra muda
+    assert nome({"codificadores": [c("anotador", None)]}) == "anotador"
+    assert nome({"codificadores": [c("claude-opus", "claude"), c("claude-sonnet", "claude")]}) == "claude-opus"
+    assert nome({"codificadores": []}) is None

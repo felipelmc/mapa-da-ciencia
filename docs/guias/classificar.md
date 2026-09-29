@@ -1,12 +1,12 @@
 # Classificar os resumos
 
-A etapa `mapa classificar` lê o título e o resumo de cada documento e preenche as variáveis do codebook do projeto (`codebook.yaml`) com um modelo local. Para cada resposta, o modelo copia do resumo um trecho curto que a justifica, a **evidência**, e a etapa confere se esse trecho está mesmo no texto. Esta página mostra como rodar. Para entender o método, veja o [ADR 0011](../decisoes/0011-classificacao-ancorada-em-evidencia.md); para escrever as variáveis, [Escrever um codebook](codebook.md).
+A etapa `mapa classificar` lê o título e o resumo de cada documento e preenche as variáveis do codebook do projeto (`codebook.yaml`) com um modelo local. Para cada resposta, o modelo copia do resumo um trecho curto que a justifica, a **evidência**, e a etapa confere se esse trecho está mesmo no texto. Esta página mostra como rodar. Para entender o método, veja [Classificação ancorada em evidência](../explicacoes/classificacao.md); para escrever as variáveis, [Escrever um codebook](codebook.md).
 
 ## Antes de começar
 
 - O projeto precisa de um corpus coletado (`mapa coletar`) e de um codebook. `mapa novo` já traz o codebook de exemplo, com 6 variáveis sobre método e recorte.
 - O Ollama precisa estar rodando, com o modelo de `modelos.classificacao.modelo` do `mapa.yaml` instalado (`qwen3.5:9b` no perfil padrão). `mapa diagnostico` confere as duas coisas.
-- A classificação é a etapa mais longa do pipeline: no Mac de desenvolvimento (M4 Pro, 24 GB), cada resumo leva uns segundos, e o piloto inteiro, horas. Feche o que puder antes de rodar, porque o modelo ocupa uns 7 GB de memória.
+- A classificação é a etapa mais longa do pipeline: no computador do piloto (um Mac M4 Pro com 24 GB), cada resumo leva uns segundos, e o piloto inteiro, horas. Feche o que puder antes de rodar, porque o modelo ocupa uns 7 GB de memória.
 
 ## Estimar o tempo antes
 

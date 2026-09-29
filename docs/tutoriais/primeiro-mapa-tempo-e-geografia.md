@@ -156,5 +156,5 @@ Na *Opinião Pública*, São Paulo soma 66,4 de peso em 88 artigos, Minas Gerais
     uv run mapa geografia -P projetos/cp-scielo
     ```
 
-- **Por que estes limiares**, e como a precisão foi medida: a decisão [0008](../decisoes/0008-geografia-casamento-das-afiliacoes.md).
+- **Por que estes limiares**, e como a precisão foi medida: [Geografia da produção](../explicacoes/geografia.md).
 - A [parte 4](primeiro-mapa-classificacao.md) **classifica** os resumos com um codebook e mede a concordância numa amostra.

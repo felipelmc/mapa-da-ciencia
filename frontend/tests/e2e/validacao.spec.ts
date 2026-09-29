@@ -16,7 +16,8 @@ test('mostra os participantes, as métricas do par e as divergências da variáv
 	await expect(page.getByTestId('lide-validacao')).toContainText(`Amostra de ${validacao.amostra.n} documentos`);
 	// o codificador de referência é identificado como tal
 	await expect(page.getByTestId('aviso-referencia')).toBeVisible();
-	await expect(page.getByTestId('lide-validacao')).toContainText('referência (não humano)');
+	await expect(page.getByTestId('lide-validacao')).toContainText('(referência, não humano,');
+	await expect(page.getByTestId('lide-validacao')).toContainText(/estratificada por \S+\. Responderam/);
 	const doPar = validacao.metricas.filter(
 		(m: { referencia: string; comparado: string }) => m.referencia === 'referencia-exemplo' && m.comparado === 'exemplo'
 	);
@@ -79,20 +80,23 @@ test('no painel, as métricas vêm da API e há o link para codificar', async ({
 test('o júri: estágios por variável, auditoria e o par circular marcado', async ({ page }) => {
 	const problemas = vigiar(page);
 	await page.goto(`${url('RAIZ')}#/validacao`);
+	// no site, a parte técnica e os outros pares ficam recolhidos
+	await page.getByTestId('detalhes-tecnicos').locator('summary').click();
 	await expect(page.getByTestId('secao-juri')).toBeVisible();
 	await expect(page.getByTestId('tabela-juri').locator('tbody tr')).toHaveCount(Object.keys(validacao.juri.etapas).length);
 	await expect(page.getByTestId('auditoria-juri')).toContainText(`conferiu ${validacao.juri.auditoria.n} decisões`);
-	await expect(page.getByTestId('concordancia-supervisor')).toContainText('circular');
-	const circular = page.getByTestId('par').filter({ hasText: 'juri-supervisor' });
+	await expect(page.getByTestId('concordancia-supervisor')).toContainText(' circular');
+	await page.getByTestId('outros-pares').locator('summary').click();
+	const circular = page.getByTestId('par').filter({ hasText: 'Júri com supervisor' });
 	await expect(circular).toContainText('circular');
 	await circular.click();
 	await expect(page.getByTestId('aviso-circular')).toBeVisible();
 	expect(problemas).toEqual([]);
 });
 
-test('o cartão de um documento da amostra mostra os votos do júri', async ({ page }) => {
+test('no painel, o cartão de um documento da amostra mostra os votos do júri', async ({ page }) => {
 	const problemas = vigiar(page);
-	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent('exemplo:00689')}`);
+	await page.goto(`${url('PAINEL')}#/mapa?doc=${encodeURIComponent('exemplo:00689')}`);
 	const juri = page.getByTestId('votos-do-juri');
 	await expect(juri).toBeVisible({ timeout: 15_000 });
 	await juri.locator('summary').click();
@@ -122,7 +126,7 @@ test('sem maioria e sem supervisor, o cartão diz o que valeu; a mudança na del
 		}
 		await route.fulfill({ response: resposta, json: dados });
 	});
-	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(doc)}`);
+	await page.goto(`${url('PAINEL')}#/mapa?doc=${encodeURIComponent(doc)}`);
 	const juri = page.getByTestId('votos-do-juri');
 	await expect(juri).toBeVisible({ timeout: 15_000 });
 	await juri.locator('summary').click();
@@ -233,4 +237,50 @@ test('numa tela larga, com muitas variáveis, a tabela grudada rola por dentro e
 		return c.bottom <= innerHeight && !!topo && el.contains(topo);
 	});
 	expect(livre).toBe(true);
+});
+
+test('no site publicado, a validação abre no par principal, com nomes legíveis e a parte técnica recolhida', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('PUBLICADO')}#/validacao`);
+	await expect(h1(page)).toHaveText('Validação');
+	// os participantes pelo nome, e não pelo id interno
+	const lide = page.getByTestId('lide-validacao');
+	await expect(lide).toContainText('Exemplo');
+	await expect(lide).toContainText('Júri de modelos');
+	await expect(lide).not.toContainText('semente');
+	await expect(page.getByTestId('tabela-metricas')).toBeVisible();
+	// os outros pares e a parte técnica, recolhidos
+	await expect(page.getByTestId('par').first()).toBeHidden();
+	await expect(page.getByTestId('lista-mcnemar')).toBeHidden();
+	await expect(page.getByTestId('secao-juri')).toBeHidden();
+	const visivel = await page.getByRole('main').innerText();
+	for (const id of ['referencia-exemplo', 'juri-supervisor', 'juri-r1']) expect(visivel).not.toContain(id);
+	// abertos, os ids também não aparecem: os nomes legíveis valem em toda a vista
+	await page.getByTestId('outros-pares').locator('summary').click();
+	await page.getByTestId('detalhes-tecnicos').locator('summary').click();
+	await expect(page.getByTestId('secao-juri')).toBeVisible();
+	const aberto = await page.getByRole('main').innerText();
+	for (const id of ['referencia-exemplo', 'juri-supervisor', 'juri-r1']) expect(aberto).not.toContain(id);
+	expect(problemas).toEqual([]);
+});
+
+test('no painel, a validação continua toda aberta, sem blocos recolhidos', async ({ page }) => {
+	await page.goto(`${url('PAINEL')}#/validacao`);
+	await expect(h1(page)).toHaveText('Validação');
+	await expect(page.getByTestId('par').first()).toBeVisible();
+	await expect(page.getByTestId('outros-pares')).toHaveCount(0);
+	await expect(page.getByTestId('detalhes-tecnicos')).toHaveCount(0);
+	// no painel, os ids de sempre (os da CLI e do mapa.yaml), e não os nomes do site
+	await expect(page.getByTestId('lide-validacao')).toContainText('referencia-exemplo');
+	await expect(page.getByTestId('lide-validacao')).toContainText('juri-supervisor');
+});
+
+test('no site publicado, o cartão não mostra os votos do júri, e a licença tem nome legível', async ({ page }) => {
+	const problemas = vigiar(page);
+	await page.goto(`${url('PUBLICADO')}#/mapa?doc=${encodeURIComponent('exemplo:00689')}`);
+	const cartao = page.getByTestId('cartao-documento');
+	await expect(cartao.locator('.licenca')).toBeVisible({ timeout: 15_000 });
+	await expect(cartao.getByTestId('votos-do-juri')).toHaveCount(0);
+	await expect(cartao.locator('.licenca')).not.toContainText(/cc-|other-oa/);
+	expect(problemas).toEqual([]);
 });

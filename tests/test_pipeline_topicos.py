@@ -64,6 +64,29 @@ def test_topicos_de_ponta_a_ponta_e_segunda_execucao(tmp_path, apis_falsas):
     assert terceira.rotulos.reaproveitados == 0 and terceira.rotulos.do_cache >= terceira.topicos
 
 
+def test_rotulos_reaproveitados_guardam_o_modelo_que_os_escreveu(tmp_path, apis_falsas):
+    """Refeitos os tópicos, os rótulos do modelo dos tópicos que continuam iguais são reaproveitados, sem chamar o
+    modelo nem o cache. O modelo que os escreveu continua registrado (o manifesto dizia "nenhum (palavras-chave)")."""
+    import sqlite3
+
+    p, _ = _projeto(tmp_path)
+    primeira = gerar_topicos(p)
+    modelo = Resultado.ler(p.dados / PASTA).modelos["rotulos"]
+    assert modelo.startswith("qwen3.5:4b@")
+    with sqlite3.connect(p.estado) as con:  # sem o cache, só o reaproveitamento explica os rótulos
+        con.execute("DELETE FROM llm_cache WHERE tarefa = 'rotulos'")
+    # como no piloto, os macrotemas têm rótulo escrito à mão: a execução não chama o modelo para nada
+    macros = [m.id for m in Resultado.ler(p.dados / PASTA).macrotemas]
+    linhas = "".join(f"  {m}: {{rotulo: Macrotema {m}, descricao: escrito à mão}}\n" for m in macros)
+    (p.raiz / "rotulos.yaml").write_text(f"macrotemas:\n{linhas}", encoding="utf-8")
+    chats = apis_falsas.chamadas["ollama_chat"]
+    segunda = gerar_topicos(p)
+    assert segunda.rotulos.reaproveitados and apis_falsas.chamadas["ollama_chat"] == chats
+    assert segunda.rotulos.chamadas == segunda.rotulos.do_cache == 0 and segunda.topicos == primeira.topicos
+    assert Resultado.ler(p.dados / PASTA).modelos["rotulos"] == modelo
+    assert ultima_execucao(p, "topicos")["modelos"]["rotulos"] == modelo
+
+
 def test_sem_rotulos_nao_chama_o_modelo(tmp_path, apis_falsas):
     p, _ = _projeto(tmp_path)
     del apis_falsas.modelos_ollama["qwen3.5:4b"]

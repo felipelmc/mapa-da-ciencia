@@ -6,7 +6,7 @@
 	import { abrirCubo, reabrirCubo } from '$lib/dados/corpus';
 	import VistaMapa from '$lib/mapa/VistaMapa.svelte';
 
-	const { fonte } = usarProjeto();
+	const { fonte, manifesto } = usarProjeto();
 
 	// documentos.json e topicos.json só existem depois de `mapa topicos`; sem eles, nenhum pedido é feito
 	let dados = $state(abrirCubo(fonte));
@@ -25,9 +25,16 @@
 		{:else}
 			<div class="vazio">
 				<h1>Mapa</h1>
-				<EstadoVazio titulo="Este projeto ainda não tem mapa." sobretitulo="Sem tópicos">
-					<p>Rode <code>mapa coletar</code> e depois <code>mapa topicos</code>. Em seguida, recarregue esta página.</p>
-				</EstadoVazio>
+				{#if manifesto.publicacao}
+					<!-- no site publicado, quem visita não tem o que rodar -->
+					<EstadoVazio titulo="O mapa não faz parte desta publicação." sobretitulo="Fora da publicação">
+						<p data-testid="fora-da-publicacao">O projeto foi publicado sem os tópicos. As outras vistas continuam no trilho.</p>
+					</EstadoVazio>
+				{:else}
+					<EstadoVazio titulo="Este projeto ainda não tem mapa." sobretitulo="Sem tópicos">
+						<p>Rode <code>mapa coletar</code> e depois <code>mapa topicos</code>. Em seguida, recarregue esta página.</p>
+					</EstadoVazio>
+				{/if}
 			</div>
 		{/if}
 	</Protegida>

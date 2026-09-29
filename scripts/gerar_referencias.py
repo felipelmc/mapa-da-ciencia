@@ -4,7 +4,8 @@
 - docs/referencia/configuracao.md   ← modelos do `mapa.yaml` (`mapa_da_ciencia.config`)
 - docs/referencia/codebook.md       ← modelos do `codebook.yaml`
 - docs/referencia/contrato.md       ← modelos do contrato de dados (`mapa_da_ciencia.contrato.modelos`)
-- docs/referencia/api-http.md       ← rotas do painel (o OpenAPI de `mapa_da_ciencia.servidor.app`)
+- docs/desenvolvimento/api-http.md  ← rotas do painel (o OpenAPI de `mapa_da_ciencia.servidor.app`); fica fora do
+  site, com as outras notas de desenvolvimento, porque só serve a quem mexe no painel
 
 Uso (da raiz do repo):
     uv run python scripts/gerar_referencias.py            # regenera
@@ -31,7 +32,7 @@ from mapa_da_ciencia import cli, config
 from mapa_da_ciencia.contrato import modelos as contrato
 
 RAIZ = Path(__file__).resolve().parent.parent
-DESTINO = RAIZ / "docs" / "referencia"
+DESTINO = RAIZ / "docs"
 AVISO = "<!-- Página gerada por scripts/gerar_referencias.py a partir do código. Não edite à mão. -->\n"
 
 
@@ -305,22 +306,22 @@ def pagina_api_http() -> str:
 
 def paginas() -> dict[str, str]:
     return {
-        "cli.md": pagina_cli(),
-        "configuracao.md": pagina_modelo(
+        "referencia/cli.md": pagina_cli(),
+        "referencia/configuracao.md": pagina_modelo(
             "Configuração do projeto (mapa.yaml)",
             "Cada projeto tem um `mapa.yaml` na raiz da pasta. `mapa novo` cria um já preenchido e comentado. "
             "Campos desconhecidos são recusados, para pegar erros de digitação. Veja também o guia "
             "[Criar um projeto](../guias/criar-projeto.md).",
             config.ConfigProjeto,
         ),
-        "codebook.md": pagina_modelo(
+        "referencia/codebook.md": pagina_modelo(
             "Codebook (codebook.yaml)",
             "O codebook define as variáveis que o modelo preenche para cada resumo. Veja o guia "
             "[Escrever um codebook](../guias/codebook.md) para recomendações de redação.",
             config.Codebook,
         ),
-        "contrato.md": pagina_contrato(),
-        "api-http.md": pagina_api_http(),
+        "referencia/contrato.md": pagina_contrato(),
+        "desenvolvimento/api-http.md": pagina_api_http(),
     }
 
 
@@ -336,7 +337,7 @@ def main() -> int:
             if not arq.exists() or arq.read_text(encoding="utf-8") != texto:
                 desatualizadas.append(nome)
         else:
-            DESTINO.mkdir(parents=True, exist_ok=True)
+            arq.parent.mkdir(parents=True, exist_ok=True)
             arq.write_text(texto, encoding="utf-8")
     if desatualizadas:
         print("Referência desatualizada; rode `uv run python scripts/gerar_referencias.py`:", *desatualizadas)

@@ -7,12 +7,13 @@
 	import { formatarDecimal, formatarInteiro } from '$lib/formato';
 	import { KAPPA_FRACO, type Referencia } from './agregar';
 
-	let { referencia }: { referencia: Referencia } = $props();
+	/** `nome`: o nome legível do codificador (`validacao/nomes.ts`), no lugar do id interno. */
+	let { referencia, nome = null }: { referencia: Referencia; nome?: string | null } = $props();
 
 	const m = $derived(referencia.metrica);
 	const p = $derived(referencia.participante);
 	const fraco = $derived(m.kappa === null || m.kappa < KAPPA_FRACO);
-	const quem = $derived(p.tipo === 'humano' ? p.nome : `${p.nome} (referência, não humano)`);
+	const quem = $derived(p.tipo === 'humano' ? p.nome : `${nome ?? p.nome} (referência, não humano)`);
 	const dica = $derived(
 		m.kappa === null
 			? `Kappa indefinido contra ${quem}: sem variação nas respostas (n = ${formatarInteiro(m.n)}).`

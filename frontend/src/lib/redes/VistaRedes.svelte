@@ -6,6 +6,7 @@
 	 * revistas, tópicos, busca, laço e lugares) vale para todas: as redes são recalculadas com os documentos que passam
 	 * nele (`calculo.ts`), sobre o desenho fixo do corpus inteiro.
 	 */
+	import { usarProjeto } from '$lib/dados/contexto';
 	import type { Aberto } from '$lib/dados/corpus';
 	import type { TabelaCitacoes, TabelaRedes } from '$lib/dados/redes';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
@@ -18,6 +19,8 @@
 
 	const filtros = $derived(filtrosDaPagina());
 	const em = '/redes';
+	// no site publicado, quem visita não tem o que rodar: sem instrução de linha de comando
+	const publicado = !!usarProjeto().manifesto.publicacao;
 	const falhas = $derived(aberto.cubo.falhas(filtros));
 
 	const MODOS: { id: Rede; rotulo: string }[] = [
@@ -60,8 +63,8 @@
 				<ModoGrafo rede="instituicoes" {aberto} {redes} afiliacoes={aberto.afiliacoes} {filtros} {falhas} />
 			{:else}
 				<p class="aviso" data-testid="rede-indisponivel">
-					Sem a geografia, a rede de instituições fica de fora. Rode <code>mapa geografia</code> e depois
-					<code>mapa redes</code>.
+					Sem a geografia, a rede de instituições fica de fora.{#if !publicado}{' '}Rode <code>mapa geografia</code> e depois
+						<code>mapa redes</code>.{/if}
 				</p>
 			{/if}
 		{:else if modo === 'estados'}
@@ -69,16 +72,16 @@
 				<ModoEstados {aberto} {redes} afiliacoes={aberto.afiliacoes} {filtros} {falhas} />
 			{:else}
 				<p class="aviso" data-testid="rede-indisponivel">
-					Sem a geografia, a colaboração entre estados fica de fora. Rode <code>mapa geografia</code> e depois
-					<code>mapa redes</code>.
+					Sem a geografia, a colaboração entre estados fica de fora.{#if !publicado}{' '}Rode <code>mapa geografia</code> e depois
+						<code>mapa redes</code>.{/if}
 				</p>
 			{/if}
 		{:else if citacoes}
 			<ModoCitacoes {aberto} {citacoes} {falhas} />
 		{:else}
 			<p class="aviso" data-testid="rede-indisponivel">
-				Sem as referências do OpenAlex, as citações ficam de fora. Rode <code>mapa coletar</code> (que busca as
-				referências) e depois <code>mapa redes</code>.
+				Sem as referências do OpenAlex, as citações ficam de fora.{#if !publicado}{' '}Rode <code>mapa coletar</code> (que busca
+					as referências) e depois <code>mapa redes</code>.{/if}
 			</p>
 		{/if}
 	{/key}

@@ -46,7 +46,7 @@ JSON válido na primeira tentativa: 100,0%; 10,6 s por documento (mediana); 1 do
 Estimativa: faltam 390 documentos, cerca de 1,1 h neste computador.
 ```
 
-O tempo é o do Mac de desenvolvimento (M4 Pro, 24 GB); o seu pode ser outro.
+O tempo é o do computador do piloto (um Mac M4 Pro com 24 GB); o seu pode ser outro.
 
 ## 4. Classifique a amostra primeiro
 
@@ -72,7 +72,7 @@ Escreva o seu nome (sem acentos nem espaços) e codifique as 40 fichas. Cada fic
 uv run mapa validar metricas
 ```
 
-Para cada variável, a concordância entre você e o modelo: a fração de respostas iguais, o kappa com o intervalo de 95%, o PABAK e o alfa. Na nossa rodada, a amostra foi codificada por um **codificador de referência**, e não por uma pessoa: o Claude (`claude-opus`), um modelo muito maior, lendo às cegas os títulos e resumos da amostra, só para esta documentação (ver o [ADR 0012](../decisoes/0012-validacao-e-codificador-de-referencia.md)). Foi a única vez em que textos saíram da máquina; no seu projeto, quem codifica é você, no painel:
+Para cada variável, a concordância entre você e o modelo: a fração de respostas iguais, o kappa com o intervalo de 95%, o PABAK e o alfa. Na nossa rodada, a amostra foi codificada por um **codificador de referência**, e não por uma pessoa: o Claude (`claude-opus`), um modelo muito maior, lendo às cegas os títulos e resumos da amostra, só para esta documentação (veja [Desenho da validação](../explicacoes/validacao.md)). Foi a única vez em que textos saíram da máquina; no seu projeto, quem codifica é você, no painel:
 
 ```text
 claude-opus × qwen3.5:9b

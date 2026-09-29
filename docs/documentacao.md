@@ -1,15 +1,13 @@
 # mapa-da-ciencia
 
-O **mapa-da-ciencia** é um observatório da literatura científica. Ele coleta milhares de artigos, começando pelo [SciELO](https://scielo.org), e usa modelos de linguagem que rodam **no seu próprio computador** para responder a três perguntas sobre um campo de pesquisa:
+O **mapa-da-ciencia** é um observatório da literatura científica. Ele coleta milhares de artigos, começando pelo [SciELO](https://scielo.org), e responde, com modelos de linguagem que rodam **no seu próprio computador** onde eles são precisos, a quatro perguntas sobre um campo de pesquisa:
 
 1. **Sobre o que se escreve, e como isso muda no tempo?** Os artigos viram pontos num mapa, agrupados por proximidade de assunto. Cada grupo é um tópico com nome e descrição, e dá para acompanhar como cada tópico cresce ou encolhe ano a ano.
 2. **Como se pesquisa?** Um modelo lê cada resumo e o classifica segundo um *codebook* escrito por você (método, recorte geográfico, subárea...). Ele sempre copia o trecho do resumo que justifica cada resposta. Você codifica uma amostra, e o sistema mede o quanto o modelo concorda com você.
 3. **Onde se produz?** O mapa das afiliações dos autores por UF, país e instituição, com contagem fracionária.
+4. **Quem trabalha com quem?** As redes de coautoria, entre pessoas e entre instituições, e as citações entre os artigos do corpus.
 
-Tudo aparece num painel interativo, que pode ser publicado como site estático para acompanhar um artigo ou uma apresentação.
-
-!!! info "Versão 2.0"
-    A **versão 2.0** trouxe o [júri de modelos locais com supervisor](explicacoes/juri.md) e as [redes de coautoria e de citação](explicacoes/redes.md), e passou por uma [revisão geral](desenvolvimento/revisao-2026-09.md). Desde a 1.0, o projeto tem a coleta de artigos do SciELO e do OpenAlex, os tópicos com rótulos em português escritos por um modelo local, o mapa navegável dos documentos, a evolução dos tópicos no tempo, a geografia da produção, com contagem fracionária, e a classificação dos resumos por um codebook, com a evidência de cada resposta e a validação numa amostra. Tudo também roda pela interface, com o progresso ao vivo, e o projeto vira um site estático, com figuras prontas para artigo e slides. A [demo](https://felipelamarca.com/mapa-da-ciencia/demo/) é o piloto publicado, e a [abertura do site](index.md) conta o que ele mostra. Veja o [plano de marcos](desenvolvimento/index.md#marcos).
+Na amostra de validação, um [júri de modelos locais](explicacoes/juri.md) pode votar e deliberar, para comparar a decisão em conjunto com a de um modelo sozinho. Tudo aparece num painel interativo, que pode ser publicado como site estático para acompanhar um artigo ou uma apresentação: a [demo](https://felipelamarca.com/mapa-da-ciencia/demo/) é o piloto publicado.
 
 ## Por onde começar
 
@@ -27,7 +25,7 @@ Tudo aparece num painel interativo, que pode ser publicado como site estático p
 - **Modelos locais.** Nenhum resumo sai da sua máquina para ser processado: embeddings e classificação rodam no [Ollama](https://ollama.com). As únicas chamadas externas são as da coleta de metadados públicos.
 - **Rastreável.** Cada classificação vem com o trecho literal que a justifica, e cada execução grava um manifesto com versões, modelos e parâmetros.
 - **Validado.** A qualidade da classificação é medida contra codificação humana (kappa de Cohen, PABAK), e não presumida.
-- **Aberto.** Código sob licença MIT. As decisões técnicas ficam registradas, com evidência, na seção [Decisões](decisoes/README.md).
+- **Aberto.** Código sob licença MIT. As decisões técnicas ficam registradas, com evidência, [no repositório](https://github.com/felipelmc/mapa-da-ciencia/tree/main/docs/decisoes).
 
 ## Sobre
 

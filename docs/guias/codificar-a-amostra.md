@@ -117,6 +117,6 @@ Grava em `validacao/`:
 
 O relatório e o JSON trazem as respostas de cada pessoa nas divergências. Por isso a pasta `validacao/` fica fora do git (o `.gitignore` que o `mapa novo` cria já a deixa de fora) e não vai para o site publicado.
 
-O desenho da validação está no [ADR 0012](../decisoes/0012-validacao-e-codificador-de-referencia.md).
+O desenho da validação está explicado em [Desenho da validação](../explicacoes/validacao.md).
 
 Em Python, `mapa.amostra_de_validacao(p)`, `mapa.importar_codificacoes(p, arquivo, "maria")`, `mapa.codificacoes(p)`, `mapa.validacao(p)` e `mapa.relatorio_de_validacao(p)` fazem o mesmo (veja a [API Python](../referencia/api-python.md)).

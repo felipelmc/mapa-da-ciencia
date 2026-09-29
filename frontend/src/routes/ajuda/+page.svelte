@@ -203,14 +203,14 @@
 		</section>
 
 		<section aria-labelledby="ajuda-modo">
-			<h2 id="ajuda-modo">Site ou painel</h2>
+			<h2 id="ajuda-modo">{manifesto.api ? 'Site ou painel' : 'Sobre este site'}</h2>
 			<p>
 				{#if manifesto.api}
 					Você está no <strong>painel local</strong> (<code>mapa painel</code>), que roda só nesta máquina e
 					poderá editar o projeto.
 				{:else}
-					Você está no <strong>site estático</strong>: os dados são somente leitura. Para editar um projeto,
-					use o painel local, com <code>mapa painel</code>.
+					Este site mostra um projeto publicado, só para leitura: os filtros, as buscas e as figuras não mudam os
+					dados.
 				{/if}
 			</p>
 		</section>

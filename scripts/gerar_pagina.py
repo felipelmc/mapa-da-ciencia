@@ -125,6 +125,24 @@ def ceu(docs: dict, topicos: dict) -> dict:
     }
 
 
+FAMILIAS = {"claude": "Claude", "gpt": "GPT", "gemini": "Gemini", "llama": "Llama"}
+
+
+def _da_familia(familia: str | None) -> str | None:
+    return FAMILIAS.get(familia, familia[:1].upper() + familia[1:]) if familia else None
+
+
+def _nome_da_referencia(validacao: dict) -> str | None:
+    """O codificador de referência pelo nome da família do modelo ("Claude"), e não pelo id interno
+    (`claude-opus`), com as mesmas regras da interface (`frontend/src/lib/validacao/nomes.ts`): sem família, o id; duas
+    referências da mesma família, o id (para não se confundirem)."""
+    referencias = [c for c in validacao["codificadores"] if c["tipo"] == "referencia"]
+    if not referencias:
+        return None
+    nomes = [_da_familia(c.get("familia")) or c["nome"] for c in referencias]
+    return nomes[0] if nomes.count(nomes[0]) == 1 else referencias[0]["nome"]
+
+
 def _kappas(validacao: dict) -> list[dict]:
     """O kappa de cada variável entre o codificador de referência e o modelo principal (vazio se faltar um dos dois)."""
     principal = (validacao.get("modelo_principal") or "").split("@", 1)[0]
@@ -397,7 +415,7 @@ def historias(
             "n": validacao["amostra"]["n"],
             "kappas": kappas,
             "mediana": round(statistics.median(k["kappa"] for k in kappas), 2) if kappas else None,
-            "referencia": next((c["nome"] for c in validacao["codificadores"] if c["tipo"] == "referencia"), None),
+            "referencia": _nome_da_referencia(validacao),
             "modelo": (validacao.get("modelo_principal") or "").split("@", 1)[0],
         }
     )

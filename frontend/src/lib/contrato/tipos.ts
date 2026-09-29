@@ -805,7 +805,7 @@ export interface Serie {
 	prop: number[];
 }
 /**
- * Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel.
+ * Tendência da participação anual no período inteiro, sem filtros: o gabarito para o painel.
  */
 export interface Tendencia {
 	anos?: [number, number] | null;

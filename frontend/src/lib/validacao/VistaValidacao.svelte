@@ -7,6 +7,10 @@
 	 * - a variável escolhida: matriz de confusão, precisão e revocação por categoria e as divergências com a
 	 *   evidência que o modelo citou (no painel local, de todos os codificadores; no site, só das referências);
 	 * - a comparação entre modelos (McNemar) e a evidência literal de cada modelo na amostra.
+	 *
+	 * No site publicado, que é para quem lê, os participantes aparecem pelo nome legível (`nomes.ts`), e não pelo id
+	 * interno, e a vista abre no par principal, com os outros pares e a parte técnica (McNemar, júri, auditoria) em blocos
+	 * recolhidos. No painel local, os ids (os mesmos da CLI e do mapa.yaml) e tudo aberto, como antes.
 	 */
 	import { tick } from 'svelte';
 	import type { CodebookContrato, MetricaVariavel, Validacao } from '$lib/contrato/tipos';
@@ -17,6 +21,7 @@
 	import Figura from '$lib/graficos/Figura.svelte';
 	import { KAPPA_FRACO } from '$lib/classificacao/agregar';
 	import MatrizConfusao from './MatrizConfusao.svelte';
+	import { nomesLegiveis } from './nomes';
 
 	let {
 		validacao,
@@ -26,7 +31,7 @@
 	}: { validacao: Validacao; codebook: CodebookContrato | null; tabela: TabelaDocumentos | null; api: boolean } =
 		$props();
 
-	const TIPOS = { humano: 'pessoa', referencia: 'referência (não humano)', modelo: 'modelo' } as const;
+	const TIPOS = { humano: 'pessoa', referencia: 'referência, não humano', modelo: 'modelo' } as const;
 	const ESTRATOS: Record<string, string> = { topico: 'tópico', ano: 'ano', revista: 'revista' };
 	const participantes = $derived(validacao.codificadores ?? []);
 	const tipo = (nome: string) => participantes.find((p) => p.nome === nome)?.tipo;
@@ -73,7 +78,9 @@
 		}
 		return v?.categorias?.find((c) => c.valor === valor)?.rotulo ?? valor.replaceAll('_', ' ');
 	}
-	const quem = (nome: string) => (tipo(nome) === 'referencia' ? `${nome} (referência)` : nome);
+	const nomes = $derived(nomesLegiveis(validacao));
+	const nome = (id: string) => (api ? id : (nomes.get(id) ?? id));
+	const quem = (id: string) => (tipo(id) === 'referencia' ? `${nome(id)} (referência)` : nome(id));
 	// kappa nulo: numa variável de texto livre ele não se aplica; nas outras, as respostas não variaram
 	const semKappa = (id: string) =>
 		variaveis.get(id.split(':')[0])?.tipo === 'texto' ? 'não se aplica (texto livre)' : 'indefinido (sem variação)';
@@ -152,6 +159,17 @@
 		const unan = Object.values(juri.etapas).reduce((s, e) => s + (e.unanime ?? 0), 0);
 		return `${formatarInteiro(juri.membros.length)} modelos locais votaram em ${formatarInteiro(juri.documentos)} documentos: ${formatarPorcentagem(total ? unan / total : 0)} das decisões foram unânimes.`;
 	});
+	/** O que o bloco recolhido da parte técnica tem, para o resumo dele (no site publicado). */
+	const tecnicos = $derived(
+		[
+			validacao.comparacoes_modelos?.length ? 'comparação entre modelos' : null,
+			juri ? 'júri de modelos' : null,
+			Object.keys(validacao.evidencia_literal ?? {}).length ? 'evidência literal' : null
+		]
+			.filter(Boolean)
+			.join(', ')
+			.replace(/, ([^,]+)$/, ' e $1')
+	);
 	/** O valor-p do McNemar: "< 0,001" em vez de "= 0,000". */
 	const textoP = (p: number) => (p < 0.001 ? '< 0,001' : `= ${formatarDecimal(p, 3)}`);
 	const titulo = (doc: string) => {
@@ -164,9 +182,9 @@
 	<header class="cabecalho">
 		<h1>Validação</h1>
 		<p class="lide" data-testid="lide-validacao">
-			Amostra de {formatarInteiro(validacao.amostra.n)} documentos, estratificada por {ESTRATOS[validacao.amostra.estratificar_por] ?? validacao.amostra.estratificar_por}
-			(semente {validacao.amostra.semente}).
-			{#each participantes as p, i (p.nome)}{i ? (i === participantes.length - 1 ? ' e ' : ', ') : 'Responderam: '}<strong>{p.nome}</strong> ({TIPOS[p.tipo]}, {formatarInteiro(p.n)}){/each}.
+			Amostra de {formatarInteiro(validacao.amostra.n)} documentos, estratificada por {ESTRATOS[validacao.amostra.estratificar_por] ?? validacao.amostra.estratificar_por}{#if api}{' '}(semente
+				{validacao.amostra.semente}){/if}.
+			{#each participantes as p, i (p.nome)}{i ? (i === participantes.length - 1 ? ' e ' : ', ') : 'Responderam: '}<strong>{nome(p.nome)}</strong> ({TIPOS[p.tipo]}, {formatarInteiro(p.n)}){/each}.
 		</p>
 		{#if participantes.some((p) => p.tipo === 'referencia')}
 			<p class="nota-referencia" data-testid="aviso-referencia">
@@ -177,17 +195,27 @@
 		{#if api}<a class="codificar" href={rota('/validacao/codificar')} data-testid="link-codificar">Codificar a amostra →</a>{/if}
 	</header>
 
-	<nav class="pares" aria-label="Pares comparados">
-		{#each pares as [r, c] (`${r}|${c}`)}
-			<button type="button" aria-pressed={`${r}|${c}` === chavePar} onclick={() => ((escolhido = `${r}|${c}`), (variavelEscolhida = null))} data-testid="par">
-				{quem(r)} × {quem(c)}{#if circular(r, c)} <span class="circular" title="Os dois são da mesma família de modelo">circular</span>{/if}
-			</button>
-		{/each}
-	</nav>
+	{#snippet listaDePares()}
+		<nav class="pares" aria-label="Pares comparados">
+			{#each pares as [r, c] (`${r}|${c}`)}
+				<button type="button" aria-pressed={`${r}|${c}` === chavePar} onclick={() => ((escolhido = `${r}|${c}`), (variavelEscolhida = null))} data-testid="par">
+					{quem(r)} × {quem(c)}{#if circular(r, c)}{' '}<span class="circular" title="Os dois são da mesma família de modelo">circular</span>{/if}
+				</button>
+			{/each}
+		</nav>
+	{/snippet}
+	{#if api}
+		{@render listaDePares()}
+	{:else if pares.length > 1}
+		<details class="recolhido" data-testid="outros-pares">
+			<summary>Comparar outros pares (todos os {formatarInteiro(pares.length)})</summary>
+			{@render listaDePares()}
+		</details>
+	{/if}
 
 	{#if parCircular}
 		<p class="nota-referencia" data-testid="aviso-circular">
-			{quem(ref)} e {comp} são da mesma família de modelo: esta concordância é um limite superior, e não uma medida
+			{quem(ref)} e {nome(comp)} são da mesma família de modelo: esta concordância é um limite superior, e não uma medida
 			independente da qualidade.
 		</p>
 	{/if}
@@ -288,7 +316,7 @@
 								<a href={rota('/mapa', escreverFiltros({ doc: d.doc }))}>{titulo(d.doc)}</a>
 								<p>
 									<strong>{quem(d.codificador || ref)}</strong>: {rotuloValor(d.variavel, d.humano)}{#if d.incerto} <span class="incerto">incerto</span>{/if}
-									· <strong>{comp}</strong>: {rotuloValor(d.variavel, d.modelo)}
+									· <strong>{nome(comp)}</strong>: {rotuloValor(d.variavel, d.modelo)}
 								</p>
 								{#if d.evidencia}
 									<blockquote class:ausente={d.status === 'ausente'}>
@@ -303,94 +331,106 @@
 		{/if}
 	</div>
 
-	{#if validacao.comparacoes_modelos?.length}
-		<Figura
-			id="modelos"
-			titulo="Comparação entre modelos"
-			resumo="Teste de McNemar exato: só os documentos em que um modelo acertou e o outro errou, contra a mesma referência. Com muitas variáveis, alguma diferença com p < 0,05 aparece por acaso."
-			colunas={['Variável', 'Referência', 'Modelos', 'n', 'Acertos', 'p']}
-			linhas={validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), c.referencia, `${c.modelo_a} × ${c.modelo_b}`, formatarInteiro(c.n), `${c.acertos_a} × ${c.acertos_b}`, c.p < 0.001 ? '< 0,001' : formatarDecimal(c.p, 3)])}
-			dados={{
-				colunas: ['Variável', 'Referência', 'Modelo A', 'Modelo B', 'n', 'Acertos de A', 'Acertos de B', 'p'],
-				linhas: validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), c.referencia, c.modelo_a, c.modelo_b, c.n, c.acertos_a, c.acertos_b, c.p])
-			}}
-		>
-			<ul class="mcnemar" data-testid="lista-mcnemar">
-				{#each validacao.comparacoes_modelos.filter((c) => c.p < 0.05) as c (`${c.variavel}|${c.referencia}|${c.modelo_a}|${c.modelo_b}`)}
-					{@const [vence, perde, av, ap] = c.acertos_a >= c.acertos_b ? [c.modelo_a, c.modelo_b, c.acertos_a, c.acertos_b] : [c.modelo_b, c.modelo_a, c.acertos_b, c.acertos_a]}
-					<li>{nomeVariavel(c.variavel)}, contra {quem(c.referencia)}: <strong>{vence}</strong> acerta mais que {perde} ({av} × {ap} acertos em {c.n}; p {textoP(c.p)}).</li>
-				{:else}
-					<li>Nenhuma diferença entre os modelos com p &lt; 0,05.</li>
-				{/each}
-			</ul>
-		</Figura>
-	{/if}
-
-	{#if juri}
-		<section class="juri" aria-labelledby="titulo-juri" data-testid="secao-juri">
-			<h2 id="titulo-juri">Júri de modelos locais</h2>
-			<p class="lide">
-				Membros: {juri.membros.join(', ')}.
-				{#if juri.supervisor}O que ficou sem maioria depois da deliberação foi decidido pelo supervisor ({juri.supervisor}), que escolheu entre os votos dos membros.{/if}
-				Os participantes <strong>juri-r1</strong> (a votação) e <strong>juri</strong> (depois da deliberação) aparecem nos pares acima.
-			</p>
+	{#snippet tecnico()}
+		{#if validacao.comparacoes_modelos?.length}
 			<Figura
-				id="juri-etapas"
-				titulo="Como o júri decidiu"
-				resumo={resumoJuri}
-				colunas={['Variável', 'Unânime', 'Maioria', 'Na deliberação', 'Sem maioria', 'Mudou na deliberação']}
-				linhas={linhasJuri}
-				dados={dadosJuri}
+				id="modelos"
+				titulo="Comparação entre modelos"
+				resumo="Teste de McNemar exato: só os documentos em que um modelo acertou e o outro errou, contra a mesma referência. Com muitas variáveis, alguma diferença com p < 0,05 aparece por acaso."
+				colunas={['Variável', 'Referência', 'Modelos', 'n', 'Acertos', 'p']}
+				linhas={validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), quem(c.referencia), `${nome(c.modelo_a)} × ${nome(c.modelo_b)}`, formatarInteiro(c.n), `${c.acertos_a} × ${c.acertos_b}`, c.p < 0.001 ? '< 0,001' : formatarDecimal(c.p, 3)])}
+				dados={{
+					colunas: ['Variável', 'Referência', 'Modelo A', 'Modelo B', 'n', 'Acertos de A', 'Acertos de B', 'p'],
+					linhas: validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), nome(c.referencia), nome(c.modelo_a), nome(c.modelo_b), c.n, c.acertos_a, c.acertos_b, c.p])
+				}}
 			>
-				<div class="rolagem-lateral">
-				<table class="metricas" data-testid="tabela-juri">
-					<thead>
-						<tr>
-							<th scope="col">Variável</th>
-							{#each Object.values(ETAPAS_JURI) as rotulo (rotulo)}<th scope="col" class="num">{rotulo}</th>{/each}
-							<th scope="col" class="num">Mudou na deliberação</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each Object.entries(juri.etapas) as [v, e] (v)}
-							<tr>
-								<th scope="row">{nomeVariavel(v)}</th>
-								{#each Object.keys(ETAPAS_JURI) as k (k)}<td class="num">{formatarInteiro(e[k] ?? 0)}</td>{/each}
-								<td class="num">{formatarInteiro(juri.virou?.[v] ?? 0)}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-				</div>
+				<ul class="mcnemar" data-testid="lista-mcnemar">
+					{#each validacao.comparacoes_modelos.filter((c) => c.p < 0.05) as c (`${c.variavel}|${c.referencia}|${c.modelo_a}|${c.modelo_b}`)}
+						{@const [vence, perde, av, ap] = c.acertos_a >= c.acertos_b ? [c.modelo_a, c.modelo_b, c.acertos_a, c.acertos_b] : [c.modelo_b, c.modelo_a, c.acertos_b, c.acertos_a]}
+						<li>{nomeVariavel(c.variavel)}, contra {quem(c.referencia)}: <strong>{nome(vence)}</strong> acerta mais que {nome(perde)} ({av} × {ap} acertos em {c.n}; p {textoP(c.p)}).</li>
+					{:else}
+						<li>Nenhuma diferença entre os modelos com p &lt; 0,05.</li>
+					{/each}
+				</ul>
 			</Figura>
-			{#if juri.referencia && Object.keys(juri.concordancia_por_etapa ?? {}).length}
-				<p class="creditos">
-					Concordância com {quem(juri.referencia)} por estágio:
-					{#each Object.entries(juri.concordancia_por_etapa ?? {}) as [etapa, c], i (etapa)}{i ? '; ' : ''}{ETAPAS_JURI[etapa as keyof typeof ETAPAS_JURI] ?? etapa}, {formatarPorcentagem(c.n ? c.acertos / c.n : 0)} de {formatarInteiro(c.n)}{/each}
-					(a decisão do júri sem o supervisor).
-					{#if juri.concordancia_supervisor}
-						{@const s = juri.concordancia_supervisor}
-						<span data-testid="concordancia-supervisor">
-							Com a escolha do supervisor, nas {formatarInteiro(s.n)} decisões sem maioria que ele arbitrou:
-							{formatarPorcentagem(s.n ? s.acertos / s.n : 0)}{#if s.circular}
-								<span class="circular" title="O supervisor e a referência são da mesma família de modelo">circular</span>{/if}.
-						</span>
-					{/if}
-				</p>
-			{/if}
-			{#if juri.auditoria}
-				<p class="creditos" data-testid="auditoria-juri">
-					Auditoria: o supervisor conferiu {formatarInteiro(juri.auditoria.n)} decisões unânimes sorteadas e discordou de {formatarInteiro(juri.auditoria.erros)}{#if juri.auditoria.ic95}{' '}(erro estimado entre {formatarPorcentagem(juri.auditoria.ic95[0])} e {formatarPorcentagem(juri.auditoria.ic95[1])}, IC 95% de Wilson){/if}.
-				</p>
-			{/if}
-		</section>
-	{/if}
+		{/if}
 
-	{#if Object.keys(validacao.evidencia_literal ?? {}).length}
-		<p class="creditos">
-			Evidência literal na amostra:
-			{#each Object.entries(validacao.evidencia_literal ?? {}) as [modelo, x], i (modelo)}{i ? '; ' : ''}{modelo}, {formatarPorcentagem(x)}{/each}.
-		</p>
+		{#if juri}
+			<section class="juri" aria-labelledby="titulo-juri" data-testid="secao-juri">
+				<h2 id="titulo-juri">Júri de modelos locais</h2>
+				<p class="lide">
+					Membros: {juri.membros.join(', ')}.
+					{#if juri.supervisor}O que ficou sem maioria depois da deliberação foi decidido pelo supervisor ({nome(juri.supervisor)}), que escolheu entre os votos dos membros.{/if}
+					{#if tipo('juri-r1') && tipo('juri')}
+					{#if api}Os participantes <strong>juri-r1</strong> (a votação) e <strong>juri</strong> (depois da deliberação) aparecem nos pares acima.
+					{:else}Os participantes <strong>{nome('juri-r1')}</strong> e <strong>{nome('juri')}</strong>, a decisão depois da deliberação, aparecem nos pares comparados.{/if}
+				{/if}
+				</p>
+				<Figura
+					id="juri-etapas"
+					titulo="Como o júri decidiu"
+					resumo={resumoJuri}
+					colunas={['Variável', 'Unânime', 'Maioria', 'Na deliberação', 'Sem maioria', 'Mudou na deliberação']}
+					linhas={linhasJuri}
+					dados={dadosJuri}
+				>
+					<div class="rolagem-lateral">
+					<table class="metricas" data-testid="tabela-juri">
+						<thead>
+							<tr>
+								<th scope="col">Variável</th>
+								{#each Object.values(ETAPAS_JURI) as rotulo (rotulo)}<th scope="col" class="num">{rotulo}</th>{/each}
+								<th scope="col" class="num">Mudou na deliberação</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each Object.entries(juri.etapas) as [v, e] (v)}
+								<tr>
+									<th scope="row">{nomeVariavel(v)}</th>
+									{#each Object.keys(ETAPAS_JURI) as k (k)}<td class="num">{formatarInteiro(e[k] ?? 0)}</td>{/each}
+									<td class="num">{formatarInteiro(juri.virou?.[v] ?? 0)}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+					</div>
+				</Figura>
+				{#if juri.referencia && Object.keys(juri.concordancia_por_etapa ?? {}).length}
+					<p class="creditos">
+						Concordância com {quem(juri.referencia)} por estágio:
+						{#each Object.entries(juri.concordancia_por_etapa ?? {}) as [etapa, c], i (etapa)}{i ? '; ' : ''}{ETAPAS_JURI[etapa as keyof typeof ETAPAS_JURI] ?? etapa}, {formatarPorcentagem(c.n ? c.acertos / c.n : 0)} de {formatarInteiro(c.n)}{/each}
+						(a decisão do júri sem o supervisor).
+						{#if juri.concordancia_supervisor}
+							{@const s = juri.concordancia_supervisor}
+							<span data-testid="concordancia-supervisor">
+								Com a escolha do supervisor, nas {formatarInteiro(s.n)} decisões sem maioria que ele arbitrou:
+								{formatarPorcentagem(s.n ? s.acertos / s.n : 0)}{#if s.circular}{' '}<span class="circular" title="O supervisor e a referência são da mesma família de modelo">circular</span>{/if}.
+							</span>
+						{/if}
+					</p>
+				{/if}
+				{#if juri.auditoria}
+					<p class="creditos" data-testid="auditoria-juri">
+						Auditoria: o supervisor conferiu {formatarInteiro(juri.auditoria.n)} decisões unânimes sorteadas e discordou de {formatarInteiro(juri.auditoria.erros)}{#if juri.auditoria.ic95}{' '}(erro estimado entre {formatarPorcentagem(juri.auditoria.ic95[0])} e {formatarPorcentagem(juri.auditoria.ic95[1])}, IC 95% de Wilson){/if}.
+					</p>
+				{/if}
+			</section>
+		{/if}
+
+		{#if Object.keys(validacao.evidencia_literal ?? {}).length}
+			<p class="creditos">
+				Evidência literal na amostra:
+				{#each Object.entries(validacao.evidencia_literal ?? {}) as [modelo, x], i (modelo)}{i ? '; ' : ''}{nome(modelo)}, {formatarPorcentagem(x)}{/each}.
+			</p>
+		{/if}
+	{/snippet}
+	{#if api}
+		{@render tecnico()}
+	{:else if validacao.comparacoes_modelos?.length || juri || Object.keys(validacao.evidencia_literal ?? {}).length}
+		<details class="recolhido" data-testid="detalhes-tecnicos">
+			<summary>Detalhes técnicos: {tecnicos}</summary>
+			<div class="tecnico">{@render tecnico()}</div>
+		</details>
 	{/if}
 </div>
 
@@ -439,6 +479,22 @@
 	.codificar {
 		justify-self: start;
 		color: var(--acento);
+	}
+
+	/* no site publicado, os outros pares e a parte técnica ficam recolhidos */
+	.recolhido > summary {
+		cursor: pointer;
+		color: var(--acento);
+		font-size: 0.92rem;
+	}
+
+	.recolhido[open] > summary {
+		margin-bottom: 0.8rem;
+	}
+
+	.tecnico {
+		display: grid;
+		gap: 1.5rem;
 	}
 
 	.pares {

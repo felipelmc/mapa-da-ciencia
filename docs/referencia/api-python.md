@@ -22,7 +22,7 @@ mapa.consultar(p, por_idioma)
 Para importar `mapa_da_ciencia.api`, o Python precisa enxergar o pacote. Pelo código, use `uv run python` (ou `uv run --with jupyter jupyter lab`, para um notebook) na pasta `mapa-da-ciencia`. Pelo *wheel*, o `uv tool install` deixa o pacote num ambiente só do comando `mapa`; abra um Python com ele assim:
 
 ```bash
-uv run --no-project --with "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v2.1.0/mapa_da_ciencia-2.1.0-py3-none-any.whl" python
+uv run --no-project --with "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v2.1.1/mapa_da_ciencia-2.1.1-py3-none-any.whl" python
 ```
 
 Para um notebook, acrescente `--with jupyter` e troque `python` por `jupyter lab`; para DataFrames, acrescente `--with pandas`. Num ambiente virtual seu, `pip install` com o mesmo endereço também serve.
@@ -148,64 +148,3 @@ O Parquet também pode ser lido direto pelo pandas ou pelo polars (`pd.read_parq
 ::: mapa_da_ciencia.fontes.revistas.Revista
     options:
       members: false
-
-## Módulos internos
-
-As funções abaixo são usadas pela fachada, pela CLI e pelo servidor do painel. Elas podem mudar entre versões menores.
-
-### Projeto
-
-::: mapa_da_ciencia.projeto.Projeto
-    options:
-      heading_level: 4
-      members: [abrir, criar, config, codebook]
-
-### Configuração
-
-::: mapa_da_ciencia.config.carregar_config
-    options:
-      heading_level: 4
-
-::: mapa_da_ciencia.config.carregar_codebook
-    options:
-      heading_level: 4
-
-::: mapa_da_ciencia.config.ErroConfig
-    options:
-      heading_level: 4
-
-### Manifesto de execução
-
-::: mapa_da_ciencia.manifesto.registrar_execucao
-    options:
-      heading_level: 4
-
-::: mapa_da_ciencia.manifesto.ultima_execucao
-    options:
-      heading_level: 4
-
-### Recursos da máquina
-
-::: mapa_da_ciencia.recursos.cabe_na_memoria
-    options:
-      heading_level: 4
-
-::: mapa_da_ciencia.llm.perfis.sugerir_perfil
-    options:
-      heading_level: 4
-
-### Diagnóstico
-
-::: mapa_da_ciencia.diagnostico.diagnosticar
-    options:
-      heading_level: 4
-
-### Contrato de dados
-
-::: mapa_da_ciencia.contrato.modelos.fragmento_de
-    options:
-      heading_level: 4
-
-::: mapa_da_ciencia.contrato.exemplo.gerar_exemplo
-    options:
-      heading_level: 4

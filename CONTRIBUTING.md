@@ -11,7 +11,7 @@ uv sync --all-groups
 uv run pytest
 ```
 
-Para a interface, veja [`frontend/README.md`](frontend/README.md). A visão geral da arquitetura está em [Desenvolvimento](https://felipelmc.github.io/mapa-da-ciencia/desenvolvimento/).
+Para a interface, veja [`frontend/README.md`](frontend/README.md). A visão geral da arquitetura, os arquivos gerados e como fazer uma release estão em [`docs/desenvolvimento/`](docs/desenvolvimento/index.md), que, como as decisões, fica no repositório e não no site.
 
 ## Antes de abrir um pull request
 

@@ -45,7 +45,7 @@ Para analisar os tópicos num notebook, a view `atribuicoes` da [API Python](../
 ## Ajustar
 
 - **Rótulos.** Para corrigir o nome de um tópico, escreva-o, com a descrição, no arquivo `rotulos.yaml` da pasta do projeto, pelo número do tópico ([como](../explicacoes/topicos.md#11-rotulos)). O que está lá tem prioridade e continua valendo nas próximas execuções.
-- **Parâmetros.** A seção `topicos:` do `mapa.yaml` controla o tamanho mínimo dos tópicos, o número de macrotemas e a reatribuição (veja a [referência da configuração](../referencia/configuracao.md)). Os padrões foram calibrados no piloto ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)). Para um corpus muito diferente, refaça a calibração com o script do código-fonte, que não vem no *wheel* (clone o repositório):
+- **Parâmetros.** A seção `topicos:` do `mapa.yaml` controla o tamanho mínimo dos tópicos, o número de macrotemas e a reatribuição (veja a [referência da configuração](../referencia/configuracao.md)). Os padrões foram calibrados no piloto (veja [Como os tópicos são construídos](../explicacoes/topicos.md)). Para um corpus muito diferente, refaça a calibração com o script do código-fonte, que não vem no *wheel* (clone o repositório):
 
     ```bash
     uv run python scripts/calibrar_topicos.py caminho/do/projeto

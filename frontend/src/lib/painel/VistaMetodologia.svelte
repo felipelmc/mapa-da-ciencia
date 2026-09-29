@@ -1,11 +1,12 @@
 <script lang="ts">
 	/**
 	 * Metodologia, no site publicado (sem API): como os dados foram gerados, tudo tirado do manifesto. As fontes, o
-	 * recorte, as contagens, os modelos com a versão exata (digest), o codebook (hash), as sementes, as durações, as
-	 * licenças e o que a publicação retirou; e os links para as explicações da documentação.
+	 * recorte, as contagens, os modelos, as licenças e o que a publicação retirou; e os links para as explicações da
+	 * documentação. O que só serve para reproduzir a execução (a versão exata dos modelos, o hash do codebook, as
+	 * sementes, as durações e a versão do contrato) fica num bloco recolhido.
 	 */
 	import type { Manifesto } from '$lib/contrato/tipos';
-	import { formatarData, formatarDuracao, formatarInteiro, formatarPeriodo, nomeDaFonte } from '$lib/formato';
+	import { formatarData, formatarDuracao, formatarInteiro, formatarPeriodo, nomeDaFonte, nomeDaLicenca } from '$lib/formato';
 
 	let { manifesto }: { manifesto: Manifesto } = $props();
 
@@ -15,8 +16,12 @@
 		embeddings: 'Embeddings',
 		topicos: 'Tópicos',
 		geografia: 'Geografia',
-		classificacao: 'Classificação'
+		redes: 'Redes',
+		classificacao: 'Classificação',
+		juri: 'Júri'
 	};
+	const IDIOMAS: Record<string, string> = { en: 'inglês', pt: 'português', es: 'espanhol' };
+	const idioma = (codigo: string) => IDIOMAS[codigo] ?? codigo;
 	const PAPEIS: Record<string, string> = { embeddings: 'Embeddings', classificacao: 'Classificação', rotulos: 'Rótulos dos tópicos' };
 	const fontes = $derived(
 		manifesto.recorte.fontes.map((f) => (f.startsWith('scielo:') ? `${nomeDaFonte(f)}, pela ArticleMeta` : nomeDaFonte(f)))
@@ -36,8 +41,8 @@
 		<h1>Metodologia</h1>
 		<p class="lide">
 			<strong>{manifesto.projeto.titulo}</strong>.{#if manifesto.projeto.descricao}{' '}{manifesto.projeto.descricao}{/if} Como
-			estes dados foram gerados, pelo <a href="https://github.com/felipelmc/mapa-da-ciencia">mapa-da-ciencia</a>
-			{e.versao_pacote}.
+			estes dados foram gerados (em {formatarData(manifesto.gerado_em)}), pelo
+			<a href="https://github.com/felipelmc/mapa-da-ciencia">mapa-da-ciencia</a> {e.versao_pacote}.
 		</p>
 	</header>
 
@@ -55,51 +60,63 @@
 				na amostra de validação codificada
 			</dd>
 			<dt>Idiomas</dt>
-			<dd>tópicos a partir de textos em <code>{manifesto.recorte.idioma_analise}</code>; o painel e a classificação em <code>{manifesto.recorte.idioma_exibicao}</code></dd>
+			<dd>tópicos a partir dos textos em {idioma(manifesto.recorte.idioma_analise)}; a exibição e a classificação em {idioma(manifesto.recorte.idioma_exibicao)}</dd>
 		</dl>
 	</section>
 
 	<section>
-		<h2>Modelos e reprodutibilidade</h2>
+		<h2>Modelos</h2>
 		<dl data-testid="modelos-metodologia">
 			{#each Object.entries(e.modelos ?? {}) as [papel, modelo] (papel)}
 				<dt>{PAPEIS[papel] ?? papel}</dt>
-				<dd><code>{modelo}</code></dd>
+				<dd>{modelo.split('@')[0]}</dd>
 			{/each}
-			{#if e.hash_codebook}
-				<dt>Codebook</dt>
-				<dd><code>{e.hash_codebook}</code> (hash do conteúdo)</dd>
-			{/if}
-			{#if Object.keys(e.sementes ?? {}).length}
-				<dt>Sementes</dt>
-				<dd>{Object.entries(e.sementes ?? {}).map(([k, v]) => `${k} = ${v}`).join('; ')}</dd>
-			{/if}
-			{#if Object.keys(e.duracao_s ?? {}).length}
-				<dt>Duração das etapas</dt>
-				<dd>{Object.entries(e.duracao_s ?? {}).map(([k, v]) => `${ETAPAS[k] ?? k}: ${formatarDuracao(v)}`).join('; ')}</dd>
-			{/if}
-			<dt>Contrato de dados</dt>
-			<dd>versão {manifesto.versao_contrato}; gerado em {formatarData(manifesto.gerado_em)}</dd>
 		</dl>
 		<p class="suave">
-			Os modelos rodaram localmente, pelo Ollama; o <em>digest</em> depois do <code>@</code> identifica a versão exata. Veja
-			<a href="{DOCS}/explicacoes/reprodutibilidade/">Reprodutibilidade</a>.
+			Os modelos rodaram localmente, pelo Ollama. Veja <a href="{DOCS}/explicacoes/modelos-locais/">Modelos locais</a>.
 		</p>
+		<details class="reproduzir" data-testid="para-reproduzir">
+			<summary>Para reproduzir</summary>
+			<dl>
+				{#each Object.entries(e.modelos ?? {}) as [papel, modelo] (papel)}
+					<dt>{PAPEIS[papel] ?? papel}</dt>
+					<dd><code>{modelo}</code></dd>
+				{/each}
+				{#if e.hash_codebook}
+					<dt>Codebook</dt>
+					<dd><code>{e.hash_codebook}</code> (hash do conteúdo)</dd>
+				{/if}
+				{#if Object.keys(e.sementes ?? {}).length}
+					<dt>Sementes</dt>
+					<dd>{Object.entries(e.sementes ?? {}).map(([k, v]) => `${k} = ${v}`).join('; ')}</dd>
+				{/if}
+				{#if Object.keys(e.duracao_s ?? {}).length}
+					<dt>Duração das etapas</dt>
+					<dd>{Object.entries(e.duracao_s ?? {}).map(([k, v]) => `${ETAPAS[k] ?? k}: ${formatarDuracao(v)}`).join('; ')}</dd>
+				{/if}
+				<dt>Contrato de dados</dt>
+				<dd>versão {manifesto.versao_contrato}</dd>
+			</dl>
+			<p class="suave">
+				O <em>digest</em> depois do <code>@</code> identifica a versão exata de cada modelo. Veja
+				<a href="{DOCS}/explicacoes/reprodutibilidade/">Reprodutibilidade</a>.
+			</p>
+		</details>
 	</section>
 
 	<section>
 		<h2>Licenças e publicação</h2>
 		{#if licencas.length}
 			<ul class="licencas">
-				{#each licencas as [licenca, n] (licenca)}<li><code>{licenca}</code>: {formatarInteiro(n)}</li>{/each}
+				{#each licencas as [licenca, n] (licenca)}<li>{nomeDaLicenca(licenca)}: {formatarInteiro(n)}</li>{/each}
 			</ul>
 		{/if}
 		{#if pub}
 			<p data-testid="publicacao">
 				Publicado em {formatarData(pub.em)}.
 				{#if pub.sem_resumos}Sem resumos, por escolha.{:else}{formatarInteiro(pub.resumos_publicados)} resumos com licença Creative
-					Commons estão aqui sem alteração; {formatarInteiro(pub.resumos_retirados)} ficaram de fora (licença não aberta ou
-					desconhecida) e aparecem só com o título, os autores e o link.{/if}
+					Commons estão aqui sem alteração; {formatarInteiro(pub.resumos_retirados)} ficaram de fora (licença que não é Creative Commons,
+					ou desconhecida) e aparecem só com o título, os autores e o link.{/if}
 				Nenhum e-mail e nenhuma codificação individual de pessoas foram publicados.
 			</p>
 		{/if}
@@ -156,6 +173,20 @@
 
 	dd {
 		margin: 0;
+	}
+
+	.reproduzir {
+		margin-top: 0.8rem;
+	}
+
+	.reproduzir > summary {
+		cursor: pointer;
+		color: var(--acento);
+		font-size: 0.92rem;
+	}
+
+	.reproduzir[open] > summary {
+		margin-bottom: 0.6rem;
 	}
 
 	.suave {

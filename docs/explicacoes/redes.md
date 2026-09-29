@@ -24,7 +24,7 @@ etapa junta as autorias em pessoas, em ordem de confiança:
 O que sobra fica separado e aparece em `mapa redes --revisar`, com as evidências de cada lado (documentos, anos,
 revistas, instituições, coautores e um título) e um bloco para o `pessoas.yaml` do projeto: `fundir`, `nao_fundir`
 (que também desfaz uma fusão automática) e `nomes`. As taxas medidas no piloto estão no
-[ADR 0014](../decisoes/0014-redes-de-coautoria-e-citacao.md#identidade-o-que-o-piloto-mostrou). O site não publica ORCIDs nem ids do OpenAlex: cada pessoa tem um id
+[registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0014-redes-de-coautoria-e-citacao.md#identidade-o-que-o-piloto-mostrou), no repositório. O site não publica ORCIDs nem ids do OpenAlex: cada pessoa tem um id
 curto, um HMAC com o segredo do projeto (ver [Privacidade e licenças](privacidade-e-licencas.md)).
 
 ## Pesos fracionários
@@ -68,7 +68,7 @@ O desenho posiciona cada componente conectado à parte (`spring_layout`, semente
 do número de nós. No maior componente, cada comunidade ganha um espaço próprio, e as comunidades mais ligadas entre si
 tendem a ficar mais perto (só em parte: o arranjo também precisa acomodar os tamanhos); os componentes menores vêm à
 direita e embaixo, do maior para o menor. No piloto, numa tela de 1920 × 1080, nenhum nó encosta noutro; numa tela
-menor, o botão "Tela cheia" e o zoom os separam (adendo do ADR 0014). **A distância no desenho não é uma medida**: nós
+menor, o botão "Tela cheia" e o zoom os separam. **A distância no desenho não é uma medida**: nós
 perto costumam estar no mesmo grupo, mas nem sempre estão ligados (no piloto, 75% das pessoas desenhadas têm como
 coautor o vizinho mais próximo), o vão entre duas comunidades vem em parte do próprio desenho, e dois nós longe podem
 estar a um passo um do outro.
@@ -115,4 +115,4 @@ As referências vêm do OpenAlex (`referenced_works`), em lotes de 100 obras por
   estados.
 - A rede é do corpus: uma pessoa que escreve com colegas de fora dele aparece com menos coautores do que tem.
 
-As decisões e os números do piloto estão no [ADR 0014](../decisoes/0014-redes-de-coautoria-e-citacao.md).
+As decisões e os números do piloto estão no [registro técnico](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0014-redes-de-coautoria-e-citacao.md), no repositório.

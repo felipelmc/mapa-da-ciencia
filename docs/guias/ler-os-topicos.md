@@ -32,7 +32,7 @@ A lista abaixo do fluxo mostra os tópicos cuja participação cresce ou cai de 
 
 Como ler com cuidado:
 
-- A regra ([ADR 0009](../decisoes/0009-tendencia-dos-topicos.md)) marca um tópico só quando o intervalo de 95% da inclinação não inclui zero, corrigido pela dispersão da série. Mesmo assim, com dezenas de tópicos testados, cerca de 1 em 20 aparece por **acaso**. A nota abaixo da lista diz quantos seriam no recorte: trate a lista como pistas para ler os artigos, não como conclusões.
+- A regra ([Em alta e em queda](../explicacoes/topicos.md#12-em-alta-e-em-queda)) marca um tópico só quando o intervalo de 95% da inclinação não inclui zero, corrigido pela dispersão da série. Mesmo assim, com dezenas de tópicos testados, cerca de 1 em 20 aparece por **acaso**. A nota abaixo da lista diz quantos seriam no recorte: trate a lista como pistas para ler os artigos, não como conclusões.
 - Um **dossiê temático** faz um pico num ano só; a correção pela dispersão impede que ele vire tendência quando o pico cai no meio do período, mas não quando cai no primeiro ou no último ano da janela, e uma sequência de dossiês também pode virar. Confira a série antes de citar.
 - A tendência é recalculada com o recorte. Com o **período** da barra, a regressão usa só aqueles anos; com menos de 5 anos com documentos, a lista pede um período maior.
 

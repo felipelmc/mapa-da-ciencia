@@ -30,4 +30,4 @@ O fundo da figura é sempre opaco, na cor do tema, para o texto não sumir num s
 
 ## Citar
 
-O rodapé da figura diz de onde vêm os dados, quantos documentos entraram e quando ela foi gerada. Numa publicação, cite também o projeto (o [CITATION.cff](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CITATION.cff) do repositório) e informe o modelo e a versão do codebook, que estão na página Metodologia do site publicado ou no `mapa status`.
+O rodapé da figura diz de onde vêm os dados, quantos documentos entraram e quando ela foi gerada. Numa publicação, cite também o projeto (o [CITATION.cff](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CITATION.cff) do repositório) e informe o modelo (na página Metodologia do site publicado) e a versão do codebook (nos créditos da vista Classificação), ou veja os dois no `mapa status`.

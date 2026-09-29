@@ -8,7 +8,7 @@ O `mapa-da-ciencia` é um observatório da literatura científica, sucessor do S
 
 Tudo é em **português**: interface, mensagens, documentação, identificadores de domínio e mensagens de commit.
 
-O desenvolvimento segue marcos M0–M7, listados em `docs/desenvolvimento/index.md`. As decisões técnicas estão em `docs/decisoes/`. Leia o ADR relevante antes de mudar algo que ele decidiu.
+O desenvolvimento segue marcos M0–M7, listados em `docs/desenvolvimento/index.md`. As decisões técnicas estão em `docs/decisoes/`. Leia o ADR relevante antes de mudar algo que ele decidiu. As duas pastas ficam fora do site da documentação, que é para o público: páginas publicadas citam um ADR pelo link absoluto do GitHub (`tests/test_site_publico.py` confere).
 
 ## Comandos
 
@@ -19,7 +19,7 @@ uv run pytest tests/test_projeto.py -k novo  # um teste
 uv run ruff check && uv run ruff format      # lint e formatação (formata também Python em Markdown)
 uv run mkdocs build --strict                 # documentação, sem avisos
 uv run python scripts/gerar_contrato.py      # regenera contrato/schema, contrato/exemplo e contrato/exemplo-publicado (--checar no CI)
-uv run python scripts/gerar_referencias.py   # regenera docs/referencia/{cli,configuracao,codebook,contrato,api-http}.md
+uv run python scripts/gerar_referencias.py   # regenera docs/referencia/{cli,configuracao,codebook,contrato}.md e docs/desenvolvimento/api-http.md
 uv run python scripts/gerar_notebook.py      # regenera notebooks/oficina_colab.ipynb (conferido em tests/test_notebook.py)
 uv run python scripts/gerar_pagina.py projetos/cp-scielo  # dados da abertura do site (docs/assets/pagina/dados.json)
 uv run mapa diagnostico                      # memória, Ollama, modelos, rede

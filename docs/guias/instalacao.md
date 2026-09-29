@@ -20,11 +20,11 @@ uv run mapa --versao
 O código do repositório não traz a interface do painel compilada (ela precisa do Node.js). Cada [*release*](https://github.com/felipelmc/mapa-da-ciencia/releases) tem um *wheel* com ela pronta, que instala sem clonar nada. Por exemplo, com o `uv`:
 
 ```bash
-uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v2.1.0/mapa_da_ciencia-2.1.0-py3-none-any.whl"
+uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v2.1.1/mapa_da_ciencia-2.1.1-py3-none-any.whl"
 mapa --versao
 ```
 
-Troque `2.1.0` (nos dois lugares do endereço) pela versão da *release* mais recente. Com o `pip`, num ambiente virtual, é o mesmo endereço em `pip install`. Se o terminal responder `command not found: mapa`, o `uv` pôs o comando numa pasta que o terminal ainda não procura (ele avisa isso no fim da instalação). Rode `uv tool update-shell`, feche o terminal e abra outro.
+Troque `2.1.1` (nos dois lugares do endereço) pela versão da *release* mais recente. Com o `pip`, num ambiente virtual, é o mesmo endereço em `pip install`. Se o terminal responder `command not found: mapa`, o `uv` pôs o comando numa pasta que o terminal ainda não procura (ele avisa isso no fim da instalação). Rode `uv tool update-shell`, feche o terminal e abra outro.
 
 ## 2. Ollama
 
@@ -40,7 +40,7 @@ Os modelos precisam caber na memória. O `mapa` sugere um perfil a partir da mem
 | `padrao` | 16 a 32 GB (e a T4 do Colab) | `qwen3-embedding:0.6b` | `qwen3.5:9b` | `qwen3.5:9b` | ~7 GB |
 | `forte` | 32 GB ou mais | `qwen3-embedding:0.6b` | `qwen3.5:9b` | `gemma4:26b` | ~24 GB |
 
-As métricas publicadas do piloto são do `qwen3.5:9b`. O `qwen3.5:4b` do perfil `leve` ainda não passou pela validação ([adendo ao ADR 0005](../decisoes/0005-modelo-de-classificacao.md#adendo-2026-09-28-versao-101-o-perfil-leve)): a validação do seu projeto mede a concordância do modelo que você usar.
+As métricas publicadas do piloto são do `qwen3.5:9b`. O `qwen3.5:4b` do perfil `leve` ainda não passou pela validação ([registro no repositório](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0005-modelo-de-classificacao.md#adendo-2026-09-28-versão-101-o-perfil-leve)): a validação do seu projeto mede a concordância do modelo que você usar.
 
 Baixe os modelos do seu perfil. No perfil `padrao`:
 
@@ -52,7 +52,7 @@ ollama pull qwen3.5:9b
 !!! warning "Memória total não é memória livre"
     Um modelo de 6,6 GB precisa de uns 8 GB **livres** na hora de rodar, contando o contexto. Com outros programas pesados abertos (outros modelos, jobs de R ou Python, dezenas de abas), o computador pode começar a usar o disco como memória e ficar muito lento. O `mapa diagnostico` mostra se cada modelo cabe na memória livre agora, e as etapas que carregam modelos fazem essa conferência antes de começar.
 
-Por que esses modelos, e não outros? Veja [Modelos locais](../explicacoes/modelos-locais.md) e os registros de decisão [0004](../decisoes/0004-embeddings-e-idioma-de-analise.md) (embeddings) e [0005](../decisoes/0005-modelo-de-classificacao.md) (classificação).
+Por que esses modelos, e não outros? Veja [Modelos locais](../explicacoes/modelos-locais.md).
 
 ## 4. Confira tudo com `mapa diagnostico`
 

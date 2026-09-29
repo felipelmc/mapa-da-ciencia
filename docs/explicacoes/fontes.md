@@ -36,7 +36,7 @@ O [OpenAlex](https://openalex.org) é um catálogo aberto (licença CC0) de publ
 
 - **enriquecer** cada artigo com o número de citações recebidas e a licença;
 - **buscar por termo** dentro das revistas do recorte, o que a ArticleMeta não faz;
-- no futuro, fornecer as referências para as redes de citação.
+- fornecer as referências citadas por cada artigo, que as [redes de citação](redes.md) usam.
 
 Desde 2026 o OpenAlex cobra por uso. Sem chave, são mil créditos por dia; com a chave gratuita, dez vezes mais. A chave vai no `.env` do projeto (`OPENALEX_API_KEY`) e nunca é gravada junto com as respostas.
 
@@ -102,4 +102,4 @@ Ciência política no SciELO Brasil, 10 revistas, de 2010 a 2025 (coletado em 26
 | Casados com o OpenAlex | 4.249 | 99,4 |
 | Com licença Creative Commons | 4.249 | 99,4 |
 
-A ArticleMeta tem 4.947 registros dessas revistas no período. Ficam de fora 670 de outros tipos (resenhas, editoriais, erratas...), e 2 artigos carregados duas vezes são fundidos. Os números por revista estão no adendo do registro de decisão [0003](../decisoes/0003-fontes-casamento-e-licencas.md#adendo-2026-09-26-marco-m2-a-coleta-de-producao).
+A ArticleMeta tem 4.947 registros dessas revistas no período. Ficam de fora 670 de outros tipos (resenhas, editoriais, erratas...), e 2 artigos carregados duas vezes são fundidos. Os números por revista estão no [registro da coleta](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0003-fontes-casamento-e-licencas.md#adendo-2026-09-26-marco-m2-a-coleta-de-produção), no repositório.

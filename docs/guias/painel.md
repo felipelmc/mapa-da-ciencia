@@ -39,16 +39,16 @@ No Colab, o painel abre numa janela nova, pelo *proxy* do Google, e só nesse mo
 
 ## O que aparece
 
-| Vista | Mostra | Disponível |
-|---|---|---|
-| Início | Números do corpus e macrotemas, com a participação de cada um por ano | agora |
-| Mapa | Cada artigo como um ponto; artigos próximos tratam de assuntos próximos. Contornos e rótulos dos tópicos (dos macrotemas, de longe), colorir por tópico, macrotema, revista ou ano, e filtrar pela legenda ou pelos rótulos; busca, laço e linha do tempo com play. Clicar num ponto abre o cartão do documento, com o resumo e os 5 mais parecidos ([Ler o mapa](ler-o-mapa.md)) | agora |
-| Tópicos | O fluxo dos macrotemas e dos tópicos no tempo, em três modos; os tópicos em alta e em queda; a gaveta de cada tópico; o perfil de cada revista ([Ler os tópicos no tempo](ler-os-topicos.md)) | agora |
-| Classificação | Uma variável do codebook por vez: a distribuição por ano, o cruzamento com macrotemas, tópicos ou revistas, os selos de concordância e os documentos de cada célula com a evidência marcada no resumo ([Ler a classificação](ler-a-classificacao.md)) | agora |
-| Geografia | Produção por UF, país e instituição, com contagem fracionária, e a cobertura das afiliações por ano ([Ler a geografia](ler-a-geografia.md)) | agora |
-| Validação | A concordância do modelo com quem codificou a amostra, a matriz de confusão e as divergências; no painel local, a codificação da amostra pelo teclado ([Codificar a amostra](codificar-a-amostra.md), [Ler kappa e PABAK](ler-kappa-e-pabak.md)) | agora |
-| Projeto | As etapas do pipeline numa linha de metrô (em dia, desatualizadas ou pendentes), rodar e cancelar cada uma com o progresso ao vivo, a estimativa da classificação e os modelos do Ollama (só no painel local) | agora |
-| Redes | Coautoria entre pessoas e entre instituições, colaboração entre estados e citações (o cânone e o fluxo entre macrotemas), com o mesmo recorte das outras vistas ([Ler as redes](ler-as-redes.md)) | agora |
+| Vista | Mostra |
+|---|---|
+| Início | Números do corpus e macrotemas, com a participação de cada um por ano |
+| Mapa | Cada artigo como um ponto; artigos próximos tratam de assuntos próximos. Contornos e rótulos dos tópicos (dos macrotemas, de longe), colorir por tópico, macrotema, revista ou ano, e filtrar pela legenda ou pelos rótulos; busca, laço e linha do tempo com play. Clicar num ponto abre o cartão do documento, com o resumo e os 5 mais parecidos ([Ler o mapa](ler-o-mapa.md)) |
+| Tópicos | O fluxo dos macrotemas e dos tópicos no tempo, em três modos; os tópicos em alta e em queda; a gaveta de cada tópico; o perfil de cada revista ([Ler os tópicos no tempo](ler-os-topicos.md)) |
+| Classificação | Uma variável do codebook por vez: a distribuição por ano, o cruzamento com macrotemas, tópicos ou revistas, os selos de concordância e os documentos de cada célula com a evidência marcada no resumo ([Ler a classificação](ler-a-classificacao.md)) |
+| Geografia | Produção por UF, país e instituição, com contagem fracionária, e a cobertura das afiliações por ano ([Ler a geografia](ler-a-geografia.md)) |
+| Validação | A concordância do modelo com quem codificou a amostra, a matriz de confusão e as divergências; no painel local, a codificação da amostra pelo teclado ([Codificar a amostra](codificar-a-amostra.md), [Ler kappa e PABAK](ler-kappa-e-pabak.md)) |
+| Projeto | As etapas do pipeline numa linha de metrô (em dia, desatualizadas ou pendentes), rodar e cancelar cada uma com o progresso ao vivo, a estimativa da classificação e os modelos do Ollama (só no painel local) |
+| Redes | Coautoria entre pessoas e entre instituições, colaboração entre estados e citações (o cânone e o fluxo entre macrotemas), com o mesmo recorte das outras vistas ([Ler as redes](ler-as-redes.md)) |
 
 Para projetar numa aula ou numa apresentação, aperte ++p++: o **modo apresentação** esconde o trilho e as barras e aumenta a letra; ++esc++ (ou ++p++ de novo) volta.
 

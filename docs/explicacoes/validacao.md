@@ -1,6 +1,6 @@
 # Desenho da validação
 
-Um modelo pequeno classificando milhares de resumos é útil só se soubermos quanto ele concorda com uma leitura cuidadosa dos mesmos textos. A validação mede isso numa amostra: pessoas (ou um anotador de referência) codificam os documentos às cegas, e o `mapa` compara as respostas, variável por variável. As decisões estão no [ADR 0012](../decisoes/0012-validacao-e-codificador-de-referencia.md); o passo a passo, em [Codificar a amostra](../guias/codificar-a-amostra.md); a leitura das métricas, em [Ler kappa e PABAK](../guias/ler-kappa-e-pabak.md).
+Um modelo pequeno classificando milhares de resumos é útil só se soubermos quanto ele concorda com uma leitura cuidadosa dos mesmos textos. A validação mede isso numa amostra: pessoas (ou um anotador de referência) codificam os documentos às cegas, e o `mapa` compara as respostas, variável por variável. O registro técnico das decisões está [no repositório](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0012-validacao-e-codificador-de-referencia.md); o passo a passo, em [Codificar a amostra](../guias/codificar-a-amostra.md); a leitura das métricas, em [Ler kappa e PABAK](../guias/ler-kappa-e-pabak.md).
 
 ## A amostra
 
@@ -20,7 +20,7 @@ Cada participante tem um tipo, que acompanha os números em todo lugar:
 - **referência** (`referencia`): um anotador que não é uma pessoa, como um modelo muito maior lendo a amostra às cegas;
 - **modelo**: cada modelo local que classificou a amostra.
 
-No piloto, a amostra foi codificada por uma **referência**: subagentes do Claude (Opus), em 10 lotes de 20, cada um com acesso só ao codebook e aos textos do lote, sem ver o projeto, as respostas do modelo local nem os outros lotes. Os códigos foram importados como `claude-opus`. Ao revisar os lotes, apareceu um desvio da regra: alguns períodos analisados tinham sido deduzidos do ano embutido no identificador do artigo, fora do texto. Esses casos foram refeitos só com o título e o resumo antes da importação.
+No piloto, a amostra foi codificada por uma **referência**: instâncias independentes do Claude (Opus), em 10 lotes de 20, cada um com acesso só ao codebook e aos textos do lote, sem ver o projeto, as respostas do modelo local nem os outros lotes. Os códigos foram importados como `claude-opus`. Ao revisar os lotes, apareceu um desvio da regra: alguns períodos analisados tinham sido deduzidos do ano embutido no identificador do artigo, fora do texto. Esses casos foram refeitos só com o título e o resumo antes da importação.
 
 A concordância com uma referência responde a uma pergunta mais fraca que a validação humana: quanto o modelo local reproduz a leitura de um modelo muito maior, seguindo as mesmas definições. Ela é útil para achar definições ambíguas e comparar modelos locais, mas não autoriza dizer que a classificação "acerta". Quando uma pessoa codificar a amostra, o mesmo relatório passa a mostrar a comparação humana ao lado.
 

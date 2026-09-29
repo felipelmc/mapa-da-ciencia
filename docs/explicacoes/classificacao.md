@@ -1,6 +1,6 @@
 # Classificação ancorada em evidência
 
-A classificação responde, para cada resumo, às perguntas de um codebook: a abordagem do estudo, a técnica, o recorte geográfico e o que mais o pesquisador definir. Quem responde é um modelo de linguagem pequeno, rodando no notebook (`qwen3.5:9b` no perfil padrão). Esta página explica como a resposta é pedida, conferida e guardada, e o que isso garante e não garante. As decisões estão no [ADR 0011](../decisoes/0011-classificacao-ancorada-em-evidencia.md); o passo a passo, em [Classificar os resumos](../guias/classificar.md).
+A classificação responde, para cada resumo, às perguntas de um codebook: a abordagem do estudo, a técnica, o recorte geográfico e o que mais o pesquisador definir. Quem responde é um modelo de linguagem pequeno, rodando no notebook (`qwen3.5:9b` no perfil padrão). Esta página explica como a resposta é pedida, conferida e guardada, e o que isso garante e não garante. O registro técnico das decisões está [no repositório](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0011-classificacao-ancorada-em-evidencia.md); o passo a passo, em [Classificar os resumos](../guias/classificar.md).
 
 ## O que o modelo lê
 
@@ -50,7 +50,7 @@ Com temperatura zero e semente fixa, o mesmo modelo tende a dar a mesma resposta
 
 ## Tempo e memória
 
-No Mac de desenvolvimento (M4 Pro, 24 GB), cada resumo levou 10,8 segundos (mediana) na amostra do piloto, e 16,4 s no 90º percentil. O tempo vem quase todo da escrita da resposta: seis variáveis, cada uma com um trecho citado. Para os 4.247 artigos com resumo do piloto, são cerca de 12 horas, numa execução que pode ser interrompida e retomada. `mapa classificar --estimar` mede o tempo na sua máquina antes.
+No computador do piloto (um Mac M4 Pro com 24 GB), cada resumo levou 10,8 segundos (mediana) na amostra do piloto, e 16,4 s no 90º percentil. O tempo vem quase todo da escrita da resposta: seis variáveis, cada uma com um trecho citado. Para os 4.247 artigos com resumo do piloto, são cerca de 12 horas, numa execução que pode ser interrompida e retomada. `mapa classificar --estimar` mede o tempo na sua máquina antes.
 
 O modelo ocupa uns 7 GB. A etapa só o carrega se houver algo a classificar, confere a memória entre um documento e outro (e para, com uma explicação, se ela acabar) e o descarrega no fim.
 

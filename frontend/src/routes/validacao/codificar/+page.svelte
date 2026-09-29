@@ -67,8 +67,8 @@
 	<div class="entrada">
 		<h1>Codificar a amostra</h1>
 		<p>
-			A codificação grava as respostas no projeto, por isso só funciona no painel local: rode
-			<code>mapa painel</code> na pasta do projeto. Neste site, veja a concordância na
+			A codificação grava as respostas no projeto, por isso só funciona no painel local{#if manifesto.publicacao}.{:else}: rode
+				<code>mapa painel</code> na pasta do projeto.{/if} Neste site, veja a concordância na
 			<a href={rota('/validacao')}>Validação</a>.
 		</p>
 	</div>

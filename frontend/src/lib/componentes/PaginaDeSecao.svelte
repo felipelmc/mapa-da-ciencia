@@ -11,13 +11,15 @@
 	/**
 	 * Página de uma seção sem conteúdo para mostrar: cabeçalho com o que ela mostra e um estado vazio com os
 	 * arquivos de dados que o projeto já tem. Sem `vazio`, diz em que marco a vista chega; com `vazio`, é a vista
-	 * pronta num projeto que ainda não rodou a etapa (o texto diz o que rodar).
+	 * pronta num projeto que ainda não rodou a etapa (o texto diz o que rodar). No site publicado, quem visita não tem
+	 * o que rodar: a vista só diz que não faz parte da publicação, sem comandos nem a lista de arquivos.
 	 */
 	let {
 		secao,
 		vazio,
 		comTitulo = true,
 		desatualizados = [],
+		paraOSite = false,
 		children
 	}: {
 		secao: Secao;
@@ -26,10 +28,13 @@
 		comTitulo?: boolean;
 		/** Arquivos que existiam, mas ficaram de fora por estarem desatualizados. */
 		desatualizados?: NomeArquivo[];
+		/** O texto (`vazio` e o conteúdo) já foi escrito para quem visita o site publicado: fica como está. */
+		paraOSite?: boolean;
 		children?: Snippet;
 	} = $props();
 
 	const { manifesto } = usarProjeto();
+	const foraDaPublicacao = $derived(!!vazio && !!manifesto.publicacao && !paraOSite);
 
 	// Contagem do manifesto que acompanha cada arquivo, quando houver.
 	const CONTAGEM: Partial<Record<NomeArquivo, [keyof Contagens, string, string?]>> = {
@@ -66,17 +71,19 @@
 	</header>
 
 	<EstadoVazio
-		titulo={vazio?.titulo ?? `Chega ${secao.chegada}`}
-		sobretitulo={vazio?.sobretitulo ?? 'Vista em construção'}
+		titulo={foraDaPublicacao ? 'Esta vista não faz parte desta publicação.' : (vazio?.titulo ?? `Chega ${secao.chegada}`)}
+		sobretitulo={foraDaPublicacao ? 'Fora da publicação' : (vazio?.sobretitulo ?? 'Vista em construção')}
 	>
-		{#if !vazio}
+		{#if foraDaPublicacao}
+			<p data-testid="fora-da-publicacao">O projeto foi publicado sem os dados desta vista. As outras continuam no trilho.</p>
+		{:else if !vazio}
 			<p>
 				A casca do app já está no ar. Esta vista entra {secao.chegada}, e o endereço
 				<code>#{secao.caminho}</code> continua o mesmo.
 			</p>
 		{/if}
-		{@render children?.()}
-		{#if arquivos.length}
+		{#if !foraDaPublicacao}{@render children?.()}{/if}
+		{#if arquivos.length && !foraDaPublicacao && !paraOSite}
 			<div class="dados">
 				<p class="rotulo-miudo">Dados deste projeto</p>
 				<ul>
