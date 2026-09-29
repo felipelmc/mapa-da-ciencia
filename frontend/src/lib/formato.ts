@@ -41,9 +41,23 @@ export function formatarPp(v: number, casas = 2): string {
 	return `${v > 0 ? '+' : v < 0 ? '\u2212' : ''}${texto} p.p.`;
 }
 
-/** Nome legível de uma fonte do recorte: `scielo:scl` → `SciELO (coleção scl)`, `openalex` → `OpenAlex`. */
+const COLECOES_SCIELO: Record<string, string> = {
+	scl: 'Brasil',
+	arg: 'Argentina',
+	chl: 'Chile',
+	col: 'Colômbia',
+	mex: 'México',
+	prt: 'Portugal',
+	esp: 'Espanha',
+	sza: 'África do Sul'
+};
+
+/** Nome legível de uma fonte do recorte: `scielo:scl` → `SciELO Brasil`, `openalex` → `OpenAlex`. */
 export function nomeDaFonte(fonte: string): string {
-	if (fonte.startsWith('scielo:')) return `SciELO (coleção ${fonte.slice('scielo:'.length)})`;
+	if (fonte.startsWith('scielo:')) {
+		const colecao = fonte.slice('scielo:'.length);
+		return COLECOES_SCIELO[colecao] ? `SciELO ${COLECOES_SCIELO[colecao]}` : `SciELO (coleção ${colecao})`;
+	}
 	if (fonte === 'scielo') return 'SciELO';
 	if (fonte === 'openalex') return 'OpenAlex';
 	return fonte;
@@ -52,8 +66,8 @@ export function nomeDaFonte(fonte: string): string {
 const LICENCAS: Record<string, string> = {
 	cc0: 'CC0',
 	'public-domain': 'domínio público',
-	'other-oa': 'outra licença aberta',
-	'publisher-specific-oa': 'licença aberta da editora',
+	'other-oa': 'acesso aberto, sem licença Creative Commons',
+	'publisher-specific-oa': 'licença própria da editora, sem Creative Commons',
 	'implied-oa': 'acesso aberto, sem licença declarada'
 };
 

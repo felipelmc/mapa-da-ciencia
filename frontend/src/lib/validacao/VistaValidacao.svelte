@@ -8,9 +8,9 @@
 	 *   evidência que o modelo citou (no painel local, de todos os codificadores; no site, só das referências);
 	 * - a comparação entre modelos (McNemar) e a evidência literal de cada modelo na amostra.
 	 *
-	 * Os participantes aparecem pelo nome legível (`nomes.ts`), e não pelo id interno. No site publicado, que é para quem
-	 * lê, a vista abre no par principal, e os outros pares e a parte técnica (McNemar, júri, auditoria) ficam em blocos
-	 * recolhidos; no painel local, tudo aberto, como antes.
+	 * No site publicado, que é para quem lê, os participantes aparecem pelo nome legível (`nomes.ts`), e não pelo id
+	 * interno, e a vista abre no par principal, com os outros pares e a parte técnica (McNemar, júri, auditoria) em blocos
+	 * recolhidos. No painel local, os ids (os mesmos da CLI e do mapa.yaml) e tudo aberto, como antes.
 	 */
 	import { tick } from 'svelte';
 	import type { CodebookContrato, MetricaVariavel, Validacao } from '$lib/contrato/tipos';
@@ -79,7 +79,7 @@
 		return v?.categorias?.find((c) => c.valor === valor)?.rotulo ?? valor.replaceAll('_', ' ');
 	}
 	const nomes = $derived(nomesLegiveis(validacao));
-	const nome = (id: string) => nomes.get(id) ?? id;
+	const nome = (id: string) => (api ? id : (nomes.get(id) ?? id));
 	const quem = (id: string) => (tipo(id) === 'referencia' ? `${nome(id)} (referência)` : nome(id));
 	// kappa nulo: numa variável de texto livre ele não se aplica; nas outras, as respostas não variaram
 	const semKappa = (id: string) =>
@@ -159,6 +159,17 @@
 		const unan = Object.values(juri.etapas).reduce((s, e) => s + (e.unanime ?? 0), 0);
 		return `${formatarInteiro(juri.membros.length)} modelos locais votaram em ${formatarInteiro(juri.documentos)} documentos: ${formatarPorcentagem(total ? unan / total : 0)} das decisões foram unânimes.`;
 	});
+	/** O que o bloco recolhido da parte técnica tem, para o resumo dele (no site publicado). */
+	const tecnicos = $derived(
+		[
+			validacao.comparacoes_modelos?.length ? 'comparação entre modelos' : null,
+			juri ? 'júri de modelos' : null,
+			Object.keys(validacao.evidencia_literal ?? {}).length ? 'evidência literal' : null
+		]
+			.filter(Boolean)
+			.join(', ')
+			.replace(/, ([^,]+)$/, ' e $1')
+	);
 	/** O valor-p do McNemar: "< 0,001" em vez de "= 0,000". */
 	const textoP = (p: number) => (p < 0.001 ? '< 0,001' : `= ${formatarDecimal(p, 3)}`);
 	const titulo = (doc: string) => {
@@ -197,7 +208,7 @@
 		{@render listaDePares()}
 	{:else if pares.length > 1}
 		<details class="recolhido" data-testid="outros-pares">
-			<summary>Comparar outros pares ({formatarInteiro(pares.length)})</summary>
+			<summary>Comparar outros pares ({formatarInteiro(pares.length - 1)})</summary>
 			{@render listaDePares()}
 		</details>
 	{/if}
@@ -330,7 +341,7 @@
 				linhas={validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), quem(c.referencia), `${nome(c.modelo_a)} × ${nome(c.modelo_b)}`, formatarInteiro(c.n), `${c.acertos_a} × ${c.acertos_b}`, c.p < 0.001 ? '< 0,001' : formatarDecimal(c.p, 3)])}
 				dados={{
 					colunas: ['Variável', 'Referência', 'Modelo A', 'Modelo B', 'n', 'Acertos de A', 'Acertos de B', 'p'],
-					linhas: validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), c.referencia, c.modelo_a, c.modelo_b, c.n, c.acertos_a, c.acertos_b, c.p])
+					linhas: validacao.comparacoes_modelos.map((c) => [nomeVariavel(c.variavel), nome(c.referencia), nome(c.modelo_a), nome(c.modelo_b), c.n, c.acertos_a, c.acertos_b, c.p])
 				}}
 			>
 				<ul class="mcnemar" data-testid="lista-mcnemar">
@@ -350,7 +361,10 @@
 				<p class="lide">
 					Membros: {juri.membros.join(', ')}.
 					{#if juri.supervisor}O que ficou sem maioria depois da deliberação foi decidido pelo supervisor ({nome(juri.supervisor)}), que escolheu entre os votos dos membros.{/if}
-					{#if tipo('juri-r1') && tipo('juri')}Os participantes <strong>{nome('juri-r1')}</strong> (a votação) e <strong>{nome('juri')}</strong> (depois da deliberação) aparecem nos pares {api ? 'acima' : 'comparados'}.{/if}
+					{#if tipo('juri-r1') && tipo('juri')}
+					{#if api}Os participantes <strong>juri-r1</strong> (a votação) e <strong>juri</strong> (depois da deliberação) aparecem nos pares acima.
+					{:else}Os participantes <strong>{nome('juri-r1')}</strong> e <strong>{nome('juri')}</strong>, a decisão depois da deliberação, aparecem nos pares comparados.{/if}
+				{/if}
 				</p>
 				<Figura
 					id="juri-etapas"
@@ -414,7 +428,7 @@
 		{@render tecnico()}
 	{:else if validacao.comparacoes_modelos?.length || juri || Object.keys(validacao.evidencia_literal ?? {}).length}
 		<details class="recolhido" data-testid="detalhes-tecnicos">
-			<summary>Detalhes técnicos: comparação entre modelos, júri e evidência literal</summary>
+			<summary>Detalhes técnicos: {tecnicos}</summary>
 			<div class="tecnico">{@render tecnico()}</div>
 		</details>
 	{/if}

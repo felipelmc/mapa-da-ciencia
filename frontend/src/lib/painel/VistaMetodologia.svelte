@@ -115,8 +115,8 @@
 			<p data-testid="publicacao">
 				Publicado em {formatarData(pub.em)}.
 				{#if pub.sem_resumos}Sem resumos, por escolha.{:else}{formatarInteiro(pub.resumos_publicados)} resumos com licença Creative
-					Commons estão aqui sem alteração; {formatarInteiro(pub.resumos_retirados)} ficaram de fora (licença não aberta ou
-					desconhecida) e aparecem só com o título, os autores e o link.{/if}
+					Commons estão aqui sem alteração; {formatarInteiro(pub.resumos_retirados)} ficaram de fora (licença que não é Creative Commons,
+					ou desconhecida) e aparecem só com o título, os autores e o link.{/if}
 				Nenhum e-mail e nenhuma codificação individual de pessoas foram publicados.
 			</p>
 		{/if}

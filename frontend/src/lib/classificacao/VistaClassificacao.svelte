@@ -175,7 +175,7 @@
 				onclick={() => mudarFiltros({ variavel: x.id === variaveis[0].id ? null : x.id }, { em })}
 			>
 				{x.rotulo}
-				{#if ref}<SeloKappa referencia={ref} nome={nomes.get(ref.participante.nome) ?? null} />{/if}
+				{#if ref}<SeloKappa referencia={ref} nome={manifesto.api ? null : (nomes.get(ref.participante.nome) ?? null)} />{/if}
 			</button>
 		{/each}
 	</nav>
@@ -266,7 +266,7 @@
 		{#if manifesto.api}
 			Modelo {classificacoes.modelo} · codebook {codebook.nome} {codebook.versao} (<code>{classificacoes.hash_codebook}</code>).
 		{:else}
-			Modelo {modelo}.
+			Modelo {modelo} · codebook versão {codebook.versao}.
 		{/if}
 		{#if validacao}
 			Selos de kappa: concordância do modelo com a codificação da amostra de validação ({formatarInteiro(validacao.amostra.n)}

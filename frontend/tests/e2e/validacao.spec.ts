@@ -270,6 +270,9 @@ test('no painel, a validação continua toda aberta, sem blocos recolhidos', asy
 	await expect(page.getByTestId('par').first()).toBeVisible();
 	await expect(page.getByTestId('outros-pares')).toHaveCount(0);
 	await expect(page.getByTestId('detalhes-tecnicos')).toHaveCount(0);
+	// no painel, os ids de sempre (os da CLI e do mapa.yaml), e não os nomes do site
+	await expect(page.getByTestId('lide-validacao')).toContainText('referencia-exemplo');
+	await expect(page.getByTestId('lide-validacao')).toContainText('juri-supervisor');
 });
 
 test('no site publicado, o cartão não mostra os votos do júri, e a licença tem nome legível', async ({ page }) => {

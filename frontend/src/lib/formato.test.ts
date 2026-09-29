@@ -21,7 +21,7 @@ describe('formatarDuracao', () => {
 	});
 
 	it('nomes legíveis das fontes do recorte, e não os códigos internos', () => {
-		expect(['scielo:scl', 'openalex'].map(nomeDaFonte)).toEqual(['SciELO (coleção scl)', 'OpenAlex']);
+		expect(['scielo:scl', 'scielo:xyz', 'openalex'].map(nomeDaFonte)).toEqual(['SciELO Brasil', 'SciELO (coleção xyz)', 'OpenAlex']);
 		expect(nomeDaFonte('exemplo')).toBe('exemplo');
 	});
 });
@@ -32,8 +32,8 @@ describe('nomeDaLicenca', () => {
 			'CC BY',
 			'CC BY-NC-SA',
 			'CC0',
-			'outra licença aberta',
-			'licença aberta da editora'
+			'acesso aberto, sem licença Creative Commons',
+			'licença própria da editora, sem Creative Commons'
 		]);
 		expect(nomeDaLicenca(null)).toBe('desconhecida');
 		expect(nomeDaLicenca('mit')).toBe('mit');

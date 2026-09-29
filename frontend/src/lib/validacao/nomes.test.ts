@@ -24,10 +24,10 @@ describe('nomesLegiveis', () => {
 		expect(nomes.get('claude-opus')).toBe('Claude');
 		expect(nomes.get('opus-supervisor')).toBe('Claude');
 		expect(nomes.get('juri')).toBe('Júri de modelos');
-		expect(nomes.get('juri-r1')).toBe('Júri (1ª votação)');
+		expect(nomes.get('juri-r1')).toBe('Júri, 1ª votação');
 		expect(nomes.get('juri-supervisor')).toBe('Júri com supervisor');
 		// os ids do júri valem mesmo fora da lista; modelos locais e pessoas ficam com o nome deles
-		expect(nomesLegiveis({ codificadores: [], juri: null }).get('juri-r1')).toBe('Júri (1ª votação)');
+		expect(nomesLegiveis({ codificadores: [], juri: null }).get('juri-r1')).toBe('Júri, 1ª votação');
 		expect(nomes.has('qwen3.5:9b')).toBe(false);
 		expect(nomes.has('Ana')).toBe(false);
 	});

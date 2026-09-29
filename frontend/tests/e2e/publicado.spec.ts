@@ -96,7 +96,9 @@ test('o site publicado não mostra o bastidor: rodapé, codebook, comandos da li
 	await expect(trilho.locator('.rodape')).not.toContainText('pacote');
 	// a classificação sem o id do codebook nem o hash
 	await expect(page.getByTestId('lide-classificacao')).toContainText('codebook do projeto');
-	await expect(page.locator('.creditos').first()).not.toContainText('@');
+	const { hash_codebook } = JSON.parse(readFileSync(join(PASTA, 'classificacoes.json'), 'utf8'));
+	await expect(page.locator('.creditos').last()).toContainText('codebook versão');
+	await expect(page.locator('.creditos').last()).not.toContainText(hash_codebook);
 	// a Ajuda não manda rodar o painel
 	await page.goto(`${url('PUBLICADO')}#/ajuda`);
 	await expect(page.getByRole('heading', { name: 'Sobre este site' })).toBeVisible();
