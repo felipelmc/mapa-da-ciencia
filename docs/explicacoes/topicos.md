@@ -16,7 +16,7 @@ Nem todo artigo tem resumo em inglês. O texto de análise nunca junta idiomas d
 | `reserva` | Não há resumo no idioma de análise | Título e resumo em outro idioma, na ordem: português, espanhol, inglês, francês |
 | `so_titulo` | O documento não tem resumo | Só o título, de preferência no idioma de análise |
 
-A reserva funciona porque o modelo de embeddings é multilíngue: no spike M0a, 99,9% dos resumos em português encontraram a própria versão em inglês como vizinho mais próximo. No piloto de ciência política (4.275 documentos), 4.159 entram com o resumo em inglês, 88 (2,1%) como reserva e 28 (0,7%) só pelo título. A marca aparece no cartão de cada documento no mapa e nas contagens da etapa. Um documento sem título nem resumo fica fora dos tópicos.
+A reserva funciona porque o modelo de embeddings é multilíngue: num teste com os artigos do piloto que têm os dois resumos, 99,9% dos resumos em português encontraram a própria versão em inglês como vizinho mais próximo. No piloto de ciência política (4.275 documentos), 4.159 entram com o resumo em inglês, 88 (2,1%) como reserva e 28 (0,7%) só pelo título. A marca aparece no cartão de cada documento no mapa e nas contagens da etapa. Um documento sem título nem resumo fica fora dos tópicos.
 
 ## 2. Embeddings
 

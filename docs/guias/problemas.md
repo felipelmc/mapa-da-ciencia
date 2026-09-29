@@ -59,7 +59,7 @@ Acontece quando o `mapa` é instalado a partir do código-fonte. Compile a inter
 
 ## Pastas "dados 2", "dados 3"… e o painel vazio
 
-Acontecia com projetos numa pasta sincronizada, como a Mesa ou os Documentos no iCloud Drive do macOS, até a versão 0.7.0: a exportação trocava a pasta `saida/dados` inteira, e o serviço de sincronização guardava a nova com outro nome. Desde a 1.0.0, a exportação troca só os arquivos, e a pasta continua a mesma. Se o seu projeto tem essas pastas, apague as `saida/dados N` e rode `mapa publicar` ou qualquer etapa (`mapa geografia` é a mais rápida): a exportação refaz `saida/dados`.
+Acontecia com projetos numa pasta sincronizada, como a Mesa ou os Documentos no iCloud Drive do macOS, feitos com versões antigas do `mapa-da-ciencia` (anteriores à 1.0): a exportação trocava a pasta `saida/dados` inteira, e o serviço de sincronização guardava a nova com outro nome. Hoje a exportação troca só os arquivos, e a pasta continua a mesma. Se o seu projeto tem essas pastas, apague as `saida/dados N` e rode `mapa publicar` ou qualquer etapa (`mapa geografia` é a mais rápida): a exportação refaz `saida/dados`.
 
 ## Erro no `mapa.yaml` ou no `codebook.yaml`
 

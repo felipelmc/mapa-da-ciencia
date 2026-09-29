@@ -26,7 +26,7 @@ Os modelos foram escolhidos em testes com o corpus do piloto, registrados no rep
 Um modelo precisa caber na memória **livre** na hora de rodar, e não só na memória total. No desenvolvimento do projeto, carregar um modelo de 17 GB numa máquina de 24 GB com outros programas abertos esgotou o *swap* e travou o computador. Por isso:
 
 - `mapa diagnostico` mostra memória livre, swap e o tamanho de cada modelo, e avisa quando um modelo não cabe agora;
-- as etapas que carregam modelos (a partir do marco M3) conferem a memória antes de começar e param com uma mensagem clara se o modelo não couber;
+- as etapas que carregam modelos conferem a memória antes de começar e param com uma mensagem clara se o modelo não couber;
 - os modelos são descarregados ao fim de cada etapa.
 
 ## Velocidade

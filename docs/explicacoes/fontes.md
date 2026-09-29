@@ -36,7 +36,7 @@ O [OpenAlex](https://openalex.org) é um catálogo aberto (licença CC0) de publ
 
 - **enriquecer** cada artigo com o número de citações recebidas e a licença;
 - **buscar por termo** dentro das revistas do recorte, o que a ArticleMeta não faz;
-- no futuro, fornecer as referências para as redes de citação.
+- fornecer as referências citadas por cada artigo, que as [redes de citação](redes.md) usam.
 
 Desde 2026 o OpenAlex cobra por uso. Sem chave, são mil créditos por dia; com a chave gratuita, dez vezes mais. A chave vai no `.env` do projeto (`OPENALEX_API_KEY`) e nunca é gravada junto com as respostas.
 

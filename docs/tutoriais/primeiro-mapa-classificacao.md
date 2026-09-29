@@ -46,7 +46,7 @@ JSON válido na primeira tentativa: 100,0%; 10,6 s por documento (mediana); 1 do
 Estimativa: faltam 390 documentos, cerca de 1,1 h neste computador.
 ```
 
-O tempo é o do Mac de desenvolvimento (M4 Pro, 24 GB); o seu pode ser outro.
+O tempo é o do computador do piloto (um Mac M4 Pro com 24 GB); o seu pode ser outro.
 
 ## 4. Classifique a amostra primeiro
 
