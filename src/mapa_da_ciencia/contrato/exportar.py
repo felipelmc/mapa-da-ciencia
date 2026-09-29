@@ -86,12 +86,35 @@ def manifesto_do_projeto(
 
 
 def _rotulos_sem_registro(projeto: Projeto, resultado: Any) -> str:
-    """O modelo dos rótulos quando a execução dos tópicos não o registrou. Sem rótulos do modelo, as palavras-chave;
-    com eles, foram reaproveitados de uma execução anterior (antes da 2.1.1, o reaproveitamento não levava o modelo
-    junto): o modelo configurado, sem o digest, que não se sabe mais."""
-    if any(t.rotulo_fonte == "llm" for t in resultado.topicos):
-        return f"{projeto.config.modelos.rotulos.modelo} (numa execução anterior)"
+    """O modelo dos rótulos quando a execução dos tópicos não o registrou: antes da 2.1.1, rótulos reaproveitados de uma
+    execução anterior não levavam o modelo junto. Ele vem do cache, que guarda quem escreveu cada rótulo (com o
+    digest); sem cache, o modelo configurado, marcado como de uma execução anterior. Sem rótulos do modelo, diz de
+    onde eles vieram (à mão ou das palavras-chave)."""
+    fontes = {t.rotulo_fonte for t in resultado.topicos}
+    if "llm" in fontes:
+        return (
+            _modelo_dos_rotulos_no_cache(projeto) or f"{projeto.config.modelos.rotulos.modelo} (numa execução anterior)"
+        )
+    if "manual" in fontes:
+        return "nenhum (escritos à mão" + (" e palavras-chave)" if "palavras" in fontes else ")")
     return "nenhum (palavras-chave)"
+
+
+def _modelo_dos_rotulos_no_cache(projeto: Projeto) -> str | None:
+    """O modelo (`nome@digest`) do rótulo mais recente no cache do projeto, se houver."""
+    import sqlite3
+    from contextlib import closing
+
+    if not projeto.estado.exists():
+        return None
+    try:
+        with closing(sqlite3.connect(projeto.estado)) as con:
+            linha = con.execute(
+                "SELECT modelo FROM llm_cache WHERE tarefa = 'rotulos' ORDER BY criado DESC LIMIT 1"
+            ).fetchone()
+    except sqlite3.Error:  # sem a tabela (um projeto que nunca chamou um modelo)
+        return None
+    return linha[0] if linha and linha[0] else None
 
 
 def schemas() -> dict[str, dict]:
