@@ -4,6 +4,26 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [2.1.1] - 2026-09-29
+
+A versão 2.1.1 tira do site público o que só interessa a quem desenvolve o pacote. A documentação e a demo são para quem usa o mapa e para quem lê os resultados; os registros de decisão, as notas de desenvolvimento e o bastidor da execução continuam no repositório e no painel local.
+
+### Mudado
+
+- **A documentação** (site): as seções Decisões (os registros técnicos de decisão, ADRs) e Desenvolvimento saem do menu e do site, e continuam no repositório, em `docs/decisoes/` e `docs/desenvolvimento/`, legíveis no GitHub. As páginas que se apoiavam num registro para dar números ou a calibração (as explicações e a metodologia) apontam para o arquivo no GitHub; as que só diziam "o porquê está no registro" levam à explicação pública do mesmo assunto. Saem também da Referência a API HTTP do painel (agora em `docs/desenvolvimento/api-http.md`) e os módulos internos da API Python, e das páginas o botão "editar no GitHub", o aviso de versão e as menções a spikes, marcos e ao "Mac de desenvolvimento". Um teste confere que nenhuma página publicada volta a apontar para o que ficou fora do site.
+- **A demo e todo site publicado** (sem API), para quem lê:
+  - na Validação, os participantes aparecem pelo nome ("Claude (referência)", "Júri de modelos", "Júri com supervisor"), e a vista abre no par principal, com os outros pares e os detalhes técnicos (a comparação entre modelos, os estágios do júri e a auditoria) em blocos recolhidos;
+  - o cartão do documento não mostra os votos de cada modelo do júri, e as licenças têm nome ("CC BY");
+  - o rodapé do trilho mostra só a data; a Classificação, o modelo e a versão do codebook, sem o nome interno nem o *hash*; a Metodologia guarda a versão exata dos modelos, o *hash*, as sementes, as durações e a versão do contrato num bloco "Para reproduzir";
+  - a gaveta do tópico não cita o `rotulos.yaml`, a Ajuda não manda rodar o `mapa painel`, e uma vista sem dados diz que não faz parte da publicação, sem comandos da linha de comando.
+
+  No painel local, tudo continua como antes, com os ids dos participantes (os mesmos da CLI e do `mapa.yaml`); só as licenças e as coleções do SciELO ganham nome também ali ("CC BY", "SciELO Brasil", no Início e no rodapé das figuras exportadas).
+
+### Corrigido
+
+- A Metodologia do piloto dizia "Rótulos dos tópicos: nenhum (palavras-chave)", com 36 rótulos escritos pelo modelo: refeitos os tópicos, os rótulos reaproveitados da execução anterior não levavam junto o modelo que os escreveu. Agora levam, e, para tópicos já gerados assim, o modelo vem do cache do projeto (com o *digest*).
+- O índice dos registros de decisão não tinha a 0014 e a 0015.
+
 ## [2.1.0] - 2026-09-28
 
 A versão 2.1.0 responde a três problemas que o autor encontrou ao usar a 2.0.0: os grafos das redes, apertados e pouco interativos; o conteúdo encostado à esquerda numa tela larga; e a vista Validação, que não carregava no site publicado nem no painel. Antes das correções, quatro agentes independentes percorreram a demo e o painel local atrás de outros problemas, e os achados médios ou maiores passaram por verificadores; depois, três revisores novos (código, desenho das redes e uso) e uma re-revisão aprovaram o resultado. Veja a seção "Segunda rodada" da página [Revisão geral](docs/desenvolvimento/revisao-2026-09.md). No piloto, numa tela de 1920 × 1080, os nós encostados no grafo de coautoria caem de 58% para 0%.
@@ -305,7 +325,8 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.1.0...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.0...v1.0.1
