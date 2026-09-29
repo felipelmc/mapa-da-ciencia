@@ -37,11 +37,11 @@ conversa; `virou` diz se ela mudou) ou `sem_maioria` (com a escolha do superviso
 
 O júri produz três classificações que a validação compara como se fossem modelos:
 
-| Fonte | O que é |
-|---|---|
-| `juri-r1` | a maioria da votação (sem maioria: o voto do primeiro membro, o "presidente") |
-| `juri` | a maioria depois da deliberação (sem maioria: o presidente) |
-| `juri-supervisor` | o `juri`, com a escolha do supervisor onde não houve maioria |
+| Fonte | Na interface | O que é |
+|---|---|---|
+| `juri-r1` | Júri (1ª votação) | a maioria da votação (sem maioria: o voto do primeiro membro, o "presidente") |
+| `juri` | Júri de modelos | a maioria depois da deliberação (sem maioria: o presidente) |
+| `juri-supervisor` | Júri com supervisor | o `juri`, com a escolha do supervisor onde não houve maioria |
 
 No piloto, o **codificador de referência** também é um modelo da família Claude, e o supervisor também. Comparar os
 dois mede, em parte, quanto uma instância do Claude concorda com outra: é **circular**. Por isso:
