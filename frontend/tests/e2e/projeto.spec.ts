@@ -17,7 +17,11 @@ test('no site estático, a seção vira a Metodologia, tirada do manifesto', asy
 	await page.goto(`${url('RAIZ')}#/projeto`);
 	await expect(h1(page)).toHaveText('Metodologia');
 	await expect(page.getByTestId('modelos-metodologia')).toContainText('Classificação');
-	await expect(page.getByTestId('metodologia')).toContainText('versão 1.5');
+	// a versão exata dos modelos, o hash e a versão do contrato ficam no bloco recolhido "Para reproduzir"
+	const reproduzir = page.getByTestId('para-reproduzir');
+	await expect(reproduzir.getByText('versão 1.5')).toBeHidden();
+	await reproduzir.locator('summary').click();
+	await expect(reproduzir.getByText('versão 1.5')).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Desenho da validação' })).toBeVisible();
 	expect(problemas).toEqual([]);
 });

@@ -10,6 +10,7 @@
 	 * A variável e o cruzamento vão na URL; a célula escolhida, não (ela depende do recorte).
 	 */
 	import type { Classificacoes, CodebookContrato, Validacao } from '$lib/contrato/tipos';
+	import { usarProjeto } from '$lib/dados/contexto';
 	import type { Aberto } from '$lib/dados/corpus';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { CRUZAR, type Cruzar } from '$lib/estado/url';
@@ -21,6 +22,7 @@
 	import Cruzamento from './Cruzamento.svelte';
 	import ListaDocumentos from './ListaDocumentos.svelte';
 	import SeloKappa from './SeloKappa.svelte';
+	import { nomesLegiveis } from '$lib/validacao/nomes';
 
 	let {
 		aberto,
@@ -141,6 +143,9 @@
 			.map(({ l, i }) => [l.rotulo, cruz.classificados[i], ...v.valores.map((_, x) => cruz.n[i * v.valores.length + x])])
 	});
 	const modelo = $derived(classificacoes.modelo.split('@')[0]);
+	// no site publicado, sem o id interno do codebook nem o digest e o hash (que ficam na Metodologia, em "Para reproduzir")
+	const { manifesto } = usarProjeto();
+	const nomes = $derived(validacao ? nomesLegiveis(validacao) : new Map<string, string>());
 </script>
 
 <div class="vista surgir">
@@ -148,7 +153,7 @@
 		<h1>Classificação</h1>
 		<p class="lide" data-testid="lide-classificacao">
 			{formatarInteiro(classificadosRecorte)} de {formatarInteiro(total)} documentos do recorte classificados por
-			<strong>{modelo}</strong>, segundo o codebook {codebook.nome} {codebook.versao}. Cada resposta vem com um trecho
+			<strong>{modelo}</strong>, segundo o codebook {manifesto.api ? `${codebook.nome} ${codebook.versao}` : 'do projeto'}. Cada resposta vem com um trecho
 			do resumo que a justifica: {formatarPorcentagem(classificacoes.evidencia_literal)} deles aparecem literalmente no
 			texto.
 		</p>
@@ -170,7 +175,7 @@
 				onclick={() => mudarFiltros({ variavel: x.id === variaveis[0].id ? null : x.id }, { em })}
 			>
 				{x.rotulo}
-				{#if ref}<SeloKappa referencia={ref} />{/if}
+				{#if ref}<SeloKappa referencia={ref} nome={nomes.get(ref.participante.nome) ?? null} />{/if}
 			</button>
 		{/each}
 	</nav>
@@ -258,7 +263,11 @@
 	{/if}
 
 	<p class="creditos">
-		Modelo {classificacoes.modelo} · codebook {codebook.nome} {codebook.versao} (<code>{classificacoes.hash_codebook}</code>).
+		{#if manifesto.api}
+			Modelo {classificacoes.modelo} · codebook {codebook.nome} {codebook.versao} (<code>{classificacoes.hash_codebook}</code>).
+		{:else}
+			Modelo {modelo}.
+		{/if}
 		{#if validacao}
 			Selos de kappa: concordância do modelo com a codificação da amostra de validação ({formatarInteiro(validacao.amostra.n)}
 			documentos); com hachura, abaixo de 0,6.

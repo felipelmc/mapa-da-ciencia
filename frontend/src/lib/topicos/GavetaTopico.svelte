@@ -6,6 +6,7 @@
 	 */
 	import { tick } from 'svelte';
 	import type { Macrotema, Topico, Topicos } from '$lib/contrato/tipos';
+	import { usarProjeto } from '$lib/dados/contexto';
 	import { D, type Cubo } from '$lib/dados/cubo';
 	import { ajustados, tendencia } from '$lib/estatistica/glm';
 	import { mudarFiltros } from '$lib/estado/filtros';
@@ -71,10 +72,12 @@
 	const recorte = $derived(recorteDe(filtros));
 	const noMapa = $derived(rota('/mapa', escreverFiltros({ ...recorte, topicos: [topico.id] })));
 	const filtrado = $derived(filtros.topicos.includes(topico.id));
+	// o nome do arquivo dos rótulos à mão só interessa a quem edita o projeto, no painel
+	const { manifesto } = usarProjeto();
 	const FONTE: Record<string, string> = {
 		llm: 'rótulo escrito pelo modelo de linguagem',
 		palavras: 'rótulo pelas palavras-chave',
-		manual: 'rótulo escrito à mão (rotulos.yaml)'
+		manual: `rótulo escrito à mão${manifesto.api ? ' (rotulos.yaml)' : ''}`
 	};
 	const DIRECAO: Record<string, string> = { alta: 'Em alta', queda: 'Em queda', estavel: 'Estável', insuficiente: 'Sem dados suficientes' };
 </script>

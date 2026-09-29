@@ -7,6 +7,7 @@
 	import type { Topicos } from '$lib/contrato/tipos';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { vizinhosDe, type TabelaDocumentos } from '$lib/dados/documentos';
+	import { nomeDaLicenca } from '$lib/formato';
 	import ResumoComEvidencias from '$lib/classificacao/ResumoComEvidencias.svelte';
 	import VotosDoJuri from '$lib/classificacao/VotosDoJuri.svelte';
 
@@ -24,7 +25,7 @@
 		aoAbrir: (i: number) => void;
 	} = $props();
 
-	const { fonte, revistas } = usarProjeto();
+	const { fonte, revistas, manifesto } = usarProjeto();
 	// o codebook só serve para os nomes das variáveis e categorias; sem ele, a lista usa os ids
 	const codebook = fonte.codebook().catch(() => null);
 	const IDIOMAS: Record<string, string> = { pt: 'português', en: 'inglês', es: 'espanhol', fr: 'francês' };
@@ -81,14 +82,15 @@
 		{:else if d?.resumo}
 			<p class="resumo" lang={d.idioma ?? undefined}>{d.resumo}</p>
 		{:else if d && d.fonte_analise !== 'so_titulo'}
-			<p class="nota" data-testid="aviso-licenca">A licença deste resumo ({d.licenca}) não permite mostrá-lo aqui. Ele está na página do artigo.</p>
+			<p class="nota" data-testid="aviso-licenca">A licença deste resumo ({nomeDaLicenca(d.licenca)}) não permite mostrá-lo aqui. Ele está na página do artigo.</p>
 		{/if}
 		{#if d && !d.resumo && Object.keys(d.evidencias ?? {}).length}
 			{#await codebook then cb}
 				<ResumoComEvidencias resumo={null} idioma={d.idioma} evidencias={d.evidencias ?? {}} codebook={cb} />
 			{/await}
 		{/if}
-		{#if d && Object.keys(d.juri ?? {}).length}
+		<!-- os votos de cada modelo do júri são o bastidor da classificação: só no painel local -->
+		{#if d && manifesto.api && Object.keys(d.juri ?? {}).length}
 			{#await codebook then cb}
 				<VotosDoJuri juri={d.juri ?? {}} codebook={cb} />
 			{/await}
@@ -105,7 +107,7 @@
 				{/if}
 			</p>
 		{/if}
-		{#if d}<p class="suave licenca">Licença: {d.licenca}</p>{/if}
+		{#if d}<p class="suave licenca">Licença: {nomeDaLicenca(d.licenca)}</p>{/if}
 	{:catch}
 		<p class="nota" role="alert">Não foi possível carregar os detalhes deste documento.</p>
 	{/await}

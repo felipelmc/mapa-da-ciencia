@@ -44,6 +44,7 @@
 				comTitulo={false}
 				secao={secao('redes')}
 				vazio={{ titulo: 'As redes não fazem parte desta publicação.', sobretitulo: 'Sem redes' }}
+				paraOSite
 			>
 				<p data-testid="redes-fora-da-publicacao">
 					Este site foi publicado sem as redes de coautoria e de citação. As outras vistas mostram o corpus inteiro.

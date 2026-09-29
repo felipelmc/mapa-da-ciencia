@@ -157,7 +157,11 @@
 					<Macrotemas topicos={t} totalDocumentos={contagens.documentos} />
 				{:else}
 					<p class="carregando" data-testid="proximo-passo">
-						Documentos coletados. Próximo passo: <code>mapa topicos</code> monta o mapa e os macrotemas.
+						{#if manifesto.publicacao}
+							Os macrotemas não fazem parte desta publicação.
+						{:else}
+							Documentos coletados. Próximo passo: <code>mapa topicos</code> monta o mapa e os macrotemas.
+						{/if}
 					</p>
 				{/if}
 			</Protegida>
@@ -166,13 +170,17 @@
 		{/await}
 	{:else}
 		<EstadoVazio titulo="Este projeto ainda não tem dados." sobretitulo="Projeto vazio">
-			<p>
-				Rode <code>mapa coletar</code> e depois <code>mapa topicos</code>.
-			</p>
-			<p>
-				A coleta traz os documentos do recorte ({formatarPeriodo(recorte.anos)}), e a etapa de tópicos
-				monta o mapa. Depois, recarregue esta página.
-			</p>
+			{#if manifesto.publicacao}
+				<p>Esta publicação não tem documentos.</p>
+			{:else}
+				<p>
+					Rode <code>mapa coletar</code> e depois <code>mapa topicos</code>.
+				</p>
+				<p>
+					A coleta traz os documentos do recorte ({formatarPeriodo(recorte.anos)}), e a etapa de tópicos
+					monta o mapa. Depois, recarregue esta página.
+				</p>
+			{/if}
 		</EstadoVazio>
 	{/if}
 </div>

@@ -89,19 +89,22 @@
 		</ul>
 	</nav>
 
+	<!-- no site publicado, só a data: o modo, a versão do contrato e a do pacote são do painel (e da Metodologia) -->
 	<dl class="rodape">
-		<div>
-			<dt>modo</dt>
-			<dd>{manifesto.api ? 'painel local' : 'site estático'}</dd>
-		</div>
-		<div>
-			<dt>contrato</dt>
-			<dd class="numero">{manifesto.versao_contrato ?? '1.0'}</dd>
-		</div>
-		<div>
-			<dt>pacote</dt>
-			<dd class="numero">{manifesto.execucao.versao_pacote}</dd>
-		</div>
+		{#if manifesto.api}
+			<div>
+				<dt>modo</dt>
+				<dd>painel local</dd>
+			</div>
+			<div>
+				<dt>contrato</dt>
+				<dd class="numero">{manifesto.versao_contrato ?? '1.0'}</dd>
+			</div>
+			<div>
+				<dt>pacote</dt>
+				<dd class="numero">{manifesto.execucao.versao_pacote}</dd>
+			</div>
+		{/if}
 		<div>
 			<dt>gerado</dt>
 			<dd>{formatarData(manifesto.gerado_em)}</dd>

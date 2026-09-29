@@ -49,6 +49,22 @@ export function nomeDaFonte(fonte: string): string {
 	return fonte;
 }
 
+const LICENCAS: Record<string, string> = {
+	cc0: 'CC0',
+	'public-domain': 'domínio público',
+	'other-oa': 'outra licença aberta',
+	'publisher-specific-oa': 'licença aberta da editora',
+	'implied-oa': 'acesso aberto, sem licença declarada'
+};
+
+/** Nome legível de uma licença do OpenAlex: `cc-by-nc` → `CC BY-NC`, `other-oa` → `outra licença aberta`. */
+export function nomeDaLicenca(codigo: string | null | undefined): string {
+	if (!codigo) return 'desconhecida';
+	if (LICENCAS[codigo]) return LICENCAS[codigo];
+	if (codigo.startsWith('cc-')) return `CC ${codigo.slice(3).toUpperCase()}`;
+	return codigo;
+}
+
 /** Duração em segundos → `45 s`, `3 min`, `2 h 10 min`. */
 export function formatarDuracao(segundos: number): string {
 	if (segundos < 90) return `${Math.round(segundos)} s`;

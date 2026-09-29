@@ -86,3 +86,32 @@ test('a Ajuda do site publicado não fala de marcos, do computador de quem lê n
 	await expect(page.getByRole('main').getByText(/^chega /)).toHaveCount(0);
 	await expect(page.getByRole('main').getByRole('link', { name: 'Redes', exact: true })).toBeVisible();
 });
+
+test('o site publicado não mostra o bastidor: rodapé, codebook, comandos da linha de comando', async ({ page }) => {
+	await page.goto(`${url('PUBLICADO')}#/classificacao`);
+	await expect(h1(page)).toHaveText('Classificação');
+	// o rodapé do trilho só com a data (o modo, o contrato e o pacote são do painel)
+	const trilho = page.getByRole('navigation', { name: 'Seções' }).locator('..');
+	await expect(trilho.locator('.rodape')).not.toContainText('contrato');
+	await expect(trilho.locator('.rodape')).not.toContainText('pacote');
+	// a classificação sem o id do codebook nem o hash
+	await expect(page.getByTestId('lide-classificacao')).toContainText('codebook do projeto');
+	await expect(page.locator('.creditos').first()).not.toContainText('@');
+	// a Ajuda não manda rodar o painel
+	await page.goto(`${url('PUBLICADO')}#/ajuda`);
+	await expect(page.getByRole('heading', { name: 'Sobre este site' })).toBeVisible();
+	await expect(page.getByRole('main')).not.toContainText('mapa painel');
+});
+
+test('no site publicado, uma vista sem dados diz que não faz parte da publicação, sem comandos', async ({ page }) => {
+	await page.route('**/dados/manifesto.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const m = await resposta.json();
+		m.arquivos = m.arquivos.filter((a: string) => a !== 'afiliacoes');
+		await rota.fulfill({ response: resposta, json: m });
+	});
+	await page.goto(`${url('PUBLICADO')}#/geografia`);
+	await expect(page.getByTestId('fora-da-publicacao')).toBeVisible();
+	await expect(page.getByRole('main')).not.toContainText('Rode');
+	await expect(page.getByRole('main')).not.toContainText('.json');
+});
