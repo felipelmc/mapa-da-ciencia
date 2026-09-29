@@ -41,7 +41,7 @@ Quando uma etapa termina, **Ver os dados novos** recarrega o painel: o Mapa, os 
 
 ## 4. Classifique a amostra
 
-A classificação de todo o corpus leva cerca de uma hora neste recorte (67 minutos no computador de desenvolvimento). Para começar, classifique só a amostra de validação:
+A classificação de todo o corpus leva cerca de uma hora neste recorte (67 minutos no computador do piloto, um Mac M4 Pro com 24 GB). Para começar, classifique só a amostra de validação:
 
 1. Na estação **Validação**, escolha **40** documentos e clique em **Sortear a amostra**. A amostra é sorteada entre os documentos com resumo, espalhada pelos tópicos.
 2. Na estação **Classificação**, clique em **Estimar o tempo**: o modelo classifica 5 documentos e o painel mostra quanto falta, neste computador.

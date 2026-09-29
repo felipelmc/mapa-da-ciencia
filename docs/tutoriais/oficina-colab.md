@@ -7,7 +7,7 @@ Um roteiro para uma oficina de duas horas, com gente que nunca instalou Python. 
     - Um navegador. Nada é instalado no computador.
 
 !!! warning "Tempos estimados"
-    Os tempos do caderno e do roteiro são estimativas a partir do computador de desenvolvimento e do tamanho dos modelos. Rode o caderno uma vez antes da oficina para ver os tempos na T4 do dia.
+    Os tempos do caderno e do roteiro são estimativas a partir das rodadas do piloto (num Mac M4 Pro com 24 GB) e do tamanho dos modelos. Rode o caderno uma vez antes da oficina para ver os tempos na T4 do dia.
 
 ## Antes da oficina
 

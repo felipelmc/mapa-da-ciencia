@@ -5,8 +5,9 @@ O **mapa-da-ciencia** é um observatório da literatura científica. Ele coleta 
 1. **Sobre o que se escreve, e como isso muda no tempo?** Os artigos viram pontos num mapa, agrupados por proximidade de assunto. Cada grupo é um tópico com nome e descrição, e dá para acompanhar como cada tópico cresce ou encolhe ano a ano.
 2. **Como se pesquisa?** Um modelo lê cada resumo e o classifica segundo um *codebook* escrito por você (método, recorte geográfico, subárea...). Ele sempre copia o trecho do resumo que justifica cada resposta. Você codifica uma amostra, e o sistema mede o quanto o modelo concorda com você.
 3. **Onde se produz?** O mapa das afiliações dos autores por UF, país e instituição, com contagem fracionária.
+4. **Quem trabalha com quem?** As redes de coautoria, entre pessoas e entre instituições, e as citações entre os artigos do corpus.
 
-Tudo aparece num painel interativo, que pode ser publicado como site estático para acompanhar um artigo ou uma apresentação.
+Nos casos difíceis da classificação, um [júri de modelos locais](explicacoes/juri.md) vota e delibera. Tudo aparece num painel interativo, que pode ser publicado como site estático para acompanhar um artigo ou uma apresentação: a [demo](https://felipelamarca.com/mapa-da-ciencia/demo/) é o piloto publicado.
 
 ## Por onde começar
 

@@ -128,14 +128,19 @@ def ceu(docs: dict, topicos: dict) -> dict:
 FAMILIAS = {"claude": "Claude", "gpt": "GPT", "gemini": "Gemini", "llama": "Llama"}
 
 
+def _da_familia(familia: str | None) -> str | None:
+    return FAMILIAS.get(familia, familia[:1].upper() + familia[1:]) if familia else None
+
+
 def _nome_da_referencia(validacao: dict) -> str | None:
     """O codificador de referência pelo nome da família do modelo ("Claude"), e não pelo id interno
-    (`claude-opus`), como na interface (`frontend/src/lib/validacao/nomes.ts`)."""
-    ref = next((c for c in validacao["codificadores"] if c["tipo"] == "referencia"), None)
-    if ref is None:
+    (`claude-opus`), com as mesmas regras da interface (`frontend/src/lib/validacao/nomes.ts`): sem família, o id; duas
+    referências da mesma família, o id (para não se confundirem)."""
+    referencias = [c for c in validacao["codificadores"] if c["tipo"] == "referencia"]
+    if not referencias:
         return None
-    familia = ref.get("familia")
-    return FAMILIAS.get(familia, familia.capitalize()) if familia else ref["nome"]
+    nomes = [_da_familia(c.get("familia")) or c["nome"] for c in referencias]
+    return nomes[0] if nomes.count(nomes[0]) == 1 else referencias[0]["nome"]
 
 
 def _kappas(validacao: dict) -> list[dict]:

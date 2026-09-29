@@ -14,12 +14,15 @@ DOCS = RAIZ / "docs"
 FORA_DO_SITE = ("decisoes", "desenvolvimento")
 # as cópias do iCloud ("index 2.md") também ficam fora do site (exclude_docs)
 COPIA_DO_ICLOUD = re.compile(r" \d+(\.\w+)?$")
-LINK = re.compile(r"\]\(([^)\s]+)\)|href=\"([^\"]+)\"")
+# links em linha (com ou sem título), definições de link por referência e href em HTML
+LINK = re.compile(r"\]\(\s*<?([^)\s>]+)|^\s*\[[^\]]+\]:\s*<?(\S+?)>?(?:\s|$)|href=\"([^\"]+)\"", re.MULTILINE)
 PARA_FORA = re.compile(r"(^|/)(decisoes|desenvolvimento)/|api-http")
 BASTIDOR = {
     "spike": re.compile(r"\bspikes?\b", re.IGNORECASE),
     "marco M": re.compile(r"\bmarcos? M\d"),
     "Mac de desenvolvimento": re.compile(r"Mac de desenvolvimento"),
+    "computador de desenvolvimento": re.compile(r"computador de desenvolvimento"),
+    "desenvolvimento do projeto": re.compile(r"desenvolvimento do projeto"),
     "ADR": re.compile(r"\bADRs?\b"),
 }
 
@@ -58,7 +61,7 @@ def test_nenhuma_pagina_publicada_aponta_para_o_que_ficou_fora_do_site():
     problemas = []
     for rel, texto in _publicadas():
         for achado in LINK.finditer(texto):
-            alvo = achado.group(1) or achado.group(2)
+            alvo = achado.group(1) or achado.group(2) or achado.group(3)
             if alvo.startswith(("http://", "https://", "#", "mailto:")):
                 continue
             if PARA_FORA.search(alvo):

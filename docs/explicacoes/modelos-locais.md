@@ -23,7 +23,7 @@ Os modelos foram escolhidos em testes com o corpus do piloto, registrados no rep
 
 ## Memória: o cuidado principal
 
-Um modelo precisa caber na memória **livre** na hora de rodar, e não só na memória total. No desenvolvimento do projeto, carregar um modelo de 17 GB numa máquina de 24 GB com outros programas abertos esgotou o *swap* e travou o computador. Por isso:
+Um modelo precisa caber na memória **livre** na hora de rodar, e não só na memória total. Num teste, carregar um modelo de 17 GB numa máquina de 24 GB com outros programas abertos esgotou o *swap* e travou o computador. Por isso:
 
 - `mapa diagnostico` mostra memória livre, swap e o tamanho de cada modelo, e avisa quando um modelo não cabe agora;
 - as etapas que carregam modelos conferem a memória antes de começar e param com uma mensagem clara se o modelo não couber;
@@ -31,7 +31,7 @@ Um modelo precisa caber na memória **livre** na hora de rodar, e não só na me
 
 ## Velocidade
 
-Embeddings são rápidos: os 4,2 mil resumos do piloto levam uns 5 minutos num Mac M4 Pro. A classificação é a etapa lenta: no piloto, 9,6 segundos por resumo (mediana) no mesmo Mac, a maior parte gasta escrevendo as evidências, ou cerca de 12 horas para os 4.247 resumos. Encurtar as evidências não trouxe as 7 horas previstas nos primeiros testes. Chamadas simultâneas não aceleram nada numa máquina de 24 GB, porque o Ollama atende uma de cada vez. Por isso a classificação:
+Embeddings são rápidos: os 4,2 mil resumos do piloto levam uns 5 minutos num Mac M4 Pro. A classificação é a etapa lenta: no piloto, 9,6 segundos por resumo (mediana) no mesmo Mac, a maior parte gasta escrevendo as evidências, ou cerca de 12 horas para os 4.247 resumos. Chamadas simultâneas não aceleram nada numa máquina de 24 GB, porque o Ollama atende uma de cada vez. Por isso a classificação:
 
 - estima o tempo antes de começar (`--estimar`);
 - roda numa amostra, se você pedir (`--limite` ou `--somente-amostra`);
