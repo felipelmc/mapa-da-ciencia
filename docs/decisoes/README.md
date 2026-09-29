@@ -2,6 +2,8 @@
 
 Cada decisão técnica relevante do projeto vira um registro curto (ADR, *architecture decision record*) nesta pasta. O registro explica o que foi decidido, por quê e com base em que evidência. Assim, quem chegar depois, inclusive o autor daqui a um ano, entende as escolhas sem precisar reconstruí-las.
 
+Os registros ficam no repositório, e não no site da documentação, que é para quem usa o mapa e lê os resultados. As páginas públicas que se apoiam num registro (as explicações e a metodologia) apontam para o arquivo aqui, no GitHub, com um link absoluto: um link relativo daria 404 no site.
+
 As decisões do marco M0 vêm de **spikes**: experimentos pequenos e descartáveis que respondem a uma pergunta específica. Os scripts ficam em `spikes/` e podem ser rodados de novo para reproduzir os números.
 
 ## Índice
@@ -21,6 +23,8 @@ As decisões do marco M0 vêm de **spikes**: experimentos pequenos e descartáve
 | [0011](0011-classificacao-ancorada-em-evidencia.md) | Classificação ancorada em evidência: texto, prompt, evidência curta, nova tentativa e cache | aceita |
 | [0012](0012-validacao-e-codificador-de-referencia.md) | Validação: amostra estratificada, codificação cega, codificador de referência e métricas por par | aceita |
 | [0013](0013-painel-jobs-sse-e-edicao.md) | Painel: jobs um por vez, progresso por SSE com retomada, cancelamento e edição do YAML sem perder comentários | aceita |
+| [0014](0014-redes-de-coautoria-e-citacao.md) | Redes de coautoria e citação: identidade das pessoas, pesos, comunidades e desenho | aceita |
+| [0015](0015-juri-de-modelos-e-supervisor.md) | Júri de modelos locais e supervisor | aceita |
 
 ## Modelo
 

@@ -1,6 +1,8 @@
 # Desenvolvimento
 
-Como o `mapa-da-ciencia` é organizado e como contribuir. As regras de colaboração estão no [`CONTRIBUTING.md`](https://github.com/felipelmc/mapa-da-ciencia/blob/main/CONTRIBUTING.md).
+Como o `mapa-da-ciencia` é organizado e como contribuir. As regras de colaboração estão no [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
+
+Esta pasta e a das decisões (`docs/decisoes/`) ficam fora do site da documentação (`exclude_docs` no `mkdocs.yml`): o site é para quem usa o mapa e lê os resultados. Uma página publicada que precise citar uma delas usa o link absoluto do GitHub, e `tests/test_site_publico.py` falha com um link relativo.
 
 ## Arquitetura
 

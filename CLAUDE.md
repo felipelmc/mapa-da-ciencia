@@ -8,7 +8,7 @@ O `mapa-da-ciencia` é um observatório da literatura científica, sucessor do S
 
 Tudo é em **português**: interface, mensagens, documentação, identificadores de domínio e mensagens de commit.
 
-O desenvolvimento segue marcos M0–M7, listados em `docs/desenvolvimento/index.md`. As decisões técnicas estão em `docs/decisoes/`. Leia o ADR relevante antes de mudar algo que ele decidiu.
+O desenvolvimento segue marcos M0–M7, listados em `docs/desenvolvimento/index.md`. As decisões técnicas estão em `docs/decisoes/`. Leia o ADR relevante antes de mudar algo que ele decidiu. As duas pastas ficam fora do site da documentação, que é para o público: páginas publicadas citam um ADR pelo link absoluto do GitHub (`tests/test_site_publico.py` confere).
 
 ## Comandos
 
