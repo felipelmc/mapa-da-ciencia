@@ -3,7 +3,6 @@ site_description: Observatório da literatura científica com modelos de linguag
 site_url: https://felipelmc.github.io/mapa-da-ciencia/
 repo_url: https://github.com/felipelmc/mapa-da-ciencia
 repo_name: felipelmc/mapa-da-ciencia
-edit_uri: edit/main/docs/
 copyright: Código sob licença MIT · Projeto independente, sem vínculo oficial com SciELO, OpenAlex ou IBGE
 
 theme:
@@ -41,18 +40,21 @@ theme:
     - search.suggest
     - search.highlight
     - content.code.copy
-    - content.action.edit
 
 extra_css:
   - css/tema.css
 
 # a versão do pacote no rodapé da abertura (overrides/hooks.py)
-# As cópias do iCloud Drive ("index 2.md") são versões antigas das páginas: ficam fora do site.
+# As cópias do iCloud Drive ("index 2.md") são versões antigas das páginas: ficam fora do site. As decisões técnicas
+# (ADRs) e as notas de desenvolvimento ficam no repositório, legíveis no GitHub, mas não no site, que é para quem usa o
+# mapa e lê os resultados (tests/test_site_publico.py confere que nenhuma página publicada aponta para elas).
 exclude_docs: |
   * [0-9]
   * [0-9].*
   * [0-9][0-9]
   * [0-9][0-9].*
+  /decisoes/
+  /desenvolvimento/
 
 hooks:
   - overrides/hooks.py
@@ -139,7 +141,6 @@ nav:
       - Configuração (mapa.yaml): referencia/configuracao.md
       - Codebook (codebook.yaml): referencia/codebook.md
       - Contrato de dados: referencia/contrato.md
-      - API HTTP do painel: referencia/api-http.md
       - API Python: referencia/api-python.md
       - Glossário: referencia/glossario.md
   - Explicações:
@@ -156,23 +157,3 @@ nav:
       - Reprodutibilidade: explicacoes/reprodutibilidade.md
       - Privacidade e licenças: explicacoes/privacidade-e-licencas.md
       - Limitações e vieses: explicacoes/limitacoes.md
-  - Decisões:
-      - decisoes/README.md
-      - "0001 · Certificados do sistema": decisoes/0001-certificados-do-sistema-com-truststore.md
-      - "0002 · Frontend": decisoes/0002-frontend-router-hash-e-regl-scatterplot.md
-      - "0003 · Fontes e licenças": decisoes/0003-fontes-casamento-e-licencas.md
-      - "0004 · Embeddings e idioma": decisoes/0004-embeddings-e-idioma-de-analise.md
-      - "0005 · Modelo de classificação": decisoes/0005-modelo-de-classificacao.md
-      - "0006 · Armazenamento": decisoes/0006-armazenamento-parquet-duckdb.md
-      - "0007 · Parâmetros dos tópicos": decisoes/0007-parametros-dos-topicos.md
-      - "0008 · Geografia das afiliações": decisoes/0008-geografia-casamento-das-afiliacoes.md
-      - "0009 · Tendência dos tópicos": decisoes/0009-tendencia-dos-topicos.md
-      - "0010 · Gráficos em SVG próprio": decisoes/0010-graficos-em-svg-proprio.md
-      - "0011 · Classificação ancorada em evidência": decisoes/0011-classificacao-ancorada-em-evidencia.md
-      - "0012 · Validação e codificador de referência": decisoes/0012-validacao-e-codificador-de-referencia.md
-      - "0013 · Painel: jobs, progresso ao vivo e edição": decisoes/0013-painel-jobs-sse-e-edicao.md
-      - "0014 · Redes de coautoria e citação": decisoes/0014-redes-de-coautoria-e-citacao.md
-      - "0015 · Júri de modelos e supervisor": decisoes/0015-juri-de-modelos-e-supervisor.md
-  - Desenvolvimento:
-      - desenvolvimento/index.md
-      - Revisão geral (setembro de 2026): desenvolvimento/revisao-2026-09.md

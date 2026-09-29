@@ -79,7 +79,7 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 |---|---|---|
 | `contrato/schema/*.json`, `contrato/exemplo/dados/` e `contrato/exemplo-publicado/dados/` | `uv run python scripts/gerar_contrato.py` | Ao mudar `contrato/modelos.py`, o gerador de exemplo ou as regras do `mapa publicar` |
 | `frontend/src/lib/contrato/tipos.ts` | `npm run tipos` (em `frontend/`) | Depois de regenerar os schemas |
-| `docs/referencia/{cli,configuracao,codebook,contrato,api-http}.md` | `uv run python scripts/gerar_referencias.py` | Ao mudar comandos, `config.py`, o contrato ou as rotas do painel |
+| `docs/referencia/{cli,configuracao,codebook,contrato}.md` e `docs/desenvolvimento/api-http.md` | `uv run python scripts/gerar_referencias.py` | Ao mudar comandos, `config.py`, o contrato ou as rotas do painel |
 | `docs/assets/pagina/dados.json` | `uv run python scripts/gerar_pagina.py projetos/cp-scielo` (localmente: o piloto não está no repositório) | Quando o piloto mudar: as estrelas, os números e as histórias da abertura do site |
 | `notebooks/oficina_colab.ipynb` | `uv run python scripts/gerar_notebook.py` (conferido em `tests/test_notebook.py`) | Ao mudar a versão do pacote ou o roteiro da oficina |
 | `src/mapa_da_ciencia/fontes/scielo-revistas.json` | `uv run python scripts/gerar_revistas.py` (1 requisição à ArticleMeta) | Para atualizar a lista de revistas do SciELO Brasil |
