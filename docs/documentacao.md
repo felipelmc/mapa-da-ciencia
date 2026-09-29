@@ -27,7 +27,7 @@ Tudo aparece num painel interativo, que pode ser publicado como site estático p
 - **Modelos locais.** Nenhum resumo sai da sua máquina para ser processado: embeddings e classificação rodam no [Ollama](https://ollama.com). As únicas chamadas externas são as da coleta de metadados públicos.
 - **Rastreável.** Cada classificação vem com o trecho literal que a justifica, e cada execução grava um manifesto com versões, modelos e parâmetros.
 - **Validado.** A qualidade da classificação é medida contra codificação humana (kappa de Cohen, PABAK), e não presumida.
-- **Aberto.** Código sob licença MIT. As decisões técnicas ficam registradas, com evidência, na seção [Decisões](decisoes/README.md).
+- **Aberto.** Código sob licença MIT. As decisões técnicas ficam registradas, com evidência, [no repositório](https://github.com/felipelmc/mapa-da-ciencia/tree/main/docs/decisoes).
 
 ## Sobre
 

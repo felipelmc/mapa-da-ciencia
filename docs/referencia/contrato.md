@@ -325,7 +325,7 @@ Agrupamento de tópicos próximos, usado para a cor e a navegação.
 | `topicos` | lista de inteiro | **obrigatório** |  |
 | `descricao` | texto | `""` |  |
 | `serie` | [Serie](#serie) ou vazio | vazio | Soma das séries dos tópicos do macrotema. |
-| `tendencia` | [Tendencia](#tendencia) ou vazio | vazio | Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel. |
+| `tendencia` | [Tendencia](#tendencia) ou vazio | vazio | Tendência da participação anual no período inteiro, sem filtros: o gabarito para o painel. |
 
 ### Serie
 
@@ -338,7 +338,7 @@ Série temporal de um tópico.
 
 ### Tendencia
 
-Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel.
+Tendência da participação anual no período inteiro, sem filtros: o gabarito para o painel.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
@@ -373,7 +373,7 @@ Um tópico: rótulo e descrição escritos pelo LLM, palavras-chave, cor estáve
 | `representativos` | lista de texto | **obrigatório** | Ids de documentos. |
 | `rotulo_fonte` | `"llm"` \| `"palavras"` \| `"manual"` | `"llm"` | Quem escreveu o rótulo: o modelo de linguagem, as palavras-chave ou você (rotulos.yaml). |
 | `n_nucleo` | inteiro ou vazio | vazio | Documentos do núcleo, que o HDBSCAN agrupou (os demais foram reatribuídos por vizinhança). |
-| `tendencia` | [Tendencia](#tendencia) ou vazio | vazio | Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel. |
+| `tendencia` | [Tendencia](#tendencia) ou vazio | vazio | Tendência da participação anual no período inteiro, sem filtros: o gabarito para o painel. |
 
 ### Outliers
 

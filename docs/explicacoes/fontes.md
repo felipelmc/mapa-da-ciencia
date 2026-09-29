@@ -102,4 +102,4 @@ Ciência política no SciELO Brasil, 10 revistas, de 2010 a 2025 (coletado em 26
 | Casados com o OpenAlex | 4.249 | 99,4 |
 | Com licença Creative Commons | 4.249 | 99,4 |
 
-A ArticleMeta tem 4.947 registros dessas revistas no período. Ficam de fora 670 de outros tipos (resenhas, editoriais, erratas...), e 2 artigos carregados duas vezes são fundidos. Os números por revista estão no adendo do registro de decisão [0003](../decisoes/0003-fontes-casamento-e-licencas.md#adendo-2026-09-26-marco-m2-a-coleta-de-producao).
+A ArticleMeta tem 4.947 registros dessas revistas no período. Ficam de fora 670 de outros tipos (resenhas, editoriais, erratas...), e 2 artigos carregados duas vezes são fundidos. Os números por revista estão no [registro da coleta](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0003-fontes-casamento-e-licencas.md#adendo-2026-09-26-marco-m2-a-coleta-de-produção), no repositório.

@@ -72,4 +72,4 @@ supervisor é um modelo da Anthropic chamado pela API: aí os títulos e resumos
 - O júri roda na amostra de validação (200 documentos, no piloto), que é onde há referência para medir o ganho.
   Levá-lo ao corpus inteiro (uma classificação completa por membro, a deliberação e o supervisor em milhares de
   documentos) fica para uma versão futura.
-- Os números do piloto e a comparação entre os membros estão no [ADR 0015](../decisoes/0015-juri-de-modelos-e-supervisor.md).
+- Os números do piloto e a comparação entre os membros estão no [registro técnico da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0015-juri-de-modelos-e-supervisor.md), no repositório.

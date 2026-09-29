@@ -17,7 +17,7 @@ Conteúdo do `mapa.yaml`.
 | `fontes` | [Fontes](#fontes) | **obrigatório** | De onde vêm os artigos. Pode combinar mais de uma fonte. |
 | `recorte` | [Recorte](#recorte) | **obrigatório** | Período e idiomas do corpus. |
 | `modelos` | [Modelos](#modelos) | valores padrão da seção | Modelos locais de cada papel. `mapa novo` preenche conforme a memória da máquina. |
-| `topicos` | [ConfigTopicos](#configtopicos) | valores padrão da seção | Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007); para outro |
+| `topicos` | [ConfigTopicos](#configtopicos) | valores padrão da seção | Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto; para outro |
 | `validacao` | [Validacao](#validacao) | valores padrão da seção | Amostra de resumos codificados por pessoas para medir a qualidade da classificação. |
 | `juri` | [ConfigJuri](#configjuri) | valores padrão da seção | Júri de modelos locais: cada membro classifica a amostra de validação, os que discordam deliberam vendo as |
 
@@ -58,7 +58,7 @@ Período e idiomas do corpus.
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `anos` | par de inteiro e inteiro | **obrigatório** | Primeiro e último ano de publicação, inclusive. |
-| `idioma_analise` | `"pt"` \| `"en"` \| `"es"` | `"en"` | Idioma dos textos usados nos embeddings e nos tópicos (ver ADR 0004). |
+| `idioma_analise` | `"pt"` \| `"en"` \| `"es"` | `"en"` | Idioma dos textos usados nos embeddings e nos tópicos. |
 | `idioma_exibicao` | `"pt"` \| `"en"` \| `"es"` | `"pt"` | Idioma preferido para mostrar resumos e palavras-chave. |
 
 ### Modelos
@@ -78,7 +78,7 @@ Modelo que transforma título e resumo em vetores (base dos tópicos e do mapa).
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `provedor` | `"ollama"` | `"ollama"` | No MVP, só o Ollama local. |
-| `modelo` | texto | `"qwen3-embedding:0.6b"` | Nome do modelo no Ollama (ver ADR 0004). |
+| `modelo` | texto | `"qwen3-embedding:0.6b"` | Nome do modelo no Ollama. |
 | `num_ctx` | inteiro | `2048` | Contexto em tokens. Título e resumo cabem com folga em 2.048; o que passar é truncado. Contextos maiores ocupam mais memória. |
 | `lote` | inteiro | `32` | Textos por requisição ao Ollama. |
 
@@ -98,7 +98,7 @@ Modelo de linguagem usado para classificar resumos ou nomear tópicos.
 
 ### ConfigTopicos
 
-Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007); para outro
+Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto; para outro
 corpus, `scripts/calibrar_topicos.py` refaz a grade.
 
 | Campo | Tipo | Padrão | Descrição |

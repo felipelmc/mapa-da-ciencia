@@ -29,7 +29,7 @@ As fontes nem sempre concordam sobre a licença:
 - o OpenAlex indica **CC BY-NC** em 2.428 artigos e **CC BY** em 2.174;
 - o XML da ArticleMeta chega a indicar CC BY 4.0 para um artigo de 2010, três anos antes de essa versão da licença existir, o que sugere que ele traz a licença *atual* da revista, e não a original.
 
-Por isso o `mapa-da-ciencia` segue uma regra prudente ([ADR 0003](../decisoes/0003-fontes-casamento-e-licencas.md)):
+Por isso o `mapa-da-ciencia` segue uma regra prudente:
 
 - a licença de cada artigo é a **mais restritiva** entre a do OpenAlex e a da revista, e a fonte fica registrada;
 - num site publicado sem fins comerciais, resumos com licença Creative Commons (BY, BY-NC, BY-NC-ND) são mostrados **na íntegra e sem alteração**, com atribuição (autores, revista, DOI e licença);

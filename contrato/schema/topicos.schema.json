@@ -173,7 +173,7 @@
     },
     "Tendencia": {
       "additionalProperties": false,
-      "description": "Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel.",
+      "description": "Tendência da participação anual no período inteiro, sem filtros: o gabarito para o painel.",
       "properties": {
         "anos": {
           "anyOf": [

@@ -1,6 +1,6 @@
 # Desenho da validação
 
-Um modelo pequeno classificando milhares de resumos é útil só se soubermos quanto ele concorda com uma leitura cuidadosa dos mesmos textos. A validação mede isso numa amostra: pessoas (ou um anotador de referência) codificam os documentos às cegas, e o `mapa` compara as respostas, variável por variável. As decisões estão no [ADR 0012](../decisoes/0012-validacao-e-codificador-de-referencia.md); o passo a passo, em [Codificar a amostra](../guias/codificar-a-amostra.md); a leitura das métricas, em [Ler kappa e PABAK](../guias/ler-kappa-e-pabak.md).
+Um modelo pequeno classificando milhares de resumos é útil só se soubermos quanto ele concorda com uma leitura cuidadosa dos mesmos textos. A validação mede isso numa amostra: pessoas (ou um anotador de referência) codificam os documentos às cegas, e o `mapa` compara as respostas, variável por variável. O registro técnico das decisões está [no repositório](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0012-validacao-e-codificador-de-referencia.md); o passo a passo, em [Codificar a amostra](../guias/codificar-a-amostra.md); a leitura das métricas, em [Ler kappa e PABAK](../guias/ler-kappa-e-pabak.md).
 
 ## A amostra
 

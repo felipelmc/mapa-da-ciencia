@@ -1,6 +1,6 @@
 # Classificar os resumos
 
-A etapa `mapa classificar` lê o título e o resumo de cada documento e preenche as variáveis do codebook do projeto (`codebook.yaml`) com um modelo local. Para cada resposta, o modelo copia do resumo um trecho curto que a justifica, a **evidência**, e a etapa confere se esse trecho está mesmo no texto. Esta página mostra como rodar. Para entender o método, veja o [ADR 0011](../decisoes/0011-classificacao-ancorada-em-evidencia.md); para escrever as variáveis, [Escrever um codebook](codebook.md).
+A etapa `mapa classificar` lê o título e o resumo de cada documento e preenche as variáveis do codebook do projeto (`codebook.yaml`) com um modelo local. Para cada resposta, o modelo copia do resumo um trecho curto que a justifica, a **evidência**, e a etapa confere se esse trecho está mesmo no texto. Esta página mostra como rodar. Para entender o método, veja [Classificação ancorada em evidência](../explicacoes/classificacao.md); para escrever as variáveis, [Escrever um codebook](codebook.md).
 
 ## Antes de começar
 

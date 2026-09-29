@@ -1,6 +1,6 @@
 # Geografia da produção
 
-A vista Geografia responde onde a produção de um corpus acontece: em que UFs, países e instituições estão os autores. Para isso, o `mapa` precisa de duas coisas que as fontes não entregam prontas: saber **qual instituição** está por trás de cada texto de afiliação e decidir **quanto cada documento conta** para cada lugar. Esta página explica as duas, e onde elas falham. Os números são do piloto (4.275 artigos de dez revistas de ciência política, 2010–2025); a decisão, com a calibração completa, está no [ADR 0008](../decisoes/0008-geografia-casamento-das-afiliacoes.md).
+A vista Geografia responde onde a produção de um corpus acontece: em que UFs, países e instituições estão os autores. Para isso, o `mapa` precisa de duas coisas que as fontes não entregam prontas: saber **qual instituição** está por trás de cada texto de afiliação e decidir **quanto cada documento conta** para cada lugar. Esta página explica as duas, e onde elas falham. Os números são do piloto (4.275 artigos de dez revistas de ciência política, 2010–2025); a calibração completa está no [registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0008-geografia-casamento-das-afiliacoes.md), no repositório.
 
 ## De onde vêm as afiliações
 
@@ -74,10 +74,10 @@ Na interface, escolher uma UF, um país ou uma instituição põe o lugar no rec
 - **Instituições com vários campi.** Uma universidade com campi em vários estados recebe uma UF por vínculo, quando a fonte informa, mas a UF da tabela de instituições é a mais comum no corpus.
 - **Redes e programas interinstitucionais** (INCTs, programas de pós-graduação de várias universidades) não são instituições no OpenAlex e ficam como não identificados, a menos que o projeto os declare no `instituicoes.yaml`.
 - **Erros das fontes.** Um país errado na `v70` fica errado na contagem; o casamento só não piora o erro.
-- **A amostra de precisão** foi lida pelo Claude, não por um especialista em instituições brasileiras. Ela está em `docs/decisoes/dados/0008-amostra-geografia.csv`, para quem quiser conferir.
+- **A amostra de precisão** foi lida pelo Claude, não por um especialista em instituições brasileiras. Ela está [no repositório](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/dados/0008-amostra-geografia.csv), para quem quiser conferir.
 
 ## Para saber mais
 
 - [Gerar a geografia](../guias/geografia.md): a etapa, a revisão e o `instituicoes.yaml`.
 - [Ler a geografia](../guias/ler-a-geografia.md): os mapas, o ranking e a cobertura na interface.
-- [ADR 0008](../decisoes/0008-geografia-casamento-das-afiliacoes.md): a decisão, os limiares e a calibração.
+- [O registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0008-geografia-casamento-das-afiliacoes.md), no repositório: os limiares e a calibração.

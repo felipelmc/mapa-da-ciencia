@@ -45,7 +45,7 @@ Os modelos ocupam de 0,6 GB (`qwen3-embedding:0.6b`) a 17 GB (`gemma4:26b`). Lis
 
 ## Erro de certificado (`CERTIFICATE_VERIFY_FAILED`)
 
-Algumas redes (universidades, órgãos públicos, empresas) inspecionam o tráfego HTTPS com um certificado próprio. O `mapa` usa os certificados do sistema operacional justamente para funcionar nesses casos (veja o registro de decisão [0001](../decisoes/0001-certificados-do-sistema-com-truststore.md)). Se o erro persistir, o certificado da instituição não está instalado no sistema. Peça ao suporte de TI para instalá-lo ou tente de outra rede.
+Algumas redes (universidades, órgãos públicos, empresas) inspecionam o tráfego HTTPS com um certificado próprio. O `mapa` usa os certificados do sistema operacional justamente para funcionar nesses casos. Se o erro persistir, o certificado da instituição não está instalado no sistema. Peça ao suporte de TI para instalá-lo ou tente de outra rede.
 
 ## A porta 8765 já está em uso
 

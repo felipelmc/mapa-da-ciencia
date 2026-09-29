@@ -339,7 +339,7 @@ class Serie(_Base):
 
 
 class Tendencia(_Base):
-    """Tendência da participação anual no período inteiro, sem filtros (ADR 0009): o gabarito para o painel."""
+    """Tendência da participação anual no período inteiro, sem filtros: o gabarito para o painel."""
 
     direcao: DirecaoTendencia
     inclinacao: float | None = Field(None, description="Inclinação na escala logit, por ano.")

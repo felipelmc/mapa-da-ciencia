@@ -73,9 +73,7 @@ class Recorte(_Base):
     """Período e idiomas do corpus."""
 
     anos: tuple[int, int] = Field(description="Primeiro e último ano de publicação, inclusive.")
-    idioma_analise: Idioma = Field(
-        "en", description="Idioma dos textos usados nos embeddings e nos tópicos (ver ADR 0004)."
-    )
+    idioma_analise: Idioma = Field("en", description="Idioma dos textos usados nos embeddings e nos tópicos.")
     idioma_exibicao: Idioma = Field("pt", description="Idioma preferido para mostrar resumos e palavras-chave.")
 
     @field_validator("anos")
@@ -91,7 +89,7 @@ class ModeloEmbeddings(_Base):
     """Modelo que transforma título e resumo em vetores (base dos tópicos e do mapa)."""
 
     provedor: Literal["ollama"] = Field("ollama", description="No MVP, só o Ollama local.")
-    modelo: str = Field("qwen3-embedding:0.6b", description="Nome do modelo no Ollama (ver ADR 0004).")
+    modelo: str = Field("qwen3-embedding:0.6b", description="Nome do modelo no Ollama.")
     num_ctx: int = Field(
         2048,
         ge=512,
@@ -123,7 +121,7 @@ class Modelos(_Base):
 
 
 class ConfigTopicos(_Base):
-    """Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto (ADR 0007); para outro
+    """Parâmetros do agrupamento em tópicos. Os padrões vêm da calibração no piloto; para outro
     corpus, `scripts/calibrar_topicos.py` refaz a grade."""
 
     vizinhos: int = Field(

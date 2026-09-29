@@ -6,7 +6,7 @@ Para rodar a etapa, veja o guia [Gerar os tópicos](../guias/topicos.md) ou a [p
 
 ## 1. O texto de análise
 
-Cada documento é representado por **título e resumo no mesmo idioma**. O idioma é o de `recorte.idioma_analise` no `mapa.yaml`: o inglês, por padrão, porque é o único presente em quase todo o corpus do SciELO ([ADR 0004](../decisoes/0004-embeddings-e-idioma-de-analise.md)).
+Cada documento é representado por **título e resumo no mesmo idioma**. O idioma é o de `recorte.idioma_analise` no `mapa.yaml`: o inglês, por padrão, porque é o único presente em quase todo o corpus do SciELO (veja o [registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0004-embeddings-e-idioma-de-analise.md)).
 
 Nem todo artigo tem resumo em inglês. O texto de análise nunca junta idiomas diferentes, e cada documento fica marcado com a fonte do texto:
 
@@ -54,7 +54,7 @@ O [HDBSCAN](https://scikit-learn.org/stable/modules/clustering.html#hdbscan) pro
 - `topicos.min_samples`: quão conservador é o agrupamento. Valores maiores deixam mais documentos de fora.
 - `topicos.selecao`: `leaf`, o padrão, fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` prefere tópicos maiores, mas uma mudança pequena nos dados pode trocar um tópico grande por vários pequenos.
 
-Os padrões foram calibrados no piloto ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)): 57 tópicos, com números parecidos nas três sementes testadas e nenhum tópico acima de 3,5% do corpus no núcleo (4,9% com os reatribuídos).
+Os padrões foram calibrados no piloto ([registro da calibração](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0007-parametros-dos-topicos.md)): 57 tópicos, com números parecidos nas três sementes testadas e nenhum tópico acima de 3,5% do corpus no núcleo (4,9% com os reatribuídos).
 
 Os documentos que o HDBSCAN agrupa formam o **núcleo** de cada tópico. Os demais ficam como **ruído**: não pertencem claramente a nenhuma região densa. O ruído não é um erro, e sim uma informação: são trabalhos isolados, de fronteira ou que misturam assuntos. Com menos de 50 documentos, não há tópicos: a etapa para e sugere ampliar o recorte.
 
@@ -62,7 +62,7 @@ Os documentos **só com título** nunca entram no núcleo. Textos curtos ficam p
 
 ## 6. Reatribuição do ruído
 
-No piloto, um terço dos documentos fica como ruído, com qualquer configuração estável do agrupamento ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)). Deixá-los de fora esconderia um terço do corpus, e forçar parâmetros para reduzir o ruído cria tópicos gigantes e instáveis. O `mapa` faz outra coisa: **reatribui por vizinhança**.
+No piloto, um terço dos documentos fica como ruído, com qualquer configuração estável do agrupamento (veja o [registro da calibração](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0007-parametros-dos-topicos.md)). Deixá-los de fora esconderia um terço do corpus, e forçar parâmetros para reduzir o ruído cria tópicos gigantes e instáveis. O `mapa` faz outra coisa: **reatribui por vizinhança**.
 
 - Cada documento de ruído olha para os seus 14 vizinhos mais próximos no espaço dos embeddings, e não no UMAP (os 15 do grafo de vizinhança, que incluem o próprio documento, como o UMAP espera).
 - Os vizinhos que estão no núcleo de algum tópico votam no próprio tópico, com peso igual à similaridade.
@@ -138,7 +138,7 @@ Escreva sempre a `descricao` junto com o `rotulo`: uma entrada só com o rótulo
 
 ## 12. Em alta e em queda
 
-Um tópico está **em alta** quando a participação dele no corpus (documentos do tópico ÷ documentos do ano) cresce de forma distinguível do acaso ao longo do período, e **em queda** quando diminui. A regra ([ADR 0009](../decisoes/0009-tendencia-dos-topicos.md)):
+Um tópico está **em alta** quando a participação dele no corpus (documentos do tópico ÷ documentos do ano) cresce de forma distinguível do acaso ao longo do período, e **em queda** quando diminui. A regra ([registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0009-tendencia-dos-topicos.md)):
 
 - uma regressão logística da participação anual, com o ano como variável; a inclinação diz se a participação cresce ou cai;
 - o intervalo de 95% da inclinação é corrigido pela dispersão da série (quase-binomial): dossiês temáticos fazem picos isolados, que não devem contar como tendência;

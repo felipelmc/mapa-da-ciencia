@@ -191,5 +191,5 @@ Escreva também a descrição: uma entrada só com o rótulo deixa o tópico sem
     ```
 
 - **Ajustar os tópicos** (mais ou menos tópicos, outro idioma de análise): o guia [Gerar os tópicos](../guias/topicos.md#ajustar).
-- **Por que estes parâmetros**, e como foram calibrados: a decisão [0007](../decisoes/0007-parametros-dos-topicos.md).
+- **Por que estes parâmetros**, e como foram calibrados: [Como os tópicos são construídos](../explicacoes/topicos.md).
 - Na [parte 3](primeiro-mapa-tempo-e-geografia.md), você vê como os tópicos mudam no tempo e de onde vêm os autores.

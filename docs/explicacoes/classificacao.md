@@ -1,6 +1,6 @@
 # Classificação ancorada em evidência
 
-A classificação responde, para cada resumo, às perguntas de um codebook: a abordagem do estudo, a técnica, o recorte geográfico e o que mais o pesquisador definir. Quem responde é um modelo de linguagem pequeno, rodando no notebook (`qwen3.5:9b` no perfil padrão). Esta página explica como a resposta é pedida, conferida e guardada, e o que isso garante e não garante. As decisões estão no [ADR 0011](../decisoes/0011-classificacao-ancorada-em-evidencia.md); o passo a passo, em [Classificar os resumos](../guias/classificar.md).
+A classificação responde, para cada resumo, às perguntas de um codebook: a abordagem do estudo, a técnica, o recorte geográfico e o que mais o pesquisador definir. Quem responde é um modelo de linguagem pequeno, rodando no notebook (`qwen3.5:9b` no perfil padrão). Esta página explica como a resposta é pedida, conferida e guardada, e o que isso garante e não garante. O registro técnico das decisões está [no repositório](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0011-classificacao-ancorada-em-evidencia.md); o passo a passo, em [Classificar os resumos](../guias/classificar.md).
 
 ## O que o modelo lê
 

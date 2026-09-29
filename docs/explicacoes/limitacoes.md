@@ -17,7 +17,7 @@ O `mapa-da-ciencia` descreve uma literatura a partir de títulos, resumos e afil
 
 ## Tópicos
 
-- **Os tópicos dependem dos parâmetros.** O número e o tamanho dos tópicos vêm do agrupamento (HDBSCAN) e dos seus parâmetros, calibrados no piloto ([ADR 0007](../decisoes/0007-parametros-dos-topicos.md)). Outra calibração daria outra granularidade: os tópicos são uma descrição útil do corpus, não categorias naturais.
+- **Os tópicos dependem dos parâmetros.** O número e o tamanho dos tópicos vêm do agrupamento (HDBSCAN) e dos seus parâmetros, calibrados no piloto ([registro da calibração](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0007-parametros-dos-topicos.md)). Outra calibração daria outra granularidade: os tópicos são uma descrição útil do corpus, não categorias naturais.
 - **Ruído.** No piloto, um terço dos documentos não entra no núcleo de nenhum tópico; 22,5% são reatribuídos por vizinhança e 11% ficam sem tópico. Os sem tópico tendem a ser os artigos mais singulares.
 - **Estabilidade.** O ARI entre três sementes é 0,89 no núcleo (os 56% de documentos que estão no núcleo nas duas execuções comparadas) e 0,78 contando os reatribuídos: os tópicos grandes são estáveis, mas fronteiras entre tópicos vizinhos mudam com a semente.
 - **Rótulos.** Os nomes dos tópicos foram escritos por um modelo de linguagem a partir de palavras-chave e títulos representativos. Leia o tópico pelos documentos, não só pelo nome, e corrija o que precisar no `rotulos.yaml`.
