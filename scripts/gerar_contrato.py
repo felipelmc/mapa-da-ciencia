@@ -20,7 +20,7 @@ from pathlib import Path
 
 from mapa_da_ciencia.contrato.exemplo import gerar_exemplo
 from mapa_da_ciencia.contrato.exportar import escrever_dados, escrever_schemas
-from mapa_da_ciencia.topicos.tendencia import casos_de_referencia
+from mapa_da_ciencia.topicos.tendencia import casos_de_referencia, casos_quantil_t
 
 RAIZ = Path(__file__).resolve().parent.parent
 SCHEMA = RAIZ / "contrato" / "schema"
@@ -45,6 +45,8 @@ def gerar(schema: Path, exemplo: Path, casos: Path, publicado: Path) -> None:
     casos.mkdir(parents=True)
     texto = json.dumps(casos_de_referencia(), ensure_ascii=False, indent=1)
     (casos / "tendencia.json").write_text(texto + "\n", encoding="utf-8")
+    texto = json.dumps(casos_quantil_t(), ensure_ascii=False, indent=1)
+    (casos / "quantil_t.json").write_text(texto + "\n", encoding="utf-8")
 
 
 def iguais(a: Path, b: Path) -> list[str]:

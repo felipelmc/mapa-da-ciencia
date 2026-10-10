@@ -38,6 +38,54 @@ const INCLINACAO_MAXIMA = 10;
 const ITERACOES_MAXIMAS = 100;
 const TOLERANCIA = 1e-10;
 
+/** P(|T| ≤ t) para a t de Student com `gl` inteiro: a forma fechada de Abramowitz e Stegun (26.7.3 e 26.7.4). */
+function probT(t: number, gl: number): number {
+	const theta = Math.atan(t / Math.sqrt(gl));
+	const seno = Math.sin(theta);
+	const cosseno2 = Math.cos(theta) ** 2;
+	if (gl % 2) {
+		let termo = Math.cos(theta);
+		let soma = termo;
+		for (let k = 3; k < gl - 1; k += 2) {
+			termo *= ((k - 1) / k) * cosseno2;
+			soma += termo;
+		}
+		return (2 / Math.PI) * (theta + (gl > 1 ? seno * soma : 0));
+	}
+	let termo = 1;
+	let soma = 1;
+	for (let k = 2; k < gl - 1; k += 2) {
+		termo *= ((k - 1) / k) * cosseno2;
+		soma += termo;
+	}
+	return seno * soma;
+}
+
+const quantis = new Map<string, number>();
+
+/** O quantil `nivel` (0,975 num intervalo de 95%) da t de Student com `gl` graus de liberdade, por bisseção. */
+export function quantilT(nivel: number, gl: number): number {
+	const chave = `${nivel}:${gl}`;
+	const guardado = quantis.get(chave);
+	if (guardado !== undefined) return guardado;
+	if (gl < 1 || !(nivel > 0.5 && nivel < 1)) throw new RangeError('quantil da t fora do domínio');
+	const alvo = 2 * nivel - 1;
+	let baixo = 0;
+	let alto = 1;
+	while (probT(alto, gl) < alvo) {
+		baixo = alto;
+		alto *= 2;
+	}
+	for (let i = 0; i < 100; i += 1) {
+		const meio = (baixo + alto) / 2;
+		if (probT(meio, gl) < alvo) baixo = meio;
+		else alto = meio;
+	}
+	const q = (baixo + alto) / 2;
+	quantis.set(chave, q);
+	return q;
+}
+
 const expit = (eta: number) => (eta >= 0 ? 1 / (1 + Math.exp(-eta)) : Math.exp(eta) / (1 + Math.exp(eta)));
 const softplus = (eta: number) => (eta > 0 ? eta + Math.log1p(Math.exp(-eta)) : Math.log1p(Math.exp(eta)));
 

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Literal
 
 MODELO = "logistica_binomial"
@@ -58,6 +59,54 @@ class Ajuste:
     erro_padrao: float  # binomial, sem a correção da dispersão
     pearson: float  # X² de Pearson
     media_anos: float
+
+
+def _prob_t(t: float, gl: int) -> float:
+    """P(|T| ≤ t) para T de Student com `gl` graus de liberdade inteiros: a forma fechada de Abramowitz e Stegun
+    (26.7.3 para gl ímpar, 26.7.4 para gl par), só com `atan`, `sin` e `cos`."""
+    theta = math.atan(t / math.sqrt(gl))
+    seno, cosseno2 = math.sin(theta), math.cos(theta) ** 2
+    if gl % 2:
+        termo = soma = math.cos(theta)
+        for k in range(3, gl - 1, 2):
+            termo *= (k - 1) / k * cosseno2
+            soma += termo
+        return 2 / math.pi * (theta + (seno * soma if gl > 1 else 0.0))
+    termo = soma = 1.0
+    for k in range(2, gl - 1, 2):
+        termo *= (k - 1) / k * cosseno2
+        soma += termo
+    return seno * soma
+
+
+@lru_cache(maxsize=256)
+def quantil_t(nivel: float, gl: int) -> float:
+    """O quantil `nivel` (0,975 para um intervalo de 95%) da t de Student com `gl` graus de liberdade inteiros, por
+    bisseção sobre `_prob_t`. Sem scipy: o navegador faz a mesma conta (`quantilT` em `glm.ts`)."""
+    if gl < 1:
+        raise ValueError("a t de Student precisa de ao menos 1 grau de liberdade")
+    if not 0.5 < nivel < 1:
+        raise ValueError("o nível do quantil fica entre 0,5 e 1")
+    alvo = 2 * nivel - 1
+    baixo, alto = 0.0, 1.0
+    while _prob_t(alto, gl) < alvo:
+        baixo, alto = alto, 2 * alto
+    for _ in range(100):
+        meio = (baixo + alto) / 2
+        if _prob_t(meio, gl) < alvo:
+            baixo = meio
+        else:
+            alto = meio
+    return (baixo + alto) / 2
+
+
+def casos_quantil_t() -> list[dict]:
+    """Quantis de referência para conferir a versão do navegador (`contrato/casos/quantil_t.json`)."""
+    return [
+        {"nivel": nivel, "gl": gl, "quantil": quantil_t(nivel, gl)}
+        for nivel in (0.9, 0.95, 0.975, 0.995)
+        for gl in (1, 2, 3, 4, 5, 8, 13, 14, 30, 100)
+    ]
 
 
 def _expit(eta: float) -> float:

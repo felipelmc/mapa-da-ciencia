@@ -2,13 +2,18 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Topicos } from '$lib/contrato/tipos';
-import { ajustados, tendencia } from './glm';
+import { ajustados, quantilT, tendencia } from './glm';
 
 const raiz = join(import.meta.dirname, '../../../../contrato');
 const casos = JSON.parse(readFileSync(join(raiz, 'casos/tendencia.json'), 'utf8')) as {
 	nome: string;
 	entrada: { n: number[]; total: number[]; anos: number[]; dispersao: 'quase' | 'binomial' };
 	saida: Record<string, unknown>;
+}[];
+const quantis = JSON.parse(readFileSync(join(raiz, 'casos/quantil_t.json'), 'utf8')) as {
+	nivel: number;
+	gl: number;
+	quantil: number;
 }[];
 const topicos = JSON.parse(readFileSync(join(raiz, 'exemplo/dados/topicos.json'), 'utf8')) as Topicos;
 
@@ -57,5 +62,16 @@ describe('tendência no navegador = referência em Python', () => {
 		expect(curva[0]).toBeCloseTo(t.prop_inicio!, 9);
 		expect(curva[curva.length - 1]).toBeCloseTo(t.prop_fim!, 9);
 		expect(ajustados(tendencia([1, 2], [10, 10], [2010, 2011]), [2010, 2011])).toBeNull();
+	});
+});
+
+describe('quantil t no navegador = referência em Python', () => {
+	it('bate com os casos, em todos os níveis e graus de liberdade', () => {
+		for (const c of quantis) expect(quantilT(c.nivel, c.gl)).toBeCloseTo(c.quantil, 10);
+	});
+
+	it('recusa graus de liberdade e níveis fora do domínio', () => {
+		expect(() => quantilT(0.975, 0)).toThrow(RangeError);
+		expect(() => quantilT(0.3, 5)).toThrow(RangeError);
 	});
 });

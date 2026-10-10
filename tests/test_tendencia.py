@@ -8,6 +8,7 @@ from mapa_da_ciencia.topicos.tendencia import (
     ANOS_MINIMOS,
     DOCS_MINIMOS,
     ajustar_glm,
+    quantil_t,
     tendencia,
 )
 
@@ -130,3 +131,15 @@ def test_dispersao_nunca_abaixo_de_1():
     anos, totais = list(range(2010, 2026)), [1000] * 16
     exato = [round(1000 * (0.02 + 0.002 * i)) for i in range(16)]  # sem ruído nenhum: X² ≈ 0
     assert tendencia(exato, totais, anos).dispersao == 1
+
+
+def test_quantil_t_bate_com_o_scipy():
+    from scipy.stats import t
+
+    for gl in [*range(1, 31), 50, 100, 500]:
+        for nivel in (0.8, 0.9, 0.95, 0.975, 0.99, 0.999):
+            assert quantil_t(nivel, gl) == pytest.approx(t.ppf(nivel, gl), rel=1e-10)
+    with pytest.raises(ValueError):
+        quantil_t(0.975, 0)
+    with pytest.raises(ValueError):
+        quantil_t(0.4, 5)
