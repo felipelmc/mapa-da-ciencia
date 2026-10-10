@@ -67,3 +67,12 @@ def test_invalido_nao_grava(arquivo):
     with pytest.raises(ErroConfig, match=r"doc\.yaml ficaria inválido"):
         editar_yaml(arquivo, {"nome": None, "itens": []}, _Doc.model_validate, substituir=True)
     assert arquivo.read_text(encoding="utf-8") == YAML
+
+
+def test_tirar_a_ultima_entrada_de_uma_secao_nao_leva_o_cabecalho_da_seguinte(tmp_path):
+    arquivo = tmp_path / "x.yaml"
+    arquivo.write_text(
+        "itens:\n  a:\n    v: 1\n  b:\n    v: 2\n\n  # --- outra seção ---\n  c:\n    v: 3\n", encoding="utf-8"
+    )
+    editar_yaml(arquivo, {"itens": {"a": {"v": 1}, "c": {"v": 3}}}, lambda d: d, substituir=True)
+    assert arquivo.read_text(encoding="utf-8") == "itens:\n  a:\n    v: 1\n\n  # --- outra seção ---\n  c:\n    v: 3\n"

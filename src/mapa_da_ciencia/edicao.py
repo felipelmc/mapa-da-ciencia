@@ -8,6 +8,9 @@ O painel manda o codebook inteiro, com os valores padrão que a leitura preenche
 `categorias: []` numa booleana). Com `omitir_vazios`, um valor vazio (`None`, `[]`, `{}`) não cria a chave e tira a
 que existia: o arquivo continua como a pessoa o escreveu. Só serve onde o padrão de todo campo opcional é vazio, como
 no codebook.
+
+Tirar uma entrada não leva junto o comentário de bloco que vem depois dela (o cabeçalho de uma seção, que o ruamel
+prende à entrada anterior): ele passa para a entrada que fica antes.
 """
 
 from __future__ import annotations
@@ -81,17 +84,49 @@ def _lista(atual: CommentedSeq, valor: list[Any], *, substituir: bool, omitir_va
     return nova
 
 
+def _fim_da_entrada(no: Any, chave: Any) -> tuple[Any, Any]:
+    """Onde o ruamel guarda o comentário que vem depois da entrada `chave` de `no`: no último valor escalar dela."""
+    valor = no[chave]
+    while isinstance(valor, CommentedMap | CommentedSeq) and len(valor):
+        no, chave = valor, (list(valor.keys())[-1] if isinstance(valor, CommentedMap) else len(valor) - 1)
+        valor = no[chave]
+    return no, chave
+
+
+def _tirar(destino: CommentedMap, chave: Any) -> None:
+    """Tira a entrada sem perder o comentário de bloco que vem depois dela (o cabeçalho de uma seção, que o ruamel
+    prende à entrada anterior): ele passa para a entrada que fica antes."""
+    chaves = list(destino.keys())
+    i = chaves.index(chave)
+    no, ultima = _fim_da_entrada(destino, chave)
+    slot = no.ca.items.get(ultima)
+    token = slot[2] if slot and len(slot) > 2 else None
+    del destino[chave]
+    if token is None or i == 0:
+        return
+    texto = token.value if token.value.startswith("\n") else token.value.split("\n", 1)[-1]  # sem o comentário da linha
+    if "#" not in texto:
+        return
+    no_ant, ultima_ant = _fim_da_entrada(destino, chaves[i - 1])
+    slot_ant = no_ant.ca.items.setdefault(ultima_ant, [None, None, None, None])
+    if slot_ant[2] is None:
+        token.value = texto if texto.startswith("\n") else "\n" + texto
+        slot_ant[2] = token
+    else:
+        slot_ant[2].value = slot_ant[2].value + texto.removeprefix("\n")
+
+
 def _mesclar(destino: CommentedMap, parcial: dict[str, Any], *, substituir: bool, omitir_vazios: bool = False) -> None:
     """Põe os valores de `parcial` em `destino`, mantendo o que não mudou e os comentários. Com `substituir`,
     chaves ausentes de `parcial` saem; com `omitir_vazios`, as de valor vazio também (e não são criadas)."""
     if substituir:
         for chave in [k for k in destino if k not in parcial]:
-            del destino[chave]
+            _tirar(destino, chave)
     for chave, valor in parcial.items():
         atual = destino.get(chave)
         if omitir_vazios and _vazio(valor):
             if chave in destino:
-                del destino[chave]
+                _tirar(destino, chave)
         elif isinstance(valor, dict) and isinstance(atual, CommentedMap):
             _mesclar(atual, valor, substituir=substituir, omitir_vazios=omitir_vazios)
         elif isinstance(valor, list) and isinstance(atual, CommentedSeq):
