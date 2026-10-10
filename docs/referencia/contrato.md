@@ -500,6 +500,7 @@ Como a amostra de validação foi sorteada.
 | `n` | inteiro | **obrigatório** |  |
 | `estratificar_por` | texto | **obrigatório** |  |
 | `semente` | inteiro | **obrigatório** |  |
+| `idiomas` | mapa de texto para inteiro | vazio | Documentos da amostra por idioma do texto lido. Vazio até a 1.6. |
 
 ### MetricaVariavel
 
@@ -521,6 +522,7 @@ Nas de múltipla escolha, `variavel` é `id:categoria` (uma variável sim/não p
 | `comparado` | texto | `""` |  |
 | `por_classe` | lista de [MetricaClasse](#metricaclasse) | vazio | Precisão, revocação e F1 de uma categoria, tomando o primeiro do par como referência. |
 | `circular` | sim/não | `false` | Os dois participantes são da mesma família de modelo (a referência e o supervisor do júri, por exemplo): um limite superior, e não uma medida independente. |
+| `subconjuntos` | lista de [MetricaSubconjunto](#metricasubconjunto) | vazio | A concordância por idioma (quando a amostra tem mais de um) e entre respostas informativas. Vazio nos dados até a 1.6. |
 
 ### Matriz
 
@@ -542,6 +544,22 @@ Precisão, revocação e F1 de uma categoria, tomando o primeiro do par como ref
 | `precisao` | número ou vazio | **obrigatório** |  |
 | `revocacao` | número ou vazio | **obrigatório** |  |
 | `f1` | número ou vazio | **obrigatório** |  |
+
+### MetricaSubconjunto
+
+A concordância de um par numa parte da amostra. Sem matriz nem métricas por classe: num grupo pequeno, elas
+mostrariam as respostas de cada documento.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `tipo` | `"idioma"` \| `"informativas"` | **obrigatório** | `idioma`: os documentos cujo texto lido está em `idioma`; `informativas`: os documentos em que nenhuma das duas respostas é de sem-informação ("não informado", "não se aplica"). |
+| `idioma` | texto ou vazio | vazio | Código do idioma, no subconjunto por idioma. |
+| `n` | inteiro | **obrigatório** |  |
+| `concordancia` | número ou vazio | vazio | Ausente com menos de 20 documentos, como as outras métricas. |
+| `kappa` | número ou vazio | vazio |  |
+| `kappa_ic95` | par de número e número ou vazio | vazio |  |
+| `pabak` | número ou vazio | vazio |  |
+| `alfa` | número ou vazio | vazio |  |
 
 ### Divergencia
 

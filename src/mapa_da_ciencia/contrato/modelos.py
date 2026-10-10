@@ -527,6 +527,23 @@ class MetricaClasse(_Base):
     f1: float | None
 
 
+class MetricaSubconjunto(_Base):
+    """A concordância de um par numa parte da amostra. Sem matriz nem métricas por classe: num grupo pequeno, elas
+    mostrariam as respostas de cada documento."""
+
+    tipo: Literal["idioma", "informativas"] = Field(
+        description="`idioma`: os documentos cujo texto lido está em `idioma`; `informativas`: os documentos em que "
+        'nenhuma das duas respostas é de sem-informação ("não informado", "não se aplica").'
+    )
+    idioma: str | None = Field(None, description="Código do idioma, no subconjunto por idioma.")
+    n: int
+    concordancia: float | None = Field(None, description="Ausente com menos de 20 documentos, como as outras métricas.")
+    kappa: float | None = None
+    kappa_ic95: tuple[float, float] | None = None
+    pabak: float | None = None
+    alfa: float | None = None
+
+
 class MetricaVariavel(_Base):
     """Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável.
     Nas de múltipla escolha, `variavel` é `id:categoria` (uma variável sim/não por categoria)."""
@@ -547,6 +564,11 @@ class MetricaVariavel(_Base):
         False,
         description="Os dois participantes são da mesma família de modelo (a referência e o supervisor do júri, "
         "por exemplo): um limite superior, e não uma medida independente.",
+    )
+    subconjuntos: list[MetricaSubconjunto] = Field(
+        default_factory=list,
+        description="A concordância por idioma (quando a amostra tem mais de um) e entre respostas informativas. "
+        "Vazio nos dados até a 1.6.",
     )
 
 
@@ -569,6 +591,9 @@ class AmostraInfo(_Base):
     n: int
     estratificar_por: str
     semente: int
+    idiomas: dict[str, int] = Field(
+        default_factory=dict, description="Documentos da amostra por idioma do texto lido. Vazio até a 1.6."
+    )
 
 
 class Participante(_Base):

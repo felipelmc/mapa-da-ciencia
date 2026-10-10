@@ -297,3 +297,23 @@ def test_relatorio(projeto, tmp_path):
     r = CliRunner().invoke(app, ["validar", "relatorio", "-P", str(projeto.raiz)], env={"COLUMNS": "160"})
     assert r.exit_code == 0, r.output
     assert "Relatório gravado" in r.output and "validacao/relatorio.md" in r.output
+
+
+def test_subconjuntos_no_contrato_sem_matriz(projeto, tmp_path):
+    from pathlib import Path
+
+    from mapa_da_ciencia.contrato import modelos as m
+    from mapa_da_ciencia.contrato.classificacao import validacao_contrato
+
+    a = va.sortear(projeto)
+    _codificar(projeto, a.docs, tmp_path, "claude-opus", set(a.docs[:3]))
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    c = validacao_contrato(vm.calcular(projeto, reamostras=10))
+    assert c.amostra.idiomas == {"pt": 12}  # a amostra do teste é toda em português
+    x = next(x for x in c.metricas if x.variavel == "abordagem" and x.comparado == "qwen3.5:4b")
+    assert [(s.tipo, s.n, s.kappa) for s in x.subconjuntos] == [("informativas", 12, None)]
+    # num grupo pequeno, a matriz e as métricas por classe mostrariam as respostas de cada documento
+    assert not {"matriz", "por_classe"} & set(m.MetricaSubconjunto.model_fields)
+    # o site publicado mantém os subconjuntos
+    publicado = Path(__file__).parents[1] / "contrato" / "exemplo-publicado" / "dados" / "validacao.json"
+    assert any(x["subconjuntos"] for x in json.loads(publicado.read_text(encoding="utf-8"))["metricas"])

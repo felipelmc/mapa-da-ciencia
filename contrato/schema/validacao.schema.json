@@ -8,6 +8,14 @@
           "title": "Estratificar Por",
           "type": "string"
         },
+        "idiomas": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Documentos da amostra por idioma do texto lido. Vazio até a 1.6.",
+          "title": "Idiomas",
+          "type": "object"
+        },
         "n": {
           "title": "N",
           "type": "integer"
@@ -327,6 +335,115 @@
       "title": "MetricaClasse",
       "type": "object"
     },
+    "MetricaSubconjunto": {
+      "additionalProperties": false,
+      "description": "A concordância de um par numa parte da amostra. Sem matriz nem métricas por classe: num grupo pequeno, elas\nmostrariam as respostas de cada documento.",
+      "properties": {
+        "alfa": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alfa"
+        },
+        "concordancia": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Ausente com menos de 20 documentos, como as outras métricas.",
+          "title": "Concordancia"
+        },
+        "idioma": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Código do idioma, no subconjunto por idioma.",
+          "title": "Idioma"
+        },
+        "kappa": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kappa"
+        },
+        "kappa_ic95": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kappa Ic95"
+        },
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "pabak": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pabak"
+        },
+        "tipo": {
+          "description": "`idioma`: os documentos cujo texto lido está em `idioma`; `informativas`: os documentos em que nenhuma das duas respostas é de sem-informação (\"não informado\", \"não se aplica\").",
+          "enum": [
+            "idioma",
+            "informativas"
+          ],
+          "title": "Tipo",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tipo",
+        "n"
+      ],
+      "title": "MetricaSubconjunto",
+      "type": "object"
+    },
     "MetricaVariavel": {
       "additionalProperties": false,
       "description": "Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável.\nNas de múltipla escolha, `variavel` é `id:categoria` (uma variável sim/não por categoria).",
@@ -431,6 +548,14 @@
           "description": "Participante tomado como referência (linhas da matriz).",
           "title": "Referencia",
           "type": "string"
+        },
+        "subconjuntos": {
+          "description": "A concordância por idioma (quando a amostra tem mais de um) e entre respostas informativas. Vazio nos dados até a 1.6.",
+          "items": {
+            "$ref": "#/$defs/MetricaSubconjunto"
+          },
+          "title": "Subconjuntos",
+          "type": "array"
         },
         "variavel": {
           "title": "Variavel",
