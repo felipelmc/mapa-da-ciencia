@@ -121,3 +121,66 @@ def test_tirar_um_item_da_lista_mantem_o_cabecalho_do_seguinte(tmp_path):
     assert arquivo.read_text(encoding="utf-8") == (
         "variaveis:\n  - id: a\n    pergunta: A?\n\n  # --- Seção 2: método ---\n  - id: c\n    pergunta: C?\n"
     )
+
+
+def _editar(tmp_path, texto, parcial, **opcoes):
+    arquivo = tmp_path / "x.yaml"
+    arquivo.write_text(texto, encoding="utf-8")
+    editar_yaml(arquivo, parcial, lambda d: d, **opcoes)
+    return arquivo.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("texto", "parcial", "esperado"),
+    [
+        pytest.param(  # o ruamel guarda o comentário depois de um item de lista no slot 0, e não no 2
+            "v:\n  - id: a\n  - id: b\n    ex:\n      - um\n\n  # --- S2 ---\n  - id: c\n",
+            {"v": [{"id": "a"}, {"id": "c"}]},
+            "v:\n  - id: a\n\n  # --- S2 ---\n  - id: c\n",
+            id="item que termina numa lista",
+        ),
+        pytest.param(
+            "v:\n  - id: a\n\n  # --- S2 ---\n  - id: b\n",
+            {"v": [{"id": "b"}]},
+            "v:\n  # --- S2 ---\n  - id: b\n",
+            id="primeiro item",
+        ),
+        pytest.param(
+            "excluir:\n  - a\n  - b\n\n  # --- de c ---\n  - c\n",
+            {"excluir": ["a", "c"]},
+            "excluir:\n  - a\n\n  # --- de c ---\n  - c\n",
+            id="lista de escalares",
+        ),
+        pytest.param(  # o item trocado (um id novo) não leva o cabeçalho da seção seguinte para cima dele
+            "v:\n  - id: a\n  - id: b\n\n  # --- S2 ---\n  - id: c\n",
+            {"v": [{"id": "a"}, {"id": "b2"}, {"id": "c"}]},
+            "v:\n  - id: a\n  - id: b2\n\n  # --- S2 ---\n  - id: c\n",
+            id="item renomeado",
+        ),
+        pytest.param(  # num item em fluxo, o comentário não vai para dentro das chaves
+            "v:\n  - id: a\n    c:\n      - {x: 1}\n  - id: b\n\n  # --- S2 ---\n  - id: c\n",
+            {"v": [{"id": "a", "c": [{"x": 1}]}, {"id": "c"}]},
+            "v:\n  - id: a\n    c:\n      - {x: 1}\n\n  # --- S2 ---\n  - id: c\n",
+            id="anterior em fluxo",
+        ),
+        pytest.param(
+            "a:\n  b:\n    1:\n      r: A\n\n# --- c ---\nc: 1\n",
+            {"a": {"b": {1: None}}},
+            "a:\n  b: {}\n\n# --- c ---\nc: 1\n",
+            id="mapa vazio a dois níveis",
+        ),
+        pytest.param(
+            "outra: 1\ntopicos:\n  1:\n    r: A\n\n# --- notas finais ---\n",
+            {"topicos": {1: None}},
+            "outra: 1\ntopicos: {}\n\n# --- notas finais ---\n",
+            id="fim do arquivo",
+        ),
+    ],
+)
+def test_os_comentarios_de_uma_entrada_que_sai_vao_para_a_seguinte(tmp_path, texto, parcial, esperado):
+    opcoes = (
+        {"substituir": True, "omitir_vazios": True}
+        if "v" in parcial or "excluir" in parcial
+        else {"omitir_vazios": True}
+    )
+    assert _editar(tmp_path, texto, parcial, **opcoes) == esperado
