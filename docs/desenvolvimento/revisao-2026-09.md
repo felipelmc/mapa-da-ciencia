@@ -233,6 +233,11 @@ com agentes independentes em cada frente:
 
   Todos foram corrigidos, com teste nos que são de código.
 
+  Uma última verificação, sobre o site da release, aprovou tudo menos os nomes das revistas, que ainda passavam da
+  borda da figura. A medida do texto montava a fonte do canvas na ordem errada ("13.6px 600 Família", e não "600
+  13.6px Família"), e o canvas media com a fonte padrão. O teste de unidade usava um medidor falso e não pegou o erro.
+  Com a correção, conferida na figura exportada a 1440 e a 1920 px, a versão ficou aprovada com ressalvas baixas.
+
 Ficam registrados, como baixos: a primeira carga da vista Projeto, que lê o corpus várias vezes e leva uns 3 s; o grafo
 exportado com faixas vazias e textos de tela; a barra de abas que corta os rótulos das pontas a 375 px; e os textos
 com "(s)" do painel.
