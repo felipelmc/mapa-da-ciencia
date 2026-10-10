@@ -222,7 +222,7 @@ function clonarMultiplos(container: HTMLElement): SVGSVGElement {
 			const texto = document.createElementNS(NS, 'text');
 			// `data-exportar`: um título mais completo que o da tela (o nome da revista, e não a sigla), cortado na largura
 			// do painel (o SVG não quebra a linha, e um nome longo entraria no painel do lado)
-			const medir = medidor(`${e.fontWeight} ${e.fontFamily}`);
+			const medir = medidor(e.fontFamily, e.fontWeight);
 			const completo = (titulo.dataset.exportar ?? titulo.textContent ?? '').replace(/\s+/g, ' ').trim();
 			texto.textContent = caberNaLargura(completo, painel.getBoundingClientRect().width - 4, (x) => medir(x, parseFloat(e.fontSize)));
 			texto.setAttribute('x', String(t.left - base.left));
@@ -393,11 +393,17 @@ export function caberNaLargura(texto: string, largura: number, medir: (texto: st
 	return `${nome.slice(0, corte).trimEnd()}…${sufixo ?? ''}`;
 }
 
-function medidor(fonte: string): OpcoesLegenda['medir'] {
+/** Mede o texto no canvas. O `font` do canvas é o atalho do CSS: o peso vem antes do tamanho ("600 13.6px Família");
+ * fora dessa ordem, ele é ignorado e a medida sai com a fonte padrão (10px sans-serif). */
+export function fonteDoCanvas(tamanho: number, familia: string, peso = ''): string {
+	return `${peso && peso !== '400' && peso !== 'normal' ? `${peso} ` : ''}${tamanho}px ${familia}`;
+}
+
+function medidor(fonte: string, peso = ''): OpcoesLegenda['medir'] {
 	const ctx = document.createElement('canvas').getContext('2d');
 	return (texto, tamanho) => {
 		if (!ctx) return texto.length * tamanho * 0.55;
-		ctx.font = `${tamanho}px ${fonte}`;
+		ctx.font = fonteDoCanvas(tamanho, fonte, peso);
 		return ctx.measureText(texto).width;
 	};
 }

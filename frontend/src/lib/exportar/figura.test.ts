@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { caberNaLargura, larguraPx, legendaEmSvg, nomeDeArquivo, numeroCru, paraCsv, PRESETS, type ItemLegenda } from './figura';
+import { caberNaLargura, fonteDoCanvas, larguraPx, legendaEmSvg, nomeDeArquivo, numeroCru, paraCsv, PRESETS, type ItemLegenda } from './figura';
 
 describe('exportar', () => {
 	it('CSV com BOM, aspas quando precisa e CRLF', () => {
@@ -71,5 +71,14 @@ describe('caberNaLargura', () => {
 		expect(cortado.endsWith('… (403)')).toBe(true);
 		expect(medir(cortado)).toBeLessThanOrEqual(200);
 		expect(caberNaLargura('Um nome comprido sem número', 100, medir)).toMatch(/…$/);
+	});
+});
+
+describe('fonteDoCanvas', () => {
+	it('põe o peso antes do tamanho, como pede o atalho font do CSS', () => {
+		// "13.6px 600 Família" não é um font válido, e o canvas mediria com a fonte padrão (o nome não era cortado)
+		expect(fonteDoCanvas(13.6, '"Instrument Sans", sans-serif', '600')).toBe('600 13.6px "Instrument Sans", sans-serif');
+		expect(fonteDoCanvas(12, 'serif', '400')).toBe('12px serif');
+		expect(fonteDoCanvas(12, 'serif')).toBe('12px serif');
 	});
 });

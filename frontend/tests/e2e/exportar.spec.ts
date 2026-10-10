@@ -278,7 +278,12 @@ test('os pequenos múltiplos saem inteiros, com o título de cada painel', async
 	expect(titulos.length).toBeGreaterThan(1);
 	expect(titulos.some((t, i) => !t.startsWith(siglas[i]))).toBe(true);
 	const svg = (await baixar(page, 'por-revista', 'SVG')).dados.toString('utf8');
-	for (const t of titulos) expect(svg).toContain(`>${noSvg(t)}</text>`);
+	// um nome longo é cortado com "…" na largura do painel, e o número de documentos fica
+	const escapar = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	for (const t of titulos) {
+		const [, nome, n] = t.match(/^(.*) \((.*)\)$/)!;
+		expect(svg).toMatch(new RegExp(`>${escapar(noSvg(nome.slice(0, 5)))}[^<]*\\(${escapar(n)}\\)</text>`));
+	}
 	expect(svg.match(/<svg /g)!.length).toBeGreaterThanOrEqual(titulos.length + 1); // um SVG por painel, dentro do da figura
 	for (const m of ler('topicos.json').macrotemas) expect(svg).toContain(`>${noSvg(m.rotulo)}</text>`); // a legenda
 	writeFileSync(join(TELAS, 'exportar-por-revista-slide.png'), (await baixar(page, 'por-revista', 'PNG', 'slide')).dados);
