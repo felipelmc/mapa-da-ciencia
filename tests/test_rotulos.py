@@ -126,3 +126,45 @@ def test_modelo_ausente_e_memoria_que_acaba(tmp_path, apis_falsas, monkeypatch):
     monkeypatch.setattr(R, "memoria_critica", lambda: True)
     with pytest.raises(ErroProvedor, match="memória do computador acabou"):
         _rotulador(tmp_path).topicos(ENTRADAS, sem_llm=False, manuais=ler_manuais(tmp_path))
+
+
+RESUMOS = [
+    "O artigo estuda a agenda legislativa no Congresso e o processo decisório no Brasil.",
+    "Analisamos o processo de votação no Congresso. A agenda legislativa do Executivo pesa no Brasil.",
+    "Mostramos que a agenda legislativa muda o processo no Congresso Nacional, como no Brasil e na OMC.",
+]
+
+
+def test_caixa_de_frase_pelos_resumos():
+    caixa = R.Caixa()
+    for texto in RESUMOS:
+        caixa.contar(texto)
+    assert (caixa.maiusculas["congresso"], caixa.total["congresso"]) == (3, 3)
+    assert (caixa.maiusculas["agenda"], caixa.total["agenda"]) == (0, 3)
+    assert caixa.total["analisamos"] == caixa.total["mostramos"] == 0  # o começo das frases não conta
+    rotulo = "Agenda Legislativa e Processo no Congresso"
+    assert R.conferir_caixa(rotulo, caixa) == "Agenda legislativa e processo no Congresso"
+    assert R.conferir_caixa("Política Comercial na OMC e no Brasil", caixa) == "Política Comercial na OMC e no Brasil"
+    # "Comercial" não aparece no tópico: decide o corpus, e sem ocorrências bastantes fica como veio
+    corpus = R.Caixa().contar("a política comercial, a abertura comercial e a pauta comercial do governo")
+    assert R.conferir_caixa("Política Comercial na OMC", caixa, corpus) == "Política comercial na OMC"
+    # idempotente
+    certo = R.conferir_caixa(rotulo, caixa)
+    assert R.conferir_caixa(certo, caixa) == certo
+
+
+def test_caixa_corrigida_tambem_no_rotulo_reaproveitado(tmp_path, apis_falsas):
+    caixa = R.Caixa()
+    for texto in RESUMOS:
+        caixa.contar(texto)
+    anterior = Rotulo("Agenda Legislativa no Congresso", "Presidencialismo de coalizão.", "llm")
+    manual = Rotulo("Agenda Legislativa", "À mão.", "manual")
+    entradas = {
+        3: EntradaTopico(ENTRADAS[3].palavras, [], anterior, ["coalizão", "congresso", "veto"], caixa),
+        7: EntradaTopico(ENTRADAS[7].palavras, [], manual, ENTRADAS[7].palavras, caixa),
+    }
+    r = _rotulador(tmp_path)
+    manuais = R._Manuais(topicos={7: R._RotuloManual(rotulo="Agenda Legislativa", descricao="À mão.")})
+    saida = r.topicos(entradas, sem_llm=False, manuais=manuais)
+    assert saida[3].rotulo == "Agenda legislativa no Congresso" and saida[7].rotulo == "Agenda Legislativa"
+    assert r.resumo.caixa_corrigida == 1 and r.resumo.chamadas == 0
