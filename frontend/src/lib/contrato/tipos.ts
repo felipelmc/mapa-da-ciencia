@@ -849,11 +849,33 @@ export interface Tendencia {
  * Como a tendência é calculada. O painel lê daqui os parâmetros para recalcular com os filtros.
  */
 export interface MetodoTendencia {
+	/**
+	 * Anos com documentos no recorte para haver tendência.
+	 */
 	anos_minimos?: number;
+	/**
+	 * `quase`: o erro-padrão é corrigido pela dispersão de Pearson; `binomial`: não é.
+	 */
 	dispersao?: 'quase' | 'binomial';
+	/**
+	 * Documentos do tópico no período para haver tendência.
+	 */
 	docs_minimos?: number;
+	/**
+	 * Regressão logística da participação anual, com o ano como variável.
+	 */
 	modelo?: 'logistica_binomial';
+	/**
+	 * Nível do intervalo da inclinação.
+	 */
 	nivel?: number;
+	/**
+	 * Quantil do intervalo: `t` (de Student, com anos − 2 graus de liberdade, quando a dispersão é estimada) ou `normal`. Ausente nos dados até a 1.6, que usavam a normal.
+	 */
+	quantil?: 't' | 'normal';
+	/**
+	 * Quantil da normal no nível pedido: o valor crítico com `quantil: normal`.
+	 */
 	z?: number;
 }
 /**

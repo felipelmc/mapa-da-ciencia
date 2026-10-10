@@ -2,7 +2,8 @@
  * Tendência de uma série no tempo (ADR 0009), espelho de `src/mapa_da_ciencia/topicos/tendencia.py`: regressão
  * logística da participação anual (sucessos = documentos do tópico no ano, ensaios = documentos do ano), com o
  * ano centrado, Newton com meio passo, erro-padrão corrigido pela dispersão de Pearson (quase-binomial) e
- * intervalo de Wald. O tamanho da mudança vem das participações ajustadas no primeiro e no último ano.
+ * intervalo de Wald, com o quantil da t de anos − 2 graus de liberdade quando a dispersão é estimada (desde a
+ * 2.3.0; antes, o da normal). O tamanho da mudança vem das participações ajustadas no primeiro e no último ano.
  *
  * Os casos de `contrato/casos/tendencia.json` (gerados pelo Python) garantem que as duas versões concordam.
  */
@@ -29,6 +30,7 @@ export const METODO_PADRAO: Required<MetodoTendencia> = {
 	modelo: 'logistica_binomial',
 	dispersao: 'quase',
 	nivel: 0.95,
+	quantil: 't',
 	z: 1.959963984540054,
 	anos_minimos: 5,
 	docs_minimos: 10
@@ -206,7 +208,8 @@ export function tendencia(
 	if (!ajuste) return insuficiente('sem_convergencia', periodo);
 	const phi = m.dispersao === 'quase' ? Math.max(1, ajuste.pearson / (usados.length - 2)) : 1;
 	const ep = ajuste.erroPadrao * Math.sqrt(phi);
-	const ic: [number, number] = [ajuste.inclinacao - m.z * ep, ajuste.inclinacao + m.z * ep];
+	const q = m.quantil === 't' && m.dispersao === 'quase' ? quantilT(0.5 + m.nivel / 2, usados.length - 2) : m.z;
+	const ic: [number, number] = [ajuste.inclinacao - q * ep, ajuste.inclinacao + q * ep];
 	const direcao: Direcao = ic[0] > 0 ? 'alta' : ic[1] < 0 ? 'queda' : 'estavel';
 	const [primeiro, ultimo] = periodo!;
 	const p0 = expit(ajuste.intercepto + ajuste.inclinacao * (primeiro - ajuste.mediaAnos));

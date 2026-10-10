@@ -7,6 +7,8 @@ import pytest
 from mapa_da_ciencia.topicos.tendencia import (
     ANOS_MINIMOS,
     DOCS_MINIMOS,
+    QUANTIL,
+    Z,
     ajustar_glm,
     quantil_t,
     tendencia,
@@ -143,3 +145,22 @@ def test_quantil_t_bate_com_o_scipy():
         quantil_t(0.975, 0)
     with pytest.raises(ValueError):
         quantil_t(0.4, 5)
+
+
+def test_o_intervalo_usa_o_quantil_t_com_a_dispersao_estimada():
+    serie = [4, 5, 3, 4, 6, 4, 5, 3, 4, 5, 6, 5, 7, 9, 6, 8]
+    totais = [250] * 16
+    anos = list(range(2010, 2026))
+    t = tendencia(serie, totais, anos)
+    z = tendencia(serie, totais, anos, quantil="normal")
+    largura = lambda x: x.ic95[1] - x.ic95[0]  # noqa: E731
+    assert largura(t) / largura(z) == pytest.approx(quantil_t(0.975, 14) / Z)
+    # a binomial pura não estima a dispersão: fica com a normal, como o summary.glm do R
+    b = tendencia(serie, totais, anos, dispersao="binomial")
+    assert b.ic95 == tendencia(serie, totais, anos, dispersao="binomial", quantil="normal").ic95
+
+
+def test_o_metodo_do_contrato_diz_o_quantil():
+    from mapa_da_ciencia.contrato.modelos import MetodoTendencia
+
+    assert MetodoTendencia().quantil == QUANTIL == "t" and MetodoTendencia().z == Z

@@ -141,7 +141,7 @@ Escreva sempre a `descricao` junto com o `rotulo`: uma entrada só com o rótulo
 Um tópico está **em alta** quando a participação dele no corpus (documentos do tópico ÷ documentos do ano) cresce de forma distinguível do acaso ao longo do período, e **em queda** quando diminui. A regra ([registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0009-tendencia-dos-topicos.md)):
 
 - uma regressão logística da participação anual, com o ano como variável; a inclinação diz se a participação cresce ou cai;
-- o intervalo de 95% da inclinação é corrigido pela dispersão da série (quase-binomial): dossiês temáticos fazem picos isolados, que não devem contar como tendência;
+- o intervalo de 95% da inclinação é corrigido pela dispersão da série (quase-binomial): dossiês temáticos fazem picos isolados, que não devem contar como tendência. Como a dispersão é estimada com poucos anos, o intervalo usa o quantil da t de Student (com anos − 2 graus de liberdade), um pouco mais largo que o da normal;
 - o tópico só é marcado quando o intervalo não inclui zero; com menos de 5 anos com documentos ou menos de 10 documentos do tópico, não há tendência calculada;
 - o tamanho da mudança é dado em **pontos percentuais**: a diferença entre a participação ajustada no primeiro e no último ano.
 

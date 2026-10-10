@@ -2,12 +2,13 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Topicos } from '$lib/contrato/tipos';
+import { metodoDe } from '$lib/topicos/tendencias';
 import { ajustados, quantilT, tendencia } from './glm';
 
 const raiz = join(import.meta.dirname, '../../../../contrato');
 const casos = JSON.parse(readFileSync(join(raiz, 'casos/tendencia.json'), 'utf8')) as {
 	nome: string;
-	entrada: { n: number[]; total: number[]; anos: number[]; dispersao: 'quase' | 'binomial' };
+	entrada: { n: number[]; total: number[]; anos: number[]; dispersao: 'quase' | 'binomial'; quantil: 't' | 'normal' };
 	saida: Record<string, unknown>;
 }[];
 const quantis = JSON.parse(readFileSync(join(raiz, 'casos/quantil_t.json'), 'utf8')) as {
@@ -36,13 +37,13 @@ function comparar(obtido: ReturnType<typeof tendencia>, esperado: Record<string,
 describe('tendência no navegador = referência em Python', () => {
 	for (const c of casos) {
 		it(`caso ${c.nome}`, () => {
-			const { n, total, anos, dispersao } = c.entrada;
-			comparar(tendencia(n, total, anos, { dispersao }), c.saida);
+			const { n, total, anos, dispersao, quantil } = c.entrada;
+			comparar(tendencia(n, total, anos, { dispersao, quantil }), c.saida);
 		});
 	}
 
 	it('bate com o gabarito do topicos.json do exemplo, tópico a tópico e macrotema a macrotema', () => {
-		const metodo = topicos.metodo_tendencia ?? {};
+		const metodo = metodoDe(topicos);
 		for (const t of [...topicos.topicos, ...topicos.macrotemas]) {
 			if (!t.tendencia || !t.serie) continue;
 			const obtido = tendencia(t.serie.n, topicos.total_por_ano, topicos.anos, metodo);
@@ -73,5 +74,22 @@ describe('quantil t no navegador = referência em Python', () => {
 	it('recusa graus de liberdade e níveis fora do domínio', () => {
 		expect(() => quantilT(0.975, 0)).toThrow(RangeError);
 		expect(() => quantilT(0.3, 5)).toThrow(RangeError);
+	});
+});
+
+describe('o quantil do método', () => {
+	const marginal = casos.find((c) => c.nome === 'marginal_t')!.entrada;
+
+	it('com a t, o caso marginal fica estável; com a normal, em alta', () => {
+		const { n, total, anos } = marginal;
+		expect(tendencia(n, total, anos).direcao).toBe('estavel');
+		expect(tendencia(n, total, anos, { quantil: 'normal' }).direcao).toBe('alta');
+	});
+
+	it('dados até a 1.6, sem o quantil, continuam com a normal', () => {
+		const antigo = { ...topicos, metodo_tendencia: { ...topicos.metodo_tendencia!, quantil: undefined } };
+		expect(metodoDe(antigo as Topicos).quantil).toBe('normal');
+		expect(metodoDe({ ...topicos, metodo_tendencia: null }).quantil).toBe('normal');
+		expect(metodoDe(topicos).quantil).toBe('t');
 	});
 });

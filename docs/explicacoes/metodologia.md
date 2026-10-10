@@ -20,7 +20,7 @@ No piloto: 57 tópicos em 7 macrotemas, ARI 0,89; 66,5% dos documentos no núcle
 
 ## 3. Tópicos no tempo
 
-A tendência de cada tópico é a inclinação de uma regressão logística quase-binomial da sua participação anual no corpus, com intervalo de 95% (erro padrão corrigido pela dispersão). Um tópico está "em alta" ou "em queda" quando o intervalo não inclui zero, e a variação é dada em pontos percentuais por ano. No piloto, 13 dos 57 tópicos. Veja [Em alta e em queda](topicos.md#12-em-alta-e-em-queda) e o [registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0009-tendencia-dos-topicos.md).
+A tendência de cada tópico é a inclinação de uma regressão logística quase-binomial da sua participação anual no corpus, com intervalo de 95% (erro padrão corrigido pela dispersão e quantil da t de Student). Um tópico está "em alta" ou "em queda" quando o intervalo não inclui zero, e a variação é dada em pontos percentuais por ano. No piloto, 13 dos 57 tópicos. Veja [Em alta e em queda](topicos.md#12-em-alta-e-em-queda) e o [registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0009-tendencia-dos-topicos.md).
 
 ## 4. Geografia
 

@@ -19,7 +19,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSAO_CONTRATO = "1.6"
+VERSAO_CONTRATO = "1.7"
 # 1.1: marcas do texto de análise, fonte do rótulo, núcleo dos tópicos, ruído por ano
 # 1.2: tendências (com o método), séries dos macrotemas, sem tópico por ano, geografia completa
 # 1.3: classificação por variável, evidência dispensada e campo da evidência, participantes da validação com o
@@ -357,12 +357,23 @@ class Tendencia(_Base):
 class MetodoTendencia(_Base):
     """Como a tendência é calculada. O painel lê daqui os parâmetros para recalcular com os filtros."""
 
-    modelo: Literal["logistica_binomial"] = "logistica_binomial"
-    dispersao: Literal["quase", "binomial"] = "quase"
-    nivel: float = 0.95
-    z: float = 1.959963984540054
-    anos_minimos: int = 5
-    docs_minimos: int = 10
+    modelo: Literal["logistica_binomial"] = Field(
+        "logistica_binomial", description="Regressão logística da participação anual, com o ano como variável."
+    )
+    dispersao: Literal["quase", "binomial"] = Field(
+        "quase", description="`quase`: o erro-padrão é corrigido pela dispersão de Pearson; `binomial`: não é."
+    )
+    nivel: float = Field(0.95, description="Nível do intervalo da inclinação.")
+    quantil: Literal["t", "normal"] = Field(
+        "t",
+        description="Quantil do intervalo: `t` (de Student, com anos − 2 graus de liberdade, quando a dispersão é "
+        "estimada) ou `normal`. Ausente nos dados até a 1.6, que usavam a normal.",
+    )
+    z: float = Field(
+        1.959963984540054, description="Quantil da normal no nível pedido: o valor crítico com `quantil: normal`."
+    )
+    anos_minimos: int = Field(5, description="Anos com documentos no recorte para haver tendência.")
+    docs_minimos: int = Field(10, description="Documentos do tópico no período para haver tendência.")
 
 
 class Topico(_Base):
