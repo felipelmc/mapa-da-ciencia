@@ -90,3 +90,14 @@ Custo: kNN exato em 0,2 s; UMAP de 5 dimensões em 3,5 a 5 s por semente (9 s na
 ## Como reproduzir
 
     uv run python scripts/calibrar_topicos.py projetos/cp-scielo --saida calibracao.json
+
+## Adendo (2.3.0): a coleta refeita
+
+A 2.3.0 coletou o piloto de novo, do cache. Ela tirou 10 documentos sem autor e 36 resumos que eram fragmentos, e corrigiu o idioma de 35, o que mudou o texto de análise de 41 documentos. Com os mesmos parâmetros, o piloto passou de 57 para 61 tópicos, em 7 macrotemas. O ARI ficou em 0,90 (era 0,89), com 64% dos documentos no núcleo, 23% reatribuídos e 12% sem tópico. A identidade manteve o número e a cor de 50 dos 57 tópicos. Pelo Jaccard dos núcleos, o resto mudou assim:
+
+- dois tópicos encolheram e mudaram de conteúdo: a teoria social (o núcleo foi de 106 para 36, e Weber e Durkheim viraram um tópico à parte) e as artes (de 52 para 23);
+- 11 tópicos são novos, quase todos de documentos que estavam fora dos núcleos;
+- o tópico de raça e ações afirmativas se dividiu em dois, e o de direitos humanos no sistema interamericano entrou no de direitos humanos e migrações;
+- três tópicos pequenos (saúde global, povos indígenas, militares e defesa, com 21 a 23 documentos no núcleo) se desfizeram, com a maior parte dos documentos sem tópico.
+
+Uma mudança de 1% no corpus mexe nas fronteiras dos tópicos pequenos, como a seção Sensibilidade já mostrava. Os rótulos escritos à mão são conferidos de novo depois de cada coleta: `scripts/comparar_rodadas.py` marca os tópicos que mudaram muito e as entradas do `rotulos.yaml` que perderam o tópico.

@@ -73,3 +73,17 @@ Uma marcação pode depender de um ano só: um dossiê no começo ou no fim do p
 
 Alternativas descartadas: marcar como frágil só quando mais de um quarto das retiradas muda a direção (no piloto, só a competição eleitoral municipal; um corte arbitrário que esconde a dependência de um ano) e o erro-padrão *jackknife* (outra regra de decisão, mais difícil de explicar que "sem 2011, fica estável").
 
+
+### No piloto refeito
+
+Com a coleta refeita na 2.3.0 (4.265 documentos, 61 tópicos), a regra em uso (quase-binomial com o quantil t) marca 11 tópicos: 7 em alta e 4 em queda. Com o quantil da normal seriam 12, e com a binomial pura, 16. Quatro das 11 marcações são frágeis:
+
+- **Em queda:** teoria social, modernidade e teoria crítica (depende de 6 anos); cobertura da imprensa e política (de 2010, 2011, 2022 e 2024); representação política, sociedade civil e crise democrática (de 7 anos).
+- **Em alta:** geografia do voto e eleições municipais (de 13 dos 16 anos).
+
+As 7 firmes são seis altas e uma queda:
+
+- **Em alta:** federalismo, capacidades estatais e implementação de políticas (+3,9 pontos percentuais de 2010 a 2025); bolsonarismo, direita e populismo (+3,0); religião e política, conservadorismo e fascismo (+2,8); comunicação política nas redes sociais (+2,4); movimentos feministas e lutas por direitos LGBTI+ (+2,0); presidencialismo de coalizão, ministérios e nomeações (+1,5).
+- **Em queda:** desenvolvimento, Estado e modelos de capitalismo (−1,6).
+
+O federalismo, frágil nos tópicos da 2.2.0, ficou firme. O núcleo do tópico mudou com a coleta refeita: ganhou os conselhos de políticas públicas (14 títulos).
