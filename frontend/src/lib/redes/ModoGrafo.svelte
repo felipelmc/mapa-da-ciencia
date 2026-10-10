@@ -294,6 +294,31 @@
 			documentos: documentosDo(i)
 		};
 	});
+	// fechar o cartão sobe a colaboração (de baixo do grafo para o lado dele, ou, numa coluna só, a altura do cartão):
+	// quem a lia ficaria sem ela na tela. Se ela estava à vista, a rolagem compensa o salto, e ela fica onde estava na
+	// janela. Num efeito, e não no `aoFechar`, para valer também para o Esc, o × e o "voltar" do navegador
+	let colaboracao = $state<HTMLElement | null>(null);
+	const temCartao = $derived(cartao !== null);
+	let topoAntes: number | null = null;
+	$effect.pre(() => {
+		const fechando = !temCartao;
+		untrack(() => {
+			const caixa = fechando ? colaboracao?.getBoundingClientRect() : undefined;
+			topoAntes = caixa && caixa.bottom > 0 && caixa.top < window.innerHeight ? caixa.top : null;
+		});
+	});
+	$effect(() => {
+		void temCartao;
+		untrack(() => {
+			if (topoAntes === null || !colaboracao) return;
+			const salto = colaboracao.getBoundingClientRect().top - topoAntes;
+			topoAntes = null;
+			if (Math.abs(salto) < 1) return;
+			// em tela cheia, quem rola é a própria área da tela cheia
+			const rolante = document.fullscreenElement?.contains(colaboracao) ? document.fullscreenElement : null;
+			(rolante ?? window).scrollBy({ top: salto, behavior: 'instant' });
+		});
+	});
 	const linkDoc = (d: number) => rota('/mapa', escreverFiltros({ ...recorteDe(filtros), doc: t.ids[d] }));
 	function alternarInstituicao(id: string) {
 		const atual = filtros.inst;
@@ -566,7 +591,7 @@
 
 	<!-- sem cartão, a colaboração fica ao lado do grafo; com ele, desce para baixo (o cartão acompanha a rolagem e a
 	     cobriria). Só muda de lugar na grade, sem ser recriada: a tabela e a exportação dela continuam abertas -->
-	<div class="colaboracao">
+	<div class="colaboracao" bind:this={colaboracao}>
 		<Colaboracao
 			quais={pessoas ? ['coautoria', 'autores'] : ['instituicoes', 'exterior']}
 			{aberto}

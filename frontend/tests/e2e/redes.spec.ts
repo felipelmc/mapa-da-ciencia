@@ -862,6 +862,24 @@ test('ao lado do grafo, o painel de exportar da colaboração fica dentro da fig
 	}
 });
 
+test('fechar o cartão lendo a colaboração não a tira da tela', async ({ page }) => {
+	for (const [largura, altura] of [
+		[1920, 1080],
+		[1024, 800]
+	]) {
+		await page.setViewportSize({ width: largura, height: altura });
+		await page.goto(`${url('RAIZ')}#/redes?no=${redes.pessoas.id[central()]}`);
+		await esperarRedes(page, 'coautoria');
+		await expect(page.getByTestId('cartao-no')).toBeVisible();
+		const figura = page.getByTestId('figura-colaboracao');
+		await figura.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+		await page.keyboard.press('Escape');
+		await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+		// ela sobe (para o lado do grafo, ou a altura do cartão), e a rolagem acompanha
+		await expect(figura, `${largura} px`).toBeInViewport({ ratio: 0.5 });
+	}
+});
+
 test('com o cartão aberto, a colaboração desce para baixo do grafo, sem nada por cima, e a exportação dela abre', async ({ page }) => {
 	await page.setViewportSize({ width: 1920, height: 1080 });
 	await page.goto(`${url('RAIZ')}#/redes?no=${redes.pessoas.id[central()]}`);
