@@ -23,7 +23,7 @@
 	import { KAPPA_FRACO } from '$lib/classificacao/agregar';
 	import MatrizConfusao from './MatrizConfusao.svelte';
 	import { nomesLegiveis } from './nomes';
-	import { celulaSubconjunto, colunasSubconjuntos } from './subconjuntos';
+	import { celulaSubconjunto, colunasSubconjuntos, composicaoDaAmostra } from './subconjuntos';
 
 	let {
 		validacao,
@@ -183,8 +183,7 @@
 			(m.subconjuntos ?? []).map((s) => [nomeVariavel(m.variavel), s.tipo, s.idioma ?? null, s.n, cru(s.concordancia), cru(s.kappa), cru(s.pabak)])
 		)
 	});
-	const IDIOMAS_LIDE: Record<string, string> = { pt: 'em português', en: 'em inglês', es: 'em espanhol', fr: 'em francês' };
-	const idiomasDaAmostra = $derived(Object.entries(validacao.amostra.idiomas ?? {}));
+	const idiomasDaAmostra = $derived(composicaoDaAmostra(validacao.amostra.n, validacao.amostra.idiomas));
 	/** O valor-p do McNemar: "< 0,001" em vez de "= 0,000". */
 	const textoP = (p: number) => (p < 0.001 ? '< 0,001' : `= ${formatarDecimal(p, 3)}`);
 	const titulo = (doc: string) => {
@@ -197,7 +196,7 @@
 	<header class="cabecalho">
 		<h1>Validação</h1>
 		<p class="lide" data-testid="lide-validacao">
-			Amostra de {formatarInteiro(validacao.amostra.n)} documentos{#if idiomasDaAmostra.length > 1}{' '}({#each idiomasDaAmostra as [idioma, n], i (idioma)}{i ? (i === idiomasDaAmostra.length - 1 ? ' e ' : ', ') : ''}{formatarInteiro(n)} {IDIOMAS_LIDE[idioma] ?? `em ${idioma}`}{/each}){/if}, estratificada por {ESTRATOS[validacao.amostra.estratificar_por] ?? validacao.amostra.estratificar_por}{#if api}{' '}(semente
+			Amostra de {formatarInteiro(validacao.amostra.n)} documentos{#if idiomasDaAmostra.length > 1}{' '}({#each idiomasDaAmostra as [rotulo, n], i (rotulo)}{i ? (i === idiomasDaAmostra.length - 1 ? ' e ' : ', ') : ''}{formatarInteiro(n)} {rotulo}{/each}){/if}, estratificada por {ESTRATOS[validacao.amostra.estratificar_por] ?? validacao.amostra.estratificar_por}{#if api}{' '}(semente
 				{validacao.amostra.semente}){/if}.
 			{#each participantes as p, i (p.nome)}{i ? (i === participantes.length - 1 ? ' e ' : ', ') : 'Responderam: '}<strong>{nome(p.nome)}</strong> ({TIPOS[p.tipo]}, {formatarInteiro(p.n)}){/each}.
 		</p>
