@@ -54,7 +54,7 @@
 					{/if}
 					{#if m.tendencia && (m.tendencia.direcao === 'alta' || m.tendencia.direcao === 'queda') && m.tendencia.pp_periodo != null}
 						<span class="tendencia" data-testid="tendencia-macro" title="Variação da participação no período, pela tendência ajustada">
-							{m.tendencia.direcao === 'alta' ? '↑' : '↓'} {formatarDecimal(Math.abs(m.tendencia.pp_periodo), 1)} p.p.
+							{m.tendencia.direcao === 'alta' ? '↑' : '↓'} {formatarDecimal(Math.abs(m.tendencia.pp_periodo), 1)} p.p.{#if m.tendencia.fragil === true}<span class="fragil" title="Muda de direção sem um dos anos da série"> frágil</span>{/if}
 						</span>
 					{/if}
 				</span>
@@ -141,6 +141,13 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+	}
+
+	.fragil {
+		margin-left: 0.3rem;
+		padding: 0 0.3rem;
+		border: 1px dashed var(--texto-suave);
+		border-radius: 0.5rem;
 	}
 
 	.tendencia {

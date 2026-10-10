@@ -16,7 +16,7 @@
 	import Fluxo from './Fluxo.svelte';
 	import GavetaTopico from './GavetaTopico.svelte';
 	import Tendencias from './Tendencias.svelte';
-	import { metodoDe, separar, tendencias } from './tendencias';
+	import { metodoDe, separar, tendencias, textoFragil } from './tendencias';
 
 	let { topicos, cubo }: { topicos: Topicos; cubo: Cubo } = $props();
 
@@ -136,6 +136,12 @@
 		if (alta.length) partes.push(`Em alta: ${nomes(alta)}.`);
 		if (queda.length) partes.push(`Em queda: ${nomes(queda)}.`);
 		if (!partes.length) partes.push('Nenhum tópico com tendência distinguível do acaso no recorte.');
+		if (grupos.frageis)
+			partes.push(
+				grupos.frageis === 1
+					? 'Das marcadas, 1 é frágil: muda de direção sem um dos anos.'
+					: `Das marcadas, ${formatarInteiro(grupos.frageis)} são frágeis: mudam de direção sem um dos anos.`
+			);
 		return partes.join(' ');
 	});
 	const dadosTendencia = $derived({
@@ -148,7 +154,9 @@
 			'Primeiro ano',
 			'Último ano',
 			'IC 95% da inclinação (inferior)',
-			'IC 95% da inclinação (superior)'
+			'IC 95% da inclinação (superior)',
+			'Frágil',
+			'Anos decisivos'
 		],
 		linhas: [...grupos.alta, ...grupos.queda].map((t) => [
 			rotulosTopicos.get(t.id) ?? String(t.id),
@@ -159,7 +167,9 @@
 			t.anos![0],
 			t.anos![1],
 			numeroCru(t.ic95![0], 6),
-			numeroCru(t.ic95![1], 6)
+			numeroCru(t.ic95![1], 6),
+			t.fragil ? 1 : 0,
+			t.anos_decisivos.join('; ')
 		])
 	});
 	const linhasTendencia = $derived(
@@ -168,7 +178,8 @@
 			t.direcao === 'alta' ? 'em alta' : 'em queda',
 			formatarPp(t.pp_periodo!),
 			`${formatarDecimal(100 * t.prop_inicio!)}% → ${formatarDecimal(100 * t.prop_fim!)}%`,
-			`${formatarDecimal(t.ic95![0], 3)} a ${formatarDecimal(t.ic95![1], 3)}`
+			`${formatarDecimal(t.ic95![0], 3)} a ${formatarDecimal(t.ic95![1], 3)}`,
+			textoFragil(t, t.observado.filter((v) => v !== null).length) ?? 'não'
 		])
 	);
 
@@ -316,7 +327,7 @@
 		id="tendencias"
 		titulo="Em alta e em queda"
 		resumo={resumoTendencias}
-		colunas={['Tópico', 'Tendência', 'Variação', 'Participação ajustada', 'IC 95% da inclinação']}
+		colunas={['Tópico', 'Tendência', 'Variação', 'Participação ajustada', 'IC 95% da inclinação', 'Frágil']}
 		linhas={linhasTendencia}
 		dados={dadosTendencia}
 	>
@@ -343,8 +354,8 @@
 			</p>
 			<p class="nota" data-testid="cautela-tendencias">
 				Confira a série antes de citar: um pico no primeiro ou no último ano do período (um dossiê temático, por
-				exemplo) pode puxar a tendência, e nem toda marcação é firme: algumas são marginais e somem quando se tira um
-				só ano da série.
+				exemplo) pode puxar a tendência. As marcadas como frágeis mudam de direção quando se tira um só ano da série,
+				e a linha diz de quais anos elas dependem.
 			</p>
 		{/if}
 	</Figura>

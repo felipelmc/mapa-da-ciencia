@@ -23,7 +23,8 @@ A lista abaixo do fluxo mostra os tópicos cuja participação cresce ou cai de 
 
 - a **sparkline**: a participação observada em cada ano (pontos) e a curva ajustada (tracejada);
 - a **variação** em pontos percentuais, entre a participação ajustada no primeiro e no último ano do período. "+4,1 p.p." quer dizer que o tópico passou, por exemplo, de 2% para 6% dos documentos do ano;
-- o **intervalo de 95%** da inclinação, em "Ver como tabela".
+- o **intervalo de 95%** da inclinação, em "Ver como tabela";
+- a etiqueta **frágil**, quando a tendência muda de direção se um único ano for retirado da série, com os anos de que ela depende ("depende de 2011"). Uma tendência frágil pode ser real, mas apoia-se num ano só, muitas vezes um dossiê temático: confira a série antes de citá-la. Num recorte curto, de 5 ou 6 anos, quase toda marcação é frágil.
 
 <figure markdown="span">
   ![As listas em alta e em queda do piloto, com uma sparkline e a variação em pontos percentuais para cada tópico](../imagens/topicos-tendencias.png){ loading=lazy }

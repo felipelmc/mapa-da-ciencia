@@ -36,7 +36,18 @@ export function separar(lista: TendenciaTopico[]) {
 	const queda = lista.filter((t) => t.direcao === 'queda').sort((a, b) => a.pp_periodo! - b.pp_periodo!);
 	const estaveis = lista.filter((t) => t.direcao === 'estavel').length;
 	const insuficientes = lista.filter((t) => t.direcao === 'insuficiente').length;
-	return { alta, queda, estaveis, insuficientes, testados: lista.length - insuficientes };
+	const frageis = [...alta, ...queda].filter((t) => t.fragil).length;
+	return { alta, queda, estaveis, insuficientes, frageis, testados: lista.length - insuficientes };
+}
+
+/** De que anos uma tendência frágil depende: "depende de 2011", "depende de 2010 e 2012" ou, com mais de três,
+ * "depende de 11 dos 16 anos". `null` para uma tendência que não é frágil. */
+export function textoFragil(t: Pick<Tendencia, 'fragil' | 'anos_decisivos'>, anosUsados: number): string | null {
+	if (!t.fragil) return null;
+	const anos = t.anos_decisivos;
+	if (anos.length > 3) return `depende de ${anos.length} dos ${anosUsados} anos`;
+	const lista = anos.length > 1 ? `${anos.slice(0, -1).join(', ')} e ${anos[anos.length - 1]}` : String(anos[0]);
+	return `depende de ${lista}`;
 }
 
 /** O método do gabarito. Os dados até a 1.6 não dizem o quantil e usavam o da normal: sem ele, vale a normal,

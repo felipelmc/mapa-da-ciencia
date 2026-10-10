@@ -13,7 +13,7 @@
 	import { escreverFiltros, recorteDe, rota, type Filtros } from '$lib/estado/url';
 	import { formatarDecimal, formatarInteiro, formatarPp } from '$lib/formato';
 	import Sparkline from '$lib/graficos/Sparkline.svelte';
-	import { metodoDe } from './tendencias';
+	import { metodoDe, textoFragil } from './tendencias';
 
 	let {
 		topico,
@@ -103,9 +103,17 @@
 		<Sparkline observado={observado} ajustado={ajuste} largura={320} altura={72} cor={topico.cor} rotulo="Participação por ano de {topico.rotulo}" />
 		<p class="tendencia" data-testid="tendencia-gaveta">
 			<strong>{DIRECAO[tend.direcao]}</strong>
+			{#if tend.fragil}
+				<span class="fragil" data-testid="fragil-gaveta">frágil</span>
+			{/if}
 			{#if tend.pp_periodo !== null}
 				· {formatarPp(tend.pp_periodo)} de {tend.anos![0]} a {tend.anos![1]}
 				({formatarDecimal(100 * tend.prop_inicio!)}% → {formatarDecimal(100 * tend.prop_fim!)}% dos documentos do ano)
+			{/if}
+			{#if tend.fragil}
+				<span class="por-que">
+					Sem um dos anos, a tendência muda de direção: {textoFragil(tend, Array.from(porAnoJanela.total).filter((v) => v > 0).length)}.
+				</span>
 			{/if}
 		</p>
 	</section>
@@ -257,6 +265,22 @@
 	.numero-grande span {
 		font-family: var(--fonte-corpo, inherit);
 		font-size: 0.85rem;
+		color: var(--texto-suave);
+	}
+
+	/* texto e contorno tracejado: a marca não depende da cor */
+	.fragil {
+		display: inline-block;
+		padding: 0 0.4rem;
+		border: 1px dashed var(--texto-suave);
+		border-radius: 0.6rem;
+		font-size: 0.75rem;
+		color: var(--texto-suave);
+	}
+
+	.por-que {
+		display: block;
+		margin-top: 0.2rem;
 		color: var(--texto-suave);
 	}
 
