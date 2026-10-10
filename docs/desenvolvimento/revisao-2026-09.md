@@ -187,6 +187,56 @@ Ficaram para depois, registrados (a 2.2.0 os corrigiu, um por commit, na branch 
 - na Validação, com "Ver como tabela" aberto, a figura grudada volta a passar da altura da janela (**corrigido na
   2.2.0**: com a tabela aberta, a figura não gruda).
 
+## Terceira rodada (2.3.0)
+
+A 2.3.0 aplicou as recomendações desta revisão (o quantil t e a tendência frágil, a concordância por idioma e entre
+respostas informativas, os resumos conferidos na coleta, a UF da `v70`), trouxe a edição dos rótulos e a trava das
+etapas ao painel e as legendas às figuras exportadas, e refez o piloto a partir do cache. Passou pelo mesmo processo,
+com agentes independentes em cada frente:
+
+- **Os rótulos do piloto.** Depois da coleta refeita (57 → 61 tópicos), um agente escreveu as correções à mão (28
+  tópicos e os 7 macrotemas), contando os títulos do núcleo de cada tópico. Outro, sem saber quais rótulos eram do
+  modelo, conferiu os 61 e os 7 contra os títulos e achou 26 problemas, 4 altos, como "Sindicalismo, greves e
+  economia solidária", sem economia solidária em nenhum título ou resumo do tópico. Todos viraram entradas do
+  `rotulos.yaml`: são 53 tópicos à mão.
+- **O código, em duas rodadas.** A primeira achou 6 problemas, como a trava que soltava entre o sorteio da amostra
+  e a exportação. A segunda achou 8, um médio: salvar o codebook pelo painel apagava o cabeçalho de uma seção quando
+  a entrada tirada terminava numa lista, porque o ruamel guarda o comentário depois de um item de lista em outro
+  lugar. Todos foram corrigidos com teste, menos três casos só de aparência no YAML: uma linha em branco perdida
+  depois de um escalar em bloco, um traço sozinho quando sai a primeira chave de um item e um cabeçalho que segue a
+  entrada numa lista reordenada.
+- **A metodologia.** Um auditor recalculou do zero, no piloto, as tendências (61 de 61 direções e 11 de 11
+  fragilidades), a concordância por subconjunto (110 de 110 valores por par) e a regra da UF (404 de 404 vínculos),
+  e conferiu o site publicado: nenhum e-mail ou ORCID, e resumos só com licença Creative Commons. Achou números
+  errados na documentação (o remendo da FGV vale para 40 vínculos, e não 28; "61 afiliações" eram 61 vínculos de 48
+  afiliações) e 76 respostas `nao_se_aplica` contadas como um período. Os dois foram corrigidos.
+- **O uso.** Um testador com o Playwright, de 375 a 1920 px e nos dois temas, achou 29 problemas, 3 deles altos:
+  - a demo que ele recebeu tinha a interface da 2.2.0, porque faltou empacotar a interface antes de publicar (o passo
+    está agora na receita da release);
+  - a etiqueta "frágil" cobria o número de tópicos no Início;
+  - o texto "muda de direção: depende de 13 dos 16 anos" dava a entender o contrário do que acontece (sem um desses
+    anos, a variação só deixa de se distinguir do acaso).
+
+  Os altos e os médios foram corrigidos, menos o tamanho do texto exportado, que acompanha a escala da figura na tela
+  (registrado no guia de exportação).
+
+  No re-teste, 11 itens ficaram resolvidos e 5 só em parte, e as correções criaram 7 problemas novos, um alto. A demo
+  publicada de novo saiu sem a geografia, porque o comentário do remendo da FGV foi reescrito no `instituicoes.yaml`
+  depois da última `mapa geografia`, o que mudou a assinatura dela (o `mapa publicar` só exporta o que está em dia).
+  Os outros foram:
+  - o pé do editor ficava embaixo da barra do celular;
+  - a correção de um acento ficava presa no arquivo;
+  - nomes de revista longos eram cortados na figura;
+  - o aviso do 409 continuava depois de a etapa terminar;
+  - o júri aparecia desatualizado no painel depois da normalização do `nao_se_aplica` (a consolidação refeita, toda do
+    cache, pôs em dia).
+
+  Todos foram corrigidos, com teste nos que são de código.
+
+Ficam registrados, como baixos: a primeira carga da vista Projeto, que lê o corpus várias vezes e leva uns 3 s; o grafo
+exportado com faixas vazias e textos de tela; a barra de abas que corta os rótulos das pontas a 375 px; e os textos
+com "(s)" do painel.
+
 ## Como repetir
 
 Os prompts dos revisores e verificadores, a rubrica e os formatos de saída estão no plano da revisão; os pareceres, com
