@@ -16,6 +16,12 @@ só a concordância, sem diferença de maiúsculas, acentos, espaços e tipo de 
 
 Entre dois modelos comparados com a mesma referência, o **teste de McNemar exato** diz se a diferença de acertos
 é maior que o acaso: conta só os documentos em que um acertou e o outro errou.
+
+Cada métrica traz também a concordância em **subconjuntos** da amostra (desde a 2.3.0): por **idioma** do texto
+lido (quando a amostra tem mais de um) e entre **respostas informativas**, os documentos em que nenhum dos dois
+respondeu "não informado" (ou "não se aplica"). Um "não informado" fácil infla a concordância de uma variável em que
+os resumos raramente dizem algo; o subconjunto mostra a concordância quando há o que classificar. Com menos de
+`N_MINIMO_SUBCONJUNTO` documentos, o subconjunto traz só o n.
 """
 
 from __future__ import annotations
@@ -24,6 +30,7 @@ import json
 import math
 import re
 import unicodedata
+from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from itertools import combinations
@@ -31,6 +38,7 @@ from typing import Any, Literal
 
 import numpy as np
 
+from ..classificacao.codebook import SEM_INFORMACAO_CATEGORIAS, sem_informacao
 from ..classificacao.resultado import PASTA as PASTA_CLASSIFICACAO
 from ..classificacao.resultado import Resultado, ler_linhas, nome_do_arquivo, resultados, rotulo_a_parte
 from ..config import ErroConfig
@@ -38,7 +46,9 @@ from ..projeto import Projeto
 from . import amostra as va
 
 REAMOSTRAS = 1000
+N_MINIMO_SUBCONJUNTO = 20  # documentos para calcular a concordância de um subconjunto
 TipoParticipante = Literal["humano", "referencia", "modelo"]
+TipoSubconjunto = Literal["idioma", "informativas"]
 
 
 # ---------------------------------------------------------------- métricas de um par
@@ -224,6 +234,21 @@ class Participante:
 
 
 @dataclass
+class MetricaSubconjunto:
+    """A concordância de um par numa parte da amostra: os documentos de um idioma ou os de respostas informativas.
+    Com menos de `N_MINIMO_SUBCONJUNTO` documentos, só o `n`."""
+
+    tipo: TipoSubconjunto
+    idioma: str | None
+    n: int
+    concordancia: float | None = None
+    kappa: float | None = None
+    kappa_ic95: tuple[float, float] | None = None
+    pabak: float | None = None
+    alfa: float | None = None
+
+
+@dataclass
 class Metrica:
     """A concordância de um par de participantes numa variável."""
 
@@ -240,6 +265,7 @@ class Metrica:
     matriz: list[list[int]] = field(default_factory=list)
     por_classe: list[Classe] = field(default_factory=list)
     circular: bool = False  # os dois participantes são da mesma família de modelo: limite superior, não medida
+    subconjuntos: list[MetricaSubconjunto] = field(default_factory=list)
 
     @property
     def comparacao(self) -> str:
@@ -349,7 +375,51 @@ def circular(familias: dict[str, str], a: str, b: str) -> bool:
     return a in familias and familias.get(a) == familias.get(b)
 
 
-def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS, versao_nova: bool = True) -> Validacao:
+def informativa(variavel, valor: str) -> bool:
+    """Se a resposta guardada (o valor em texto) diz algo sobre a variável, e não "não informado"."""
+    if variavel.tipo == "multipla":
+        return not sem_informacao(variavel, json.loads(valor))
+    if variavel.tipo == "booleana":
+        return not sem_informacao(variavel, valor == "true")
+    return not sem_informacao(variavel, valor)
+
+
+def tem_informativas(variavel, medida: VariavelMedida) -> bool:
+    """Se o subconjunto das respostas informativas faz sentido: as booleanas ("não" é uma resposta) e as categóricas
+    sem categoria de sem-informação ficam de fora, e a categoria "não informado" de uma múltipla também."""
+    if variavel.tipo == "booleana":
+        return False
+    if variavel.tipo == "categorica":
+        return any(c.valor in SEM_INFORMACAO_CATEGORIAS for c in variavel.categorias)
+    if variavel.tipo == "multipla":
+        return medida.id.split(":", 1)[1] not in SEM_INFORMACAO_CATEGORIAS
+    return True
+
+
+def medir_subconjunto(
+    tipo: TipoSubconjunto,
+    idioma: str | None,
+    a: Sequence[str],
+    b: Sequence[str],
+    v: VariavelMedida,
+    *,
+    minimo: int,
+    reamostras: int,
+    semente: int,
+) -> MetricaSubconjunto:
+    if len(a) < minimo:
+        return MetricaSubconjunto(tipo, idioma, len(a))
+    m = medir(a, b, v, "", "", reamostras=reamostras, semente=semente)
+    return MetricaSubconjunto(tipo, idioma, m.n, m.concordancia, m.kappa, m.kappa_ic95, m.pabak, m.alfa)
+
+
+def calcular(
+    projeto: Projeto,
+    *,
+    reamostras: int = REAMOSTRAS,
+    versao_nova: bool = True,
+    minimo_subconjunto: int = N_MINIMO_SUBCONJUNTO,
+) -> Validacao:
     """As métricas da validação do projeto: a amostra guardada, as codificações e os modelos com o codebook atual.
     Com `versao_nova=False` (o `validacao.json` do contrato, que vai para o site publicado), fica de fora a versão
     à parte de um modelo, que ainda não substituiu o resultado completo."""
@@ -416,12 +486,38 @@ def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS, versao_nova: boo
     def comuns(v: VariavelMedida, *nomes: str) -> list[str]:
         return [d for d in amostra.docs if all((d, v.variavel) in respostas[n] for n in nomes)]
 
+    # o idioma do texto que cada documento da amostra mostra (o que o modelo e as pessoas leram)
+    idioma_de = {t.doc: t.idioma for t in va.textos_do_projeto(projeto) if t.doc in na_amostra}
+    idiomas = Counter(idioma_de[d] for d in amostra.docs if idioma_de.get(d))
+    por_idioma = sorted(idiomas, key=lambda i: (-idiomas[i], i)) if len(idiomas) > 1 else []
+    variavel_de = {v.id: v for v in codebook.variaveis}
+
     metricas = []
     for v in medidas:
+        var = variavel_de[v.variavel]
         for a, b in pares:
             docs = comuns(v, a, b)
             m = medir(valores(a, v, docs), valores(b, v, docs), v, a, b, reamostras=reamostras, semente=semente)
             m.circular = circular(familias, a, b)
+            partes: list[tuple[TipoSubconjunto, str | None, list[str]]] = [
+                ("idioma", i, [d for d in docs if idioma_de.get(d) == i]) for i in por_idioma
+            ]
+            if tem_informativas(var, v):
+                docs_inf = [d for d in docs if all(informativa(var, respostas[x][(d, v.variavel)]) for x in (a, b))]
+                partes.append(("informativas", None, docs_inf))
+            m.subconjuntos = [
+                medir_subconjunto(
+                    tipo,
+                    idioma,
+                    valores(a, v, sub),
+                    valores(b, v, sub),
+                    v,
+                    minimo=minimo_subconjunto,
+                    reamostras=reamostras,
+                    semente=semente,
+                )
+                for tipo, idioma, sub in partes
+            ]
             metricas.append(m)
 
     comparacoes = []
@@ -464,6 +560,7 @@ def calcular(projeto: Projeto, *, reamostras: int = REAMOSTRAS, versao_nova: boo
             "estratificar_por": amostra.estratificar_por,
             "semente": amostra.semente,
             "sorteada_em": amostra.sorteada_em,
+            "idiomas": dict(sorted(idiomas.items(), key=lambda kv: (-kv[1], kv[0]))),
         },
         codebook=f"{codebook.nome} {codebook.versao}",
         hash_codebook=hash_cb,

@@ -28,6 +28,13 @@ A concordância com uma referência responde a uma pergunta mais fraca que a val
 
 Para cada variável e cada par de participantes, sobre os documentos que os dois responderam: concordância simples, kappa de Cohen com intervalo de 95% por *bootstrap*, PABAK, alfa de Krippendorff nominal, matriz de confusão e precisão, revocação e F1 por categoria. Entre dois modelos comparados com a mesma referência, o teste de McNemar exato. O kappa e a precisão/revocação são conferidos com o scikit-learn nos testes, e o alfa com o exemplo publicado por Krippendorff.
 
+Cada par tem também a concordância em duas partes da amostra:
+
+- **por idioma** do texto lido, quando a amostra tem mais de um. Um modelo pode ler pior os resumos em inglês do que os em português, e a média esconde isso;
+- **entre respostas informativas**: só os documentos em que nenhum dos dois respondeu "não informado" ou "não se aplica". Numa variável que os resumos raramente informam, concordar que o resumo não diz nada é fácil e infla a concordância. O subconjunto mostra se os dois concordam quando há o que classificar. Ele não existe nas booleanas ("não" é uma resposta) nem nas variáveis sem a categoria "não informado".
+
+Com menos de 20 documentos, o subconjunto mostra só quantos documentos tem: o kappa de 20 documentos já tem um intervalo de 0,3 a 0,5 de largura. Os subconjuntos não trazem matriz de confusão nem métricas por categoria: num grupo pequeno, elas mostrariam as respostas de cada documento.
+
 ## O que o piloto mostrou
 
 Na amostra de 200 artigos, `qwen3.5:9b` contra a referência `claude-opus`:

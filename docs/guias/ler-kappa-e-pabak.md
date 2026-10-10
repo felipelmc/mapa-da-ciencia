@@ -56,6 +56,15 @@ Uma categoria com revocação baixa é uma que o modelo não reconhece; com prec
   <figcaption>Na amostra do tutorial, o modelo leu como qualitativos ou mistos 10 dos 25 artigos que a referência leu como quantitativos.</figcaption>
 </figure>
 
+## Por idioma e entre respostas informativas
+
+Abaixo da tabela de cada par, a concordância aparece também em partes da amostra:
+
+- **Português e inglês** (ou os idiomas da amostra): a mesma métrica, só nos documentos cujo resumo lido estava naquele idioma. Uma diferença grande sugere que o modelo (ou a referência) lê pior um dos idiomas.
+- **Respostas informativas**: só os documentos em que nenhum dos dois respondeu "não informado". Se a concordância cai muito nesse subconjunto, boa parte do acordo geral era sobre resumos que não dizem nada sobre a variável. Se sobe, os desacordos estavam em decidir *se* o resumo informa, e não *o quê*: um problema de definição do "não informado" no codebook.
+
+Um subconjunto com menos de 20 documentos mostra só o n ("— (12)"): com tão poucos, o kappa varia demais para ser lido.
+
 ## Comparar modelos
 
 Com dois modelos classificando a amostra (`mapa classificar --somente-amostra --modelo X`), o **teste de McNemar exato** compara os acertos dos dois contra a mesma referência. Ele conta só os documentos em que um acertou e o outro errou, e o valor-p diz se essa diferença vai além do acaso. A saída menciona só as variáveis com p < 0,05. Com muitas variáveis, alguma sai abaixo de 0,05 por acaso: leia o conjunto, não uma variável isolada.
