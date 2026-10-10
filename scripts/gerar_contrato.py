@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import filecmp
 import json
+import math
 import shutil
 import sys
 import tempfile
@@ -49,13 +50,32 @@ def gerar(schema: Path, exemplo: Path, casos: Path, publicado: Path) -> None:
     (casos / "quantil_t.json").write_text(texto + "\n", encoding="utf-8")
 
 
-def iguais(a: Path, b: Path) -> list[str]:
-    """Arquivos que diferem (ou só existem de um lado) entre duas pastas, recursivamente."""
+def iguais(a: Path, b: Path, *, perto: bool = False) -> list[str]:
+    """Arquivos que diferem (ou só existem de um lado) entre duas pastas, recursivamente. Com `perto`, os JSON valem
+    iguais com os números a menos de `TOLERANCIA` (relativa): os casos de referência passam por `atan`, `sin` e `cos`
+    (o quantil t), que diferem no último bit entre a libm do macOS e a do Linux."""
     cmp = filecmp.dircmp(a, b)
-    difs = [*cmp.left_only, *cmp.right_only, *cmp.diff_files]
+    diferentes = [d for d in cmp.diff_files if not (perto and d.endswith(".json") and _perto(a / d, b / d))]
+    difs = [*cmp.left_only, *cmp.right_only, *diferentes]
     for sub in cmp.common_dirs:
-        difs += [f"{sub}/{d}" for d in iguais(a / sub, b / sub)]
+        difs += [f"{sub}/{d}" for d in iguais(a / sub, b / sub, perto=perto)]
     return difs
+
+
+TOLERANCIA = 1e-12
+
+
+def _perto(a: Path, b: Path) -> bool:
+    def igual(x: object, y: object) -> bool:
+        if isinstance(x, float) or isinstance(y, float):
+            return isinstance(x, int | float) and isinstance(y, int | float) and math.isclose(x, y, rel_tol=TOLERANCIA)
+        if isinstance(x, list) and isinstance(y, list):
+            return len(x) == len(y) and all(igual(i, j) for i, j in zip(x, y, strict=True))
+        if isinstance(x, dict) and isinstance(y, dict):
+            return x.keys() == y.keys() and all(igual(x[k], y[k]) for k in x)
+        return x == y
+
+    return igual(json.loads(a.read_text(encoding="utf-8")), json.loads(b.read_text(encoding="utf-8")))
 
 
 def main() -> int:
@@ -76,7 +96,7 @@ def main() -> int:
             if PUBLICADO.exists()
             else ["exemplo-publicado/"]
         )
-        difs += [f"casos/{d}" for d in iguais(CASOS, t / "casos")] if CASOS.exists() else ["casos/"]
+        difs += [f"casos/{d}" for d in iguais(CASOS, t / "casos", perto=True)] if CASOS.exists() else ["casos/"]
     if difs:
         print("Contrato desatualizado; rode `uv run python scripts/gerar_contrato.py`. Diferenças:", *difs, sep="\n  ")
         return 1
