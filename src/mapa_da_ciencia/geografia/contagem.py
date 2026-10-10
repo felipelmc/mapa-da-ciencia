@@ -29,9 +29,10 @@ qual ela subiu: a EAESP fica em São Paulo, mesmo que a FGV seja do Rio.
 
 A `v240` (a afiliação normalizada) às vezes põe a instituição na cidade errada: 61 afiliações do piloto dizem
 "Fundação Getúlio Vargas, Brasília", e o texto original (`v70`) de 34 delas diz São Paulo. Por isso, num vínculo da
-`v240` em que a UF da `v70` diverge da UF dos passos 1 e 2 (ou só a `v70` dá o lugar), decide o consenso do passo 4,
-quando existe; sem consenso, vale a `v70`. No consenso, o vínculo em que as duas divergem vota na UF da `v70`, e uma
-instituição com campi em vários estados (a FGV) fica sem consenso. O consenso decide porque a `v70` também erra: ela
+`v240` em que a UF da `v70` diverge da UF dos passos 1 e 2 (ou só a `v70` dá o lugar), vale a `v70`, salvo quando o
+consenso do passo 4 confirma a UF da `v240` ou, se a `v240` não dá o lugar, aponta outra UF. No consenso, o vínculo em
+que as duas divergem vota na UF da `v70`, e uma instituição com campi em vários estados (a FGV) fica sem consenso.
+O consenso pesa porque a `v70` também erra: ela
 põe autores da UFMG em Brasília e, quando a `v240` não dá o lugar, às vezes traz o endereço do autor em outra cidade
 (um autor da USP em Brasília, da Unicamp no Rio).
 """
