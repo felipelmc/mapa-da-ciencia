@@ -123,7 +123,8 @@ def status_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any] | None]:
 def estados_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any]]:
     """Cada etapa: `pendente` (nunca rodou), `em_dia`, `incompleta` (a classificação parou antes do fim, a amostra
     não foi toda codificada, o júri não chegou ao fim) ou `desatualizada` (o corpus, o codebook ou as correções
-    mudaram depois), com a última execução. Nas redes desatualizadas, `mudou` diz o quê. O júri só aparece com
+    mudaram depois), com a última execução. Nas redes desatualizadas, `mudou` diz o quê; nos tópicos em dia,
+    `rotulos_pendentes` conta os rótulos do `rotulos.yaml` que ainda não foram aplicados. O júri só aparece com
     `juri.membros` no `mapa.yaml`, e `proximo` diz o comando a rodar (ele não roda pelo painel)."""
     from mapa_da_ciencia.armazenamento import ARQUIVO, ler_documentos
     from mapa_da_ciencia.classificacao.pipeline import classificacao_em_dia
@@ -165,6 +166,16 @@ def estados_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any]]:
         return None if m is None else {"fim": m["fim"], "duracao_s": m["duracao_s"], "contagens": m["contagens"]}
 
     saida = {etapa: {"estado": nomes[estado], "ultima": ultima(etapa)} for etapa, estado in em_dia.items()}
+    if topicos:  # rótulos editados no rotulos.yaml (ou pelo painel) que ainda não estão nos tópicos
+        from mapa_da_ciencia.config import ErroConfig
+        from mapa_da_ciencia.topicos.aplicar import rotulos_pendentes
+        from mapa_da_ciencia.topicos.rotulos import ler_manuais
+
+        try:
+            if pendentes := rotulos_pendentes(r, ler_manuais(projeto.raiz)):
+                saida["topicos"]["rotulos_pendentes"] = pendentes
+        except ErroConfig:  # um rotulos.yaml inválido: o erro aparece ao aplicar
+            pass
     if amostra:
         saida["validacao"]["amostra"] = {"n": len(amostra.docs), "codificados": codificados}
     if em_dia["redes"] is False:

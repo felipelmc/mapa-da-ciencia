@@ -124,6 +124,7 @@ mapa topicos [OPÇÕES]
 | `--refazer-embeddings` | Recalcula os embeddings de todos os documentos. |  |
 | `--semente` | Semente principal do UMAP (padrão: a primeira de topicos.sementes). |  |
 | `--refazer-macrotemas` | Agrupa os tópicos em macrotemas de novo, em vez de manter os da execução anterior (as cores mudam). |  |
+| `--aplicar-rotulos` | Só aplica o rotulos.yaml aos tópicos já calculados, sem refazê-los e sem o modelo de linguagem. |  |
 
 ## `mapa classificar`
 

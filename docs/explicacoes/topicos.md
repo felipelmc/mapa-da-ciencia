@@ -136,6 +136,8 @@ macrotemas:
 
 Escreva sempre a `descricao` junto com o `rotulo`: uma entrada só com o rótulo deixa o tópico (ou o macrotema) sem descrição. O que está no `rotulos.yaml` tem prioridade sobre o modelo, e continua valendo nas execuções seguintes, porque o número do tópico é estável. Sem modelo de linguagem (`mapa topicos --sem-rotulos`), os rótulos são as três palavras-chave mais fortes.
 
+Para aplicar o `rotulos.yaml` sem refazer os tópicos, rode `mapa topicos --aplicar-rotulos` (ou use o editor de rótulos do painel, na vista Projeto). Ele troca só os rótulos, sem chamar o modelo, e exporta de novo; as redes também não precisam ser refeitas, porque o nome de cada comunidade sai dos rótulos atuais. Um macrotema de um tópico só leva o nome dele. Duas coisas esperam a próxima `mapa topicos` completa: o rótulo do modelo de um tópico cuja entrada saiu do arquivo (até lá, ele fica com as palavras-chave) e o rótulo de um macrotema de vários tópicos escrito pelo modelo, que foi escrito a partir dos rótulos antigos. O `mapa status` e a linha das etapas do painel avisam quando há rótulos do arquivo ainda não aplicados.
+
 ## 12. Em alta e em queda
 
 Um tópico está **em alta** quando a participação dele no corpus (documentos do tópico ÷ documentos do ano) cresce de forma distinguível do acaso ao longo do período, e **em queda** quando diminui. A regra ([registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0009-tendencia-dos-topicos.md)):

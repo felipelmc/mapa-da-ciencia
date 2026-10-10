@@ -230,6 +230,32 @@ def _mostrar_topicos(p: Projeto) -> None:
         console.print(
             "[yellow]Os tópicos são de antes da última coleta.[/] Rode [bold]mapa topicos[/] para atualizá-los."
         )
+        return
+    from mapa_da_ciencia.topicos.aplicar import rotulos_pendentes
+    from mapa_da_ciencia.topicos.rotulos import ler_manuais
+
+    try:
+        pendentes = rotulos_pendentes(resultado, ler_manuais(p.raiz))
+    except ErroConfig as e:
+        console.print(f"[yellow]Aviso:[/] {escape(str(e))}")
+        return
+    if pendentes:
+        console.print(
+            f"[yellow]{num(pendentes, 0)} rótulo(s) do rotulos.yaml ainda não aplicado(s).[/] Rode "
+            "[bold]mapa topicos --aplicar-rotulos[/] (sem refazer os tópicos nem chamar o modelo)."
+        )
+
+
+def _aplicar_rotulos(projeto: Path) -> None:
+    from mapa_da_ciencia.progresso import ProgressoRich
+    from mapa_da_ciencia.topicos.aplicar import aplicar_rotulos
+
+    with _erros_amigaveis():
+        resumo = aplicar_rotulos(Projeto.abrir(projeto), ProgressoRich(console))
+    console.print(f"\n[bold green]Rótulos aplicados[/]: {escape(str(resumo))}")
+    for aviso in resumo.avisos:
+        console.print(f"[yellow]Aviso:[/] {escape(aviso)}")
+    console.print("Próximo passo: [bold]mapa painel[/] para ver os rótulos novos no mapa.")
 
 
 def _mostrar_classificacao_status(p: Projeto) -> None:
@@ -694,11 +720,25 @@ def topicos(
             help="Agrupa os tópicos em macrotemas de novo, em vez de manter os da execução anterior (as cores mudam).",
         ),
     ] = False,
+    aplicar_rotulos: Annotated[
+        bool,
+        typer.Option(
+            "--aplicar-rotulos",
+            help="Só aplica o rotulos.yaml aos tópicos já calculados, sem refazê-los e sem o modelo de linguagem.",
+        ),
+    ] = False,
 ) -> None:
     """Descobre os tópicos do corpus, dá um nome a cada um e prepara o mapa do painel."""
     from mapa_da_ciencia.progresso import ProgressoRich
     from mapa_da_ciencia.topicos.pipeline import OpcoesTopicos, gerar_topicos
     from mapa_da_ciencia.topicos.resultado import PASTA, Resultado
+
+    if aplicar_rotulos:
+        if sem_rotulos or refazer_embeddings or semente is not None or refazer_macrotemas:
+            console.print("[bold red]Erro:[/] --aplicar-rotulos não refaz os tópicos: use-o sem as outras opções.")
+            raise typer.Exit(2)
+        _aplicar_rotulos(projeto)
+        return
 
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)

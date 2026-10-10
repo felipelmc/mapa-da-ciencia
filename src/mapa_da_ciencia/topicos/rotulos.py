@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from mapa_da_ciencia.config import ErroConfig, ModeloLLM, ler_yaml
 from mapa_da_ciencia.llm.base import ErroProvedor
@@ -252,6 +252,19 @@ class _RotuloManual(BaseModel):
     model_config = ConfigDict(extra="forbid")
     rotulo: str
     descricao: str = ""
+
+    @field_validator("rotulo")
+    @classmethod
+    def _rotulo_numa_linha(cls, rotulo: str) -> str:
+        rotulo = " ".join(rotulo.split())
+        if not rotulo:
+            raise ValueError("o rótulo não pode ficar vazio")
+        return rotulo
+
+    @field_validator("descricao")
+    @classmethod
+    def _descricao_sem_sobras(cls, descricao: str) -> str:
+        return " ".join(descricao.split())
 
 
 class _Manuais(BaseModel):

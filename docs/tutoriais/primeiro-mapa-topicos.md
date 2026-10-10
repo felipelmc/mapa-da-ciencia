@@ -173,7 +173,13 @@ topicos:
     descricao: Campanhas eleitorais e comunicação política no Twitter e no Facebook.
 ```
 
-Escreva também a descrição: uma entrada só com o rótulo deixa o tópico sem descrição. Rode `uv run mapa topicos` de novo: o rótulo escrito à mão tem prioridade sobre o do modelo e fica marcado como manual.
+Escreva também a descrição: uma entrada só com o rótulo deixa o tópico sem descrição. Para aplicar a correção sem refazer os tópicos (e sem o modelo de linguagem), rode:
+
+```bash
+uv run mapa topicos --aplicar-rotulos
+```
+
+O rótulo escrito à mão tem prioridade sobre o do modelo, fica marcado como manual e continua valendo quando você rodar `uv run mapa topicos` de novo. No painel, o mesmo se faz pelo editor de rótulos, na vista Projeto.
 
 ## O que você fez
 

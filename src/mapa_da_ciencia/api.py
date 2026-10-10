@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from mapa_da_ciencia.geografia.pipeline import ResumoGeografia
     from mapa_da_ciencia.publicar import ResumoPublicacao
     from mapa_da_ciencia.redes.pipeline import ResumoRedes
+    from mapa_da_ciencia.topicos.aplicar import ResumoAplicacao
     from mapa_da_ciencia.topicos.pipeline import ResumoTopicos
     from mapa_da_ciencia.validacao.amostra import Amostra, ResumoImportacao
     from mapa_da_ciencia.validacao.metricas import Validacao
@@ -52,6 +53,7 @@ __all__ = [
     "Projeto",
     "abrir",
     "amostra_de_validacao",
+    "aplicar_rotulos",
     "classificar",
     "cobertura",
     "codificacoes",
@@ -279,6 +281,19 @@ def topicos(
     from rich.console import Console
 
     return gerar_topicos(p, opcoes, ProgressoRich(Console()))
+
+
+def aplicar_rotulos(projeto: Projeto | str | Path = ".", *, progresso: bool = True) -> ResumoAplicacao:
+    """Aplica o `rotulos.yaml` aos tópicos já calculados, como `mapa topicos --aplicar-rotulos`: sem refazer os
+    tópicos e sem chamar o modelo. Devolve o que mudou (`print(resumo)`)."""
+    from mapa_da_ciencia.topicos.aplicar import aplicar_rotulos as _aplicar
+
+    p = _projeto(projeto)
+    if not progresso:
+        return _aplicar(p, ProgressoNulo())
+    from rich.console import Console
+
+    return _aplicar(p, ProgressoRich(Console()))
 
 
 def geografia(projeto: Projeto | str | Path = ".", *, progresso: bool = True) -> ResumoGeografia:
