@@ -281,9 +281,15 @@ def test_relatorio(projeto, tmp_path):
     assert "## Por classe: `claude-opus` (referência) × `qwen3.5:4b`" in md
     assert "## Comparação entre modelos" in md and "## Divergências com `qwen3.5:4b`" in md
     assert md.count("(marcado como incerto)") == 3 and "citando «" in md
+    # os subconjuntos: a amostra é toda em português (sem recorte por idioma), e com 12 documentos o subconjunto
+    # das respostas informativas fica abaixo do mínimo: só o n
+    assert "| Variável | Todos | Informativas |" in md and "| `periodo_analisado` | 100% (12) | — (12) |" in md
+    assert "| `brasil_como_caso` | — (12) | não se aplica |" in md
     tex = arquivos["latex"].read_text(encoding="utf-8")
-    assert tex.count(r"\begin{table}") == 3 and r"tecnica\_principal & 12 & 100\% &" in tex
+    assert tex.count(r"\begin{table}") == 6 and r"tecnica\_principal & 12 & 100\% &" in tex
     assert r"\label{tab:concordancia-claude-opus-qwen3-5-4b}" in tex
+    assert r"\label{tab:subconjuntos-claude-opus-qwen3-5-4b}" in tex
+    assert r"periodo\_analisado & 100\% (12) & --- (12)" in tex
     dados = json.loads(arquivos["json"].read_text(encoding="utf-8"))
     assert dados["modelo_principal"] == "qwen3.5:4b" and len(dados["divergencias"]) == 3
     assert {a.parent.name for a in arquivos.values()} == {"validacao"}
