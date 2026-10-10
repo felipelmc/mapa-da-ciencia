@@ -6,7 +6,8 @@ escolhidos em outra vista chegam aqui, e o que fica de fora esmaece (o desenho n
 ## Coautoria
 
 Cada ponto é uma pessoa, e cada linha liga duas pessoas que escreveram juntas. O tamanho do ponto cresce com o número
-de artigos; a cor é a da comunidade (o macrotema mais frequente nos artigos dela). A espessura da linha é o peso
+de artigos; a cor é a da comunidade: um tom do macrotema mais frequente nos artigos dela, diferente dos tons das
+outras comunidades do mesmo macrotema (o matiz diz o macrotema; o tom separa as comunidades). A espessura da linha é o peso
 fracionário: dois autores que escreveram vários artigos a dois têm uma linha forte; dez autores num único artigo formam
 45 linhas fracas, de peso 1/9 cada.
 

@@ -19,7 +19,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSAO_CONTRATO = "1.5"
+VERSAO_CONTRATO = "1.6"
 # 1.1: marcas do texto de análise, fonte do rótulo, núcleo dos tópicos, ruído por ano
 # 1.2: tendências (com o método), séries dos macrotemas, sem tópico por ano, geografia completa
 # 1.3: classificação por variável, evidência dispensada e campo da evidência, participantes da validação com o
@@ -695,6 +695,12 @@ class ComunidadeRede(_Base):
     macro: int | None = Field(description="Macrotema mais frequente nos documentos da comunidade.")
     topicos: list[int] = Field(description="Os tópicos mais frequentes, em ordem.")
     rotulo: str = Field(description="Os dois tópicos mais frequentes (a comunidade não recebe nome de pessoa).")
+    cor: str | None = Field(
+        None,
+        description="Cor da comunidade (hex): um tom da cor do macrotema dela, diferente dos tons das outras "
+        "comunidades do mesmo macrotema na mesma rede. `null` sem macrotema (a interface usa a cor neutra). Desde "
+        "a versão 1.6; antes, a interface usava a cor do macrotema.",
+    )
 
 
 class MetricasRede(_Base):

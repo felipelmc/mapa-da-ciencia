@@ -36,6 +36,28 @@ def fluxo_por_posicao(fluxo: dict[tuple[int, int], int], ids_macrotemas: list[in
     return matriz
 
 
+def cores_das_comunidades(
+    comunidades: list[dict[str, Any]], cores_macrotemas: dict[int, str]
+) -> dict[tuple[str, int], str | None]:
+    """Uma cor por comunidade, pela rede e pelo id: um tom do macrotema dela, como nos tópicos (`proxima_cor`), o mais
+    distante dos tons já dados às comunidades do mesmo macrotema na mesma rede, da maior comunidade para a menor (a
+    maior fica com a cor do próprio macrotema). Várias comunidades dividem um macrotema (no piloto, 38 comunidades de
+    coautoria para 7 macrotemas), e com a cor do macrotema elas não se distinguiam. Sem macrotema, `None`."""
+    from ..topicos.paleta import proxima_cor
+
+    usadas: dict[tuple[str, int], list[str]] = {}
+    cores: dict[tuple[str, int], str | None] = {}
+    for c in sorted(comunidades, key=lambda c: (c["rede"], -c["n"], c["id"])):
+        macro = c["macro"]
+        if macro is None or macro not in cores_macrotemas:
+            cores[(c["rede"], c["id"])] = None
+            continue
+        ja = usadas.setdefault((c["rede"], macro), [])
+        cores[(c["rede"], c["id"])] = cor = proxima_cor(cores_macrotemas[macro], ja)
+        ja.append(cor)
+    return cores
+
+
 def _registro(o: dict[str, Any]) -> str | None:
     """ "Autor, Autor (ano)" do registro do OpenAlex, quando a conferência mudou os autores ou o ano."""
     if not o["autoria_das_referencias"] and o["ano"] == o["ano_openalex"]:
@@ -49,10 +71,10 @@ def _numero(x: Any) -> float | None:
 
 
 def redes_contrato(
-    projeto: Projeto, ids_documentos: list[str], ids_macrotemas: list[int]
+    projeto: Projeto, ids_documentos: list[str], ids_macrotemas: list[int], cores_macrotemas: dict[int, str]
 ) -> tuple[m.Redes, m.Citacoes | None, dict[str, Any]]:
     """Os dois arquivos e o que vai para o gabarito (`agregados`). `ids_macrotemas`: os ids na ordem de
-    `topicos.macrotemas`."""
+    `topicos.macrotemas`; `cores_macrotemas`: a cor de cada um, de onde saem os tons das comunidades."""
     from ..redes.pipeline import PASTA, ResultadoRedes
 
     pasta = projeto.dados / PASTA
@@ -65,6 +87,7 @@ def redes_contrato(
     arestas = ler_tabela(pasta / "arestas.parquet")
     comunidades = ler_tabela(pasta / "comunidades.parquet")
     colaboracao = ler_tabela(pasta / "colaboracao.parquet")
+    cores = cores_das_comunidades(comunidades, cores_macrotemas)
     redes = m.Redes(
         pessoas=m.ColunasPessoas(
             id=[p["id"] for p in pessoas],
@@ -96,6 +119,7 @@ def redes_contrato(
                 macro=c["macro"],
                 topicos=list(c["topicos"] or []),
                 rotulo=c["rotulo"],
+                cor=cores[(c["rede"], c["id"])],
             )
             for c in comunidades
         ],

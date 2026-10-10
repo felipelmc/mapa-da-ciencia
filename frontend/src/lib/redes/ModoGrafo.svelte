@@ -162,17 +162,20 @@
 	const forcaRecorte = $derived(forcaDe(recorte, nos.n));
 
 	// ---- aparência: raio pela raiz dos documentos do corpus (não muda com o recorte), de 1 documento (o mínimo) ao
-	// maior (o máximo), como `raios_na_vista` no Python, que desenha sem sobreposição com estes raios; cor pelo macrotema
-	// da comunidade
+	// maior (o máximo), como `raios_na_vista` no Python, que desenha sem sobreposição com estes raios; a cor é a da
+	// comunidade (um tom do macrotema dela, calculado no Python)
 	const raio = $derived.by(() => {
 		const maximo = Math.sqrt(Math.max(1, ...nos.docsCorpus));
 		const escala = maximo > 1 ? (RAIO.max - RAIO.min) / (maximo - 1) : 0;
 		return Float32Array.from(nos.docsCorpus, (n) => RAIO.min + escala * Math.max(0, Math.sqrt(n) - 1));
 	});
 	const corDoMacro = $derived(new Map(aberto.topicos.macrotemas.map((m) => [m.id, m.cor])));
+	/** A cor da comunidade; num contrato anterior ao 1.6 (sem `cor`), a do macrotema dela. */
 	const corDaComunidade = (c: number) => {
-		const macro = nos.comunidades.get(c)?.macro;
-		return macro !== null && macro !== undefined ? (corDoMacro.get(macro) ?? null) : null;
+		const comunidade = nos.comunidades.get(c);
+		if (!comunidade) return null;
+		if (comunidade.cor) return comunidade.cor;
+		return comunidade.macro !== null && comunidade.macro !== undefined ? (corDoMacro.get(comunidade.macro) ?? null) : null;
 	};
 	const cores = $derived(Array.from(nos.comunidade, corDaComunidade));
 	const desenhados = $derived(Array.from(nos.x).filter(Number.isFinite).length);
@@ -323,8 +326,8 @@
 	);
 	const resumo = $derived(
 		pessoas
-			? `Cada ponto é uma pessoa, do tamanho dos documentos dela no corpus, na cor do macrotema mais comum na sua comunidade. Cada linha liga duas pessoas que assinaram juntas um documento do recorte; quanto mais forte a linha, mais peso tem a parceria.`
-			: `Cada ponto é uma instituição, do tamanho dos documentos com afiliação nela. Cada linha liga duas instituições que aparecem nas afiliações de um mesmo documento do recorte; quanto mais forte a linha, mais peso tem a colaboração.`
+			? `Cada ponto é uma pessoa, do tamanho dos documentos dela no corpus, na cor da sua comunidade: um tom do macrotema mais comum nela. Cada linha liga duas pessoas que assinaram juntas um documento do recorte; quanto mais forte a linha, mais peso tem a parceria.`
+			: `Cada ponto é uma instituição, do tamanho dos documentos com afiliação nela, na cor da sua comunidade: um tom do macrotema mais comum nela. Cada linha liga duas instituições que aparecem nas afiliações de um mesmo documento do recorte; quanto mais forte a linha, mais peso tem a colaboração.`
 	);
 	// a força (a soma dos pesos 1/(n−1)) é um inteiro: os documentos do recorte em que o nó teve parceiro
 	const colunas = $derived([
@@ -388,6 +391,10 @@
 		debug.arestasNoRecorte = recorte.n;
 		debug.selecionado = selecionado !== null ? nos.ids[selecionado] : null;
 		debug.comunidade = comunidadeEscolhida;
+		debug.corDoNo = (id) => {
+			const i = nos.indice.get(id);
+			return i === undefined ? undefined : cores[i];
+		};
 		debug.estadoDoGrafo = () => grafo?.estado();
 		debug.posicaoNaTela = (id) => {
 			const i = nos.indice.get(id);
@@ -470,6 +477,7 @@
 		{/if}
 		<div class="legenda" aria-label="Legenda">
 			<ul class="cores" data-legenda>
+				<li class="titulo-legenda">Cada comunidade num tom do seu macrotema:</li>
 				{#each macrosNaLegenda as m (m.id)}
 					<li><span class="bolinha" style:background={m.cor}></span>{m.rotulo}</li>
 				{/each}

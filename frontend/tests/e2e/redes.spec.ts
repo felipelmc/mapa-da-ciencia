@@ -191,6 +191,31 @@ test('a vista leva à ajuda das redes, e as comunidades têm rótulo e lista', a
 	await expect(page.getByTestId('glossario-redes')).toContainText('Modularidade');
 });
 
+test('duas comunidades do mesmo macrotema têm cores diferentes, nos nós e na legenda', async ({ page }) => {
+	// no exemplo, cada comunidade de coautoria tem um macrotema; no piloto, 38 dividem 7
+	const [a, b] = redes.comunidades.filter((c: { rede: string }) => c.rede === 'coautoria');
+	await page.route('**/dados/redes.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const r = await resposta.json();
+		const outra = r.comunidades.find((c: { rede: string; id: number }) => c.rede === 'coautoria' && c.id === b.id);
+		outra.macro = a.macro;
+		outra.cor = '#123456';
+		await rota.fulfill({ response: resposta, json: r });
+	});
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const membro = (c: number) => redes.pessoas.id[redes.pessoas.comunidade.indexOf(c)];
+	const cores = await page.evaluate(
+		([x, y]) => [window.__redesDebug!.corDoNo!(x), window.__redesDebug!.corDoNo!(y)],
+		[membro(a.id), membro(b.id)]
+	);
+	expect(cores).toEqual([a.cor, '#123456']);
+	const bolinhas = page.getByTestId('lista-comunidades').getByTestId('comunidade').locator('.bolinha');
+	const fundos = await bolinhas.evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor));
+	expect(fundos).toContain('rgb(18, 52, 86)');
+	expect(new Set(fundos).size).toBe(fundos.length);
+});
+
 test('instituições: o cartão põe a instituição no recorte', async ({ page }) => {
 	const problemas = vigiar(page);
 	const id: string = redes.instituicoes.id[0];

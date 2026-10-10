@@ -231,6 +231,19 @@
     "ComunidadeRede": {
       "additionalProperties": false,
       "properties": {
+        "cor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Cor da comunidade (hex): um tom da cor do macrotema dela, diferente dos tons das outras comunidades do mesmo macrotema na mesma rede. `null` sem macrotema (a interface usa a cor neutra). Desde a versão 1.6; antes, a interface usava a cor do macrotema.",
+          "title": "Cor"
+        },
         "documentos": {
           "title": "Documentos",
           "type": "integer"
@@ -399,7 +412,7 @@
       "$ref": "#/$defs/ColunasPessoas"
     },
     "versao_contrato": {
-      "default": "1.5",
+      "default": "1.6",
       "description": "Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x.",
       "pattern": "^1\\.\\d+$",
       "title": "Versao Contrato",

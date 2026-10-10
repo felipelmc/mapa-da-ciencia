@@ -144,8 +144,9 @@
 			</p>
 			<p>
 				As <strong>comunidades</strong> são agrupamentos automáticos (o algoritmo de Louvain), de nós mais ligados
-				entre si que com o resto. Elas levam o nome dos tópicos mais frequentes nos documentos delas e a cor do
-				macrotema mais comum, nunca o nome de uma pessoa. O desenho é o do corpus inteiro: o recorte não move nada,
+				entre si que com o resto. Elas levam o nome dos tópicos mais frequentes nos documentos delas, nunca o nome
+				de uma pessoa, e cada uma tem a sua cor: um tom do macrotema mais comum nela, diferente dos tons das
+				outras comunidades do mesmo macrotema. O desenho é o do corpus inteiro: o recorte não move nada,
 				só apaga quem não tem documento nele. Clique num nó, ou busque pelo nome, para ver os documentos dele.
 			</p>
 			<p>

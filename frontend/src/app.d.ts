@@ -43,6 +43,8 @@ declare global {
 		posicaoNaTela?: (id: string) => [number, number] | undefined;
 		/** A comunidade em destaque na coautoria ou nas instituições. */
 		comunidade?: number | null;
+		/** A cor de um nó (a da comunidade dele), pelo id; `null` na cor neutra. */
+		corDoNo?: (id: string) => string | null | undefined;
 		/** O zoom, o destaque, os nós movidos e os nomes escritos no grafo. */
 		estadoDoGrafo?: () => import('$lib/redes/Grafo.svelte').EstadoGrafo | undefined;
 	}

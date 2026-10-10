@@ -606,7 +606,14 @@ def gerar_exemplo(n_docs: int = 1500, semente: int = 42) -> tuple[dict[str, m.Ba
     )
     macro_do_topico = {tid: id_macro[mi] for tid, mi, *_ in topicos_def}
     redes, citacoes, gabarito = _redes_sinteticas(
-        random.Random(semente + 1), docs, macro_do_topico, af, insts, i_nao_identificada, id_macro
+        random.Random(semente + 1),
+        docs,
+        macro_do_topico,
+        af,
+        insts,
+        i_nao_identificada,
+        id_macro,
+        {id_macro[mi]: cores_macro[mi] for mi in range(len(MACROS))},
     )
     agregados = agregados.model_copy(update=gabarito)
     licencas = Counter(det.licenca for det in detalhes.values())
@@ -847,10 +854,10 @@ PRENOMES = ["Ana", "Bruno", "Carla", "Diego", "Elisa", "Fábio", "Gisele", "Hugo
 SOBRENOMES = ["Almeida", "Barros", "Cardoso", "Duarte", "Esteves", "Freitas", "Gomes", "Hollanda", "Iório", "Jardim"]
 
 
-def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada, ids_macros):
+def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada, ids_macros, cores_macros):
     """Redes fictícias sobre os documentos do exemplo: pessoas por macrotema (com alguma mistura), a colaboração
     entre as instituições das afiliações do exemplo, citações de documentos mais antigos e um cânone inventado."""
-    from mapa_da_ciencia.contrato.redes import fluxo_por_posicao
+    from mapa_da_ciencia.contrato.redes import cores_das_comunidades, fluxo_por_posicao
     from mapa_da_ciencia.redes.citacoes import calcular
     from mapa_da_ciencia.redes.grafos import colaboracao_por_ano, comunidades, grafo, metricas, pares_ponderados
 
@@ -911,6 +918,8 @@ def _redes_sinteticas(rng, docs, macro_do_topico, af, insts, i_nao_identificada,
                     rotulo=f"Comunidade {k + 1}",
                 )
             )
+    cores = cores_das_comunidades([c.model_dump() for c in comunidades_c], cores_macros)
+    comunidades_c = [c.model_copy(update={"cor": cores[(c.rede, c.id)]}) for c in comunidades_c]
     anos = {d["id"]: d["ano"] for d in docs}
     serie = colaboracao_por_ano(anos, autores, dict(inst_do_doc), dict(lugares))
     redes = m.Redes(

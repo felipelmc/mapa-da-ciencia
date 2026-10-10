@@ -486,8 +486,10 @@ def _redes(
         desatualizadas.append("redes")
         return
     documentos = arquivos["documentos"]
-    ids_macros = [mt.id for mt in arquivos["topicos"].macrotemas]  # type: ignore[attr-defined]
-    redes, citacoes, gabarito = redes_contrato(projeto, list(documentos.colunas.id), ids_macros)
+    macrotemas = arquivos["topicos"].macrotemas  # type: ignore[attr-defined]
+    redes, citacoes, gabarito = redes_contrato(
+        projeto, list(documentos.colunas.id), [mt.id for mt in macrotemas], {mt.id: mt.cor for mt in macrotemas}
+    )
     if fora := instituicoes_fora_de_afiliacoes(redes, arquivos.get("afiliacoes")):  # type: ignore[arg-type]
         avisos.append(
             f"{len(fora)} instituição(ões) da rede sem registro em afiliacoes.json (por exemplo, {fora[0]}): a rede de "

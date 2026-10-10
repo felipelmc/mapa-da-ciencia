@@ -7,6 +7,8 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 ### Adicionado
 
 - **O júri no `mapa status` e na linha das etapas do painel.** Num projeto com `juri.membros`, o júri ganha uma linha no `mapa status` (com a amostra classificada por membro e o próximo passo) e uma estação na vista Projeto: incompleto enquanto falta votar, deliberar ou a resposta do supervisor, desatualizado depois de uma mudança no codebook ou quando as decisões gravadas não batem mais com os votos, em dia quando só falta o relatório. A deliberação e a importação das respostas do supervisor passam a deixar um manifesto em `execucoes/`, como as outras etapas. Os passos do júri continuam rodando pela linha de comando.
+- **Uma cor por comunidade nas redes.** Cada comunidade de coautoria e de instituições ganha a própria cor, um tom do macrotema mais comum nela, diferente dos tons das outras comunidades do mesmo macrotema (como os tópicos): no piloto, 38 comunidades dividem 7 macrotemas, e comunidades vizinhas saíam com a mesma cor. A cor é calculada na exportação, sem rodar `mapa redes` de novo.
+- Contrato de dados **1.6** (só acréscimo): `ComunidadeRede.cor`. A interface lê também os dados 1.5, com a cor do macrotema.
 
 ### Corrigido
 
