@@ -41,7 +41,7 @@
 		/** Chamado a cada quadro em que a câmera muda, para camadas sobre o mapa (rótulos). */
 		aoVer?: (camera: Camera) => void;
 		/** A parte do canvas que nenhum painel cobre (o cartão do documento fica por cima do mapa): o ponto em
-		 * destaque que cair fora dela é levado ao centro dela. */
+		 * destaque que cair fora dela é trazido para dentro dela. */
 		areaLivre?: () => Area | null;
 	}
 
@@ -261,7 +261,8 @@
 		return d0 + ((px - r0) / (r1 - r0 || 1)) * (d1 - d0);
 	}
 
-	/** Leva o ponto em destaque ao centro da área livre, sem mudar o zoom, se ele estiver embaixo de um painel. */
+	/** Traz o ponto em destaque para dentro da área livre, sem mudar o zoom, se ele estiver embaixo de um painel: só
+	 * o necessário para ele ficar a uma margem da borda (centrá-lo deslocaria a nuvem inteira para fora da tela). */
 	function mostrarDestaque(i: number) {
 		if (!grafico || destaque !== i) return;
 		const area = areaLivre?.();
@@ -270,7 +271,10 @@
 		const [px, py] = pos;
 		const folga = 24;
 		if (px >= area.x0 + folga && px <= area.x1 - folga && py >= area.y0 + folga && py <= area.y1 - folga) return;
-		const [cx, cy] = [(area.x0 + area.x1) / 2, (area.y0 + area.y1) / 2];
+		const margem = (a: number, b: number) => Math.min(80, (b - a) / 4);
+		const [mx, my] = [margem(area.x0, area.x1), margem(area.y0, area.y1)];
+		const cx = Math.min(Math.max(px, area.x0 + mx), area.x1 - mx);
+		const cy = Math.min(Math.max(py, area.y0 + my), area.y1 - my);
 		const [tx, ty] = grafico.get('cameraTarget');
 		const alvo: [number, number] = [
 			tx + dadoNoPixel(escalaX, px) - dadoNoPixel(escalaX, cx),
