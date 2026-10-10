@@ -545,6 +545,32 @@ test('uma comunidade escolhida na legenda fica acesa, enquadrada e no link; "Tod
 	expect(problemas).toEqual([]);
 });
 
+test('um link com a comunidade e o nó enquadra o nó; escolher outra comunidade fecha o cartão', async ({ page }) => {
+	const problemas = vigiar(page);
+	const no = central();
+	const c = redes.comunidades.find(
+		(x: { rede: string; id: number }) => x.rede === 'coautoria' && x.id !== redes.pessoas.comunidade[no]
+	).id;
+	await page.goto(`${url('RAIZ')}#/redes?comunidade=${c}&no=${encodeURIComponent(redes.pessoas.id[no])}`);
+	await esperarRedes(page, 'coautoria');
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).not.toBe(1);
+	// o nó e os vizinhos na tela, já enquadrados: "Enquadrar o nó" não muda o zoom (antes, o enquadramento da
+	// comunidade vencia, e o nó podia ficar fora da tela)
+	await expect.poll(() => todosNaTela(page, [no, ...vizinhosDe(no)])).toBe(true);
+	await expect(page.getByTestId('zoom-enquadrar')).toHaveText('Enquadrar o nó');
+	const vista = (await estadoDoGrafo(page)).vista;
+	await page.getByTestId('zoom-enquadrar').click();
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista).toEqual(vista);
+	// escolher outra comunidade na legenda fecha o cartão e enquadra a comunidade
+	await page.locator('[data-testid="comunidade"][aria-pressed="false"]').first().click();
+	await expect(page).toHaveURL(/comunidade=\d+/);
+	await expect(page).not.toHaveURL(/[?&]no=/);
+	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+	await expect(page.getByTestId('zoom-enquadrar')).toHaveText('Enquadrar a comunidade');
+	expect(problemas).toEqual([]);
+});
+
 test('arrastar um nó o move sem abrir o cartão; "Reiniciar" devolve o desenho; o clique abre sem rolar a página', async ({ page }) => {
 	const problemas = vigiar(page);
 	await page.goto(`${url('RAIZ')}#/redes`);

@@ -33,7 +33,8 @@ com a legenda, depois o cartão e, no fim, a colaboração). Esc (ou o ×) fecha
 vem enquadrado, mesmo quando está numa dupla ou num trio escondido (que passa a aparecer).
 
 Escolha uma comunidade no seletor da barra do grafo (ou clique nela na lista da legenda) para acendê-la e
-enquadrá-la; a escolha vai para o link (`comunidade=`), e "Todas as comunidades" (ou Esc, sem cartão aberto) solta. "Enquadrar a
+enquadrá-la; a escolha vai para o link (`comunidade=`), e "Todas as comunidades" (ou Esc, sem cartão aberto) solta.
+Escolher uma comunidade fecha o cartão aberto; num link com a comunidade e um nó, o zoom vai até o nó. "Enquadrar a
 comunidade" volta a ela depois de mexer no zoom. Com zoom, os nomes das pessoas com mais artigos aparecem, sem se
 cobrirem, e mais nomes aparecem quanto mais perto você chega.
 

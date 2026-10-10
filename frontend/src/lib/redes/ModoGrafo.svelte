@@ -223,7 +223,8 @@
 	const comunidadeEscolhida = $derived(
 		filtros.comunidade !== null && nos.comunidades.has(filtros.comunidade) ? filtros.comunidade : null
 	);
-	const escolherComunidade = (c: number | null) => mudarFiltros({ comunidade: c }, { em });
+	/** Escolher uma comunidade fecha o cartão aberto: o zoom vai até ela (com um nó aberto, ele seria o do nó). */
+	const escolherComunidade = (c: number | null) => mudarFiltros(c === null ? { comunidade: c } : { comunidade: c, no: null }, { em });
 	/** Pela legenda, embaixo do grafo: escolhe e traz o grafo à vista (senão ele mudaria fora da tela). */
 	function escolherPelaLegenda(c: number | null) {
 		escolherComunidade(c);

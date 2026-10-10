@@ -309,7 +309,8 @@
 			enquadrarNo(i);
 		});
 	});
-	// a comunidade escolhida é enquadrada; soltá-la volta à vista inteira
+	// a comunidade escolhida é enquadrada; soltá-la volta à vista inteira. Com um nó aberto (um link com `no=` e
+	// `comunidade=`), o enquadramento é o do nó: este efeito roda depois do dele quando a área é medida, e venceria
 	let comunidadeAnterior: number | null = null;
 	$effect(() => {
 		const c = comunidadeEscolhida;
@@ -318,6 +319,7 @@
 			if (c === comunidadeAnterior) return;
 			const antes = comunidadeAnterior;
 			comunidadeAnterior = c;
+			if (selecionado !== null) return;
 			if (c !== null) {
 				const alvo = enquadrar(nosDaComunidade(c), bx, by, largura, altura, { kMin: ZOOM.min, kMax: 8 });
 				if (alvo) irPara(alvo);

@@ -175,7 +175,8 @@ Ficaram para depois, registrados (a 2.2.0 os corrigiu, um por commit, na branch 
 - o júri, que ainda não aparece na linha das etapas nem no `mapa status` (**corrigido na 2.2.0**: o júri tem estado,
   manifesto e o próximo comando, e continua rodando pela linha de comando);
 - nas redes:
-    - um link com `comunidade=` e `no=` juntos, que enquadra a comunidade (o nó pode ficar fora da tela);
+    - um link com `comunidade=` e `no=` juntos, que enquadra a comunidade (o nó pode ficar fora da tela)
+      (**corrigido na 2.2.0**: o nó tem a prioridade);
     - o Esc que fecha um cartão aberto pelo link, que leva o foco para a busca (o Esc seguinte não solta a
       comunidade);
     - o painel de exportar ao lado do grafo, que passa uns pixels da borda;
