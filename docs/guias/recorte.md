@@ -47,6 +47,21 @@ recorte:
 - **`anos`**: primeiro e último ano de publicação, inclusive. O ano sai do identificador do artigo no SciELO (o PID), porque a API não filtra por ano de publicação (veja [Fontes de dados](../explicacoes/fontes.md)).
 - **`tipos`**: por padrão, artigos de pesquisa e de revisão. Resenhas (`book-review`), editoriais (`editorial`), erratas (`correction`) e outros tipos ficam de fora. Para incluí-los, acrescente o tipo à lista.
 
+### Documentos que não são artigos
+
+Algumas revistas registram como artigo o que não é: encartes de dados, apresentações de dossiê, declarações. No piloto, a *Opinião Pública* tem oito "Encartes Tendências" registrados como artigos de pesquisa. Quase sempre eles não têm autor, e por isso **a coleta deixa de fora os documentos sem nenhum autor**. Para os outros casos, liste no recorte o que deve sair, pelo PID do SciELO, pelo DOI ou pelo id do OpenAlex:
+
+```yaml
+recorte:
+  anos: [2010, 2025]
+  excluir_sem_autor: true              # o padrão; false mantém os documentos sem autor
+  excluir:
+    - S0102-64452011000300001          # apresentação de um dossiê
+    - 10.1590/0104-6276-op-exemplo     # pelo DOI
+```
+
+O resumo da coleta diz quantos documentos ficaram de fora por cada motivo e avisa quando um item da lista não apareceu (um PID errado, um artigo fora do recorte).
+
 Para já criar o projeto com o recorte certo, sem editar o YAML:
 
 ```bash

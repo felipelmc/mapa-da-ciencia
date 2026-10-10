@@ -5,7 +5,7 @@ from typer.testing import CliRunner
 
 from mapa_da_ciencia.armazenamento import ARQUIVO, ler_documentos
 from mapa_da_ciencia.cli import app
-from mapa_da_ciencia.coleta import OpcoesColeta, coletar, interpretar_anos
+from mapa_da_ciencia.coleta import OpcoesColeta, coletar, guardar_importacao, interpretar_anos
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.contrato.modelos import Manifesto, Revistas
 from mapa_da_ciencia.fontes.base import ErroFonte, FaltaNoCache
@@ -238,3 +238,37 @@ def test_referencias_da_articlemeta_vem_do_cache_sem_email(projeto, apis_falsas)
     assert any(r["sobrenomes"] and (r["titulo"] or r["titulo_fonte"]) for r in refs)
     assert not any(contem_email(str(r)) for r in refs)
     assert dict(apis_falsas.chamadas) == antes  # ler a tabela não pede nada
+
+
+def _recorte_de_2011(projeto, extra: str = "") -> Projeto:
+    """O projeto de 2024 com o recorte aberto até 2011 (e as linhas `extra` no recorte), e uma lista importada
+    com dois artigos de 2011: a "Apresentação" de um dossiê da Lua Nova, sem autor, e um artigo com autores."""
+    texto = (projeto.raiz / "mapa.yaml").read_text()
+    (projeto.raiz / "mapa.yaml").write_text(texto.replace("  anos: [2024, 2024]\n", f"  anos: [2011, 2024]\n{extra}"))
+    projeto = Projeto.abrir(projeto.raiz)  # relê o mapa.yaml editado
+    lista = projeto.raiz / "lista.txt"
+    lista.write_text("S0102-64452011000300001\nS0103-33522011000100001\n")
+    return projeto
+
+
+def test_documento_sem_autor_fica_de_fora(projeto, apis_falsas):
+    projeto = _recorte_de_2011(projeto)
+    r = runner.invoke(app, ["importar", str(projeto.raiz / "lista.txt"), "-P", str(projeto.raiz)])
+    assert r.exit_code == 0, r.output
+    assert "sem autor: 1" in r.output
+    ids = {d.id for d in ler_documentos(projeto.dados / ARQUIVO)}
+    assert "S0102-64452011000300001" not in ids and "S0103-33522011000100001" in ids
+    m = ultima_execucao(projeto, "coleta")
+    assert m["contagens"]["excluidos_sem_autor"] == 1
+    assert m["parametros"]["excluidos"] == {"sem_autor": ["S0102-64452011000300001"]}
+
+
+def test_sem_autor_desligado_e_lista_do_recorte(projeto, apis_falsas):
+    extra = "  excluir_sem_autor: false\n  excluir:\n    - S0103-33522011000100001\n    - 10.1590/nao-existe\n"
+    projeto = _recorte_de_2011(projeto, extra)
+    guardar_importacao(projeto, projeto.raiz / "lista.txt")
+    resumo = coletar(projeto)
+    assert resumo.excluidos == {"lista": ["S0103-33522011000100001"]}
+    assert any("10.1590/nao-existe" in a for a in resumo.avisos)
+    ids = {d.id for d in ler_documentos(projeto.dados / ARQUIVO)}
+    assert "S0102-64452011000300001" in ids and "S0103-33522011000100001" not in ids

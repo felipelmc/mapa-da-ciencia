@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Documentos sem autor ficam fora do corpus, e o recorte pode listar documentos a excluir.** Encartes de dados, apresentações de dossiê e declarações às vezes estão registrados como artigos de pesquisa e quase nunca têm autor: no piloto, os oito "Encartes Tendências" da *Opinião Pública*, uma apresentação da *Lua Nova* e uma declaração na *Dados*. A coleta deixa de fora os documentos sem nenhum autor (`recorte.excluir_sem_autor`, ligado por padrão) e os listados em `recorte.excluir`, pelo PID, pelo DOI ou pelo id do OpenAlex, e avisa quando um item da lista não aparece. As contagens saem no resumo da coleta e no `mapa status`, e as listas, no manifesto.
+
 ### Corrigido
 
 - **A coleta confere os resumos.** Um "resumo" que é um fragmento (menos de 15 palavras, o aviso de um repositório, ou um texto do OpenAlex que começa no meio de uma frase) sai, e o documento fica com os outros resumos ou só com o título. O idioma declarado de cada resumo é conferido pelas palavras funcionais (artigos, preposições, conjunções) e corrigido quando um idioma ganha com folga; o título e as palavras-chave seguem o resumo, salvo quando o título confirma o idioma declarado. No piloto, saem 36 fragmentos e 35 resumos mudam de idioma (resumos em francês declarados espanhol, em espanhol declarados português, pares português/inglês trocados). A coleta mostra as duas contagens, e as listas ficam no manifesto.

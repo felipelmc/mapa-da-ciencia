@@ -28,6 +28,8 @@ Cada registro da ArticleMeta vira um **documento** com títulos, resumos e palav
 - **Afiliações das duas versões.** A versão normalizada da afiliação (`v240`, com país em código ISO) é usada quando existe. As afiliações que ela não cobre vêm da versão original (`v70`).
 - **Autores segundo o OpenAlex.** Do OpenAlex, o documento guarda também os autores na ordem da obra, com as instituições que o OpenAlex reconheceu (com o identificador [ROR](https://ror.org), o país, o tipo e as instituições acima dela) e o texto de afiliação de cada um, sem e-mails. É a base da [geografia](geografia.md): as afiliações da ArticleMeta são casadas com essas instituições.
 
+O tipo de documento vem da revista, e nem sempre é o certo: encartes de dados e apresentações de dossiê às vezes estão registrados como artigos de pesquisa. Como quase sempre não têm autor, a coleta deixa de fora os documentos sem nenhum autor, e o recorte pode listar outros a excluir ([Montar um recorte](../guias/recorte.md#documentos-que-nao-sao-artigos)).
+
 As referências citadas por cada artigo (cerca de 90% do tamanho de um registro) não entram no documento, só a contagem delas. Elas continuam guardadas nas respostas brutas, e a coleta extrai delas, por lista branca, uma tabela à parte (`dados/referencias_articlemeta.parquet`: título, até três autores e o ano de cada referência), que as [redes](redes.md) usam para medir a cobertura e conferir a autoria do cânone.
 
 ## OpenAlex

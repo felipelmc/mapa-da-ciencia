@@ -367,7 +367,8 @@ def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
         c = coleta["contagens"]
         console.print(
             f"[dim]Última coleta: ficaram de fora {num(c.get('fora_do_periodo', 0), 0)} fora do período, "
-            f"{num(c.get('excluidos_por_tipo', 0), 0)} por tipo e {num(c.get('nao_encontrados', 0), 0)} não "
+            f"{num(c.get('excluidos_por_tipo', 0), 0)} por tipo, {num(c.get('excluidos_sem_autor', 0), 0)} sem "
+            f"autor e {num(c.get('nao_encontrados', 0), 0)} não "
             f"encontrado(s); {num(c.get('fundidos', 0), 0)} duplicata(s) fundida(s). "
             f"{num(c.get('requisicoes', 0), 0)} requisição(ões), {num(c.get('do_cache', 0), 0)} do cache, "
             f"{num(c.get('creditos_openalex', 0), 0)} crédito(s) do OpenAlex.[/]"
@@ -640,6 +641,10 @@ def coletar(
         console.print(tabela)
     fora = [f"fora do período: {num(resumo.fora_do_periodo, 0)}"]
     fora += [f"{tipo}: {num(n, 0)}" for tipo, n in resumo.excluidos_por_tipo.items()]
+    if sem_autor := resumo.excluidos.get("sem_autor"):
+        fora.append(f"sem autor: {num(len(sem_autor), 0)}")
+    if lista := resumo.excluidos.get("lista"):
+        fora.append(f"pela lista do recorte: {num(len(lista), 0)}")
     if resumo.nao_encontrados:
         fora.append(f"não encontrados na API: {num(resumo.nao_encontrados, 0)}")
     console.print("[dim]Ficaram de fora — " + "; ".join(fora) + ".[/]")

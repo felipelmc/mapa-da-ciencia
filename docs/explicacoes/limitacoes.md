@@ -6,7 +6,7 @@ O `mapa-da-ciencia` descreve uma literatura a partir de títulos, resumos e afil
 
 - **O SciELO não é a ciência política brasileira.** O piloto cobre 10 revistas do SciELO Brasil. Ficam de fora os livros, as teses, os anais de congressos, as revistas fora do SciELO e o que pesquisadores brasileiros publicam no exterior. Um tópico "em queda" no SciELO pode estar migrando para revistas estrangeiras. Veja [Fontes de dados](fontes.md).
 - **As revistas pesam de forma diferente.** Cada revista publica um número diferente de artigos por ano, e uma revista que muda de periodicidade ou abre um dossiê desloca as proporções do corpus inteiro. A vista Tópicos mostra os pequenos múltiplos por revista para separar o efeito de uma revista do da área.
-- **Só artigos.** Resenhas, editoriais e erratas ficam de fora (670 registros no piloto). É uma escolha do recorte, que muda o que "a literatura" quer dizer.
+- **Só artigos.** Resenhas, editoriais e erratas ficam de fora (670 registros no piloto), e também os documentos sem nenhum autor, que costumam ser encartes de dados e apresentações registrados como artigos (10 no piloto). É uma escolha do recorte, que muda o que "a literatura" quer dizer.
 - **Metadados com erros.** DOIs trocados, anos de publicação que não batem com o fascículo e afiliações incompletas existem nas fontes. A coleta confere o casamento entre fontes e marca as suspeitas de duplicata, mas não corrige a fonte.
 
 ## Resumos, não artigos
