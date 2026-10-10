@@ -56,6 +56,9 @@
 	});
 
 	const chave = (grupo: 't' | 'm', id: number) => `${grupo}:${id}`;
+	/** O que vale para cada tópico: a entrada do `rotulos.yaml`, quando há (ainda que não aplicada), ou o rótulo atual. */
+	const base = (x: { rotulo: string; descricao: string; manual: RotuloManual | null }): RotuloManual =>
+		x.manual ? { rotulo: x.manual.rotulo, descricao: x.manual.descricao ?? '' } : { rotulo: x.rotulo, descricao: x.descricao };
 
 	onMount(async () => {
 		try {
@@ -64,8 +67,8 @@
 			erro = e instanceof ErroDaApi ? e.message : `Não foi possível ler os rótulos: ${(e as Error).message}`;
 			return;
 		}
-		for (const t of dados.topicos) campos[chave('t', t.id)] = { rotulo: t.rotulo, descricao: t.descricao };
-		for (const m of dados.macrotemas) campos[chave('m', m.id)] = { rotulo: m.rotulo, descricao: m.descricao };
+		for (const t of dados.topicos) campos[chave('t', t.id)] = { ...base(t) };
+		for (const m of dados.macrotemas) campos[chave('m', m.id)] = { ...base(m) };
 		if (foco !== null) {
 			await tick();
 			const campo = document.getElementById(`rotulo-t-${foco}`) as HTMLInputElement | null;
@@ -81,11 +84,12 @@
 	const mudanca = $derived.by(() => {
 		const saida: Required<MudancaDeRotulos> = { topicos: {}, macrotemas: {} };
 		if (!dados) return saida;
-		const conferir = (grupo: 't' | 'm', x: { id: number; rotulo: string; descricao: string }) => {
+		const conferir = (grupo: 't' | 'm', x: { id: number; rotulo: string; descricao: string; manual: RotuloManual | null }) => {
 			const k = chave(grupo, x.id);
 			const destino = grupo === 't' ? saida.topicos : saida.macrotemas;
+			const b = base(x);
 			if (voltar[k]) destino[x.id] = null;
-			else if (campos[k] && (campos[k].rotulo.trim() !== x.rotulo || campos[k].descricao.trim() !== x.descricao))
+			else if (campos[k] && (campos[k].rotulo.trim() !== b.rotulo || campos[k].descricao.trim() !== b.descricao))
 				destino[x.id] = { rotulo: campos[k].rotulo.trim(), descricao: campos[k].descricao.trim() };
 		};
 		for (const t of dados.topicos) conferir('t', t);
@@ -101,9 +105,12 @@
 		erro = null;
 		try {
 			const r = await fonte.mudarRotulos(mudanca);
-			// um acento perdido: o arquivo já foi gravado, mas a pessoa decide se aplica assim ou corrige antes
-			if (r.avisos?.length) avisos = r.avisos;
-			else fechar({ salvou: true, avisos: [] });
+			// um acento perdido: o arquivo já foi gravado, mas a pessoa decide se aplica assim ou corrige antes. A base dos
+			// campos passa a ser o arquivo: o que foi gravado não conta mais como mudança, e voltar ao texto de antes conta
+			if (r.avisos?.length) {
+				avisos = r.avisos;
+				dados = await fonte.rotulos();
+			} else fechar({ salvou: true, avisos: [] });
 		} catch (e) {
 			erro = e instanceof ErroDaApi ? e.message : `Não foi possível salvar: ${(e as Error).message}`;
 		} finally {
@@ -120,7 +127,8 @@
 	<p class="suave">
 		O que você escrever vai para o <code>rotulos.yaml</code> do projeto e vale também quando os tópicos forem refeitos.
 		Salvar aplica os rótulos sem refazer os tópicos e sem chamar o modelo. O rótulo de um macrotema com vários tópicos,
-		quando escrito pelo modelo, só muda na próxima vez que a etapa Tópicos rodar inteira.
+		quando escrito pelo modelo, só muda na próxima vez que a etapa Tópicos rodar inteira. "Tirar a correção à mão"
+		devolve o tópico às palavras-chave até a etapa Tópicos rodar inteira, que traz de novo o rótulo do modelo.
 	</p>
 	{#if erro && !dados}<p class="aviso" role="alert" data-testid="erro-rotulos">{erro}</p>{/if}
 	{#if dados && dados.pendentes > 0 && !mudou}
@@ -181,10 +189,8 @@
 		{/if}
 		<p class="detalhe suave">{detalhe}</p>
 		{#if x.manual}
-			<label class="voltar">
-				<input type="checkbox" bind:checked={voltar[k]} data-testid="voltar-{k}" />
-				Tirar a correção à mão
-				<span class="suave">(o rótulo volta às palavras-chave até a etapa Tópicos rodar inteira, que traz de novo o do modelo)</span>
+			<label class="voltar" title="O rótulo volta às palavras-chave até a etapa Tópicos rodar inteira, que traz de novo o do modelo">
+				<input type="checkbox" bind:checked={voltar[k]} data-testid="voltar-{k}" /> Tirar a correção à mão
 			</label>
 		{/if}
 	</div>
@@ -211,7 +217,8 @@
 
 	footer {
 		position: sticky;
-		bottom: 0;
+		/* no celular, acima da barra de navegação de baixo (o trilho define a altura dela) */
+		bottom: var(--altura-trilho, 0px);
 		z-index: 2;
 		justify-content: flex-start;
 		align-items: center;

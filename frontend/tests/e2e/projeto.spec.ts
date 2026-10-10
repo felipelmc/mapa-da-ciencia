@@ -244,6 +244,11 @@ test('o editor dos rótulos grava só o que mudou e aplica sem refazer os tópic
 	});
 	await expect(editor.getByTestId('avisos-rotulos')).toContainText('“coalizao”');
 	await expect(editor.getByTestId('pe-rotulos')).toBeInViewport(); // o aviso fica no pé da tela, à vista
+	// o arquivo já tem o texto do aviso: voltar ao texto de antes conta como mudança (e não fica preso no arquivo)
+	await editor.locator('#rotulo-t-0').fill(t0.rotulo);
+	await expect(editor.getByTestId('salvar-rotulos')).toHaveText('Salvar e aplicar 1 rótulo');
+	await editor.locator('#rotulo-t-0').fill('Coalizao no congresso');
+	await expect(editor.getByTestId('salvar-rotulos')).toHaveText('Aplicar');
 	const job = page.waitForRequest((r) => r.url().endsWith('/api/etapas/topicos') && r.method() === 'POST');
 	await editor.getByTestId('aplicar-assim').click();
 	expect((await job).postDataJSON()).toEqual({ aplicar_rotulos: true });
@@ -256,6 +261,21 @@ test('o editor dos rótulos grava só o que mudou e aplica sem refazer os tópic
 	const volta = page.waitForRequest((r) => r.url().endsWith('/api/rotulos') && r.method() === 'PATCH');
 	await page.getByTestId('salvar-rotulos').click();
 	expect((await volta).postDataJSON()).toEqual({ topicos: { '0': null }, macrotemas: {} });
+});
+
+test('no celular, o botão de salvar os rótulos fica acima da barra de navegação', async ({ page }) => {
+	await page.setViewportSize({ width: 375, height: 740 });
+	await page.goto(`${url('PAINEL')}#/projeto`);
+	await page.getByTestId('editar-rotulos').click();
+	await page.locator('#rotulo-t-0').fill('Um rótulo novo');
+	const salvar = page.getByTestId('salvar-rotulos');
+	await expect(salvar).toBeInViewport();
+	const botao = (await salvar.boundingBox())!;
+	const barra = (await page.getByRole('navigation', { name: 'Seções' }).boundingBox())!;
+	expect(botao.y + botao.height).toBeLessThanOrEqual(barra.y);
+	page.once('dialog', (d) => d.accept()); // sair com a mudança pergunta antes
+	await page.getByRole('button', { name: 'Fechar sem salvar' }).click();
+	await expect(page.getByTestId('editor-rotulos')).toHaveCount(0);
 });
 
 test('a gaveta do tópico leva ao editor do rótulo, só no painel', async ({ page }) => {
