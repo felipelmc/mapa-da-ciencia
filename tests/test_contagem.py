@@ -147,4 +147,6 @@ def test_a_v70_nao_vence_o_consenso_da_instituicao():
     # a v70 também erra: um autor da UFMG que ela põe em Brasília continua em Minas
     registros = {"UFMG": Registro("UFMG", "Universidade Federal de Minas Gerais", pais="BR")}
     vinculos = [_v240("UFMG", "MG", None)] * 12 + [_v240("UFMG", "MG", "MG")] * 8 + [_v240("UFMG", "MG", "DF")]
-    assert _ufs(vinculos, registros) == ["MG"] * 21
+    # sem o lugar na v240, a v70 às vezes traz o endereço do autor, e não o da universidade
+    vinculos.append(_v240("UFMG", None, "DF"))
+    assert _ufs(vinculos, registros) == ["MG"] * 22
