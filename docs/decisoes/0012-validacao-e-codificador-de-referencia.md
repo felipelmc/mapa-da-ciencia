@@ -37,7 +37,7 @@ A técnica é a variável fraca: 44 das 111 divergências são ensaios teóricos
 
 Os lotes do codificador de referência trouxeram um desvio: em alguns resumos sem ano final, o período analisado foi deduzido do ano embutido no identificador do artigo ou da data de publicação. Esses casos foram refeitos só com o título e o resumo antes da importação, e a instrução passou a proibir explicitamente o identificador e a data. O desvio mostra uma ambiguidade do codebook (períodos abertos ou relativos) que também afeta a codificação humana.
 
-A comparação com outros modelos locais não foi feita: o `qwen3.5:4b` não está instalado (o plano não baixa modelos) e o `gemma4:26b` (17 GB) não cabe na memória livre ao lado do resto. O código da comparação (McNemar exato) está pronto e testado.
+A comparação com outros modelos locais não foi feita: o `qwen3.5:4b` não está instalado (o plano não baixa modelos) e o `gemma4:26b` (17 GB) não cabe na memória livre ao lado do resto. O código da comparação (McNemar exato) está pronto e testado. (Feita na 2.0.0, com o júri: o `qwen3.5:4b` e o `gemma4:12b` contra o `qwen3.5:9b`, no [ADR 0015](0015-juri-de-modelos-e-supervisor.md#números-do-piloto).)
 
 ## Consequências
 

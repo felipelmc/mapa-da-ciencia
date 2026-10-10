@@ -88,3 +88,8 @@ A consequência acima pedia que o pesquisador pudesse editar os rótulos na inte
 - **O editor de rótulos do painel** grava no `rotulos.yaml` (sem perder os comentários, como o editor do codebook) e roda a aplicação como um job da etapa de tópicos.
 
 Para que mudar um rótulo não desatualize as redes, o rótulo de cada comunidade passou a ser calculado na exportação, com os rótulos atuais (veja o adendo do ADR 0014 e o CHANGELOG).
+
+### O `qwen3.5:4b` do perfil `leve`, medido
+
+A medida que o adendo da 1.0.1 pedia foi feita na 2.0.0, com o júri de modelos ([ADR 0015](0015-juri-de-modelos-e-supervisor.md#números-do-piloto)): o `qwen3.5:4b` classificou a amostra de validação do piloto como membro do júri, e o kappa dele contra a referência pode ser lido ao lado do `qwen3.5:9b`. Ele é pior na `abordagem` (0,60 contra 0,67), em `brasil_como_caso` (0,79 contra 0,93) e na `subarea` (0,58 contra 0,63), melhor na `tecnica_principal` (0,48 contra 0,37) e empata no `recorte_geografico` (0,74). O `leve` continua com ele, porque é o que cabe na memória dessas máquinas, e o padrão continua o `qwen3.5:9b`. Os rótulos de tópicos que o `qwen3.5:4b` escreve não foram medidos.
+
