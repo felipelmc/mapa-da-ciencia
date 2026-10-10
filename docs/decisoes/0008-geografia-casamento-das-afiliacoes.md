@@ -95,7 +95,7 @@ uv run python scripts/calibrar_geografia.py projetos/cp-scielo --rotulada docs/d
 
 ## Adendo (2.3.0): a UF da `v70` quando a `v240` diverge
 
-A revisão de setembro de 2026 achou a FGV contada no Distrito Federal: 61 afiliações `v240` do piloto dizem "Fundação Getúlio Vargas, Brasília", enquanto o texto original de 34 delas (`v70`) diz São Paulo e o de 13, Brasília. O consenso da instituição (97% DF) também mandava para o DF os vínculos sem cidade, e o remédio, um `uf: SP` no `instituicoes.yaml` do piloto, mandava para São Paulo os da FGV do Rio. A coleta descartava a `v70` de toda afiliação que a `v240` cobria.
+A revisão de setembro de 2026 achou a FGV contada no Distrito Federal: 61 vínculos do piloto (48 afiliações `v240`) dizem "Fundação Getúlio Vargas, Brasília", enquanto o texto original de 34 dessas afiliações (`v70`) diz São Paulo e o de 13, Brasília. O consenso da instituição (97% DF) também mandava para o DF os vínculos sem cidade, e o remédio, um `uf: SP` no `instituicoes.yaml` do piloto, mandava para São Paulo os da FGV do Rio. A coleta descartava a `v70` de toda afiliação que a `v240` cobria.
 
 Decisão:
 
@@ -108,6 +108,6 @@ O consenso pesa porque preferir a `v70` sempre estragaria vínculos de outras in
 
 **No piloto**, a regra mudou a UF de 76 vínculos (do peso: DF −17,5, RJ +8,4, SP +7,9, BA +2,7, CE −2,7). São 60 da FGV, que deixa de ser contada em Brasília e cuja escola do Rio deixa de ir para São Paulo pelo remendo do `instituicoes.yaml`, e 16 de outras instituições, quase todos campi fora da sede que a `v240` punha na sede: a Fiocruz Minas, a Unilab em São Francisco do Conde (BA), a UFFS em Erechim (RS), a Univasf no Piauí, a ESPM no Rio e o Exército em Manaus. Um é erro da `v70`: um autor da Universidade Federal do Tocantins, também da PUC-Rio, posto no Rio.
 
-O remendo da FGV no `instituicoes.yaml` do piloto (`uf: SP`) ficou para os 28 vínculos sem lugar em nenhuma das duas versões. Sem ele, iriam para o Rio, a cidade do registro do OpenAlex; dos vínculos da FGV com lugar, 79% são de São Paulo (186 de 235). Com a regra, a UF é conhecida em 99,3% do peso brasileiro (eram 99,2%).
+O remendo da FGV no `instituicoes.yaml` do piloto (`uf: SP`) ficou para os 40 vínculos sem lugar em nenhuma das duas versões. Quatro deles dizem "Brasília DF", sem separador, que a normalização não lê (uma lacuna conhecida; eles deviam ir para o DF). Sem o remendo, a maior parte iria para o Rio, a cidade do registro do OpenAlex. Dos 196 vínculos da FGV com lugar, 146 (74,5%) são de São Paulo. Com a regra, a UF é conhecida em 99,3% do peso brasileiro (eram 99,2%).
 
 `geografia/resultado.VERSAO` passou a 3: o resultado guardado de um projeto fica desatualizado, e a correção só vale depois de coletar de novo (os registros saem do cache, sem rede).

@@ -45,7 +45,7 @@ Assim, artigos com muitos autores não pesam mais que os outros, e a soma de tud
 
 Três casos pedem regra:
 
-- **autor sem afiliação**: a parte dele vai para "sem afiliação", e não é redistribuída entre os coautores. No piloto, 223 do peso total (5,2%);
+- **autor sem afiliação**: a parte dele vai para "sem afiliação", e não é redistribuída entre os coautores. No piloto, 213 do peso total (5,0%);
 - **afiliação que ninguém cita** (a fonte lista a afiliação, mas não diz de qual autor é): vai para os autores sem afiliação ou, se todos têm, entra na lista de cada um;
 - **afiliação que não casou**: conta como "instituição não identificada", mas com o país e a UF que a fonte informou.
 
@@ -62,7 +62,7 @@ O país de cada vínculo é o da instituição identificada (o casamento já des
 
 Nos passos 3 a 6, vale primeiro a unidade que casou (uma escola, um hospital) e só depois a instituição "mãe" para a qual ela subiu: a Escola de Administração de Empresas de São Paulo fica em São Paulo, mesmo que a FGV seja do Rio.
 
-A afiliação normalizada (`v240`) às vezes põe a instituição na cidade da sede, e não na do campus: no piloto, 61 afiliações dizem "Fundação Getúlio Vargas, Brasília", e o texto original da mesma afiliação (`v70`) diz São Paulo em 34 delas. Por isso, quando a `v240` não dá UF ou dá uma diferente da `v70`, vale a `v70`, salvo quando o consenso da instituição (a UF de 90% das afiliações dela no corpus, contando, nas que divergem, a da `v70`) confirma a `v240` ou, se a `v240` não dá o lugar, aponta outra UF. A FGV, que tem escolas em São Paulo, no Rio e em Brasília, fica sem consenso, e cada afiliação segue a `v70`. O consenso pesa porque a `v70` também erra: ela põe alguns autores da UFMG em Brasília e, quando a `v240` não dá o lugar, às vezes traz o endereço do autor, e não o da instituição (um autor da USP em Brasília, da Unicamp no Rio). No piloto, a regra mudou a UF de 76 vínculos: 60 da FGV e, entre os outros, campi fora da sede (Fiocruz Minas, a Unilab na Bahia, a UFFS em Erechim) e um erro, um autor da Universidade Federal do Tocantins posto no Rio.
+A afiliação normalizada (`v240`) às vezes põe a instituição na cidade da sede, e não na do campus: no piloto, 61 vínculos (48 afiliações) dizem "Fundação Getúlio Vargas, Brasília", e o texto original da mesma afiliação (`v70`) diz São Paulo em 34 dessas afiliações. Por isso, quando a `v240` não dá UF ou dá uma diferente da `v70`, vale a `v70`, salvo quando o consenso da instituição (a UF de 90% das afiliações dela no corpus, contando, nas que divergem, a da `v70`) confirma a `v240` ou, se a `v240` não dá o lugar, aponta outra UF. A FGV, que tem escolas em São Paulo, no Rio e em Brasília, fica sem consenso, e cada afiliação segue a `v70`. O consenso pesa porque a `v70` também erra: ela põe alguns autores da UFMG em Brasília e, quando a `v240` não dá o lugar, às vezes traz o endereço do autor, e não o da instituição (um autor da USP em Brasília, da Unicamp no Rio). No piloto, a regra mudou a UF de 76 vínculos: 60 da FGV e, entre os outros, campi fora da sede (Fiocruz Minas, a Unilab na Bahia, a UFFS em Erechim) e um erro, um autor da Universidade Federal do Tocantins posto no Rio. Uma lacuna conhecida: a normalização não lê uma cidade com a UF sem separador ("Brasília DF"), e o vínculo fica sem lugar (4 no piloto).
 
 No piloto, o país é conhecido em 98,9% do peso com afiliação, e a UF em 99,3% do peso brasileiro.
 
