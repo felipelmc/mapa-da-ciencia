@@ -249,12 +249,14 @@ def test_uma_etapa_no_terminal_trava_o_painel(cliente):
         em_andamento = cliente.get("/api/projeto/etapas").json()["em_andamento"]
         assert em_andamento["etapa"] == "coleta" and em_andamento["origem"] == "terminal"
         assert "outro terminal" in em_andamento["mensagem"]
+        assert cliente.get("/api/projeto/em-andamento").json()["em_andamento"]["etapa"] == "coleta"
         r = cliente.patch("/api/configuracao", json={"titulo": "Outro"})
         assert r.status_code == 409 and "coleta" in r.json()["detail"]
     finally:
         soltar.set()
         t.join()
     assert "em_andamento" not in cliente.get("/api/projeto/etapas").json()
+    assert cliente.get("/api/projeto/em-andamento").json() == {"em_andamento": None}
     assert cliente.post("/api/etapas/lenta", json={}).status_code == 202
 
 

@@ -23,6 +23,7 @@ O progresso das etapas chega por *Server-Sent Events* (`GET /api/jobs/{job}/even
 | `GET` | `/api/estimativa/classificacao` | Quanto falta classificar, pelo tempo mediano por documento das execuções anteriores. |
 | `GET` | `/api/modelos` | Memória, perfis, modelos instalados no Ollama e os modelos do projeto. |
 | `POST` | `/api/modelos/baixar` | Baixa um modelo do Ollama em segundo plano (um job, com o progresso em MB). |
+| `GET` | `/api/projeto/em-andamento` | Só a etapa que roda fora do painel (`em_andamento`, ou `null`), sem o estado das etapas: uma consulta leve, que a vista Projeto faz a cada poucos segundos para notar uma etapa que começou no terminal. |
 | `GET` | `/api/projeto/etapas` | O estado de cada etapa do pipeline, para a linha de metrô da vista Projeto. Com uma etapa rodando fora do painel (no terminal ou num notebook), `em_andamento` diz qual, onde e desde quando. |
 | `GET` | `/api/revistas` | As revistas correntes do SciELO Brasil (o retrato empacotado), por nome, acrônimo, ISSN ou área; com `issn`, só as desses ISSNs (separados por vírgula), na ordem pedida. |
 | `GET` | `/api/rotulos` | Os rótulos dos tópicos e dos macrotemas: o atual, a fonte (`llm`, `palavras` ou `manual`), as palavras-chave e a entrada do `rotulos.yaml`; `pendentes` conta as entradas do arquivo ainda não aplicadas. |
@@ -127,6 +128,10 @@ Corpo (JSON, `PedidoDownload`):
 | Campo | Tipo |
 |---|---|
 | `modelo` | texto |
+
+### `GET /api/projeto/em-andamento`
+
+Só a etapa que roda fora do painel (`em_andamento`, ou `null`), sem o estado das etapas: uma consulta leve, que a vista Projeto faz a cada poucos segundos para notar uma etapa que começou no terminal.
 
 ### `GET /api/projeto/etapas`
 

@@ -211,6 +211,11 @@ export function criarPainelFalso(
 		const metodo = req.method ?? 'GET';
 		const ativo = () => jobs.find((j) => j.estado === 'na_fila' || j.estado === 'rodando');
 
+		if (metodo === 'GET' && caminho === 'projeto/em-andamento') {
+			json(res, 200, { em_andamento: noTerminal ?? null });
+			return true;
+		}
+
 		if (metodo === 'GET' && caminho === 'projeto/etapas') {
 			const feitos = new Set(jobs.filter((j) => j.estado === 'concluido').map((j) => j.etapa));
 			const estado = (e: string, padrao: string) => (feitos.has(e) ? 'em_dia' : padrao);

@@ -212,6 +212,19 @@ test('com uma etapa rodando no terminal, o painel não começa outra e avisa at�
 	}
 });
 
+test('o painel já aberto nota a etapa que começa no terminal', async ({ page }) => {
+	const terminal = `${url('PAINEL')}api/__teste/terminal`;
+	await page.goto(`${url('PAINEL')}#/projeto`);
+	await expect(page.getByTestId('rodar-topicos')).toBeEnabled();
+	await page.request.post(terminal, { data: { etapa: 'geografia' } });
+	try {
+		await expect(page.getByTestId('etapa-fora')).toContainText('A etapa geografia está rodando', { timeout: 8000 });
+		await expect(page.getByTestId('rodar-topicos')).toBeDisabled();
+	} finally {
+		await page.request.delete(terminal);
+	}
+});
+
 test('o editor dos rótulos grava só o que mudou e aplica sem refazer os tópicos', async ({ page }) => {
 	const topicos = ler('topicos.json');
 	const t0 = topicos.topicos.find((t: { id: number }) => t.id === 0);
@@ -220,19 +233,21 @@ test('o editor dos rótulos grava só o que mudou e aplica sem refazer os tópic
 	const editor = page.getByTestId('editor-rotulos');
 	await expect(editor.locator('#rotulo-t-0')).toHaveValue(t0.rotulo);
 	await expect(editor.getByTestId('salvar-rotulos')).toBeDisabled(); // nada mudou
-	// um acento perdido ("coalizao", e a palavra-chave é "coalizão") não impede de salvar, mas vira aviso
+	// um acento perdido ("coalizao", e a palavra-chave é "coalizão") não impede de salvar, mas segura o editor antes de aplicar
 	await editor.locator('#rotulo-t-0').fill('Coalizao no congresso');
 	await expect(editor.getByTestId('salvar-rotulos')).toHaveText('Salvar e aplicar 1 rótulo');
 	const pedido = page.waitForRequest((r) => r.url().endsWith('/api/rotulos') && r.method() === 'PATCH');
-	const job = page.waitForRequest((r) => r.url().endsWith('/api/etapas/topicos') && r.method() === 'POST');
 	await editor.getByTestId('salvar-rotulos').click();
 	expect((await pedido).postDataJSON()).toEqual({
 		topicos: { '0': { rotulo: 'Coalizao no congresso', descricao: t0.descricao } },
 		macrotemas: {}
 	});
+	await expect(editor.getByTestId('avisos-rotulos')).toContainText('“coalizao”');
+	await expect(editor.getByTestId('pe-rotulos')).toBeInViewport(); // o aviso fica no pé da tela, à vista
+	const job = page.waitForRequest((r) => r.url().endsWith('/api/etapas/topicos') && r.method() === 'POST');
+	await editor.getByTestId('aplicar-assim').click();
 	expect((await job).postDataJSON()).toEqual({ aplicar_rotulos: true });
 	await expect(editor).toHaveCount(0);
-	await expect(page.getByTestId('aviso-rotulos')).toContainText('“coalizao”');
 	// de volta ao do modelo: a entrada sai do arquivo
 	await expect(page.getByTestId('editar-rotulos')).toBeEnabled({ timeout: 10_000 });
 	await page.getByTestId('editar-rotulos').click();

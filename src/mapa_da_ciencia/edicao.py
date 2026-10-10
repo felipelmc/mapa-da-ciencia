@@ -307,7 +307,10 @@ def editar_yaml(
     try:
         validado = validar(_simples(doc))
     except ValidationError as e:
-        problemas = "; ".join(f"{'.'.join(str(p) for p in err['loc'])}: {err['msg']}" for err in e.errors())
+        # sem o "Value error, " que o Pydantic põe antes da mensagem de um validador
+        problemas = "; ".join(
+            f"{'.'.join(str(p) for p in err['loc'])}: {err['msg'].removeprefix('Value error, ')}" for err in e.errors()
+        )
         raise ErroConfig(f"{caminho.name} ficaria inválido: {problemas}") from e
     saida = io.StringIO()
     y.dump(doc, saida)

@@ -41,11 +41,18 @@
 	/** Uma etapa que roda fora do painel (no terminal ou num notebook): o painel não começa outra até ela terminar. */
 	const fora = $derived(etapas?.em_andamento ?? null);
 	const ocupado = $derived((!!aoVivo && !aoVivo.terminado) || !!fora);
-	// enquanto ela roda, a linha confere a cada 5 s se já terminou
+	// a cada 5 s, uma consulta leve diz se uma etapa começou (ou terminou) fora do painel; quando isso muda, a linha das
+	// etapas é consultada de novo (essa consulta lê o corpus e leva alguns segundos)
 	$effect(() => {
-		if (!fora) return;
 		const timer = setInterval(() => {
-			void fonte.etapas().then((e) => (etapas = e)).catch(() => {});
+			void fonte
+				.emAndamento()
+				.then(({ em_andamento }) => {
+					const agora = em_andamento ? `${em_andamento.pid}:${em_andamento.etapa}` : null;
+					if (agora !== (fora ? `${fora.pid}:${fora.etapa}` : null))
+						void fonte.etapas().then((e) => (etapas = e)).catch(() => {});
+				})
+				.catch(() => {});
 		}, 5000);
 		return () => clearInterval(timer);
 	});
@@ -135,7 +142,8 @@
 		</p>
 	</header>
 
-	{#if aviso}<p class="aviso" role="alert" data-testid="aviso-projeto">{aviso}</p>{/if}
+	<!-- o 409 de uma etapa que roda fora diz o mesmo que o aviso dela, logo abaixo: uma vez basta -->
+	{#if aviso && aviso !== fora?.mensagem}<p class="aviso" role="alert" data-testid="aviso-projeto">{aviso}</p>{/if}
 	{#if salvo}<p class="ok-salvo" role="status" data-testid="projeto-salvo">Projeto salvo. As etapas afetadas aparecem desatualizadas na linha.</p>{/if}
 
 	{#if configurando}

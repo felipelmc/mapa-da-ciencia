@@ -3,9 +3,12 @@
 	 * O editor dos rótulos dos tópicos, no painel: cada macrotema com os tópicos dele, o rótulo e a descrição de cada
 	 * um (o atual, escrito pelo modelo, pelas palavras-chave ou à mão), as palavras-chave e o tamanho do tópico. O que
 	 * mudar vai para o `rotulos.yaml` (sem perder os comentários) e é aplicado pela etapa de tópicos, sem refazê-los
-	 * nem chamar o modelo. "Voltar ao do modelo" tira a entrada do arquivo.
+	 * nem chamar o modelo. "Tirar a correção" tira a entrada do arquivo: o tópico volta às palavras-chave até a etapa de
+	 * tópicos rodar inteira, que traz de novo o rótulo do modelo. Um aviso de acento, que a gravação devolve, segura o
+	 * editor aberto antes de aplicar; sair com mudanças não salvas pergunta antes.
 	 */
 	import { onMount, tick } from 'svelte';
+	import { beforeNavigate } from '$app/navigation';
 	import type { FonteApi, MudancaDeRotulos, RotuloManual, RotulosDoProjeto } from '$lib/dados/api';
 	import { ErroDaApi } from '$lib/dados/pedir';
 	import { formatarInteiro } from '$lib/formato';
@@ -23,6 +26,7 @@
 
 	const MAXIMO = 80;
 	const FONTE = { llm: 'do modelo', palavras: 'palavras-chave', manual: 'à mão' } as const;
+	const MENSAGEM_SAIR = 'Há rótulos editados e não salvos. Sair sem salvar?';
 
 	let dados = $state<RotulosDoProjeto | null>(null);
 	let erro = $state<string | null>(null);
@@ -30,6 +34,26 @@
 	/** O que está nos campos, por `t:<id>` ou `m:<id>`, e as entradas que voltam ao modelo. */
 	let campos = $state<Record<string, RotuloManual>>({});
 	let voltar = $state<Record<string, boolean>>({});
+	/** Os avisos de acento da última gravação: o arquivo já mudou, e o editor espera a pessoa aplicar ou corrigir. */
+	let avisos = $state<string[]>([]);
+	let fechando = false;
+
+	function fechar(r: { salvou: boolean; avisos: string[] }) {
+		fechando = true;
+		aoFechar(r);
+	}
+
+	function fecharSemSalvar() {
+		if (mudou && !confirm(MENSAGEM_SAIR)) return;
+		fechar({ salvou: false, avisos: [] });
+	}
+
+	// sair da vista (pelo trilho, por um link ou fechando a aba) com mudanças não salvas pergunta antes
+	beforeNavigate((nav) => {
+		if (fechando || !mudou) return;
+		if (nav.type === 'leave') nav.cancel();
+		else if (!confirm(MENSAGEM_SAIR)) nav.cancel();
+	});
 
 	const chave = (grupo: 't' | 'm', id: number) => `${grupo}:${id}`;
 
@@ -70,13 +94,16 @@
 	});
 	const mudou = $derived(Object.keys(mudanca.topicos).length + Object.keys(mudanca.macrotemas).length);
 	const vazio = $derived(Object.values(campos).some((c) => !c.rotulo.trim()));
+	const longo = $derived(Object.values(campos).some((c) => c.rotulo.trim().length > MAXIMO));
 
 	async function salvar() {
 		salvando = true;
 		erro = null;
 		try {
 			const r = await fonte.mudarRotulos(mudanca);
-			aoFechar({ salvou: true, avisos: r.avisos ?? [] });
+			// um acento perdido: o arquivo já foi gravado, mas a pessoa decide se aplica assim ou corrige antes
+			if (r.avisos?.length) avisos = r.avisos;
+			else fechar({ salvou: true, avisos: [] });
 		} catch (e) {
 			erro = e instanceof ErroDaApi ? e.message : `Não foi possível salvar: ${(e as Error).message}`;
 		} finally {
@@ -88,14 +115,14 @@
 <section class="editor" aria-labelledby="titulo-rotulos" data-testid="editor-rotulos">
 	<header>
 		<h2 id="titulo-rotulos">Rótulos dos tópicos</h2>
-		<button type="button" class="fechar" onclick={() => aoFechar({ salvou: false, avisos: [] })}>Fechar sem salvar</button>
+		<button type="button" class="fechar" onclick={fecharSemSalvar}>Fechar sem salvar</button>
 	</header>
 	<p class="suave">
 		O que você escrever vai para o <code>rotulos.yaml</code> do projeto e vale também quando os tópicos forem refeitos.
 		Salvar aplica os rótulos sem refazer os tópicos e sem chamar o modelo. O rótulo de um macrotema com vários tópicos,
 		quando escrito pelo modelo, só muda na próxima vez que a etapa Tópicos rodar inteira.
 	</p>
-	{#if erro}<p class="aviso" role="alert" data-testid="erro-rotulos">{erro}</p>{/if}
+	{#if erro && !dados}<p class="aviso" role="alert" data-testid="erro-rotulos">{erro}</p>{/if}
 	{#if dados && dados.pendentes > 0 && !mudou}
 		<p class="aviso" role="status">{formatarInteiro(dados.pendentes)} rótulo(s) do arquivo ainda não aplicado(s): salve para aplicar.</p>
 	{/if}
@@ -105,7 +132,7 @@
 	{:else if dados}
 		{#each grupos as { m, topicos } (m.id)}
 			<fieldset class="macro" style:--cor={m.cor}>
-				<legend><span class="cor" aria-hidden="true"></span> Macrotema {m.id}</legend>
+				<legend><span class="cor" aria-hidden="true"></span> {m.rotulo}</legend>
 				{@render campo('m', m, `${topicos.length} tópico(s)`)}
 				<ol class="topicos">
 					{#each topicos as t (t.id)}
@@ -116,11 +143,22 @@
 				</ol>
 			</fieldset>
 		{/each}
-		<footer>
-			<button type="button" class="botao" disabled={!(mudou || dados.pendentes) || vazio || salvando} onclick={salvar} data-testid="salvar-rotulos">
+		<!-- o botão e as mensagens ficam sempre à vista, no pé da tela: o editor é longo -->
+		<footer data-testid="pe-rotulos">
+			{#if erro}<p class="aviso" role="alert" data-testid="erro-rotulos">{erro}</p>{/if}
+			{#if avisos.length}
+				<div class="avisos" role="status" data-testid="avisos-rotulos">
+					<p>Gravado no <code>rotulos.yaml</code>, mas ainda não aplicado. Confira antes:</p>
+					<ul>{#each avisos as a (a)}<li>{a}</li>{/each}</ul>
+					<button type="button" class="botao" onclick={() => fechar({ salvou: true, avisos: [] })} data-testid="aplicar-assim">Aplicar assim mesmo</button>
+					<span class="suave">ou corrija e salve de novo.</span>
+				</div>
+			{/if}
+			<button type="button" class="botao" disabled={!(mudou || dados.pendentes) || vazio || longo || salvando} onclick={salvar} data-testid="salvar-rotulos">
 				{mudou ? `Salvar e aplicar ${mudou === 1 ? '1 rótulo' : `${mudou} rótulos`}` : 'Aplicar'}
 			</button>
 			{#if vazio}<span class="suave">Um rótulo não pode ficar vazio.</span>{/if}
+			{#if longo}<span class="suave">Um rótulo tem até {MAXIMO} caracteres.</span>{/if}
 		</footer>
 	{/if}
 </section>
@@ -132,16 +170,22 @@
 		<label for={id}>
 			<span class="cor" aria-hidden="true"></span>
 			<span class="numero">{grupo === 't' ? 'Tópico' : 'Rótulo do macrotema'} {grupo === 't' ? x.id : ''}</span>
-			<span class="selo" data-testid="fonte-{k}">{voltar[k] ? 'volta ao do modelo' : FONTE[x.fonte]}</span>
+			<span class="selo" data-testid="fonte-{k}">{voltar[k] ? 'volta às palavras-chave' : FONTE[x.fonte]}</span>
 		</label>
 		{#if campos[k]}
-			<input {id} type="text" maxlength={MAXIMO} bind:value={campos[k].rotulo} disabled={voltar[k]} />
-			<span class="contador suave">{campos[k].rotulo.length}/{MAXIMO}</span>
-			<textarea aria-label="Descrição" rows="2" maxlength="1000" bind:value={campos[k].descricao} disabled={voltar[k]}></textarea>
+			{@const invalido = !voltar[k] && (!campos[k].rotulo.trim() || campos[k].rotulo.trim().length > MAXIMO)}
+			<input {id} type="text" bind:value={campos[k].rotulo} disabled={voltar[k]} aria-invalid={invalido} aria-describedby="{id}-contador" />
+			<span id="{id}-contador" class="contador" class:excede={campos[k].rotulo.trim().length > MAXIMO}>{campos[k].rotulo.trim().length}/{MAXIMO}</span>
+			{#if !voltar[k] && !campos[k].rotulo.trim()}<p class="erro-campo">O rótulo não pode ficar vazio.</p>{/if}
+			<textarea aria-label="Descrição" rows="3" maxlength="1000" bind:value={campos[k].descricao} disabled={voltar[k]}></textarea>
 		{/if}
 		<p class="detalhe suave">{detalhe}</p>
 		{#if x.manual}
-			<label class="voltar"><input type="checkbox" bind:checked={voltar[k]} data-testid="voltar-{k}" /> Voltar ao do modelo</label>
+			<label class="voltar">
+				<input type="checkbox" bind:checked={voltar[k]} data-testid="voltar-{k}" />
+				Tirar a correção à mão
+				<span class="suave">(o rótulo volta às palavras-chave até a etapa Tópicos rodar inteira, que traz de novo o do modelo)</span>
+			</label>
 		{/if}
 	</div>
 {/snippet}
@@ -166,8 +210,41 @@
 	}
 
 	footer {
+		position: sticky;
+		bottom: 0;
+		z-index: 2;
 		justify-content: flex-start;
 		align-items: center;
+		margin: 0 -1.4rem -1.2rem;
+		padding: 0.8rem 1.4rem;
+		border-top: 1px solid var(--linha);
+		border-radius: 0 0 var(--raio) var(--raio);
+		background: var(--superficie);
+	}
+
+	footer > .aviso,
+	.avisos {
+		flex-basis: 100%;
+	}
+
+	.avisos {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem 0.8rem;
+		align-items: center;
+		padding: 0.6rem 0.8rem;
+		border: 1px dashed var(--texto-suave);
+		border-radius: var(--raio);
+	}
+
+	.avisos p,
+	.avisos ul {
+		flex-basis: 100%;
+		margin: 0;
+	}
+
+	.avisos ul {
+		padding-left: 1.2rem;
 	}
 
 	h2 {
@@ -266,6 +343,27 @@
 
 	.contador {
 		font-size: 0.75rem;
+		color: var(--texto-suave);
+	}
+
+	.contador.excede,
+	.erro-campo {
+		color: var(--acento);
+	}
+
+	.erro-campo {
+		grid-column: 1 / -1;
+		margin: 0;
+		font-size: 0.8rem;
+	}
+
+	input[aria-invalid='true'] {
+		border-color: var(--acento);
+	}
+
+	textarea {
+		field-sizing: content;
+		min-height: 3lh;
 	}
 
 	.detalhe {

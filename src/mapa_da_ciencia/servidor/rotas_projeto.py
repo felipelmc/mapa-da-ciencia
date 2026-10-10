@@ -102,6 +102,13 @@ def rotas_projeto(projeto: Projeto, jobs: Jobs) -> APIRouter:
             estados["em_andamento"] = dono | {"mensagem": mensagem_da_trava(projeto, dono)}
         return estados
 
+    @rotas.get("/projeto/em-andamento")
+    def em_andamento() -> dict[str, Any]:
+        """Só a etapa que roda fora do painel (`em_andamento`, ou `null`), sem o estado das etapas: uma consulta leve,
+        que a vista Projeto faz a cada poucos segundos para notar uma etapa que começou no terminal."""
+        dono = fora_do_painel(projeto)
+        return {"em_andamento": dono | {"mensagem": mensagem_da_trava(projeto, dono)} if dono is not None else None}
+
     @rotas.get("/modelos")
     def modelos() -> dict[str, Any]:
         """Memória, perfis, modelos instalados no Ollama e os modelos do projeto."""
@@ -292,7 +299,8 @@ def rotas_projeto(projeto: Projeto, jobs: Jobs) -> APIRouter:
         _livre()
         r = _resultado_dos_topicos()
         ids = {"topicos": {t.id for t in r.topicos}, "macrotemas": {m.id for m in r.macrotemas}}
-        faltam = [f"{g[:-1]} {i}" for g in ids for i in getattr(pedido, g) if i not in ids[g]]
+        nomes = {"topicos": "tópico", "macrotemas": "macrotema"}
+        faltam = [f"{nomes[g]} {i}" for g in ids for i in getattr(pedido, g) if i not in ids[g]]
         if faltam:
             raise HTTPException(422, f"Não há {', '.join(faltam)} nos tópicos atuais.")
         # uma descrição vazia não vai para o arquivo (e tira a que existia); `null` tira a entrada

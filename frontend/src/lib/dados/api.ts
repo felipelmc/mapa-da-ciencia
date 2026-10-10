@@ -124,6 +124,11 @@ export class FonteApi extends FonteEstatica {
 		return pedirApi('api/projeto/etapas');
 	}
 
+	/** Só a etapa que roda fora do painel, sem o estado das etapas: a consulta leve que a vista Projeto repete. */
+	emAndamento(): Promise<{ em_andamento: EtapaEmAndamento | null }> {
+		return pedirApi('api/projeto/em-andamento');
+	}
+
 	iniciarEtapa(etapa: NomeEtapa, opcoes: Record<string, unknown> = {}): Promise<Job> {
 		return pedirApi(`api/etapas/${etapa}`, { method: 'POST', body: JSON.stringify(opcoes) });
 	}
