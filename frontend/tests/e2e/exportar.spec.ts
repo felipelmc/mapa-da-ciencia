@@ -267,3 +267,23 @@ test('as legendas vão na figura exportada: Classificação, Geografia e Tópico
 	for (const m of ler('topicos.json').macrotemas) expect(fluxo).toContain(`>${noSvg(m.rotulo)}</text>`);
 	expect(fluxo).toContain('>Sem tópico</text>');
 });
+
+test('os pequenos múltiplos saem inteiros, com o título de cada painel', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	const multiplos = page.getByTestId('figura-por-revista');
+	await expect(multiplos.locator('.titulo-multiplo').first()).toBeVisible();
+	const revistas = (await multiplos.locator('.titulo-multiplo').allTextContents()).map((t) => t.trim().split(/\s+/)[0]);
+	expect(revistas.length).toBeGreaterThan(1);
+	const svg = (await baixar(page, 'por-revista', 'SVG')).dados.toString('utf8');
+	for (const r of revistas) expect(svg).toMatch(new RegExp(`>${r} [\\d.]+</text>`));
+	expect(svg.match(/<svg /g)!.length).toBeGreaterThanOrEqual(revistas.length + 1); // um SVG por painel, dentro do da figura
+	for (const m of ler('topicos.json').macrotemas) expect(svg).toContain(`>${noSvg(m.rotulo)}</text>`); // a legenda
+	writeFileSync(join(TELAS, 'exportar-por-revista-slide.png'), (await baixar(page, 'por-revista', 'PNG', 'slide')).dados);
+
+	await page.goto(`${url('RAIZ')}#/redes`);
+	const colaboracao = page.getByTestId('figura-colaboracao');
+	await expect(colaboracao.locator('h3').first()).toBeVisible();
+	const series = await colaboracao.locator('h3').allTextContents();
+	const svgColaboracao = (await baixar(page, 'colaboracao', 'SVG')).dados.toString('utf8');
+	for (const s of series) expect(svgColaboracao).toContain(`>${noSvg(s)}</text>`);
+});

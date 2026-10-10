@@ -188,10 +188,48 @@ const NS = 'http://www.w3.org/2000/svg';
 const escapar = (t: string) =>
 	t.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
-/** O primeiro gráfico SVG da figura (o que vale exportar), ignorando ícones e sparklines pequenas. */
-export function graficoDe(figura: HTMLElement): SVGSVGElement | null {
+/** O gráfico da figura (o que vale exportar): os pequenos múltiplos inteiros (`[data-multiplos]`, cada filho um painel
+ * com um SVG e o título), ou o primeiro gráfico SVG, ignorando ícones e sparklines pequenas. */
+export function graficoDe(figura: HTMLElement): SVGSVGElement | HTMLElement | null {
+	const multiplos = figura.querySelector<HTMLElement>('.grafico [data-multiplos]');
+	if (multiplos?.querySelector('svg')) return multiplos;
 	const svgs = Array.from(figura.querySelectorAll<SVGSVGElement>('.grafico svg'));
 	return svgs.find((s) => s.getBoundingClientRect().width >= 200) ?? null;
+}
+
+/** Os pequenos múltiplos num SVG só: cada painel na posição da tela, com o título em `<text>` e a opacidade dele
+ * (um painel apagado pelo recorte continua apagado). */
+function clonarMultiplos(container: HTMLElement): SVGSVGElement {
+	const base = container.getBoundingClientRect();
+	const saida = document.createElementNS(NS, 'svg') as SVGSVGElement;
+	saida.setAttribute('viewBox', `0 0 ${base.width} ${base.height}`);
+	for (const painel of Array.from(container.children) as HTMLElement[]) {
+		const svg = painel.querySelector<SVGSVGElement>('svg');
+		if (!svg) continue;
+		const grupo = document.createElementNS(NS, 'g');
+		const opacidade = getComputedStyle(painel).opacity;
+		if (opacidade && opacidade !== '1') grupo.setAttribute('opacity', opacidade);
+		const r = svg.getBoundingClientRect();
+		const clone = svg.cloneNode(true) as SVGSVGElement;
+		fixarEstilos(svg, clone);
+		for (const [nome, valor] of [['x', r.left - base.left], ['y', r.top - base.top], ['width', r.width], ['height', r.height]] as const)
+			clone.setAttribute(nome, String(valor));
+		clone.removeAttribute('style');
+		const titulo = painel.querySelector<HTMLElement>('[data-titulo-painel], h3, .titulo-multiplo');
+		if (titulo) {
+			const t = titulo.getBoundingClientRect();
+			const e = getComputedStyle(titulo);
+			const texto = document.createElementNS(NS, 'text');
+			texto.textContent = (titulo.textContent ?? '').replace(/\s+/g, ' ').trim();
+			texto.setAttribute('x', String(t.left - base.left));
+			texto.setAttribute('y', String(t.top - base.top + parseFloat(e.fontSize)));
+			texto.setAttribute('style', `font-family:${e.fontFamily};font-size:${e.fontSize};font-weight:${e.fontWeight};fill:${e.color}`);
+			grupo.append(texto);
+		}
+		grupo.append(clone);
+		saida.append(grupo);
+	}
+	return saida;
 }
 
 /**
@@ -354,6 +392,7 @@ function medidor(fonte: string): OpcoesLegenda['medir'] {
 export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Preset): Promise<string | null> {
 	const grafico = graficoDe(figura);
 	if (!grafico) return null;
+	const multiplos = !(grafico instanceof SVGSVGElement);
 	const caixa = grafico.getBoundingClientRect();
 	const w = caixa.width;
 	const h = caixa.height;
@@ -362,11 +401,15 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 	const { clone, fundo, texto, suave, familias, imagem, legenda } = comTema(tema, () => {
 		const imagem = raster?.rasterizar?.() ?? null;
 		const legenda = legendaDe(figura);
-		const clone = grafico.cloneNode(true) as SVGSVGElement;
-		fixarEstilos(grafico, clone);
+		let clone: SVGSVGElement;
+		if (multiplos) clone = clonarMultiplos(grafico);
+		else {
+			clone = grafico.cloneNode(true) as SVGSVGElement;
+			fixarEstilos(grafico, clone);
+		}
 		const s = getComputedStyle(document.body);
 		const familias = new Set<string>();
-		for (const el of [grafico, ...grafico.querySelectorAll('text')]) {
+		for (const el of [grafico, ...grafico.querySelectorAll('text, h3, .titulo-multiplo, [data-titulo-painel]')]) {
 			getComputedStyle(el)
 				.fontFamily.split(',')
 				.forEach((f) => familias.add(f.replaceAll(/['"]/g, '').trim()));

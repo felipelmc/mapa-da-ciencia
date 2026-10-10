@@ -370,8 +370,9 @@
 			colunas={colunasRevista}
 			linhas={porRevista.map((r) => [r.id, ...r.matriz.map((l) => formatarInteiro(somaDe(l))), formatarInteiro(r.total)])}
 			dados={{ colunas: colunasRevista, linhas: porRevista.map((r) => [r.id, ...r.matriz.map(somaDe), r.total]) }}
+			legenda={{ itens: idsMacro.map((i) => ({ texto: rotulosMacro.get(i) ?? String(i), cor: coresMacro.get(i) ?? 'var(--linha-forte)' })) }}
 		>
-			<div class="multiplos">
+			<div class="multiplos" data-multiplos>
 				{#each porRevista as r (r.id)}
 					<div class="multiplo" class:apagado={filtros.revistas.length > 0 && !filtros.revistas.includes(r.id)}>
 						<button type="button" class="titulo-multiplo" aria-pressed={filtros.revistas.includes(r.id)} onclick={() => alternarRevista(r.id)}>
