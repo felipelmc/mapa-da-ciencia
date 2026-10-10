@@ -920,3 +920,27 @@ def test_redes_de_ponta_a_ponta(projeto):
     exportar(projeto)
     agregados = json.loads((dados / "agregados.json").read_text(encoding="utf-8"))
     assert agregados["arestas_coautoria"] > 0 and agregados["canone_n"] == [citacoes.canone[0].n]
+
+
+def test_comunidades_do_mesmo_macrotema_tem_tons_diferentes():
+    """Cada comunidade ganha um tom do macrotema dela: a maior de cada rede fica com a cor do macrotema, as outras do
+    mesmo macrotema com tons diferentes (no mesmo matiz, legíveis nos dois fundos); sem macrotema, sem cor."""
+    from itertools import combinations
+
+    from mapa_da_ciencia.contrato.redes import cores_das_comunidades
+    from mapa_da_ciencia.topicos.paleta import cores_macrotemas, hex_para_oklch, legivel_nos_fundos
+
+    cor_a, cor_b = cores_macrotemas(2)
+    comunidades = [{"rede": "coautoria", "id": i, "n": 20 - i, "macro": 3 if i < 4 else 5} for i in range(6)]
+    comunidades += [
+        {"rede": "coautoria", "id": 6, "n": 2, "macro": None},
+        {"rede": "instituicoes", "id": 0, "n": 9, "macro": 3},
+    ]
+    cores = cores_das_comunidades(comunidades, {3: cor_a, 5: cor_b})
+    assert cores[("coautoria", 0)] == cores[("instituicoes", 0)] == cor_a  # cada rede tem os seus tons
+    assert cores[("coautoria", 4)] == cor_b and cores[("coautoria", 6)] is None
+    do_macro = [cores[("coautoria", i)] for i in range(4)]
+    assert len(set(do_macro)) == 4 and all(legivel_nos_fundos(c) for c in do_macro)
+    matiz = hex_para_oklch(cor_a)[2]
+    assert all(min(abs(hex_para_oklch(c)[2] - matiz), 360 - abs(hex_para_oklch(c)[2] - matiz)) <= 20 for c in do_macro)
+    assert all(a != b for a, b in combinations(do_macro, 2))

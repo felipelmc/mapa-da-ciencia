@@ -18,7 +18,7 @@
 	import { CORES_POR, normalizarBusca, rota, type CorPor } from '$lib/estado/url';
 	import { formatarInteiro } from '$lib/formato';
 	import { simplificar, type Ponto } from '$lib/graficos/geometria';
-	import Nuvem, { type Anotacao, type Camera } from '$lib/graficos/Nuvem.svelte';
+	import Nuvem, { type Anotacao, type Area, type Camera } from '$lib/graficos/Nuvem.svelte';
 	import Rotulos, { type Caixa, type ItemRotulo } from '$lib/graficos/Rotulos.svelte';
 	import Cartao from './Cartao.svelte';
 	import { calcularContornos, centroDePeso } from './contornos';
@@ -146,6 +146,20 @@
 		});
 	}
 
+	/** A parte da tela do mapa que o cartão do documento não cobre (à direita, ou embaixo no celular). */
+	let lado = $state<HTMLDivElement>();
+	function areaLivre(): Area | null {
+		if (!tela) return null;
+		const base = tela.getBoundingClientRect();
+		const livre = { x0: 0, y0: 0, x1: base.width, y1: base.height };
+		const cartao = lado?.firstElementChild?.getBoundingClientRect();
+		if (cartao?.width) {
+			if (cartao.top - base.top > base.height / 3) livre.y1 = Math.min(livre.y1, cartao.top - base.top);
+			else livre.x1 = Math.min(livre.x1, cartao.left - base.left);
+		}
+		return livre.x1 - livre.x0 > 80 && livre.y1 - livre.y0 > 80 ? livre : null;
+	}
+
 	function repassarRoda(evento: WheelEvent) {
 		evento.preventDefault();
 		tela.querySelector('canvas')?.dispatchEvent(new WheelEvent('wheel', evento));
@@ -228,6 +242,7 @@
 			vista={vistaInicial}
 			{anotacoes}
 			{aoVer}
+			{areaLivre}
 			aoClicar={abrir}
 			{aoLaco}
 			aoMoverCamera={(v) => mudarFiltros({ vista: v }, { substituir: true, em: '/mapa' })}
@@ -314,7 +329,8 @@
 	</p>
 
 	{#if destaque !== null}
-		<div class="lado" data-sobre-o-mapa>
+		<!-- só o cartão está sobre o mapa: a coluna embaixo de um cartão curto deixa passar o clique e a roda -->
+		<div class="lado" bind:this={lado}>
 			<Cartao {tabela} {topicos} indice={destaque} aoFechar={() => abrir(null)} aoAbrir={abrir} />
 		</div>
 	{/if}
@@ -539,10 +555,12 @@
 		width: min(24rem, calc(100% - 2rem));
 		display: flex;
 		flex-direction: column;
+		pointer-events: none;
 	}
 
 	.lado > :global(*) {
 		max-height: 100%;
+		pointer-events: auto;
 	}
 
 	/* em telas largas, o painel aberto fica ao lado do mapa, e não por cima: a nuvem inteira aparece */

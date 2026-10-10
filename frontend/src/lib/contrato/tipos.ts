@@ -672,6 +672,10 @@ export interface ColaboracaoAno {
 	entre_ufs?: number | null;
 }
 export interface ComunidadeRede {
+	/**
+	 * Cor da comunidade (hex): um tom da cor do macrotema dela, diferente dos tons das outras comunidades do mesmo macrotema na mesma rede. `null` sem macrotema (a interface usa a cor neutra). Desde a versão 1.6; antes, a interface usava a cor do macrotema.
+	 */
+	cor?: string | null;
 	documentos: number;
 	id: number;
 	/**

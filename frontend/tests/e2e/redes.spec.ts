@@ -191,6 +191,31 @@ test('a vista leva à ajuda das redes, e as comunidades têm rótulo e lista', a
 	await expect(page.getByTestId('glossario-redes')).toContainText('Modularidade');
 });
 
+test('duas comunidades do mesmo macrotema têm cores diferentes, nos nós e na legenda', async ({ page }) => {
+	// no exemplo, cada comunidade de coautoria tem um macrotema; no piloto, 38 dividem 7
+	const [a, b] = redes.comunidades.filter((c: { rede: string }) => c.rede === 'coautoria');
+	await page.route('**/dados/redes.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const r = await resposta.json();
+		const outra = r.comunidades.find((c: { rede: string; id: number }) => c.rede === 'coautoria' && c.id === b.id);
+		outra.macro = a.macro;
+		outra.cor = '#123456';
+		await rota.fulfill({ response: resposta, json: r });
+	});
+	await page.goto(`${url('RAIZ')}#/redes`);
+	await esperarRedes(page, 'coautoria');
+	const membro = (c: number) => redes.pessoas.id[redes.pessoas.comunidade.indexOf(c)];
+	const cores = await page.evaluate(
+		([x, y]) => [window.__redesDebug!.corDoNo!(x), window.__redesDebug!.corDoNo!(y)],
+		[membro(a.id), membro(b.id)]
+	);
+	expect(cores).toEqual([a.cor, '#123456']);
+	const bolinhas = page.getByTestId('lista-comunidades').getByTestId('comunidade').locator('.bolinha');
+	const fundos = await bolinhas.evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor));
+	expect(fundos).toContain('rgb(18, 52, 86)');
+	expect(new Set(fundos).size).toBe(fundos.length);
+});
+
 test('instituições: o cartão põe a instituição no recorte', async ({ page }) => {
 	const problemas = vigiar(page);
 	const id: string = redes.instituicoes.id[0];
@@ -520,6 +545,32 @@ test('uma comunidade escolhida na legenda fica acesa, enquadrada e no link; "Tod
 	expect(problemas).toEqual([]);
 });
 
+test('um link com a comunidade e o nó enquadra o nó; escolher outra comunidade fecha o cartão', async ({ page }) => {
+	const problemas = vigiar(page);
+	const no = central();
+	const c = redes.comunidades.find(
+		(x: { rede: string; id: number }) => x.rede === 'coautoria' && x.id !== redes.pessoas.comunidade[no]
+	).id;
+	await page.goto(`${url('RAIZ')}#/redes?comunidade=${c}&no=${encodeURIComponent(redes.pessoas.id[no])}`);
+	await esperarRedes(page, 'coautoria');
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista.k).not.toBe(1);
+	// o nó e os vizinhos na tela, já enquadrados: "Enquadrar o nó" não muda o zoom (antes, o enquadramento da
+	// comunidade vencia, e o nó podia ficar fora da tela)
+	await expect.poll(() => todosNaTela(page, [no, ...vizinhosDe(no)])).toBe(true);
+	await expect(page.getByTestId('zoom-enquadrar')).toHaveText('Enquadrar o nó');
+	const vista = (await estadoDoGrafo(page)).vista;
+	await page.getByTestId('zoom-enquadrar').click();
+	await expect.poll(async () => (await estadoDoGrafo(page)).vista).toEqual(vista);
+	// escolher outra comunidade na legenda fecha o cartão e enquadra a comunidade
+	await page.locator('[data-testid="comunidade"][aria-pressed="false"]').first().click();
+	await expect(page).toHaveURL(/comunidade=\d+/);
+	await expect(page).not.toHaveURL(/[?&]no=/);
+	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+	await expect(page.getByTestId('zoom-enquadrar')).toHaveText('Enquadrar a comunidade');
+	expect(problemas).toEqual([]);
+});
+
 test('arrastar um nó o move sem abrir o cartão; "Reiniciar" devolve o desenho; o clique abre sem rolar a página', async ({ page }) => {
 	const problemas = vigiar(page);
 	await page.goto(`${url('RAIZ')}#/redes`);
@@ -780,6 +831,55 @@ test('em tela cheia, o cartão do nó aparece junto com o grafo', async ({ page 
 	await page.keyboard.press('Escape');
 });
 
+test('ao lado do grafo, o painel de exportar da colaboração fica dentro da figura e da janela', async ({ page }) => {
+	for (const [largura, altura] of [
+		[1440, 900],
+		[1200, 800]
+	]) {
+		await page.setViewportSize({ width: largura, height: altura });
+		await page.goto(`${url('RAIZ')}#/redes`);
+		await esperarRedes(page, 'coautoria');
+		const figura = page.getByTestId('figura-colaboracao');
+		await figura.scrollIntoViewIfNeeded();
+		// com a tabela aberta, o botão "Esconder a tabela" é mais largo e empurra o "Exportar" para a direita
+		for (const comTabela of [false, true]) {
+			if (comTabela) await figura.getByRole('button', { name: 'Ver como tabela' }).click();
+			await figura.getByTestId('abrir-exportar').click();
+			const painel = figura.getByRole('group', { name: 'Exportar a figura' });
+			await expect(painel).toBeVisible();
+			const f = (await figura.boundingBox())!;
+			// o recuo é medido depois de o painel aparecer
+			await expect
+				.poll(async () => {
+					const p = (await painel.boundingBox())!;
+					return p.x + p.width;
+				}, { message: `${largura} px, tabela ${comTabela}` })
+				.toBeLessThanOrEqual(f.x + f.width + 0.5);
+			expect((await painel.boundingBox())!.x).toBeGreaterThanOrEqual(0);
+			expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+			await figura.getByTestId('abrir-exportar').click();
+		}
+	}
+});
+
+test('fechar o cartão lendo a colaboração não a tira da tela', async ({ page }) => {
+	for (const [largura, altura] of [
+		[1920, 1080],
+		[1024, 800]
+	]) {
+		await page.setViewportSize({ width: largura, height: altura });
+		await page.goto(`${url('RAIZ')}#/redes?no=${redes.pessoas.id[central()]}`);
+		await esperarRedes(page, 'coautoria');
+		await expect(page.getByTestId('cartao-no')).toBeVisible();
+		const figura = page.getByTestId('figura-colaboracao');
+		await figura.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+		await page.keyboard.press('Escape');
+		await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+		// ela sobe (para o lado do grafo, ou a altura do cartão), e a rolagem acompanha
+		await expect(figura, `${largura} px`).toBeInViewport({ ratio: 0.5 });
+	}
+});
+
 test('com o cartão aberto, a colaboração desce para baixo do grafo, sem nada por cima, e a exportação dela abre', async ({ page }) => {
 	await page.setViewportSize({ width: 1920, height: 1080 });
 	await page.goto(`${url('RAIZ')}#/redes?no=${redes.pessoas.id[central()]}`);
@@ -889,6 +989,34 @@ test('no toque, depois de usar a legenda, tocar num nó não faz a página pular
 	await expect(page.getByTestId('cartao-no')).toBeAttached();
 	expect(await page.evaluate(() => scrollY)).toBe(antes);
 	await contexto.close();
+});
+
+test('um cartão aberto pelo link: o primeiro Esc fecha o cartão, o segundo solta a comunidade', async ({ page }) => {
+	const no = central();
+	const c = redes.pessoas.comunidade[no];
+	await page.goto(`${url('RAIZ')}#/redes?comunidade=${c}&no=${encodeURIComponent(redes.pessoas.id[no])}`);
+	await esperarRedes(page, 'coautoria');
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+	await expect(page).toHaveURL(new RegExp(`comunidade=${c}`));
+	// o foco vai para o grafo (antes ia para a busca, e o Esc seguinte ficava com o campo de texto)
+	await expect(page.locator('[data-grafo]')).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect(page).not.toHaveURL(/comunidade=/);
+});
+
+test('na busca, o Esc limpa o texto; com ela vazia, solta a comunidade', async ({ page }) => {
+	const c = redes.comunidades.find((x: { rede: string }) => x.rede === 'coautoria').id;
+	await page.goto(`${url('RAIZ')}#/redes?comunidade=${c}`);
+	await esperarRedes(page, 'coautoria');
+	const campo = page.getByRole('combobox', { name: 'Buscar uma pessoa' });
+	await campo.fill('zzz');
+	await campo.press('Escape');
+	await expect(campo).toHaveValue('');
+	await expect(page).toHaveURL(new RegExp(`comunidade=${c}`));
+	await campo.press('Escape');
+	await expect(page).not.toHaveURL(/comunidade=/);
 });
 
 test('o Esc que fecha o menu das revistas, ou sai do modo apresentação, não solta a comunidade', async ({ page }) => {

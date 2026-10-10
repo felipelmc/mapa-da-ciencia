@@ -19,9 +19,9 @@ test('no site estático, a seção vira a Metodologia, tirada do manifesto', asy
 	await expect(page.getByTestId('modelos-metodologia')).toContainText('Classificação');
 	// a versão exata dos modelos, o hash e a versão do contrato ficam no bloco recolhido "Para reproduzir"
 	const reproduzir = page.getByTestId('para-reproduzir');
-	await expect(reproduzir.getByText('versão 1.5')).toBeHidden();
+	await expect(reproduzir.getByText('versão 1.6')).toBeHidden();
 	await reproduzir.locator('summary').click();
-	await expect(reproduzir.getByText('versão 1.5')).toBeVisible();
+	await expect(reproduzir.getByText('versão 1.6')).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Desenho da validação' })).toBeVisible();
 	expect(problemas).toEqual([]);
 });
@@ -30,7 +30,15 @@ test('a linha de metrô, a estimativa e os modelos', async ({ page }) => {
 	const problemas = vigiar(page);
 	await page.goto(`${url('PAINEL')}#/projeto`);
 	await expect(h1(page)).toHaveText('Projeto');
-	await expect(page.getByTestId('linha-metro').getByRole('listitem')).toHaveCount(6);
+	await expect(page.getByTestId('linha-metro').getByRole('listitem')).toHaveCount(7);
+	// o júri (o projeto tem `juri.membros`): o estado e o próximo comando, sem botão de rodar
+	const juri = page.getByTestId('estacao-juri');
+	await expect(page.getByTestId('estado-juri')).toHaveText('Incompleta');
+	await expect(page.getByTestId('proximo-juri')).toContainText('mapa juri exportar-pedidos');
+	await expect(juri.getByRole('link', { name: 'Como usar o júri' })).toBeVisible();
+	await expect(juri.getByRole('button')).toHaveCount(0);
+	// o comando longo quebra dentro da estação: a página não rola de lado
+	expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 	// as redes, depois da geografia: desatualizadas, com o que mudou, e o botão diz "Atualizar"
 	await expect(page.getByTestId('estado-redes')).toHaveText('Desatualizada');
 	await expect(page.getByTestId('mudou-redes')).toHaveText('Mudou o pessoas.yaml');
@@ -83,8 +91,12 @@ test('cancelar um job', async ({ page }) => {
 	await page.goto(`${url('PAINEL')}#/projeto`);
 	await page.getByTestId('estacao-classificacao').getByRole('button', { name: 'Só a amostra' }).click();
 	await expect(page.getByTestId('estado-job')).toHaveText('Rodando');
+	// o histórico acompanha o job ao vivo (não fica "na fila", o estado que o POST devolveu)
+	const ultima = page.getByTestId('historico').getByRole('listitem').first();
+	await expect(ultima.getByTestId('estado-historico')).toHaveText('rodando');
 	await page.getByTestId('cancelar-job').click();
 	await expect(page.getByTestId('estado-job')).toHaveText('Cancelado');
+	await expect(ultima.getByTestId('estado-historico')).toHaveText('cancelado');
 	await expect(page.getByTestId('rodar-coleta')).toBeEnabled();
 });
 
@@ -130,8 +142,12 @@ test('o assistente em 5 passos salva o projeto e roda um piloto', async ({ page 
 	await expect(assistente.getByTestId('perfil-leve')).toHaveAttribute('aria-pressed', 'true');
 	await assistente.screenshot({ path: join(TELAS, 'assistente-modelos.png') });
 	await assistente.getByTestId('avancar').click();
-	// 4. codebook: uma variável nova
+	// 4. codebook: uma variável nova, e outra que vira booleana (as categorias dela saem)
 	await assistente.getByTestId('nova-variavel').click();
+	await assistente.getByTestId('nova-variavel').click();
+	const virouBooleana = assistente.locator('details.variavel').last();
+	await virouBooleana.getByLabel('Tipo').selectOption('booleana');
+	await expect(virouBooleana.locator('table.categorias')).toHaveCount(0);
 	await assistente.getByTestId('avancar').click();
 	// 5. revisão: o que muda e o que isso refaz
 	const mudancas = assistente.getByTestId('mudancas');
@@ -150,7 +166,9 @@ test('o assistente em 5 passos salva o projeto e roda um piloto', async ({ page 
 	expect(config.fontes.scielo.revistas).toEqual(['0103-3352']);
 	expect(config.modelos.classificacao.modelo).toBe('qwen3.5:4b');
 	const codebook = await (await page.request.get(`${url('PAINEL')}api/codebook`)).json();
-	expect(codebook.variaveis.at(-1).rotulo).toMatch(/^Variável \d+$/);
+	expect(codebook.variaveis.at(-2).rotulo).toMatch(/^Variável \d+$/);
+	expect(codebook.variaveis.at(-1)).toMatchObject({ tipo: 'booleana' });
+	expect(codebook.variaveis.at(-1).categorias ?? []).toEqual([]);
 	expect(semAQueda(problemas)).toEqual([]);
 });
 

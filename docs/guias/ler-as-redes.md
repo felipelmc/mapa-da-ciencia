@@ -6,7 +6,8 @@ escolhidos em outra vista chegam aqui, e o que fica de fora esmaece (o desenho n
 ## Coautoria
 
 Cada ponto é uma pessoa, e cada linha liga duas pessoas que escreveram juntas. O tamanho do ponto cresce com o número
-de artigos; a cor é a da comunidade (o macrotema mais frequente nos artigos dela). A espessura da linha é o peso
+de artigos; a cor é a da comunidade: um tom do macrotema mais frequente nos artigos dela, diferente dos tons das
+outras comunidades do mesmo macrotema (o matiz diz o macrotema; o tom separa as comunidades). A espessura da linha é o peso
 fracionário: dois autores que escreveram vários artigos a dois têm uma linha forte; dez autores num único artigo formam
 45 linhas fracas, de peso 1/9 cada.
 
@@ -28,11 +29,12 @@ coautores aparecem. Um clique abre o cartão da pessoa, com os artigos dela no r
 um com o peso da parceria no recorte e os documentos em comum; a vizinhança fica acesa, e "Enquadrar o nó" leva o zoom
 até ela. Numa tela larga, a colaboração por ano fica ao lado do grafo; com o cartão aberto, ela desce para baixo dele,
 e o cartão acompanha a rolagem ao lado do grafo (numa tela mais estreita, tudo fica numa coluna: a figura do grafo,
-com a legenda, depois o cartão e, no fim, a colaboração). Esc (ou o ×) fecha o cartão e devolve o foco para onde ele estava. Aberto pela busca ou por um link, o nó já
+com a legenda, depois o cartão e, no fim, a colaboração). Esc (ou o ×) fecha o cartão e devolve o foco para onde ele estava (no cartão aberto pelo link, para o grafo). Aberto pela busca ou por um link, o nó já
 vem enquadrado, mesmo quando está numa dupla ou num trio escondido (que passa a aparecer).
 
 Escolha uma comunidade no seletor da barra do grafo (ou clique nela na lista da legenda) para acendê-la e
-enquadrá-la; a escolha vai para o link (`comunidade=`), e "Todas as comunidades" (ou Esc, sem cartão aberto) solta. "Enquadrar a
+enquadrá-la; a escolha vai para o link (`comunidade=`), e "Todas as comunidades" (ou Esc, sem cartão aberto) solta.
+Escolher uma comunidade fecha o cartão aberto; num link com a comunidade e um nó, o zoom vai até o nó. "Enquadrar a
 comunidade" volta a ela depois de mexer no zoom. Com zoom, os nomes das pessoas com mais artigos aparecem, sem se
 cobrirem, e mais nomes aparecem quanto mais perto você chega.
 

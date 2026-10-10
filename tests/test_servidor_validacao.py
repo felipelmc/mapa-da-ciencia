@@ -85,6 +85,26 @@ def test_gravar_parcial_completa_e_retomar(projeto, tmp_path):
     assert c.put("/api/validacao/codificacoes/S0000", json={"codificador": "maria", "respostas": {}}).status_code == 404
 
 
+def test_so_o_enter_confirma(projeto, tmp_path):
+    """Uma ficha respondida por inteiro pelo salvamento automático continua incompleta na fila e fora das métricas;
+    o PUT com `completa: true` (o Enter) a confirma."""
+    a = va.sortear(projeto)
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    c = _cliente(projeto, tmp_path)
+    doc = a.docs[0]
+    corpo = {"codificador": "maria", "respostas": _respostas(projeto, "mista")}
+    assert c.put(f"/api/validacao/codificacoes/{doc}", json=corpo).json() == {"ok": True, "completa": False}
+    ficha = next(x for x in c.get("/api/validacao/fila?codificador=maria").json()["fila"] if x["doc"] == doc)
+    assert not ficha["completa"] and ficha["respostas"]
+    assert "maria" not in {x["nome"] for x in c.get("/api/validacao/metricas").json()["codificadores"]}
+
+    r = c.put(f"/api/validacao/codificacoes/{doc}", json={**corpo, "completa": True})
+    assert r.json() == {"ok": True, "completa": True}
+    ficha = next(x for x in c.get("/api/validacao/fila?codificador=maria").json()["fila"] if x["doc"] == doc)
+    assert ficha["completa"]
+    assert "maria" in {x["nome"] for x in c.get("/api/validacao/metricas").json()["codificadores"]}
+
+
 def test_escrita_so_desta_maquina(projeto, tmp_path):
     va.sortear(projeto)
     doc = va.ler(projeto).docs[0]

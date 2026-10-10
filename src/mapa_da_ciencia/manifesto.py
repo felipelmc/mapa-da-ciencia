@@ -39,7 +39,7 @@ def registrar_execucao(
     que a etapa usou (lido no começo dela); sem ele, vale o do arquivo agora."""
     if etapa not in ETAPAS:
         raise ValueError(f"etapa desconhecida: {etapa}")
-    if etapa not in ("classificacao", "validacao"):
+    if etapa not in ("classificacao", "validacao", "juri"):
         hash_codebook = None
     elif hash_codebook is None:
         hash_codebook = projeto.codebook.hash()
@@ -122,11 +122,13 @@ def status_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any] | None]:
 
 def estados_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any]]:
     """Cada etapa: `pendente` (nunca rodou), `em_dia`, `incompleta` (a classificação parou antes do fim, a amostra
-    não foi toda codificada) ou `desatualizada` (o corpus, o codebook ou as correções mudaram depois), com a última
-    execução. Nas redes desatualizadas, `mudou` diz o quê."""
+    não foi toda codificada, o júri não chegou ao fim) ou `desatualizada` (o corpus, o codebook ou as correções
+    mudaram depois), com a última execução. Nas redes desatualizadas, `mudou` diz o quê. O júri só aparece com
+    `juri.membros` no `mapa.yaml`, e `proximo` diz o comando a rodar (ele não roda pelo painel)."""
     from mapa_da_ciencia.armazenamento import ARQUIVO, ler_documentos
     from mapa_da_ciencia.classificacao.pipeline import classificacao_em_dia
     from mapa_da_ciencia.geografia.pipeline import geografia_em_dia
+    from mapa_da_ciencia.juri.pipeline import estado_da_etapa
     from mapa_da_ciencia.redes.pipeline import o_que_mudou, redes_em_dia
     from mapa_da_ciencia.topicos.resultado import PASTA, Resultado, assinatura_corpus
     from mapa_da_ciencia.validacao.amostra import documentos_completos
@@ -157,17 +159,16 @@ def estados_das_etapas(projeto: Projeto) -> dict[str, dict[str, Any]]:
         "validacao": None if not amostra else (True if codificados >= len(amostra.docs) else "incompleta"),
     }
     nomes = {None: "pendente", True: "em_dia", False: "desatualizada", "incompleta": "incompleta"}
-    saida = {}
-    for etapa, estado in em_dia.items():
+
+    def ultima(etapa: str) -> dict[str, Any] | None:
         m = ultimas.get(etapa)
-        saida[etapa] = {
-            "estado": nomes[estado],
-            "ultima": None
-            if m is None
-            else {"fim": m["fim"], "duracao_s": m["duracao_s"], "contagens": m["contagens"]},
-        }
+        return None if m is None else {"fim": m["fim"], "duracao_s": m["duracao_s"], "contagens": m["contagens"]}
+
+    saida = {etapa: {"estado": nomes[estado], "ultima": ultima(etapa)} for etapa, estado in em_dia.items()}
     if amostra:
         saida["validacao"]["amostra"] = {"n": len(amostra.docs), "codificados": codificados}
     if em_dia["redes"] is False:
         saida["redes"]["mudou"] = o_que_mudou(projeto)
+    if (juri := estado_da_etapa(projeto)) is not None:
+        saida["juri"] = {"estado": nomes[juri["estado"]], "ultima": ultima("juri"), "proximo": juri["proximo"]}
     return saida

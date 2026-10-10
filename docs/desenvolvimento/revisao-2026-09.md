@@ -161,18 +161,31 @@ Uma última verificação, só desse diff, também aprovou com ressalvas baixas.
 não protegia nada foram corrigidos. O CI achou mais um: o roteador decodificava `%25`, `%26` e `%2B` no endereço, e
 um link com `busca=voto%26partido` perdia o "partido" numa recarga.
 
-Ficaram para depois, registrados: a cor dos nós por comunidade (hoje é a do macrotema, e várias comunidades dividem
-a mesma cor); o cartão do documento, que cobre parte do mapa numa tela de 1440 px; o kappa de uma pessoa, que conta
-fichas ainda não confirmadas; o editor do codebook, que acrescenta listas vazias ao YAML; o histórico das etapas, que
-mostra "na fila" durante a execução; o júri, que ainda não aparece na linha das etapas nem no `mapa status`; e, nas
-redes:
+Ficaram para depois, registrados (a 2.2.0 os corrigiu, um por commit, na branch `pendencias-2.2`):
 
-- um link com `comunidade=` e `no=` juntos, que enquadra a comunidade (o nó pode ficar fora da tela);
-- o Esc que fecha um cartão aberto pelo link, que leva o foco para a busca (o Esc seguinte não solta a comunidade);
-- o painel de exportar ao lado do grafo, que passa uns pixels da borda;
-- fechar o cartão lendo a colaboração, embaixo do grafo, que a tira da tela (ela volta para o lado do grafo).
-
-Na Validação, com "Ver como tabela" aberto, a figura grudada volta a passar da altura da janela.
+- a cor dos nós por comunidade (era a do macrotema, e várias comunidades dividiam a mesma cor) (**corrigido na
+  2.2.0**: cada comunidade tem um tom próprio do macrotema dela);
+- o cartão do documento, que cobre parte do mapa numa tela de 1440 px (**corrigido na 2.2.0**: o mapa desliza até
+  o documento aberto ficar à vista);
+- o kappa de uma pessoa, que conta fichas ainda não confirmadas (**corrigido na 2.2.0**: a confirmação fica
+  guardada, e só fichas confirmadas entram nas métricas);
+- o editor do codebook, que acrescenta listas vazias ao YAML (**corrigido na 2.2.0**: os valores vazios não entram
+  no arquivo);
+- o histórico das etapas, que mostra "na fila" durante a execução (**corrigido na 2.2.0**: ele usa o estado do job
+  acompanhado ao vivo);
+- o júri, que ainda não aparece na linha das etapas nem no `mapa status` (**corrigido na 2.2.0**: o júri tem estado,
+  manifesto e o próximo comando, e continua rodando pela linha de comando);
+- nas redes:
+    - um link com `comunidade=` e `no=` juntos, que enquadra a comunidade (o nó pode ficar fora da tela)
+      (**corrigido na 2.2.0**: o nó tem a prioridade);
+    - o Esc que fecha um cartão aberto pelo link, que leva o foco para a busca (o Esc seguinte não solta a
+      comunidade) (**corrigido na 2.2.0**: o foco vai para o grafo);
+    - o painel de exportar ao lado do grafo, que passa uns pixels da borda (**corrigido na 2.2.0**: o painel recua
+      para caber na figura);
+    - fechar o cartão lendo a colaboração, embaixo do grafo, que a tira da tela (ela volta para o lado do grafo)
+      (**corrigido na 2.2.0**: a rolagem compensa a mudança de lugar);
+- na Validação, com "Ver como tabela" aberto, a figura grudada volta a passar da altura da janela (**corrigido na
+  2.2.0**: com a tabela aberta, a figura não gruda).
 
 ## Como repetir
 

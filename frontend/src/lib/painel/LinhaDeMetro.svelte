@@ -2,7 +2,7 @@
 	import type { NomeEtapa } from '$lib/dados/api';
 
 	export interface Estacao {
-		id: NomeEtapa | 'validacao';
+		id: NomeEtapa | 'validacao' | 'juri';
 		rotulo: string;
 		frase: string;
 		/** Variações da etapa (um piloto, uma estimativa...), além do "Rodar". */
@@ -29,8 +29,11 @@
 				{ rotulo: 'Piloto com 20 documentos', opcoes: { limite: 20 } }
 			]
 		},
-		{ id: 'validacao', rotulo: 'Validação', frase: 'A amostra codificada às cegas', variacoes: [] }
+		{ id: 'validacao', rotulo: 'Validação', frase: 'A amostra codificada às cegas', variacoes: [] },
+		{ id: 'juri', rotulo: 'Júri', frase: 'Vários modelos e um supervisor na amostra', variacoes: [] }
 	];
+
+	const GUIA_JURI = 'https://felipelamarca.com/mapa-da-ciencia/guias/juri/';
 </script>
 
 <script lang="ts">
@@ -38,7 +41,8 @@
 	 * As etapas do pipeline numa linha de metrô: cada estação mostra se a etapa nunca rodou, está em dia, parou no
 	 * meio (incompleta: meio círculo) ou ficou para trás (desatualizada, tracejada: o corpus, o codebook ou as
 	 * correções mudaram depois), a última execução e o botão de rodar. A
-	 * estação da etapa que está rodando pulsa. A validação não é um job: ela leva à codificação da amostra.
+	 * estação da etapa que está rodando pulsa. A validação não é um job: ela leva à codificação da amostra. O júri
+	 * também não: a estação (só num projeto com júri) diz o próximo comando, que roda pela linha de comando.
 	 */
 	import type { EtapasDoProjeto } from '$lib/dados/api';
 	import { rota } from '$lib/estado/url';
@@ -73,8 +77,8 @@
 
 <div class="caixa-metro">
 <ol class="metro" aria-label="Etapas do pipeline" data-testid="linha-metro">
-	{#each ESTACOES as e (e.id)}
-		{@const info = etapas[e.id]}
+	{#each ESTACOES.filter((x) => etapas[x.id]) as e (e.id)}
+		{@const info = etapas[e.id]!}
 		{@const estado = rodando === e.id ? 'rodando' : info.estado}
 		<li class="estacao" data-estado={estado} data-testid="estacao-{e.id}">
 			<span class="ponto" aria-hidden="true"></span>
@@ -105,6 +109,11 @@
 							Sortear a amostra
 						</button>
 					{/if}
+				{:else if e.id === 'juri'}
+					{#if info.proximo}
+						<p class="ultima" data-testid="proximo-juri">Próximo passo, pela linha de comando: <code>{info.proximo}</code></p>
+					{/if}
+					<a class="variacao" href={GUIA_JURI}>Como usar o júri</a>
 				{:else}
 					<button type="button" class="botao" disabled={ocupado} onclick={() => aoRodar(e.id as NomeEtapa, {})} data-testid="rodar-{e.id}">
 						{acao(info.estado)}
@@ -213,6 +222,12 @@
 		margin: 0;
 		font-size: 0.8rem;
 		color: var(--texto-suave);
+	}
+
+	/* o próximo comando do júri é longo: quebra dentro da estação, em vez de alargar a linha */
+	.ultima code {
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 
 	.estado {

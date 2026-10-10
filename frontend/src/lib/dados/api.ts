@@ -14,8 +14,11 @@ export interface EtapaDoProjeto {
 	amostra?: { n: number; codificados: number };
 	/** Nas redes desatualizadas, o que mudou desde a última execução ("o pessoas.yaml", "a geografia"…). */
 	mudou?: string[];
+	/** No júri, o comando do próximo passo (o júri roda pela linha de comando, não como job). */
+	proximo?: string;
 }
-export type EtapasDoProjeto = Record<NomeEtapa | 'validacao', EtapaDoProjeto>;
+/** O júri só vem quando o projeto tem `juri.membros` no `mapa.yaml`. */
+export type EtapasDoProjeto = Record<NomeEtapa | 'validacao', EtapaDoProjeto> & { juri?: EtapaDoProjeto };
 
 export interface Perfil {
 	nome: string;

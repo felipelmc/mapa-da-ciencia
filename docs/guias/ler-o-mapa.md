@@ -55,7 +55,7 @@ O recorte vai junto quando você passa para Tópicos ou Geografia pelo trilho: u
   <figcaption>O cartão de um artigo: resumo, palavras-chave, DOI, licença e os cinco documentos mais parecidos. Com o zoom aproximado, os rótulos passam a ser dos tópicos.</figcaption>
 </figure>
 
-Clique num ponto para abrir o cartão, com a revista, o ano, os autores, o resumo, as palavras-chave, o DOI e os cinco documentos mais parecidos (clique num deles para abri-lo). O cartão também diz como o documento chegou ao tópico:
+Clique num ponto para abrir o cartão, com a revista, o ano, os autores, o resumo, as palavras-chave, o DOI e os cinco documentos mais parecidos (clique num deles para abri-lo). Se o documento aberto ficaria embaixo do cartão, o mapa desliza só o necessário para deixá-lo à vista, sem mudar o zoom. O cartão também diz como o documento chegou ao tópico:
 
 - **pela vizinhança**: o agrupamento deixou o documento de fora, mas a maioria dos seus vizinhos está naquele tópico;
 - **sem tópico**: nem o agrupamento nem a vizinhança o colocaram num tópico;

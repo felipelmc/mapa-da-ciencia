@@ -200,10 +200,12 @@
 			<h2 id="titulo-historico">Últimas execuções</h2>
 			<ol class="historico" data-testid="historico">
 				{#each historico.slice(0, 6) as j (j.id)}
-					<li>
+					<!-- o job acompanhado ao vivo: o estado do fluxo, e não o da lista (lida no POST ou na abertura) -->
+					{@const estado = aoVivo?.id === j.id ? aoVivo.estado : j.estado}
+					<li data-testid="historico-{j.id}">
 						<span>{NOMES[j.etapa] ?? j.etapa}</span>
 						<span class="suave">{formatarData(j.criado)}</span>
-						<span class="estado-{j.estado}">{ESTADOS[j.estado]}</span>
+						<span class="estado-{estado}" data-testid="estado-historico">{ESTADOS[estado]}</span>
 						{#if j.resumo?.frase}<span class="suave frase">{j.resumo.frase}</span>{/if}
 						{#if j.erro}<span class="suave frase">{j.erro}</span>{/if}
 					</li>

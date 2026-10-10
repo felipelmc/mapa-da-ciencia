@@ -151,6 +151,8 @@ def status(projeto: OpcaoProjeto = Path(".")) -> None:
         "desatualizada": "[yellow]desatualizada[/]",
     }
     for etapa, manifesto in etapas.items():
+        if etapa == "juri" and etapa not in estados:  # o projeto não tem júri (`juri.membros` vazio)
+            continue
         estado = estados[etapa]["estado"] if etapa in estados else ("em_dia" if manifesto else "pendente")
         amostra = estados.get(etapa, {}).get("amostra")
         if manifesto is None:
@@ -332,6 +334,25 @@ def _mostrar_redes(p: Projeto) -> None:
         console.print(f"[yellow]As redes estão desatualizadas[/] (mudou {escape(mudou)}). Rode [bold]mapa redes[/].")
 
 
+def _mostrar_juri(p: Projeto) -> None:
+    """O júri, se o projeto tiver um: quanto da amostra cada membro classificou e o próximo passo."""
+    from mapa_da_ciencia.juri.pipeline import estado, estado_da_etapa
+
+    if (etapa := estado_da_etapa(p)) is None:
+        return
+    if etapa["proximo"] == "mapa validar amostra":
+        console.print("[dim]Júri: sem amostra de validação. Rode `mapa validar amostra`.[/]")
+        return
+    e = estado(p)
+    membros = ", ".join(f"{escape(m)} {num(n, 0)} de {num(e.amostra, 0)}" for m, n in e.classificados.items())
+    console.print(f"[bold]Júri[/]: a amostra classificada por membro: {membros}.")
+    if e.resumo:
+        console.print(escape(str(e.resumo)))
+    if etapa["estado"] is False:
+        console.print("[yellow]O júri está desatualizado[/] (o codebook, a amostra ou os votos mudaram).")
+    console.print(f"Próximo passo do júri: [bold]{escape(etapa['proximo'])}[/].")
+
+
 def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
     """Cobertura do corpus coletado (`dados/documentos.parquet`), se já houver coleta."""
     caminho = p.dados / ARQUIVO_DOCUMENTOS
@@ -355,6 +376,7 @@ def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
     _mostrar_geografia(p)
     _mostrar_redes(p)
     _mostrar_classificacao_status(p)
+    _mostrar_juri(p)
     if not total:
         return
     geral = {

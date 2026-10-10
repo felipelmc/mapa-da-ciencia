@@ -4,7 +4,9 @@
   semente tirada do nome, a mesma em qualquer sessão), com título, resumo, o codebook e as respostas que ele já deu;
   nunca as respostas de um modelo (a codificação é cega).
 - `PUT /api/validacao/codificacoes/{doc}`: grava as respostas de um documento. Com `completa: false` (o
-  salvamento automático), as variáveis ainda não respondidas não são erro.
+  salvamento automático), as variáveis ainda não respondidas não são erro e a ficha não é confirmada; com
+  `completa: true` (o Enter), ela é confirmada. Só fichas confirmadas entram nas métricas, e a fila marca como
+  completas só elas.
 - `POST /api/validacao/amostra`: sorteia a amostra (como `mapa validar amostra`);
 - `GET /api/validacao/metricas`: a concordância calculada agora, no formato de `validacao.json`, com as
   divergências de todos os codificadores (no contrato publicado, só as de codificadores de referência).
@@ -95,6 +97,7 @@ def rotas_validacao(projeto: Projeto) -> APIRouter:
                     "incerto": bool(c["incerto"]),
                     "nota": c["nota"],
                 }
+        completas = {doc for _, doc in va.fichas_completas(projeto, nome)}  # confirmadas e respondidas por inteiro
         ordem = [d for d in a.docs if d in textos]
         random.Random(semente_do_codificador(nome)).shuffle(ordem)
         return {
@@ -109,7 +112,7 @@ def rotas_validacao(projeto: Projeto) -> APIRouter:
                     "resumo": textos[d].resumo,
                     "idioma": textos[d].idioma,
                     "respostas": dadas.get(d, {}),
-                    "completa": set(dadas.get(d, {})) >= set(tipos),
+                    "completa": d in completas,
                 }
                 for d in ordem
             ],
@@ -130,8 +133,7 @@ def rotas_validacao(projeto: Projeto) -> APIRouter:
             raise HTTPException(422, {"problemas": problemas})
         if apagadas:
             va.apagar_respostas(projeto, nome, doc, apagadas)
-        ja = {c["variavel"] for c in va.codificacoes(projeto, nome) if c["doc"] == doc}
-        return {"ok": True, "completa": ja >= {v.id for v in projeto.codebook.variaveis}}
+        return {"ok": True, "completa": (nome, doc) in va.fichas_completas(projeto, nome)}
 
     @rotas.post("/amostra", dependencies=[Depends(conferir_origem)])
     def sortear(corpo: PedidoAmostra) -> dict[str, Any]:

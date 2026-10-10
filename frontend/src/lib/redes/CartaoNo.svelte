@@ -58,9 +58,13 @@
 	const { revistas } = usarProjeto();
 	const nomeDaRevista = (acronimo: string) => revistas?.revistas.find((r) => r.id === acronimo)?.titulo ?? acronimo;
 
-	/** Fecha e devolve o foco a quem o tinha (senão, à busca da vista), para quem usa o teclado não voltar ao topo. */
+	/**
+	 * Fecha e devolve o foco a quem o tinha (senão, à área do grafo), para quem usa o teclado não voltar ao topo. Sem
+	 * dono (o cartão aberto pelo link), o foco vai para o grafo, e não para a busca: num campo de texto, o Esc seguinte
+	 * seria do campo e não soltaria a comunidade em destaque.
+	 */
 	function fechar() {
-		const destino = voltarPara?.isConnected ? voltarPara : document.querySelector<HTMLElement>('[data-busca-no]');
+		const destino = voltarPara?.isConnected ? voltarPara : document.querySelector<HTMLElement>('[data-grafo]');
 		const tinhaFoco = !!document.activeElement?.closest('[data-testid="cartao-no"]');
 		aoFechar();
 		if (tinhaFoco || document.activeElement === document.body) destino?.focus({ preventScroll: true });

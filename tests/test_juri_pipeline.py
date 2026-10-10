@@ -11,11 +11,12 @@ import yaml
 
 from mapa_da_ciencia.coleta import coletar
 from mapa_da_ciencia.juri.consolidar import ler_resumo
-from mapa_da_ciencia.juri.pipeline import deliberar_juri, estado
+from mapa_da_ciencia.juri.pipeline import deliberar_juri, estado, estado_da_etapa
 from mapa_da_ciencia.juri.relatorio import gerar
 from mapa_da_ciencia.juri.supervisor import auditoria, exportar_pedidos, importar_respostas, wilson
 from mapa_da_ciencia.juri.votacao import votar
 from mapa_da_ciencia.llm.perfis import PERFIS
+from mapa_da_ciencia.manifesto import estados_das_etapas, ultima_execucao
 from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.validacao import amostra as va
 from mapa_da_ciencia.validacao.metricas import calcular
@@ -149,6 +150,67 @@ def test_juri_de_ponta_a_ponta(projeto, apis_falsas):
     assert "Limite superior" in texto and "(circular)" in texto and numeros.referencia == "claude-opus"
     assert numeros.deliberacao["qwen3.5:9b"]["mudou"] == 0
     assert estado(projeto).proximo.startswith("mapa juri exportar-pedidos")
+
+
+def _responder_tudo(projeto) -> None:
+    """Responde, como supervisor, a todos os pedidos exportados (a escolha 1, com um trecho do resumo)."""
+    exportar_pedidos(projeto)
+    pasta = projeto.raiz / "juri"
+    respostas = []
+    for f in sorted(pasta.glob("*-*.jsonl")):
+        if f.name.endswith(".respostas.jsonl"):
+            continue
+        for linha in f.read_text().splitlines():
+            p = json.loads(linha)
+            ev = " ".join(p["resumo"].split()[:5])
+            if "candidatos" in p:
+                respostas.append({"id": p["id"], "escolha": 1, "evidencia": ev, "justificativa": "…"})
+            else:
+                respostas.append({"id": p["id"], "correto": True, "evidencia": ev, "justificativa": "ok"})
+    arquivo = pasta / "tudo.respostas.jsonl"
+    arquivo.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in respostas), encoding="utf-8")
+    importar_respostas(projeto, [arquivo])
+
+
+def test_o_juri_na_linha_das_etapas_e_no_status(projeto):
+    """O júri entra no `mapa status` e na linha das etapas do painel com o estado de cada passo e o próximo
+    comando; cada passo que consolida deixa um manifesto."""
+    from typer.testing import CliRunner
+
+    from mapa_da_ciencia.cli import app
+
+    assert estado_da_etapa(projeto) == {"estado": None, "proximo": "mapa juri votar"}
+    votar(projeto)
+    assert estado_da_etapa(projeto) == {"estado": "incompleta", "proximo": "mapa juri deliberar"}
+    deliberar_juri(projeto)
+    e = estados_das_etapas(projeto)["juri"]
+    assert e["estado"] == "incompleta" and e["proximo"].startswith("mapa juri exportar-pedidos")
+    assert e["ultima"]["contagens"]["documentos"] == len(va.ler(projeto).docs)
+    m = ultima_execucao(projeto, "juri")
+    assert m["parametros"]["passo"] == "deliberar" and m["hash_codebook"] == projeto.codebook.hash()
+    assert m["modelos"]["membros"] == ", ".join(MEMBROS)
+
+    _responder_tudo(projeto)
+    assert ultima_execucao(projeto, "juri")["parametros"]["passo"] == "supervisor"
+    assert estado_da_etapa(projeto) == {"estado": True, "proximo": "mapa juri relatorio"}
+    r = CliRunner().invoke(app, ["status", "-P", str(projeto.raiz)], env={"COLUMNS": "200"})
+    assert r.exit_code == 0, r.output
+    assert any(linha.split()[:3] == ["│", "juri", "│"] and "em dia" in linha for linha in r.output.splitlines())
+    assert "Próximo passo do júri: mapa juri relatorio" in r.output
+
+    # outro codebook: o júri de antes fica para trás
+    arquivo = projeto.raiz / "codebook.yaml"
+    cb = yaml.safe_load(arquivo.read_text(encoding="utf-8"))
+    cb["instrucoes"] += " Leia com atenção."
+    arquivo.write_text(yaml.safe_dump(cb, allow_unicode=True), encoding="utf-8")
+    projeto = Projeto.abrir(projeto.raiz)
+    assert estado_da_etapa(projeto) == {"estado": False, "proximo": "mapa juri votar"}
+
+
+def test_sem_amostra_o_juri_esta_pendente(projeto):
+    with va.conectar(projeto) as con:
+        con.execute("DELETE FROM validacao_amostra")
+    assert estado_da_etapa(projeto) == {"estado": None, "proximo": "mapa validar amostra"}
 
 
 def test_wilson():

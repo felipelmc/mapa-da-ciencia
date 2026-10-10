@@ -40,11 +40,17 @@ flowchart LR
 | Reprodutibilidade | `manifesto.py` | Registro de cada execução de etapa |
 | Coleta | `coleta.py`, `fontes/`, `documento.py`, `texto.py` | Orquestração da etapa (`coleta.py`); buscador com cache (`fontes/base.py`), ArticleMeta, OpenAlex, importação, deduplicação; o `Documento` normalizado |
 | Tópicos | `embeddings.py`, `topicos/` | Texto de análise e embeddings com cache; kNN exato, UMAP e HDBSCAN com reatribuição do ruído; palavras-chave (c-TF-IDF), macrotemas, identidade e cores estáveis (paleta OKLCH), rótulos pelo modelo de linguagem; `topicos/pipeline.py` orquestra a etapa ([explicação](../explicacoes/topicos.md), [ADR 0007](../decisoes/0007-parametros-dos-topicos.md)) |
+| Geografia | `geografia/` | Normalização de país, UF e município; instituições do OpenAlex, apelidos e `instituicoes.yaml`; casamento das afiliações; contagem fracionária; revisão (`--revisar`) ([ADR 0008](../decisoes/0008-geografia-casamento-das-afiliacoes.md)) |
+| Classificação | `classificacao/` | Esquema da resposta a partir do codebook, prompt, conferência da evidência, executor com cache e o resultado por modelo × codebook ([ADR 0011](../decisoes/0011-classificacao-ancorada-em-evidencia.md)) |
+| Validação | `validacao/` | Amostra estratificada e codificações no `estado.sqlite`, métricas (kappa, PABAK, alfa, McNemar) e relatório ([ADR 0012](../decisoes/0012-validacao-e-codificador-de-referencia.md)) |
+| Júri | `juri/` | Votação de vários modelos locais, uma rodada de deliberação, supervisor por arquivos ou pela API da Anthropic, consolidação em três fontes que a validação compara ([ADR 0015](../decisoes/0015-juri-de-modelos-e-supervisor.md)) |
+| Redes | `redes/`, `segredos.py` | Pessoas por *union-find*, grafos com pesos fracionários, comunidades, desenho fixo e citações; o id publicado das pessoas é um HMAC com o segredo do projeto ([ADR 0014](../decisoes/0014-redes-de-coautoria-e-citacao.md)) |
 | Armazenamento | `armazenamento.py` | Corpus em Parquet via DuckDB, com views para consulta ([ADR 0006](../decisoes/0006-armazenamento-parquet-duckdb.md)) |
 | Rede e máquina | `rede.py`, `recursos.py` | HTTP com `truststore`; memória, swap e disco |
-| Modelos | `llm/` | Interface de provedor e adaptador do Ollama (embeddings, saída estruturada); guarda de memória (`memoria.py`); cache das respostas no `estado.sqlite` (`cache.py`); perfis |
+| Modelos | `llm/` | Interface de provedor e adaptador do Ollama (embeddings, saída estruturada); guarda de memória (`memoria.py`); cache das respostas no `estado.sqlite` (`cache.py`); perfis; o adaptador opcional da Anthropic, só para o supervisor do júri (`anthropic.py`) |
 | Contrato | `contrato/` | Modelos Pydantic (a fonte da verdade), exportação única de `saida/dados/` (`exportar.py`), exemplo sintético |
-| Painel | `servidor/app.py` | FastAPI: interface em `/`, dados em `/dados`, API em `/api` |
+| Publicação | `publicar.py` | O site estático: a interface com `api: false`, resumos só com licença Creative Commons e a varredura de e-mails e ORCIDs |
+| Painel | `servidor/` | FastAPI: interface em `/`, dados em `/dados`, API em `/api`; jobs com SSE, edição do `mapa.yaml` e do codebook, codificação da amostra, trava de um painel por projeto ([ADR 0013](../decisoes/0013-painel-jobs-sse-e-edicao.md)) |
 | Interface | `frontend/` | SvelteKit; veja o [`frontend/README.md`](https://github.com/felipelmc/mapa-da-ciencia/blob/main/frontend/README.md) |
 
 ## Ambiente
@@ -94,7 +100,7 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 - **Português** em tudo: interface, documentação, mensagens, identificadores de domínio (`coletar`, `topicos`, `revistas`).
 - **Mensagens de erro dizem o que fazer**, sem traceback para o usuário (veja `_erros_amigaveis` em `cli.py`).
 - **Commits pequenos**, um por tarefa modular, no formato [Conventional Commits](https://www.conventionalcommits.org/pt-br/) com escopo: `feat(coleta): …`, `docs(guias): …`. Cada commit leva o código, os testes e a documentação da tarefa, e passa no lint e nos testes.
-- **Branches por marco** (`m1-esqueleto`, `m2-coleta`…), com merge em `main` e tag ao fim de cada marco.
+- **Branches por marco** (`m1-esqueleto`, `m2-coleta`…) até a 0.7.0 e, depois, por frente (`juri-de-modelos`, `redes`…), com merge em `main` e tag em cada versão.
 - **Decisões técnicas relevantes viram ADR** em `docs/decisoes/`, com evidência e o script que a reproduz.
 
 ## Fazer uma release
@@ -118,6 +124,9 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | M6 | Painel completo: rodar etapas pela interface | concluído (v0.6.0) |
 | M7 | Publicação, figuras, oficina no Colab, release | concluído (v0.7.0) |
 | Página | A abertura do site, "Céu que se forma" | concluído (v1.0.0) |
+| Júri e redes | O júri de modelos locais com supervisor ([ADR 0015](../decisoes/0015-juri-de-modelos-e-supervisor.md)), as redes de coautoria e de citação ([ADR 0014](../decisoes/0014-redes-de-coautoria-e-citacao.md)) e a [revisão geral](revisao-2026-09.md) | concluído (v2.0.0) |
+| Interface revista | Grafos interativos, telas largas, Validação para quem lê e o site público sem bastidor | concluído (v2.1.0, v2.1.1) |
+| Pendências da 2.1 | O júri na linha das etapas, uma cor por comunidade, as fichas confirmadas na validação e as correções de interface que a [revisão](revisao-2026-09.md) deixou para depois | concluído (v2.2.0) |
 
 ## Armadilhas conhecidas
 

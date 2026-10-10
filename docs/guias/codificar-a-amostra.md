@@ -53,6 +53,7 @@ Com o painel aberto (`mapa painel`), vá a **Validação › Codificar a amostra
 - A codificação é **cega**: a ficha nunca mostra o que o modelo respondeu.
 - Cada pessoa tem a própria ordem na fila, sempre a mesma, e a amostra inteira passa por todas.
 - Tudo é gravado sozinho, primeiro no navegador e depois no projeto. Se o painel cair, as respostas ficam guardadas no navegador e são enviadas quando ele voltar. Ao reabrir, a fila continua da primeira ficha incompleta.
+- Só a ficha confirmada com ++enter++ conta como completa e entra nas métricas. Uma ficha respondida por inteiro, mas sem o ++enter++, continua gravada e volta na fila como incompleta: confira e confirme.
 - A evidência é opcional para pessoas: ela ajuda a discutir as divergências depois.
 
 ## Importar codificações feitas fora do painel
@@ -90,7 +91,7 @@ Com o painel aberto (`mapa painel`), a codificação também pode ser gravada po
 | Rota | O que faz |
 |---|---|
 | `GET /api/validacao/fila?codificador=NOME` | A amostra na ordem da fila desse codificador (embaralhada a partir do nome, sempre a mesma), com título, resumo, o codebook e as respostas que ele já deu. Nunca traz respostas de modelos. |
-| `PUT /api/validacao/codificacoes/{doc}` | Grava as respostas de um documento: `{"codificador": "maria", "respostas": {...}, "completa": true}`. Com `completa: false`, as variáveis ainda não respondidas não são erro. |
+| `PUT /api/validacao/codificacoes/{doc}` | Grava as respostas de um documento: `{"codificador": "maria", "respostas": {...}, "completa": true}`. Com `completa: false`, as variáveis ainda não respondidas não são erro e a ficha não é confirmada; só as fichas gravadas com `completa: true` entram nas métricas. |
 | `GET /api/validacao/metricas` | A concordância calculada na hora, no formato de `validacao.json`. |
 
 As rotas de escrita só aceitam pedidos feitos desta máquina (endereço `127.0.0.1` ou `localhost`), para que uma página aberta em outro site não consiga gravar no projeto pelo navegador.

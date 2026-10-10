@@ -240,6 +240,46 @@ test('clicar num ponto abre o cartão dele', async ({ page }) => {
 	await expect(page).toHaveURL(/doc=/);
 });
 
+test('a 1440 px, o documento aberto não fica embaixo do cartão', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/mapa`);
+	await esperarMapa(page);
+	// o ponto mais à direita da nuvem: o cartão, aberto, ficaria em cima dele
+	const i = await page.evaluate(() => {
+		const d = window.__mapaDebug!;
+		let melhor = 0;
+		for (let k = 1; k < d.pontos; k += 1) if (d.posicaoNaTela!(k)![0] > d.posicaoNaTela!(melhor)![0]) melhor = k;
+		return melhor;
+	});
+	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(documentos.colunas.id[i])}`);
+	await esperarMapa(page);
+	const cartao = page.getByTestId('cartao-documento');
+	await expect(cartao).toBeVisible();
+	const canvas = (await page.getByTestId('canvas-mapa').boundingBox())!;
+	await expect
+		.poll(async () => {
+			const c = (await cartao.boundingBox())!;
+			const [x] = (await page.evaluate((k) => window.__mapaDebug!.posicaoNaTela!(k), i))!;
+			return canvas.x + x < c.x - 16;
+		})
+		.toBe(true);
+	expect(await page.evaluate(() => window.__mapaDebug!.deslocamentos)).toBeGreaterThan(0);
+	// e o ponto continua clicável ali: é o canvas, e não o cartão, que está em cima dele
+	const [x, y] = (await page.evaluate((k) => window.__mapaDebug!.posicaoNaTela!(k), i))!;
+	expect(await page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.tagName, [canvas.x + x, canvas.y + y])).toBe('CANVAS');
+});
+
+test('a coluna embaixo de um cartão curto não engole o clique', async ({ page }) => {
+	await page.setViewportSize({ width: 1440, height: 1600 }); // uma janela alta: o cartão não ocupa a coluna inteira
+	const id = documentos.colunas.id[0];
+	await page.goto(`${url('RAIZ')}#/mapa?doc=${encodeURIComponent(id)}`);
+	await esperarMapa(page);
+	const c = (await page.getByTestId('cartao-documento').boundingBox())!;
+	const canvas = (await page.getByTestId('canvas-mapa').boundingBox())!;
+	test.skip(c.y + c.height > canvas.y + canvas.height - 40, 'o cartão deste documento ocupa a coluna inteira');
+	const embaixo = [c.x + c.width / 2, (c.y + c.height + canvas.y + canvas.height) / 2];
+	expect(await page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.tagName, embaixo)).toBe('CANVAS');
+});
+
 // ---- busca, laço, linha do tempo e atalhos
 test('busca com "/" e sem acentos; um resultado abre o cartão', async ({ page }) => {
 	const problemas = vigiar(page);

@@ -720,5 +720,12 @@
 			max-height: max(14rem, calc(100dvh - var(--altura-barra, 4rem) - 18rem));
 			overflow-y: auto;
 		}
+
+		/* com "Ver como tabela" aberto, a figura não gruda: com a tabela dos dados embaixo, ela passaria da altura da
+		   janela, e a parte de baixo só apareceria no fim do detalhe. Dividir a altura entre as duas tabelas cortaria a
+		   do par mesmo com poucas variáveis */
+		.par-e-detalhe > :global(.figura[data-tabela]) {
+			position: static;
+		}
 	}
 </style>

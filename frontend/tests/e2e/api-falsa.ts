@@ -2,6 +2,7 @@
 // Espelha a forma das respostas de `src/mapa_da_ciencia/servidor/validacao.py`, que o pytest testa de verdade:
 //   GET  /api/validacao/fila?codificador=NOME   → { codificador, tipo, amostra, codebook, fila: [...] }
 //   PUT  /api/validacao/codificacoes/{doc}      → { ok, completa } | 422 { detail: { problemas } }
+//        (só `completa: true`, o Enter, confirma a ficha; a fila marca como completas só as confirmadas)
 //   GET  /api/validacao/metricas                → o validacao.json do exemplo
 // A "amostra" são os primeiros N documentos do exemplo sintético.
 import { readdirSync, readFileSync } from 'node:fs';
@@ -30,13 +31,15 @@ export function criarApiFalsa(pastaExemplo: string, n = 24): ManipuladorApi {
 	const titulo = new Map<string, string>(documentos.colunas.id.map((id: string, i: number) => [id, documentos.colunas.titulo[i]]));
 	const variaveis: Variavel[] = codebook.variaveis;
 	const guardadas = new Map<string, Map<string, Record<string, unknown>>>();
+	const confirmadas = new Map<string, Set<string>>(); // codificador → documentos confirmados
 
 	const json = (res: ServerResponse, status: number, corpo: unknown) => {
 		res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
 		res.end(JSON.stringify(corpo));
 	};
 	const semente = (texto: string) => [...texto].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 0x01000193) >>> 0, 0x811c9dc5);
-	const completa = (r: Record<string, unknown>) => variaveis.every((v) => v.id in r);
+	const respondida = (r: Record<string, unknown>) => variaveis.every((v) => v.id in r);
+	const completa = (nome: string, doc: string, r: Record<string, unknown>) => !!confirmadas.get(nome)?.has(doc) && respondida(r);
 
 	return (req, res, url) => {
 		if (!url.pathname.includes('/api/validacao/')) return false;
@@ -67,7 +70,7 @@ export function criarApiFalsa(pastaExemplo: string, n = 24): ManipuladorApi {
 					resumo: detalhes[doc].resumo,
 					idioma: detalhes[doc].idioma ?? 'pt',
 					respostas: dele.get(doc) ?? {},
-					completa: completa(dele.get(doc) ?? {})
+					completa: completa(nome, doc, dele.get(doc) ?? {})
 				}))
 			});
 			return true;
@@ -89,9 +92,14 @@ export function criarApiFalsa(pastaExemplo: string, n = 24): ManipuladorApi {
 				if (exigir) for (const v of variaveis) if (!(v.id in respostas)) problemas.push(`\`${v.id}\`: faltou a variável`);
 				if (problemas.length) return json(res, 422, { detail: { problemas } });
 				const dele = guardadas.get(codificador) ?? new Map();
-				dele.set(doc, { ...(dele.get(doc) ?? {}), ...respostas });
+				const ficha: Record<string, unknown> = { ...(dele.get(doc) ?? {}), ...respostas };
+				// uma resposta apagada (o texto esvaziado) vem com valor nulo e sai, como no Python
+				for (const [id, r] of Object.entries(respostas as Record<string, { valor: unknown }>))
+					if (r.valor === null || r.valor === '') delete ficha[id];
+				dele.set(doc, ficha);
 				guardadas.set(codificador, dele);
-				json(res, 200, { ok: true, completa: completa(dele.get(doc)) });
+				if (exigir) confirmadas.set(codificador, new Set([...(confirmadas.get(codificador) ?? []), doc]));
+				json(res, 200, { ok: true, completa: completa(codificador, doc, ficha) });
 			});
 			return true;
 		}

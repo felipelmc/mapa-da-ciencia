@@ -162,17 +162,20 @@
 	const forcaRecorte = $derived(forcaDe(recorte, nos.n));
 
 	// ---- aparência: raio pela raiz dos documentos do corpus (não muda com o recorte), de 1 documento (o mínimo) ao
-	// maior (o máximo), como `raios_na_vista` no Python, que desenha sem sobreposição com estes raios; cor pelo macrotema
-	// da comunidade
+	// maior (o máximo), como `raios_na_vista` no Python, que desenha sem sobreposição com estes raios; a cor é a da
+	// comunidade (um tom do macrotema dela, calculado no Python)
 	const raio = $derived.by(() => {
 		const maximo = Math.sqrt(Math.max(1, ...nos.docsCorpus));
 		const escala = maximo > 1 ? (RAIO.max - RAIO.min) / (maximo - 1) : 0;
 		return Float32Array.from(nos.docsCorpus, (n) => RAIO.min + escala * Math.max(0, Math.sqrt(n) - 1));
 	});
 	const corDoMacro = $derived(new Map(aberto.topicos.macrotemas.map((m) => [m.id, m.cor])));
+	/** A cor da comunidade; num contrato anterior ao 1.6 (sem `cor`), a do macrotema dela. */
 	const corDaComunidade = (c: number) => {
-		const macro = nos.comunidades.get(c)?.macro;
-		return macro !== null && macro !== undefined ? (corDoMacro.get(macro) ?? null) : null;
+		const comunidade = nos.comunidades.get(c);
+		if (!comunidade) return null;
+		if (comunidade.cor) return comunidade.cor;
+		return comunidade.macro !== null && comunidade.macro !== undefined ? (corDoMacro.get(comunidade.macro) ?? null) : null;
 	};
 	const cores = $derived(Array.from(nos.comunidade, corDaComunidade));
 	const desenhados = $derived(Array.from(nos.x).filter(Number.isFinite).length);
@@ -220,7 +223,8 @@
 	const comunidadeEscolhida = $derived(
 		filtros.comunidade !== null && nos.comunidades.has(filtros.comunidade) ? filtros.comunidade : null
 	);
-	const escolherComunidade = (c: number | null) => mudarFiltros({ comunidade: c }, { em });
+	/** Escolher uma comunidade fecha o cartão aberto: o zoom vai até ela (com um nó aberto, ele seria o do nó). */
+	const escolherComunidade = (c: number | null) => mudarFiltros(c === null ? { comunidade: c } : { comunidade: c, no: null }, { em });
 	/** Pela legenda, embaixo do grafo: escolhe e traz o grafo à vista (senão ele mudaria fora da tela). */
 	function escolherPelaLegenda(c: number | null) {
 		escolherComunidade(c);
@@ -232,11 +236,13 @@
 	const opcoesComunidade = $derived(
 		[...nos.comunidades.values()].sort((a, b) => b.n - a.n || a.id - b.id).map((c) => ({ id: c.id, rotulo: `${c.rotulo} (${formatarInteiro(c.n)})` }))
 	);
-	// Esc solta a comunidade em destaque (com o cartão aberto, o Esc é dele, e num campo de texto, do campo)
+	// Esc solta a comunidade em destaque (com o cartão aberto, o Esc é dele, e num campo de texto, do campo; na busca
+	// vazia, que não tem o que limpar, ele solta)
 	function tecla(e: KeyboardEvent) {
 		const alvo = e.target as HTMLElement | null;
 		if (e.key !== 'Escape' || e.defaultPrevented || selecionado !== null || comunidadeEscolhida === null) return;
-		if (alvo?.closest('input, textarea, select')) return;
+		const buscaVazia = alvo instanceof HTMLInputElement && alvo.matches('[data-busca-no]') && !alvo.value;
+		if (alvo?.closest('input, textarea, select') && !buscaVazia) return;
 		if (document.documentElement.dataset.apresentacao === 'sim' || document.querySelector('details[open]')) return;
 		escolherComunidade(null);
 	}
@@ -288,6 +294,31 @@
 			documentos: documentosDo(i)
 		};
 	});
+	// fechar o cartão sobe a colaboração (de baixo do grafo para o lado dele, ou, numa coluna só, a altura do cartão):
+	// quem a lia ficaria sem ela na tela. Se ela estava à vista, a rolagem compensa o salto, e ela fica onde estava na
+	// janela. Num efeito, e não no `aoFechar`, para valer também para o Esc, o × e o "voltar" do navegador
+	let colaboracao = $state<HTMLElement | null>(null);
+	const temCartao = $derived(cartao !== null);
+	let topoAntes: number | null = null;
+	$effect.pre(() => {
+		const fechando = !temCartao;
+		untrack(() => {
+			const caixa = fechando ? colaboracao?.getBoundingClientRect() : undefined;
+			topoAntes = caixa && caixa.bottom > 0 && caixa.top < window.innerHeight ? caixa.top : null;
+		});
+	});
+	$effect(() => {
+		void temCartao;
+		untrack(() => {
+			if (topoAntes === null || !colaboracao) return;
+			const salto = colaboracao.getBoundingClientRect().top - topoAntes;
+			topoAntes = null;
+			if (Math.abs(salto) < 1) return;
+			// em tela cheia, quem rola é a própria área da tela cheia
+			const rolante = document.fullscreenElement?.contains(colaboracao) ? document.fullscreenElement : null;
+			(rolante ?? window).scrollBy({ top: salto, behavior: 'instant' });
+		});
+	});
 	const linkDoc = (d: number) => rota('/mapa', escreverFiltros({ ...recorteDe(filtros), doc: t.ids[d] }));
 	function alternarInstituicao(id: string) {
 		const atual = filtros.inst;
@@ -323,8 +354,8 @@
 	);
 	const resumo = $derived(
 		pessoas
-			? `Cada ponto é uma pessoa, do tamanho dos documentos dela no corpus, na cor do macrotema mais comum na sua comunidade. Cada linha liga duas pessoas que assinaram juntas um documento do recorte; quanto mais forte a linha, mais peso tem a parceria.`
-			: `Cada ponto é uma instituição, do tamanho dos documentos com afiliação nela. Cada linha liga duas instituições que aparecem nas afiliações de um mesmo documento do recorte; quanto mais forte a linha, mais peso tem a colaboração.`
+			? `Cada ponto é uma pessoa, do tamanho dos documentos dela no corpus, na cor da sua comunidade: um tom do macrotema mais comum nela. Cada linha liga duas pessoas que assinaram juntas um documento do recorte; quanto mais forte a linha, mais peso tem a parceria.`
+			: `Cada ponto é uma instituição, do tamanho dos documentos com afiliação nela, na cor da sua comunidade: um tom do macrotema mais comum nela. Cada linha liga duas instituições que aparecem nas afiliações de um mesmo documento do recorte; quanto mais forte a linha, mais peso tem a colaboração.`
 	);
 	// a força (a soma dos pesos 1/(n−1)) é um inteiro: os documentos do recorte em que o nó teve parceiro
 	const colunas = $derived([
@@ -388,6 +419,10 @@
 		debug.arestasNoRecorte = recorte.n;
 		debug.selecionado = selecionado !== null ? nos.ids[selecionado] : null;
 		debug.comunidade = comunidadeEscolhida;
+		debug.corDoNo = (id) => {
+			const i = nos.indice.get(id);
+			return i === undefined ? undefined : cores[i];
+		};
 		debug.estadoDoGrafo = () => grafo?.estado();
 		debug.posicaoNaTela = (id) => {
 			const i = nos.indice.get(id);
@@ -470,6 +505,7 @@
 		{/if}
 		<div class="legenda" aria-label="Legenda">
 			<ul class="cores" data-legenda>
+				<li class="titulo-legenda">Cada comunidade num tom do seu macrotema:</li>
 				{#each macrosNaLegenda as m (m.id)}
 					<li><span class="bolinha" style:background={m.cor}></span>{m.rotulo}</li>
 				{/each}
@@ -555,7 +591,7 @@
 
 	<!-- sem cartão, a colaboração fica ao lado do grafo; com ele, desce para baixo (o cartão acompanha a rolagem e a
 	     cobriria). Só muda de lugar na grade, sem ser recriada: a tabela e a exportação dela continuam abertas -->
-	<div class="colaboracao">
+	<div class="colaboracao" bind:this={colaboracao}>
 		<Colaboracao
 			quais={pessoas ? ['coautoria', 'autores'] : ['instituicoes', 'exterior']}
 			{aberto}

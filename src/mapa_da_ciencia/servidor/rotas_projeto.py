@@ -185,7 +185,10 @@ def rotas_projeto(projeto: Projeto, jobs: Jobs) -> APIRouter:
         _livre()
         corpo = {k: v for k, v in corpo.items() if k != "hash"}
         try:
-            novo = editar_yaml(projeto.raiz / "codebook.yaml", corpo, Codebook.model_validate, substituir=True)
+            # o corpo traz os padrões que a leitura preencheu (`exemplos: []`…): eles não vão para o arquivo
+            novo = editar_yaml(
+                projeto.raiz / "codebook.yaml", corpo, Codebook.model_validate, substituir=True, omitir_vazios=True
+            )
         except ErroConfig as e:
             raise HTTPException(422, str(e)) from e
         projeto._codebook = novo

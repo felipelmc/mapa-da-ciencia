@@ -4,6 +4,28 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [2.2.0] - 2026-10-10
+
+A versão 2.2.0 fecha as pendências que a revisão da interface da 2.1.0 registrou e deixou para depois: o júri aparece no `mapa status` e na linha das etapas do painel, cada comunidade das redes ganha a própria cor (contrato 1.6), a concordância de uma pessoa passa a contar só as fichas confirmadas, e oito problemas de interface, no Mapa, nas Redes, na Validação e no painel, foram corrigidos, cada um com o seu teste.
+
+### Adicionado
+
+- **O júri no `mapa status` e na linha das etapas do painel.** Num projeto com `juri.membros`, o júri ganha uma linha no `mapa status` (com a amostra classificada por membro e o próximo passo) e uma estação na vista Projeto: incompleto enquanto falta votar, deliberar ou a resposta do supervisor, desatualizado depois de uma mudança no codebook ou quando as decisões gravadas não batem mais com os votos, em dia quando só falta o relatório. A deliberação e a importação das respostas do supervisor passam a deixar um manifesto em `execucoes/`, como as outras etapas. Os passos do júri continuam rodando pela linha de comando.
+- **Uma cor por comunidade nas redes.** Cada comunidade de coautoria e de instituições ganha a própria cor, um tom do macrotema mais comum nela, diferente dos tons das outras comunidades do mesmo macrotema (como os tópicos): no piloto, 38 comunidades dividem 7 macrotemas, e comunidades vizinhas saíam com a mesma cor. A cor é calculada na exportação, sem rodar `mapa redes` de novo.
+- Contrato de dados **1.6** (só acréscimo): `ComunidadeRede.cor`. A interface lê também os dados 1.5, com a cor do macrotema.
+
+### Corrigido
+
+- **A concordância de uma pessoa conta só as fichas confirmadas.** O painel grava a ficha a cada resposta, e o kappa, o n de quem codifica e a contagem de documentos validados incluíam fichas salvas pela metade, que nunca foram confirmadas com ++enter++. Agora a confirmação fica guardada (as fichas respondidas por inteiro antes desta versão contam como confirmadas), e uma ficha só entra nas métricas, no `validacao.json`, no relatório e na escolha da referência do júri depois de confirmada. As fichas importadas (`mapa validar importar`) continuam confirmadas desde a importação.
+- **O editor do codebook no painel não acrescenta mais listas vazias ao `codebook.yaml`.** Salvar pelo painel, mesmo sem mudar nada, escrevia os valores padrão de cada campo opcional (`exemplos: []` em cada categoria, `categorias: []` nas variáveis booleanas e de texto, `rotulo: null`). Agora o arquivo só muda onde a pessoa mudou algo. Uma variável que vira booleana ou de texto no editor também perde as categorias, que o servidor recusava.
+- **As últimas execuções, na vista Projeto do painel, acompanham o job ao vivo.** A etapa que acabou de começar aparecia "na fila" até terminar; agora a lista mostra o mesmo estado do acompanhamento (rodando, concluído, cancelado).
+- **Nas redes, um link com uma comunidade e um nó enquadra o nó.** Aberto direto (ou recarregado), o link com `comunidade=` e `no=` enquadrava a comunidade, e o nó do cartão podia ficar fora da tela. Escolher outra comunidade, na legenda ou no seletor, agora fecha o cartão aberto e enquadra a comunidade.
+- **Nas redes, o Esc solta a comunidade depois de fechar um cartão aberto pelo link.** O cartão aberto pelo link mandava o foco para a busca ao fechar, e o Esc seguinte ficava com o campo de texto. Agora o foco vai para o grafo, e o segundo Esc solta a comunidade; na busca, o Esc limpa o texto e, com o campo vazio, solta a comunidade.
+- **O painel "Exportar" de uma figura não passa mais da borda dela.** Ele nascia alinhado ao botão e, numa figura estreita (a colaboração ao lado do grafo, nas redes), passava da borda da figura e, perto de 1100 px ou em tela cheia, da janela. Agora ele recua para caber, em todas as figuras.
+- **Nas redes, fechar o cartão lendo a colaboração não a tira da tela.** Com o cartão aberto, a colaboração desce para baixo do grafo; ao fechá-lo, ela voltava para o lado do grafo e saía da janela de quem a lia. Agora a rolagem acompanha a mudança, e ela fica onde estava.
+- **No Mapa, o cartão do documento não esconde mais o documento aberto.** Numa tela de 1440 px, o cartão cobria cerca de 43% da nuvem, e o documento aberto (pelo clique, pela busca ou por um link) podia ficar embaixo dele. Agora o mapa desliza só o necessário para deixá-lo à vista, ao lado do cartão, sem mudar o zoom. A coluna vazia embaixo de um cartão curto também deixa de engolir o clique, o arrasto e a roda do mouse, e os rótulos dos tópicos só se escondem atrás do próprio cartão.
+- **Na Validação, com "Ver como tabela" aberto, a figura grudada continua cabendo na janela.** Numa tela larga, a tabela da concordância acompanha a rolagem ao lado do detalhe; com a tabela dos dados aberta, a figura passava da altura da janela. Agora, com a tabela aberta, a figura deixa de grudar e acompanha a página; fechada a tabela, ela volta a grudar.
+
 ## [2.1.1] - 2026-09-29
 
 A versão 2.1.1 tira do site público o que só interessa a quem desenvolve o pacote. A documentação e a demo são para quem usa o mapa e para quem lê os resultados; os registros de decisão, as notas de desenvolvimento e o bastidor da execução continuam no repositório e no painel local.

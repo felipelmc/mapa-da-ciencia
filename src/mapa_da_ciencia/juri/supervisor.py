@@ -34,7 +34,7 @@ from ..classificacao.resultado import valor_como_texto, valor_do_texto
 from ..config import ErroConfig
 from ..llm.cache import chave_de
 from ..projeto import Projeto
-from .consolidar import DecisaoFinal, chave_pedido, consolidar, decidir, respostas_do_supervisor
+from .consolidar import DecisaoFinal, chave_pedido, consolidar, decidir, registrar_passo, respostas_do_supervisor
 from .deliberacao import DELIBERAVEIS
 from .estado import conectar, pasta_pedidos
 from .prompt import INSTRUCOES_SUPERVISOR, descrever_variavel
@@ -226,6 +226,7 @@ def _ler_respostas(arquivos: Iterable[Path]) -> list[dict[str, Any]]:
 
 def importar_respostas(projeto: Projeto, arquivos: list[Path], *, origem: str = "arquivo") -> ResumoRespostas:
     """Confere e guarda as respostas do supervisor (o de `juri.supervisor.nome`), e consolida o júri de novo."""
+    inicio = datetime.now(UTC)
     codebook = projeto.codebook
     hash_cb = codebook.hash()
     nome = projeto.config.juri.supervisor.nome
@@ -350,7 +351,7 @@ def importar_respostas(projeto: Projeto, arquivos: list[Path], *, origem: str = 
             "nenhum_adequado, custo_usd, atualizado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             linhas,
         )
-    consolidar(projeto)
+    registrar_passo(projeto, "supervisor", inicio, consolidar(projeto))
     return resumo
 
 

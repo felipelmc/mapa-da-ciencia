@@ -175,3 +175,14 @@ O desenho leva cerca de 1 s no piloto e não depende do hash das strings do Pyth
 coordenadas mudaram: pessoas, comunidades, métricas, arestas, citações e o cânone são os mesmos da 2.0.0. O
 relaxamento garante a folga até o tamanho do piloto; numa rede bem maior, os nós voltam a se tocar na tela de
 referência (num corpus sintético, 0,4% com 3 mil nós desenhados, 82% com 8 mil), e o zoom continua sendo o caminho.
+
+## Adendo (2.2.0): uma cor por comunidade
+
+Até a 2.1, cada nó tinha a cor do macrotema da sua comunidade. No piloto, as 38 comunidades de coautoria dividem 7
+macrotemas, e comunidades vizinhas no desenho saíam com a mesma cor. Desde o contrato 1.6, cada comunidade tem a
+própria cor (`ComunidadeRede.cor`), um tom do macrotema dela escolhido como os tons dos tópicos
+(`topicos.paleta.proxima_cor`): a maior comunidade de cada macrotema, em cada rede, fica com a cor do macrotema, e as
+outras com o tom mais distante dos já usados. O matiz continua dizendo o macrotema, e o tom separa as comunidades. A
+cor é calculada na exportação (`contrato/redes.py`), a partir das cores dos macrotemas: um projeto não precisa rodar
+`mapa redes` de novo. Alternativa descartada: uma paleta categórica, sem repetir cor entre discos vizinhos, que
+separaria mais as comunidades, mas perderia a ligação visual com os macrotemas do mapa e dos tópicos.

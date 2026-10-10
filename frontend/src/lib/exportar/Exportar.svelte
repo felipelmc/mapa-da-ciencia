@@ -3,6 +3,7 @@
 	 * O botão "Exportar" de uma figura: escolhe o formato (SVG, PNG, CSV) e o preset (artigo, slide, telão) e baixa
 	 * o arquivo. O cabeçalho do SVG e do PNG leva o título e o recorte; o rodapé, a fonte, o n e a data.
 	 */
+	import { tick } from 'svelte';
 	import { usarProjeto } from '$lib/dados/contexto';
 	import { filtrosDaPagina } from '$lib/estado/filtros';
 	import { formatarPeriodo, nomeDaFonte } from '$lib/formato';
@@ -45,11 +46,23 @@
 	// O mesmo critério da exportação (`graficoDe`: um SVG de 200 px ou mais, não as sparklines), medido ao abrir,
 	// porque o tamanho na tela não é reativo. Sem gráfico, o CSV já vem escolhido.
 	let temGrafico = $state(false);
-	function alternar() {
+	// o painel nasce alinhado à esquerda do botão; perto da borda direita da figura (ou da tela), ele recua para caber,
+	// como a lista das revistas na barra do recorte. No celular ele é uma folha fixa embaixo, e não recua
+	let caixa = $state<HTMLDivElement>();
+	let painel = $state<HTMLDivElement>();
+	let recuo = $state(0);
+	async function alternar() {
 		aberto = !aberto;
 		if (!aberto) return;
 		temGrafico = !!figura && graficoDe(figura) !== null;
 		if (!temGrafico) formato = 'csv';
+		recuo = 0;
+		await tick();
+		if (!caixa || !painel || getComputedStyle(painel).position === 'fixed') return;
+		const inicio = caixa.getBoundingClientRect().left;
+		const tela = document.documentElement.clientWidth - 8;
+		const limite = Math.min(tela, figura?.getBoundingClientRect().right ?? tela);
+		recuo = Math.max(Math.min(0, limite - (inicio + painel.offsetWidth)), 8 - inicio);
 	}
 
 	function recorteEmPalavras(): string {
@@ -92,12 +105,12 @@
 	}
 </script>
 
-<div class="exportar">
+<div class="exportar" bind:this={caixa}>
 	<button type="button" class="abrir" aria-expanded={aberto} onclick={alternar} data-testid="abrir-exportar">
 		Exportar
 	</button>
 	{#if aberto}
-		<div class="painel" role="group" aria-label="Exportar a figura">
+		<div class="painel" role="group" aria-label="Exportar a figura" bind:this={painel} style:left={recuo ? `${recuo}px` : null}>
 			<fieldset>
 				<legend>Formato</legend>
 				{#each [['svg', 'SVG'], ['png', 'PNG'], ['csv', 'CSV (dados)']] as [valor, rotulo] (valor)}
