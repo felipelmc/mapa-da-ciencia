@@ -74,6 +74,23 @@ def _hash_resultado(caminho: Path) -> str:
     return hashlib.sha256(json.dumps(dados, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
 
 
+_CAMPOS_DE_ROTULO = ("rotulo", "descricao", "rotulo_fonte", "versao_rotulo")
+
+
+def _hash_topicos(caminho: Path) -> str:
+    """O `resultado.json` dos tópicos sem os carimbos de hora e sem os rótulos: as redes usam os tópicos de cada
+    documento, e o rótulo de uma comunidade é calculado na exportação, com os rótulos atuais. Mudar um rótulo (no
+    `rotulos.yaml` ou pelo painel) não desatualiza as redes."""
+    if not caminho.exists():
+        return "-"
+    dados = {k: v for k, v in json.loads(caminho.read_text(encoding="utf-8")).items() if k not in _CARIMBOS}
+    for chave in ("topicos", "macrotemas"):
+        dados[chave] = [{k: v for k, v in x.items() if k not in _CAMPOS_DE_ROTULO} for x in dados.get(chave) or []]
+    if isinstance(dados.get("modelos"), dict):
+        dados["modelos"] = {k: v for k, v in dados["modelos"].items() if k != "rotulos"}
+    return hashlib.sha256(json.dumps(dados, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
+
+
 def _hash_correcoes(raiz: Path) -> str:
     """O conteúdo do `pessoas.yaml` (um comentário ou a ordem das chaves não mudam as redes)."""
     try:
@@ -82,10 +99,13 @@ def _hash_correcoes(raiz: Path) -> str:
         return _hash_arquivos(raiz / ARQUIVO_PESSOAS)
 
 
-def partes_das_entradas(projeto: Projeto) -> dict[str, str]:
-    """Um hash por entrada da etapa, com o nome que o aviso de desatualizada mostra."""
+def partes_das_entradas(projeto: Projeto, *, legado: bool = False) -> dict[str, str]:
+    """Um hash por entrada da etapa, com o nome que o aviso de desatualizada mostra. Com `legado`, o dos tópicos é o
+    de antes da 2.3.0 (com os rótulos), para que as redes de um projeto existente não fiquem desatualizadas só pela
+    atualização do pacote."""
     geo = projeto.dados / "geografia"
     top = projeto.dados / PASTA_TOPICOS
+    topicos = _hash_resultado(top / "resultado.json") if legado else _hash_topicos(top / "resultado.json")
     return {
         "o corpus": _hash_arquivos(projeto.dados / ARQUIVO),
         "as referências": _hash_arquivos(
@@ -94,7 +114,7 @@ def partes_das_entradas(projeto: Projeto) -> dict[str, str]:
         "o pessoas.yaml": _hash_correcoes(projeto.raiz),
         "a geografia": _hash_resultado(geo / "resultado.json")
         + _hash_arquivos(geo / "pesos.parquet", geo / "vinculos.parquet", geo / "instituicoes.parquet"),
-        "os tópicos": _hash_resultado(top / "resultado.json") + _hash_arquivos(top / "atribuicoes.parquet"),
+        "os tópicos": topicos + _hash_arquivos(top / "atribuicoes.parquet"),
     }
 
 
@@ -139,7 +159,13 @@ def redes_em_dia(projeto: Projeto) -> bool | None:
     r = ResultadoRedes.ler(projeto.dados / PASTA)
     if r is None:
         return None
-    return r.versao == VERSAO and r.entradas == assinatura_entradas(projeto)
+    return r.versao == VERSAO and r.entradas in _assinaturas_validas(projeto)
+
+
+def _assinaturas_validas(projeto: Projeto) -> set[str]:
+    """A assinatura atual e a de antes da 2.3.0 (com os rótulos no hash dos tópicos), que vale até a próxima
+    `mapa redes`."""
+    return {assinatura_entradas(projeto), assinatura_entradas(projeto, partes_das_entradas(projeto, legado=True))}
 
 
 def o_que_mudou(projeto: Projeto) -> list[str]:
@@ -150,7 +176,7 @@ def o_que_mudou(projeto: Projeto) -> list[str]:
     if r.versao != VERSAO:
         return ["a versão da etapa"]
     agora = partes_das_entradas(projeto)
-    if r.entradas == assinatura_entradas(projeto, agora):
+    if r.entradas in _assinaturas_validas(projeto):
         return []
     return [nome for nome, valor in agora.items() if r.partes.get(nome) != valor] or ["as entradas"]
 

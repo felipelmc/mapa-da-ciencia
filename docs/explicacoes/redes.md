@@ -50,8 +50,9 @@ trabalhando juntas.
 As comunidades são grupos de nós mais ligados entre si do que com o resto, achados pelo algoritmo de **Louvain**
 (com semente fixa, para dar sempre o mesmo resultado). Só as grandes ganham número (8 pessoas ou 5 instituições, no
 mínimo). O rótulo de cada comunidade são os **dois tópicos mais frequentes** nos artigos dela (no empate, o de menor
-id): uma comunidade não recebe nome de pessoa. Comunidades são um agrupamento automático, e não grupos de pesquisa
-declarados.
+id): uma comunidade não recebe nome de pessoa. O rótulo usa os nomes atuais dos tópicos: corrigir o nome de um tópico
+muda o rótulo das comunidades na próxima exportação, sem rodar `mapa redes` de novo. Comunidades são um agrupamento
+automático, e não grupos de pesquisa declarados.
 
 O agregado das comunidades é estável, mas a **composição** de cada uma não é tanto: numa cópia do piloto auditada,
 trocar a semente do

@@ -490,7 +490,11 @@ def _redes(
     documentos = arquivos["documentos"]
     macrotemas = arquivos["topicos"].macrotemas  # type: ignore[attr-defined]
     redes, citacoes, gabarito = redes_contrato(
-        projeto, list(documentos.colunas.id), [mt.id for mt in macrotemas], {mt.id: mt.cor for mt in macrotemas}
+        projeto,
+        list(documentos.colunas.id),
+        [mt.id for mt in macrotemas],
+        {mt.id: mt.cor for mt in macrotemas},
+        {t.id: t.rotulo for t in arquivos["topicos"].topicos},  # type: ignore[attr-defined]
     )
     if fora := instituicoes_fora_de_afiliacoes(redes, arquivos.get("afiliacoes")):  # type: ignore[arg-type]
         avisos.append(
