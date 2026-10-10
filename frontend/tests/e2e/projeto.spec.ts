@@ -30,7 +30,15 @@ test('a linha de metrô, a estimativa e os modelos', async ({ page }) => {
 	const problemas = vigiar(page);
 	await page.goto(`${url('PAINEL')}#/projeto`);
 	await expect(h1(page)).toHaveText('Projeto');
-	await expect(page.getByTestId('linha-metro').getByRole('listitem')).toHaveCount(6);
+	await expect(page.getByTestId('linha-metro').getByRole('listitem')).toHaveCount(7);
+	// o júri (o projeto tem `juri.membros`): o estado e o próximo comando, sem botão de rodar
+	const juri = page.getByTestId('estacao-juri');
+	await expect(page.getByTestId('estado-juri')).toHaveText('Incompleta');
+	await expect(page.getByTestId('proximo-juri')).toContainText('mapa juri exportar-pedidos');
+	await expect(juri.getByRole('link', { name: 'Como usar o júri' })).toBeVisible();
+	await expect(juri.getByRole('button')).toHaveCount(0);
+	// o comando longo quebra dentro da estação: a página não rola de lado
+	expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 	// as redes, depois da geografia: desatualizadas, com o que mudou, e o botão diz "Atualizar"
 	await expect(page.getByTestId('estado-redes')).toHaveText('Desatualizada');
 	await expect(page.getByTestId('mudou-redes')).toHaveText('Mudou o pessoas.yaml');

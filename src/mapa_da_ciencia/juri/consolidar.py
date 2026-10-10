@@ -369,6 +369,31 @@ def consolidar(projeto: Projeto) -> ResumoJuri:
     return resumo
 
 
+def registrar_passo(projeto: Projeto, passo: str, inicio: datetime, resumo: ResumoJuri) -> None:
+    """O manifesto de um passo do júri que consolidou as decisões (a deliberação, as respostas do supervisor): é a
+    última execução que o `mapa status` e a linha das etapas do painel mostram."""
+    from ..manifesto import registrar_execucao
+
+    total = {e: sum(v.get(e, 0) for v in resumo.etapas.values()) for e in ESTAGIOS}
+    modelos = {"membros": ", ".join(resumo.membros)}
+    if resumo.supervisor:
+        modelos["supervisor"] = resumo.supervisor
+    registrar_execucao(
+        projeto,
+        "juri",
+        inicio=inicio,
+        fim=datetime.now(UTC),
+        contagens={
+            "documentos": resumo.documentos,
+            **{f"decisoes_{e}": n for e, n in total.items()},
+            "arbitrados": resumo.arbitrados,
+            "pendentes_supervisor": resumo.pendentes_supervisor,
+        },
+        modelos=modelos,
+        parametros={"passo": passo, "deliberar": projeto.config.juri.deliberar},
+    )
+
+
 def _voto(d: DecisaoFinal, x: Voto, rodada: int, revisou: bool) -> dict[str, Any]:
     return {
         "doc": d.doc,

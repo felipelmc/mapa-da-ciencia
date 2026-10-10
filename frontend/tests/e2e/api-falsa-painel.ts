@@ -160,7 +160,9 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 				geografia: { estado: estado('geografia', 'em_dia'), ultima },
 				redes: feitos.has('redes') ? { estado: 'em_dia', ultima } : { estado: 'desatualizada', ultima, mudou: ['o pessoas.yaml'] },
 				classificacao: { estado: estado('classificacao', 'desatualizada'), ultima },
-				validacao: { estado: 'pendente', ultima: null, ...(amostra ? { amostra } : {}) }
+				validacao: { estado: 'pendente', ultima: null, ...(amostra ? { amostra } : {}) },
+				// o júri só vem num projeto com `juri.membros` (o do exemplo tem); ele não roda pelo painel
+				juri: { estado: 'incompleta', ultima, proximo: 'mapa juri exportar-pedidos (e depois importar-respostas)' }
 			});
 			return true;
 		}
@@ -171,6 +173,9 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 		if (metodo === 'POST' && (caminho.startsWith('etapas/') || caminho === 'modelos/baixar')) {
 			void corpoDe(req).then((opcoes) => {
 				const etapa = caminho === 'modelos/baixar' ? 'modelo' : caminho.slice('etapas/'.length);
+				// como `rotas_jobs.py`: só as etapas do painel (o júri e a validação não são jobs)
+				if (!['coleta', 'topicos', 'geografia', 'redes', 'classificacao', 'modelo'].includes(etapa))
+					return json(res, 404, { detail: `Etapa desconhecida: ${etapa}.` });
 				const a = ativo();
 				if (a) return json(res, 409, { detail: { mensagem: `Já há uma etapa rodando (${a.etapa}).`, job: semEventos(a) } });
 				json(res, 202, semEventos(iniciar(etapa, opcoes)));

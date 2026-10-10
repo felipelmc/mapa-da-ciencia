@@ -171,7 +171,8 @@ Ficaram para depois, registrados (a 2.2.0 os corrigiu, um por commit, na branch 
   no arquivo);
 - o histórico das etapas, que mostra "na fila" durante a execução (**corrigido na 2.2.0**: ele usa o estado do job
   acompanhado ao vivo);
-- o júri, que ainda não aparece na linha das etapas nem no `mapa status`;
+- o júri, que ainda não aparece na linha das etapas nem no `mapa status` (**corrigido na 2.2.0**: o júri tem estado,
+  manifesto e o próximo comando, e continua rodando pela linha de comando);
 - nas redes:
     - um link com `comunidade=` e `no=` juntos, que enquadra a comunidade (o nó pode ficar fora da tela);
     - o Esc que fecha um cartão aberto pelo link, que leva o foco para a busca (o Esc seguinte não solta a

@@ -40,6 +40,12 @@ mapa juri status      # em que passo o júri está
 Os dois passos retomam de onde pararam: as respostas ficam no cache do projeto. Um membro só é carregado com os
 outros descarregados.
 
+O júri também aparece no `mapa status` e na linha das etapas da vista Projeto do painel, com o estado e o próximo
+comando: incompleto enquanto falta votar, deliberar ou a resposta do supervisor; desatualizado depois de uma mudança no
+codebook ou na amostra, ou quando as decisões gravadas não batem mais com os votos (rode `mapa juri deliberar`, que
+consolida de novo); em dia quando só falta o relatório. Os passos do júri rodam pela linha de comando, e não pelo
+painel.
+
 ## O supervisor por arquivos (padrão)
 
 ```bash

@@ -47,7 +47,7 @@ No Colab, o painel abre numa janela nova, pelo *proxy* do Google, e só nesse mo
 | Classificação | Uma variável do codebook por vez: a distribuição por ano, o cruzamento com macrotemas, tópicos ou revistas, os selos de concordância e os documentos de cada célula com a evidência marcada no resumo ([Ler a classificação](ler-a-classificacao.md)) |
 | Geografia | Produção por UF, país e instituição, com contagem fracionária, e a cobertura das afiliações por ano ([Ler a geografia](ler-a-geografia.md)) |
 | Validação | A concordância do modelo com quem codificou a amostra, a matriz de confusão e as divergências; no painel local, a codificação da amostra pelo teclado ([Codificar a amostra](codificar-a-amostra.md), [Ler kappa e PABAK](ler-kappa-e-pabak.md)) |
-| Projeto | As etapas do pipeline numa linha de metrô (em dia, desatualizadas ou pendentes), rodar e cancelar cada uma com o progresso ao vivo, a estimativa da classificação e os modelos do Ollama (só no painel local) |
+| Projeto | As etapas do pipeline numa linha de metrô (em dia, desatualizadas ou pendentes), rodar e cancelar cada uma com o progresso ao vivo, a estimativa da classificação e os modelos do Ollama (só no painel local); num projeto com júri, o estado dele e o próximo comando ([Usar o júri](juri.md)) |
 | Redes | Coautoria entre pessoas e entre instituições, colaboração entre estados e citações (o cânone e o fluxo entre macrotemas), com o mesmo recorte das outras vistas ([Ler as redes](ler-as-redes.md)) |
 
 Para projetar numa aula ou numa apresentação, aperte ++p++: o **modo apresentação** esconde o trilho e as barras e aumenta a letra; ++esc++ (ou ++p++ de novo) volta.

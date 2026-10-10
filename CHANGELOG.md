@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Adicionado
+
+- **O júri no `mapa status` e na linha das etapas do painel.** Num projeto com `juri.membros`, o júri ganha uma linha no `mapa status` (com a amostra classificada por membro e o próximo passo) e uma estação na vista Projeto: incompleto enquanto falta votar, deliberar ou a resposta do supervisor, desatualizado depois de uma mudança no codebook ou quando as decisões gravadas não batem mais com os votos, em dia quando só falta o relatório. A deliberação e a importação das respostas do supervisor passam a deixar um manifesto em `execucoes/`, como as outras etapas. Os passos do júri continuam rodando pela linha de comando.
+
 ### Corrigido
 
 - **A concordância de uma pessoa conta só as fichas confirmadas.** O painel grava a ficha a cada resposta, e o kappa, o n de quem codifica e a contagem de documentos validados incluíam fichas salvas pela metade, que nunca foram confirmadas com ++enter++. Agora a confirmação fica guardada (as fichas respondidas por inteiro antes desta versão contam como confirmadas), e uma ficha só entra nas métricas, no `validacao.json`, no relatório e na escolha da referência do júri depois de confirmada. As fichas importadas (`mapa validar importar`) continuam confirmadas desde a importação.
