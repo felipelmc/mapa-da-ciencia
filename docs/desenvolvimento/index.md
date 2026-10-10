@@ -95,6 +95,16 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | `src/mapa_da_ciencia/geografia/dados/municipios.csv` | `uv run python scripts/gerar_municipios.py` (1 requisição ao IBGE) | Quando o IBGE criar municípios |
 | `tests/fixtures/articlemeta/` | `uv run python scripts/recortar_fixtures.py` (precisa do cache do spike, `spikes/saida/brutos/`) | Ao precisar de novos casos de teste; os e-mails reais viram `anonimo@exemplo.invalid` |
 
+### Refazer o piloto com segurança
+
+Uma mudança na coleta, nos tópicos ou na geografia pede refazer o piloto, e o piloto alimenta a demo, a abertura e os números da documentação. Antes de tocar nele, copie a pasta duas vezes para fora do iCloud (uma cópia congelada e uma de ensaio), rode as etapas na de ensaio e compare:
+
+```bash
+uv run python scripts/comparar_rodadas.py /tmp/cp-scielo-antes /tmp/cp-scielo-novo > comparacao.md
+```
+
+O relatório lista os documentos que entraram e saíram, os resumos tirados ou com o idioma trocado, os textos de análise e de classificação que mudaram (o que vai chamar o modelo de novo), as UFs e os vínculos que mudaram, e cada tópico ao lado do de mesmo número na rodada anterior, com o Jaccard dos núcleos e o `rotulos.yaml`. Os tópicos marcados "rever" e as entradas do `rotulos.yaml` sem tópico pedem uma nova leitura dos rótulos antes de publicar.
+
 ## Convenções
 
 - **Português** em tudo: interface, documentação, mensagens, identificadores de domínio (`coletar`, `topicos`, `revistas`).
