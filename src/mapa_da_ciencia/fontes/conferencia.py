@@ -32,7 +32,12 @@ _REPOSITORIO = re.compile(
     re.IGNORECASE,
 )
 _ABERTURA = "\"'“‘«¿¡(["  # o que pode vir antes da primeira letra de uma frase
-_NUMERO_NO_INICIO = re.compile(r"^\d+[\s.,%ºª/–-]")  # "2013 foi o ano", "40% dos", e não "2] Ibid"
+# um começo de frase com número: um ano ("2013 foi", "1968–1978"), uma porcentagem ("40% dos", "40,5 %"), um
+# ordinal ("1º de maio", "19th-century") ou um número seguido de minúscula ("40 anos", "10 de setembro"); e não uma
+# nota de rodapé raspada da página ("2] Ibid", "2. Ibid.", "2 Todas as passagens")
+_NUMERO_NO_INICIO = re.compile(
+    r"^(?:(?:1[5-9]|20)\d\d(?![\d.\])])|\d+(?:[.,]\d+)?\s?%|\d+(?:[ºª]|st|nd|rd|th)|\d+\s+[a-zà-ÿ])"
+)
 
 
 @dataclass
@@ -49,7 +54,7 @@ def fragmento(resumo: Texto) -> bool:
     if resumo.origem != "openalex":
         return False
     inicio = texto.lstrip(_ABERTURA)
-    return not (inicio[:1].isupper() or _NUMERO_NO_INICIO.match(texto))
+    return not (inicio[:1].isupper() or _NUMERO_NO_INICIO.match(inicio))
 
 
 def _um_por_idioma(textos: list[Texto], certos: set[int]) -> list[Texto]:

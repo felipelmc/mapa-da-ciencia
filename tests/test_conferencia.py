@@ -90,9 +90,27 @@ def test_regras_de_fragmento():
     assert fragmento(r("2] Todas as passagens do livro citadas foram traduzidas pelo autor. " + PT))
     assert not fragmento(r(PT))
     assert not fragmento(r("“Democracia como valor universal”: " + PT))
-    # aberturas legítimas: pontuação de abertura, um ano ou um número
-    for inicio in ("¿Por qué los partidos? ", "2013 foi o ano em que ", "(Re)pensar a democracia: ", "[Introduction] "):
+    # aberturas legítimas: pontuação de abertura, um ano, uma porcentagem, um número seguido de minúscula
+    for inicio in (
+        "¿Por qué los partidos? ",
+        "2013 foi o ano em que ",
+        "(Re)pensar a democracia: ",
+        "[Introduction] ",
+        "“1968” foi o ano em que ",
+        "«2013» marcou ",
+        '"40% dos eleitores" ',
+        "40 anos depois, ",
+        "1º de maio: ",
+        "19th-century Brazil ",
+    ):
         assert not fragmento(r(inicio + PT)), inicio
+    # notas de rodapé raspadas da página
+    for inicio in (
+        "2 Todas as passagens do livro citadas foram traduzidas pelo autor. ",
+        "2. Ibid., p. 45. ",
+        "12) Ver ",
+    ):
+        assert fragmento(r(inicio + PT)), inicio
     # da ArticleMeta, um resumo que começa em minúscula é do próprio artigo
     assert not fragmento(r("este estudo trata das " + PT, origem="articlemeta"))
 
