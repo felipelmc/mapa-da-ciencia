@@ -161,6 +161,25 @@ def test_validacao_do_projeto(projeto, tmp_path):
     assert div[0].valor_modelo == "quantitativa" and div[0].evidencia_modelo and div[0].status_evidencia == "literal"
 
 
+def test_fichas_nao_confirmadas_nao_entram(projeto, tmp_path):
+    """O salvamento automático do painel grava fichas pela metade: elas não entram no kappa nem no n de quem codifica
+    até a pessoa confirmar."""
+    a = va.sortear(projeto)
+    _codificar(projeto, a.docs, tmp_path, "claude-opus", set(a.docs[:3]))
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    abordagem = next(v for v in projeto.codebook.variaveis if v.id == "abordagem")
+    so_uma = {"abordagem": {"valor": abordagem.categorias[-2].valor}}
+    for d in a.docs[:4]:
+        assert va.salvar(projeto, "maria", d, so_uma, completa=False) == []
+    r = vm.calcular(projeto, reamostras=10)
+    assert "maria" not in {p.nome for p in r.participantes}
+
+    _codificar(projeto, a.docs[:2], tmp_path, "maria", set())  # importa: confirma duas fichas inteiras
+    r = vm.calcular(projeto, reamostras=10)
+    assert next(p.n for p in r.participantes if p.nome == "maria") == 2
+    assert r.metrica("abordagem", "maria", "qwen3.5:4b").n == 2
+
+
 def test_cli_validar_metricas(projeto, tmp_path):
     from typer.testing import CliRunner
 

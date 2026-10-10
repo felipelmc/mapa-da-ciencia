@@ -292,23 +292,67 @@ def test_codificacoes_presas_ao_codebook(projeto):
     calcular(projeto, reamostras=10)  # não quebra com o valor antigo guardado como texto
 
 
-def test_so_fichas_completas_contam_como_codificadas(tmp_path):
-    """Uma ficha salva pela metade (uma variável só) não conta como validada."""
-    from mapa_da_ciencia.llm.perfis import PERFIS
-    from mapa_da_ciencia.projeto import Projeto
-
-    p = Projeto.criar(tmp_path / "p", modelo="ciencia-politica", perfil=PERFIS["leve"])
+def _gravar_direto(p, codificador: str, fichas: dict[str, int], *, confirmar: bool) -> None:
+    """Grava no banco, sem passar por `salvar`, as primeiras `n` variáveis de cada documento."""
     variaveis = [v.id for v in p.codebook.variaveis]
-    assert len(variaveis) > 1
     with va.conectar(p) as con:
-        for doc, n in (("d1", len(variaveis)), ("d2", 1)):
+        con.execute("INSERT OR IGNORE INTO codificadores (nome, tipo) VALUES (?, 'humano')", (codificador,))
+        for doc, n in fichas.items():
             for var in variaveis[:n]:
                 con.execute(
                     "INSERT INTO codificacoes (codificador, doc, variavel, valor, evidencia, incerto, nota, atualizado)"
-                    " VALUES ('ana', ?, ?, ?, '', 0, '', 'agora')",
-                    (doc, var, _valor_valido(p, var)),
+                    " VALUES (?, ?, ?, ?, '', 0, '', 'agora')",
+                    (codificador, doc, var, _valor_valido(p, var)),
                 )
+            if confirmar:
+                con.execute("INSERT INTO validacao_confirmadas VALUES (?, ?, 'agora')", (codificador, doc))
+
+
+def test_so_fichas_completas_contam_como_codificadas(tmp_path):
+    """Uma ficha salva pela metade (uma variável só) não conta como validada, nem confirmada."""
+    p = Projeto.criar(tmp_path / "p", modelo="ciencia-politica", perfil=PERFIS["leve"])
+    n = len(p.codebook.variaveis)
+    assert n > 1
+    _gravar_direto(p, "ana", {"d1": n, "d2": 1}, confirmar=True)
     assert va.documentos_completos(p) == {"d1"}
+
+
+def test_so_fichas_confirmadas_contam(projeto):
+    """O salvamento automático do painel (`completa=False`) não confirma a ficha, mesmo respondida por inteiro: só o
+    Enter (`completa=True`) confirma, e uma gravação automática depois disso não desfaz a confirmação."""
+    a = va.sortear(projeto)
+    doc = a.docs[0]
+    assert va.salvar(projeto, "felipe", doc, _respostas(projeto), completa=False) == []
+    assert va.documentos_completos(projeto) == set() and va.fichas_confirmadas(projeto) == set()
+    assert va.codificacoes(projeto, "felipe", confirmadas=True) == [] and va.codificacoes(projeto, "felipe")
+    assert va.salvar(projeto, "felipe", doc, _respostas(projeto), completa=True) == []
+    assert va.documentos_completos(projeto) == {doc} and va.fichas_completas(projeto, "felipe") == {("felipe", doc)}
+    assert va.salvar(projeto, "felipe", doc, _respostas(projeto, primeira=False), completa=False) == []
+    assert va.documentos_completos(projeto) == {doc}
+
+
+def test_referencia_conta_sempre(projeto, tmp_path):
+    """O codificador de referência só chega por importação, com fichas inteiras: elas contam sem confirmação."""
+    a = va.sortear(projeto)
+    arquivo = tmp_path / "ref.jsonl"
+    arquivo.write_text(json.dumps({"doc": a.docs[0], "respostas": _respostas(projeto)}))
+    va.importar(projeto, arquivo, "claude-opus", tipo="referencia")
+    with va.conectar(projeto) as con:
+        con.execute("DELETE FROM validacao_confirmadas")
+    assert va.fichas_confirmadas(projeto) == {("claude-opus", a.docs[0])}
+
+
+def test_fichas_antigas_viram_confirmadas_uma_vez(tmp_path):
+    """Um projeto de uma versão anterior (sem a confirmação): na primeira conexão, as fichas de pessoas já respondidas
+    por inteiro contam como confirmadas; as parciais, não. A migração não roda de novo."""
+    p = Projeto.criar(tmp_path / "p", modelo="ciencia-politica", perfil=PERFIS["leve"])
+    n = len(p.codebook.variaveis)
+    _gravar_direto(p, "ana", {"d1": n, "d2": 1}, confirmar=False)
+    with va.conectar(p) as con:  # como era antes da 2.2: sem a marca da migração
+        con.execute("DELETE FROM validacao_info WHERE chave = 'confirmadas_migradas'")
+    assert va.fichas_confirmadas(Projeto.abrir(p.raiz)) == {("ana", "d1")}
+    _gravar_direto(p, "ana", {"d3": n}, confirmar=False)
+    assert va.fichas_confirmadas(Projeto.abrir(p.raiz)) == {("ana", "d1")}
 
 
 def _valor_valido(p, var):

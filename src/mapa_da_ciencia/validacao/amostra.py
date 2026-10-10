@@ -9,6 +9,11 @@ pelos maiores restos. Os documentos sem tópico formam um estrato próprio. A se
 pessoas), a marca de incerteza e uma nota. Cada codificador tem um tipo: `humano` ou `referencia` (um anotador que
 não é uma pessoa, como o Claude, ver ADR 0012). Os modelos locais não são codificadores: as respostas deles vêm da
 classificação.
+
+**Confirmação.** O painel grava a ficha a cada mudança (`completa=False`), e só o Enter da pessoa a confirma
+(`completa=True`, como toda importação). As métricas e a contagem de validados só usam fichas confirmadas: uma ficha
+salva pela metade não entra no kappa. A confirmação fica em `validacao_confirmadas`; as fichas do codificador de
+referência, que só chegam por importação (inteiras), contam sempre.
 """
 
 from __future__ import annotations
@@ -56,14 +61,47 @@ CREATE TABLE IF NOT EXISTS codificacoes (
     atualizado  TEXT NOT NULL,
     PRIMARY KEY (codificador, doc, variavel)
 );
+CREATE TABLE IF NOT EXISTS validacao_confirmadas (
+    codificador TEXT NOT NULL,
+    doc         TEXT NOT NULL,
+    em          TEXT NOT NULL,
+    PRIMARY KEY (codificador, doc)
+);
 """
+_MIGRADAS = "confirmadas_migradas"  # a marca, em `validacao_info`, de que as fichas antigas já foram confirmadas
 
 
 def conectar(projeto: Projeto) -> sqlite3.Connection:
     con = sqlite3.connect(projeto.estado)
     con.execute("PRAGMA journal_mode=WAL")
     con.executescript(_ESQUEMA)
+    if con.execute("SELECT 1 FROM validacao_info WHERE chave = ?", (_MIGRADAS,)).fetchone() is None:
+        _confirmar_fichas_antigas(projeto, con)
     return con
+
+
+def _confirmar_fichas_antigas(projeto: Projeto, con: sqlite3.Connection) -> None:
+    """Uma vez por projeto: as fichas de pessoas gravadas antes da confirmação existir (até a 2.1) e já respondidas por
+    inteiro contam como confirmadas, para o trabalho feito não sair das métricas. Sem codebook legível, fica para a
+    próxima conexão."""
+    try:
+        variaveis = {v.id for v in projeto.codebook.variaveis}
+    except ErroConfig:
+        return
+    respondidas: dict[tuple[str, str], set[str]] = defaultdict(set)
+    sql = (
+        "SELECT c.codificador, c.doc, c.variavel FROM codificacoes c "
+        "JOIN codificadores k ON k.nome = c.codificador WHERE k.tipo = 'humano'"
+    )
+    for codificador, doc, variavel in con.execute(sql):
+        respondidas[(codificador, doc)].add(variavel)
+    agora = datetime.now(UTC).isoformat(timespec="seconds")
+    with con:
+        con.executemany(
+            "INSERT OR IGNORE INTO validacao_confirmadas (codificador, doc, em) VALUES (?, ?, ?)",
+            [(c, d, agora) for (c, d), vs in respondidas.items() if variaveis and variaveis <= vs],
+        )
+        con.execute("INSERT OR REPLACE INTO validacao_info (chave, valor) VALUES (?, ?)", (_MIGRADAS, agora))
 
 
 # ---------------------------------------------------------------- amostra
@@ -258,7 +296,8 @@ def salvar(
 ) -> list[str]:
     """Grava as respostas de um codificador para um documento (substituindo as das mesmas variáveis). Devolve os
     problemas; com algum problema, nada é gravado. Com `completa=False` (o salvamento automático do painel), as
-    variáveis ainda não respondidas não contam como problema."""
+    variáveis ainda não respondidas não contam como problema, e a ficha não é confirmada (uma já confirmada continua);
+    com `completa=True`, ela é confirmada."""
     nome_valido(codificador)
     codebook = projeto.codebook
     bruto = {
@@ -291,6 +330,11 @@ def salvar(
                 for v in r.valores
             ],
         )
+        if completa:
+            con.execute(
+                "INSERT OR REPLACE INTO validacao_confirmadas (codificador, doc, em) VALUES (?, ?, ?)",
+                (codificador, doc, agora),
+            )
     return []
 
 
@@ -343,12 +387,28 @@ def codificadores(projeto: Projeto) -> dict[str, TipoCodificador]:
         return dict(con.execute("SELECT nome, tipo FROM codificadores ORDER BY nome").fetchall())
 
 
-def codificacoes(projeto: Projeto, codificador: str | None = None, *, todas: bool = False) -> list[dict[str, Any]]:
+def fichas_confirmadas(projeto: Projeto) -> set[tuple[str, str]]:
+    """Os pares (codificador, documento) cuja ficha conta: as confirmadas e todas as do codificador de referência."""
+    if not projeto.estado.exists():
+        return set()
+    with conectar(projeto) as con:
+        confirmadas = set(con.execute("SELECT codificador, doc FROM validacao_confirmadas").fetchall())
+        sql = (
+            "SELECT DISTINCT c.codificador, c.doc FROM codificacoes c "
+            "JOIN codificadores k ON k.nome = c.codificador WHERE k.tipo = 'referencia'"
+        )
+        return confirmadas | set(con.execute(sql).fetchall())
+
+
+def codificacoes(
+    projeto: Projeto, codificador: str | None = None, *, todas: bool = False, confirmadas: bool = False
+) -> list[dict[str, Any]]:
     """As codificações (de um codificador, ou de todos), uma por codificador × documento × variável.
 
     Só as que valem no codebook atual: a variável existe e o valor cabe nela. Uma categoria renomeada ou uma variável
     que mudou de tipo deixam a ficha incompleta na fila, para codificar de novo, em vez de contar contra o modelo com
-    o valor antigo. Com `todas=True`, vêm também as que não valem mais.
+    o valor antigo. Com `todas=True`, vêm também as que não valem mais. Com `confirmadas=True`, só as das fichas que
+    contam (`fichas_confirmadas`): é o que as métricas leem.
     """
     if not projeto.estado.exists():
         return []
@@ -361,6 +421,9 @@ def codificacoes(projeto: Projeto, codificador: str | None = None, *, todas: boo
                 sql + (" WHERE codificador = ?" if codificador else ""), (codificador,) if codificador else ()
             )
         ]
+    if confirmadas:
+        contam = fichas_confirmadas(projeto)
+        linhas = [c for c in linhas if (c["codificador"], c["doc"]) in contam]
     if todas:
         return linhas
     variaveis = {v.id: v for v in projeto.codebook.variaveis}
@@ -377,11 +440,17 @@ def codificacoes(projeto: Projeto, codificador: str | None = None, *, todas: boo
     return [c for c in linhas if vale(c)]
 
 
-def documentos_completos(projeto: Projeto) -> set[str]:
-    """Os documentos que algum codificador respondeu por inteiro (todas as variáveis do codebook atual): só eles contam
-    como validados; uma ficha salva pela metade não."""
+def fichas_completas(projeto: Projeto, codificador: str | None = None) -> set[tuple[str, str]]:
+    """Os pares (codificador, documento) com a ficha confirmada e respondida por inteiro no codebook atual (uma
+    variável nova, ou uma categoria renomeada, a deixa incompleta de novo)."""
     variaveis = {v.id for v in projeto.codebook.variaveis}
     respondidas: dict[tuple[str, str], set[str]] = {}
-    for c in codificacoes(projeto):
+    for c in codificacoes(projeto, codificador, confirmadas=True):
         respondidas.setdefault((c["codificador"], c["doc"]), set()).add(c["variavel"])
-    return {doc for (_, doc), vs in respondidas.items() if variaveis <= vs}
+    return {par for par, vs in respondidas.items() if variaveis <= vs}
+
+
+def documentos_completos(projeto: Projeto) -> set[str]:
+    """Os documentos que algum codificador confirmou e respondeu por inteiro (todas as variáveis do codebook atual):
+    só eles contam como validados; uma ficha salva pela metade, ou ainda não confirmada, não."""
+    return {doc for _, doc in fichas_completas(projeto)}

@@ -55,6 +55,21 @@ test('20 fichas só pelo teclado sobrevivem a um reload', async ({ page }) => {
 	expect(problemas).toEqual([]);
 });
 
+test('uma ficha respondida sem o Enter fica gravada, mas não conta como completa', async ({ page }) => {
+	await entrar(page, 'sem-enter');
+	const progresso = page.getByTestId('progresso');
+	const doc = await page.getByTestId('ficha').getAttribute('data-doc');
+	for (let i = 0; i < nVars - textos; i += 1) await page.keyboard.press('1');
+	if (textos) await page.keyboard.type('2010–2020');
+	await expect(page.locator('[data-testid="variavel-ficha"][data-respondida="sim"]')).toHaveCount(nVars);
+	await expect(page.getByTestId('estado-gravacao')).toHaveText('Tudo gravado.');
+	await page.reload();
+	// as respostas voltam, mas a ficha não foi confirmada: a fila retoma nela e as métricas não a contam
+	await expect(progresso).toContainText('0 de 24 fichas completas · ficha 1');
+	await expect(page.getByTestId('ficha')).toHaveAttribute('data-doc', doc!);
+	await expect(page.locator('[data-testid="variavel-ficha"][data-respondida="sim"]')).toHaveCount(nVars);
+});
+
 test('o Tab sai da ficha (não há armadilha de teclado), e Enter num botão aciona o botão', async ({ page }) => {
 	await entrar(page, 'tabulacao');
 	const fora = () =>

@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Corrigido
+
+- **A concordância de uma pessoa conta só as fichas confirmadas.** O painel grava a ficha a cada resposta, e o kappa, o n de quem codifica e a contagem de documentos validados incluíam fichas salvas pela metade, que nunca foram confirmadas com ++enter++. Agora a confirmação fica guardada (as fichas respondidas por inteiro antes desta versão contam como confirmadas), e uma ficha só entra nas métricas, no `validacao.json`, no relatório e na escolha da referência do júri depois de confirmada. As fichas importadas (`mapa validar importar`) continuam confirmadas desde a importação.
+
 ## [2.1.1] - 2026-09-29
 
 A versão 2.1.1 tira do site público o que só interessa a quem desenvolve o pacote. A documentação e a demo são para quem usa o mapa e para quem lê os resultados; os registros de decisão, as notas de desenvolvimento e o bastidor da execução continuam no repositório e no painel local.

@@ -67,7 +67,7 @@ class NumerosJuri:
 
 
 def _respostas_da_referencia(projeto: Projeto, referencia: str) -> dict[tuple[str, str], str]:
-    return {(c["doc"], c["variavel"]): c["valor"] for c in va.codificacoes(projeto, referencia)}
+    return {(c["doc"], c["variavel"]): c["valor"] for c in va.codificacoes(projeto, referencia, confirmadas=True)}
 
 
 def numeros(projeto: Projeto, resumo: ResumoJuri, v: Validacao) -> NumerosJuri:
