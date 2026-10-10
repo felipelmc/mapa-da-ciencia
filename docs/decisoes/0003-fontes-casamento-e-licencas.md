@@ -130,7 +130,7 @@ Reprodução: `mapa novo projetos/cp-scielo` e `mapa coletar -P projetos/cp-scie
 
 ## Adendo (2.3.0): os resumos conferidos na coleta
 
-A revisão de setembro de 2026 achou no piloto cerca de 25 "resumos" que eram fragmentos e cerca de 40 com o idioma declarado errado, usados como vieram. Eles não eram pegos pelo descarte dos resumos repetidos, porque cada um aparece uma vez só. A coleta passou a conferir cada resumo antes de fundir as duplicatas (`fontes/conferencia.py`):
+A revisão de setembro de 2026 achou no piloto cerca de 25 "resumos" que eram fragmentos e cerca de 40 com o idioma declarado errado, usados como vieram. Eles não eram pegos pelo descarte dos resumos repetidos, porque cada um aparece uma vez só. A coleta passou a conferir cada resumo depois da deduplicação (`fontes/conferencia.py`):
 
 - **Fragmentos saem:** menos de 15 palavras, aviso de repositório (DSpace, DOAJ) ou, no OpenAlex, um texto que começa no meio de uma frase. Na ArticleMeta, um resumo que começa em minúscula fica: é o texto que a revista registrou.
 - **O idioma declarado é conferido** por um detector de palavras funcionais (`idioma.py`): listas de artigos, preposições e conjunções exclusivas de português, espanhol, inglês e francês. Ele só decide com 15 palavras ou mais, 5 palavras funcionais do idioma vencedor e o dobro das do segundo; senão, vale o declarado. O título e as palavras-chave seguem o resumo, salvo quando o título confirma o idioma declarado (na RBPI de 2012, só os resumos estão trocados).

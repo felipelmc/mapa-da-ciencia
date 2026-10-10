@@ -549,8 +549,9 @@ async def coletar_async(
                     )
         contadores = buscador.contadores
 
-    documentos, conferencia = conferir_textos(documentos)
     documentos, dedup = deduplicar(documentos)
+    # depois da deduplicação: os resumos repetidos (textos padrão) já saíram e não entram nas contagens
+    documentos, conferencia = conferir_textos(documentos)
     avisos += [
         f"{doc}: o DOI {doi} é de outro artigo ({dono}, confirmado pelo OpenAlex); o documento ficou sem DOI."
         for doc, doi, dono in dedup.dois_removidos

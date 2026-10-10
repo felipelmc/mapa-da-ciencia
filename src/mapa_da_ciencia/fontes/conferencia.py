@@ -1,6 +1,6 @@
 """Conferência dos resumos que as fontes entregam: fragmentos e idioma declarado.
 
-Dois problemas que o piloto mostrou e que a coleta corrige antes de fundir as duplicatas:
+Dois problemas que o piloto mostrou e que a coleta corrige depois da deduplicação (os resumos repetidos já saíram):
 
 - **Fragmentos.** Parte dos "resumos" não é resumo: um pedaço do meio do texto que o OpenAlex raspou da página
   ("2] Ibid", "na revista Encontros com a…"), o aviso de um repositório ("Made available in DSpace…"), a palavra
