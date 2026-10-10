@@ -331,9 +331,12 @@ def historias(
     }
     saida: dict = {}
 
-    # 1. o tópico que mais cresceu
+    # 1. o tópico que mais cresceu, entre as tendências firmes (as frágeis dependem de um ano só); se todas forem
+    # frágeis, o que mais cresceu entre todas. `fragil` falta no topicos.json até o contrato 1.6
     em_alta = [t for t in topicos["topicos"] if (t.get("tendencia") or {}).get("direcao") == "alta"]
-    alta = max(em_alta, key=lambda t: t["tendencia"]["pp_periodo"]) if em_alta else None
+    firmes = [t for t in em_alta if not t["tendencia"].get("fragil")]
+    alta = max(firmes or em_alta, key=lambda t: t["tendencia"]["pp_periodo"]) if em_alta else None
+    marcados = [t for t in topicos["topicos"] if (t.get("tendencia") or {}).get("direcao") in ("alta", "queda")]
     saida["alta"] = alta and {
         "topico": alta["id"],
         "rotulo": alta["rotulo"],
@@ -343,6 +346,8 @@ def historias(
         "em_alta": len(em_alta),
         "em_queda": sum((t.get("tendencia") or {}).get("direcao") == "queda" for t in topicos["topicos"]),
         "topicos": len(topicos["topicos"]),
+        "fragil": bool(alta["tendencia"].get("fragil")),
+        "frageis": sum(bool(t["tendencia"].get("fragil")) for t in marcados),
     }
 
     # 2. o tópico mais recente: a maior parte dos artigos depois de 2018 (entre os com ao menos 40)

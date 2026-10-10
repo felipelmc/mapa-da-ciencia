@@ -111,6 +111,19 @@ test('os links da abertura levam a páginas do site ou às vistas da demo', asyn
 	for (const h of demo) expect(h, h).toMatch(/\/demo\/(#\/(mapa|topicos|geografia|classificacao|validacao|redes)(\?.*)?)?$/);
 });
 
+test('a história em alta conta as tendências frágeis, em PT e EN', async ({ page }) => {
+	const alta = dados.historias.alta;
+	test.skip(!alta?.frageis, 'os dados da abertura não têm tendências frágeis');
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await page.goto(url());
+	const cartao = page.locator('.historia', { hasText: 'O tópico que mais cresceu' });
+	await expect(cartao.locator('.historia__texto')).toContainText(`${alta.frageis} dessas tendências`);
+	await page.getByRole('button', { name: 'EN', exact: true }).click();
+	await expect(page.locator('.historia', { hasText: 'fastest-growing' }).locator('.historia__texto')).toContainText(
+		`${alta.frageis} of these trends`
+	);
+});
+
 test('a colaboração: os dois períodos, os denominadores e o gráfico com os números, em PT e EN', async ({ page }) => {
 	const col = dados.historias.colaboracao;
 	test.skip(!col, 'o projeto não tem redes');

@@ -748,8 +748,10 @@
       numero: '+' + num(alta.pp_periodo, 1) + ' <small>p.p.</small>',
       titulo: alta.rotulo,
       texto: t(
-        'O tópico que mais cresceu entre os ' + num(alta.topicos) + ': na tendência ajustada, a participação dele no corpus subiu ' + num(alta.pp_periodo, 1) + ' pontos percentuais de ' + ano(anos[0]) + ' a ' + ano(anos[anos.length - 1]) + ' (' + num(alta.pp_por_ano, 2) + ' por ano); o gráfico mostra a participação observada em cada ano. Outros ' + num(alta.em_alta - 1) + ' estão em alta, e ' + num(alta.em_queda) + ' em queda.',
-        'The fastest-growing of the ' + num(alta.topicos) + ' topics: on the fitted trend, its share of the corpus rose ' + num(alta.pp_periodo, 1) + ' percentage points from ' + ano(anos[0]) + ' to ' + ano(anos[anos.length - 1]) + ' (' + num(alta.pp_por_ano, 2) + ' a year); the chart shows the observed share each year. ' + num(alta.em_alta - 1) + ' others are rising, and ' + num(alta.em_queda) + ' falling.'
+        'O tópico que mais cresceu entre os ' + num(alta.topicos) + ': na tendência ajustada, a participação dele no corpus subiu ' + num(alta.pp_periodo, 1) + ' pontos percentuais de ' + ano(anos[0]) + ' a ' + ano(anos[anos.length - 1]) + ' (' + num(alta.pp_por_ano, 2) + ' por ano); o gráfico mostra a participação observada em cada ano. Outros ' + num(alta.em_alta - 1) + ' estão em alta, e ' + num(alta.em_queda) + ' em queda' +
+          (alta.frageis ? '; ' + num(alta.frageis) + (alta.frageis === 1 ? ' dessas tendências é frágil: depende' : ' dessas tendências são frágeis: dependem') + ' de um ano só.' : '.'),
+        'The fastest-growing of the ' + num(alta.topicos) + ' topics: on the fitted trend, its share of the corpus rose ' + num(alta.pp_periodo, 1) + ' percentage points from ' + ano(anos[0]) + ' to ' + ano(anos[anos.length - 1]) + ' (' + num(alta.pp_por_ano, 2) + ' a year); the chart shows the observed share each year. ' + num(alta.em_alta - 1) + ' others are rising, and ' + num(alta.em_queda) + ' falling' +
+          (alta.frageis ? '; ' + num(alta.frageis) + (alta.frageis === 1 ? ' of these trends is fragile: it hinges' : ' of these trends are fragile: they hinge') + ' on a single year.' : '.')
       ),
       grafico: sparkline(alta.serie, anos, '%', t('Participação observada do tópico no corpus, ano a ano', 'Observed yearly share of the topic in the corpus')),
       link: demo('/topicos?topico=' + encodeURIComponent(alta.topico)),
