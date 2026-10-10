@@ -9,10 +9,12 @@
 	import { onMount } from 'svelte';
 	import { rota } from '$lib/estado/url';
 	import type criarGrafico from 'regl-scatterplot';
-	import { escalaLinear } from './escala';
+	import { escalaLinear, type EscalaLinear } from './escala';
 
 	type Grafico = ReturnType<typeof criarGrafico>;
 	type Vista = { x: number; y: number; zoom: number };
+	/** Uma área do canvas, em pixels. */
+	export type Area = { x0: number; y0: number; x1: number; y1: number };
 	export type Camera = { projetar: (x: number, y: number) => [number, number]; zoom: number; largura: number; altura: number };
 	export type Anotacao = { vertices: [number, number][]; cor: string; largura: number };
 
@@ -38,11 +40,14 @@
 		aoMoverCamera: (v: Vista) => void;
 		/** Chamado a cada quadro em que a câmera muda, para camadas sobre o mapa (rótulos). */
 		aoVer?: (camera: Camera) => void;
+		/** A parte do canvas que nenhum painel cobre (o cartão do documento fica por cima do mapa): o ponto em
+		 * destaque que cair fora dela é levado ao centro dela. */
+		areaLivre?: () => Area | null;
 	}
 
 	let {
 		x, y, valores, tipo, cores, visiveis, selecionados, destaque, fundo, corLaco, modoLaco, vista,
-		anotacoes = [], aoClicar, aoLaco, aoMoverCamera, aoVer
+		anotacoes = [], aoClicar, aoLaco, aoMoverCamera, aoVer, areaLivre
 	}: Props = $props();
 
 	// O gráfico atualiza estas escalas a cada movimento: dados (NDC) → pixels do canvas
@@ -247,6 +252,42 @@
 		void selecionados;
 		void destaque;
 		if (pronto) emFila(aplicarSelecao);
+	});
+
+	/** O pixel do canvas convertido de volta em coordenada dos dados, com a câmera de agora. */
+	function dadoNoPixel(e: EscalaLinear, px: number) {
+		const [d0, d1] = e.domain();
+		const [r0, r1] = e.range();
+		return d0 + ((px - r0) / (r1 - r0 || 1)) * (d1 - d0);
+	}
+
+	/** Leva o ponto em destaque ao centro da área livre, sem mudar o zoom, se ele estiver embaixo de um painel. */
+	function mostrarDestaque(i: number) {
+		if (!grafico || destaque !== i) return;
+		const area = areaLivre?.();
+		const pos = grafico.getScreenPosition(i);
+		if (!area || !pos) return;
+		const [px, py] = pos;
+		const folga = 24;
+		if (px >= area.x0 + folga && px <= area.x1 - folga && py >= area.y0 + folga && py <= area.y1 - folga) return;
+		const [cx, cy] = [(area.x0 + area.x1) / 2, (area.y0 + area.y1) / 2];
+		const [tx, ty] = grafico.get('cameraTarget');
+		const alvo: [number, number] = [
+			tx + dadoNoPixel(escalaX, px) - dadoNoPixel(escalaX, cx),
+			ty + dadoNoPixel(escalaY, py) - dadoNoPixel(escalaY, cy)
+		];
+		const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+		debug().deslocamentos = (debug().deslocamentos ?? 0) + 1;
+		return grafico.zoomToLocation(alvo, grafico.get('cameraDistance'), { transition: !reduzido, transitionDuration: 400 });
+	}
+	// um documento aberto (pelo clique, pela busca ou pelo link) que fica embaixo do cartão é trazido para a vista; o
+	// quadro seguinte espera o cartão ter tamanho
+	let destaqueAnterior: number | null = null;
+	$effect(() => {
+		const i = destaque;
+		if (!pronto || i === destaqueAnterior) return;
+		destaqueAnterior = i;
+		if (i !== null && areaLivre) requestAnimationFrame(() => emFila(() => mostrarDestaque(i)));
 	});
 
 	$effect(() => {

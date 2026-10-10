@@ -48,7 +48,7 @@
 	});
 </script>
 
-<article class="cartao" aria-labelledby="titulo-cartao" data-testid="cartao-documento">
+<article class="cartao" aria-labelledby="titulo-cartao" data-testid="cartao-documento" data-sobre-o-mapa>
 	<header>
 		<p class="rotulo-miudo">{revista} · {tabela.ano[indice]}</p>
 		<button class="fechar" type="button" aria-label="Fechar o cartão" onclick={aoFechar}>×</button>

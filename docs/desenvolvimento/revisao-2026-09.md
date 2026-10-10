@@ -165,7 +165,8 @@ Ficaram para depois, registrados (a 2.2.0 os corrigiu, um por commit, na branch 
 
 - a cor dos nós por comunidade (hoje é a do macrotema, e várias comunidades dividem a mesma cor) (**corrigido na
   2.2.0**: cada comunidade tem um tom próprio do macrotema dela);
-- o cartão do documento, que cobre parte do mapa numa tela de 1440 px;
+- o cartão do documento, que cobre parte do mapa numa tela de 1440 px (**corrigido na 2.2.0**: o mapa desliza até
+  o documento aberto ficar à vista);
 - o kappa de uma pessoa, que conta fichas ainda não confirmadas (**corrigido na 2.2.0**: a confirmação fica
   guardada, e só fichas confirmadas entram nas métricas);
 - o editor do codebook, que acrescenta listas vazias ao YAML (**corrigido na 2.2.0**: os valores vazios não entram

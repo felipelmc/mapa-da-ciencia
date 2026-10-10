@@ -116,6 +116,7 @@ try {
 		// 3. o cartão do documento, com o zoom sobre o tópico dele (os rótulos passam a ser dos tópicos)
 		await abrir(page, `?doc=${encodeURIComponent(id)}`);
 		await page.getByTestId('cartao-documento').waitFor();
+		await page.waitForTimeout(700); // a câmera desliza se o documento ficou embaixo do cartão
 		const [qx, qy] = (await page.evaluate((i) => window.__mapaDebug!.posicaoNaTela!(i), indice))!;
 		await page.mouse.move(caixa.x + qx, caixa.y + qy);
 		for (let i = 0; i < 3; i += 1) await page.mouse.wheel(0, -300);
