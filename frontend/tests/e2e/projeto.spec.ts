@@ -83,8 +83,12 @@ test('cancelar um job', async ({ page }) => {
 	await page.goto(`${url('PAINEL')}#/projeto`);
 	await page.getByTestId('estacao-classificacao').getByRole('button', { name: 'Só a amostra' }).click();
 	await expect(page.getByTestId('estado-job')).toHaveText('Rodando');
+	// o histórico acompanha o job ao vivo (não fica "na fila", o estado que o POST devolveu)
+	const ultima = page.getByTestId('historico').getByRole('listitem').first();
+	await expect(ultima.getByTestId('estado-historico')).toHaveText('rodando');
 	await page.getByTestId('cancelar-job').click();
 	await expect(page.getByTestId('estado-job')).toHaveText('Cancelado');
+	await expect(ultima.getByTestId('estado-historico')).toHaveText('cancelado');
 	await expect(page.getByTestId('rodar-coleta')).toBeEnabled();
 });
 
