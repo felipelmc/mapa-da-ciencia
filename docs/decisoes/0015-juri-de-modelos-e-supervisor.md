@@ -100,3 +100,7 @@ por uma pessoa, o único teste sem circularidade.
   ao corpus inteiro (cerca de 50 h de modelo no piloto) fica para uma versão futura.
 - A validação ganha a família dos codificadores e a marca `circular`, e o contrato vai para a versão 1.5.
 - O teste sem circularidade continua dependendo de uma codificação humana da amostra.
+
+## Adendo (2.3.0)
+
+Com a coleta refeita, a amostra tem 199 documentos com resumo: o único resumo de um deles era um fragmento, que a coleta passou a tirar (ADR 0003, adendo da 2.3.0). E as respostas de texto escritas como o nome de uma categoria (`nao_se_aplica`) passaram a valer como "não se aplica", também na comparação dos votos. No período analisado, 49 decisões passaram a ser unânimes. No total, são 767 unânimes (eram 718), 73 por maioria (eram 102) e 35 sem maioria (eram 55; 26 delas no período, que não vai ao supervisor). As variáveis categóricas não mudaram, e a deliberação saiu toda do cache, sem chamar os modelos.
