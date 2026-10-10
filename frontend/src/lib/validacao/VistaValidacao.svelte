@@ -721,11 +721,11 @@
 			overflow-y: auto;
 		}
 
-		/* com "Ver como tabela" aberto, as duas tabelas dividem a altura que a do par tinha sozinha (os 2rem a mais são
-		   a margem e a borda da tabela da figura), e a figura grudada continua cabendo na janela */
-		.par-e-detalhe > :global(.figura[data-tabela] .tabela-do-par),
-		.par-e-detalhe > :global(.figura[data-tabela] > .rolagem) {
-			max-height: max(7rem, calc((100dvh - var(--altura-barra, 4rem) - 20rem) / 2));
+		/* com "Ver como tabela" aberto, a figura não gruda: com a tabela dos dados embaixo, ela passaria da altura da
+		   janela, e a parte de baixo só apareceria no fim do detalhe. Dividir a altura entre as duas tabelas cortaria a
+		   do par mesmo com poucas variáveis */
+		.par-e-detalhe > :global(.figura[data-tabela]) {
+			position: static;
 		}
 	}
 </style>

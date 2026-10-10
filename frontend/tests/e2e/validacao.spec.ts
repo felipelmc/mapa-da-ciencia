@@ -239,7 +239,7 @@ test('numa tela larga, com muitas variáveis, a tabela grudada rola por dentro e
 	expect(livre).toBe(true);
 });
 
-test('com "Ver como tabela" aberto, a figura grudada continua cabendo na janela', async ({ page }) => {
+test('com "Ver como tabela" aberto, a figura deixa de grudar, e as duas tabelas chegam à última linha', async ({ page }) => {
 	await page.route('**/dados/validacao.json', async (rota) => {
 		const resposta = await rota.fetch();
 		const v = await resposta.json();
@@ -251,16 +251,15 @@ test('com "Ver como tabela" aberto, a figura grudada continua cabendo na janela'
 	await page.setViewportSize({ width: 1600, height: 800 });
 	await page.goto(`${url('RAIZ')}#/validacao`);
 	const figura = page.getByTestId('figura-concordancia');
+	await expect.poll(() => figura.evaluate((el) => getComputedStyle(el).position)).toBe('sticky');
 	await figura.getByRole('button', { name: 'Ver como tabela' }).click();
 	await expect(figura).toHaveAttribute('data-tabela', 'aberta');
-	await figura.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top));
-	const caixa = (await figura.boundingBox())!;
-	expect(caixa.y).toBeGreaterThan(0);
-	expect(caixa.y + caixa.height).toBeLessThanOrEqual(800);
-	// as duas tabelas rolam por dentro, e a última linha de cada uma recebe o clique
+	// antes, grudada com a tabela dos dados embaixo, a figura passava da altura da janela
+	expect(await figura.evaluate((el) => getComputedStyle(el).position)).toBe('static');
 	for (const rolagem of [page.locator('.tabela-do-par'), page.locator('#tabela-concordancia')]) {
 		await rolagem.evaluate((el) => (el.scrollTop = el.scrollHeight));
 		const ultima = rolagem.locator('tbody tr').last();
+		await ultima.scrollIntoViewIfNeeded();
 		const livre = await ultima.evaluate((el) => {
 			const c = el.getBoundingClientRect();
 			const topo = document.elementFromPoint(c.left + c.width / 2, c.top + c.height / 2);
@@ -268,6 +267,9 @@ test('com "Ver como tabela" aberto, a figura grudada continua cabendo na janela'
 		});
 		expect(livre).toBe(true);
 	}
+	// fechada a tabela, ela volta a grudar
+	await figura.getByRole('button', { name: 'Esconder a tabela' }).click();
+	expect(await figura.evaluate((el) => getComputedStyle(el).position)).toBe('sticky');
 });
 
 test('no site publicado, a validação abre no par principal, com nomes legíveis e a parte técnica recolhida', async ({ page }) => {
