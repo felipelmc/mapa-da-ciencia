@@ -41,9 +41,15 @@
 	/** Uma etapa que roda fora do painel (no terminal ou num notebook): o painel não começa outra até ela terminar. */
 	const fora = $derived(etapas?.em_andamento ?? null);
 	const ocupado = $derived((!!aoVivo && !aoVivo.terminado) || !!fora);
-	// o 409 de uma etapa que rodava fora some quando ela termina (o "Rodar" volta a valer)
+	// o 409 de uma etapa que rodava fora some quando ela termina (o "Rodar" volta a valer); enquanto o painel ainda não
+	// a viu na linha das etapas, o aviso fica, para o clique não ficar sem resposta
+	let viuFora = false;
 	$effect(() => {
-		if (!fora && aviso?.includes('está rodando')) aviso = null;
+		if (fora) viuFora = true;
+		else if (viuFora) {
+			viuFora = false;
+			if (aviso?.includes('está rodando')) aviso = null;
+		}
 	});
 	// a cada 5 s, uma consulta leve diz se uma etapa começou (ou terminou) fora do painel; quando isso muda, a linha das
 	// etapas é consultada de novo (essa consulta lê o corpus e leva alguns segundos)

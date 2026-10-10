@@ -178,7 +178,13 @@
 		<label for={id}>
 			<span class="cor" aria-hidden="true"></span>
 			<span class="numero">{grupo === 't' ? 'Tópico' : 'Rótulo do macrotema'} {grupo === 't' ? x.id : ''}</span>
-			<span class="selo" data-testid="fonte-{k}">{voltar[k] ? 'volta às palavras-chave' : FONTE[x.fonte]}</span>
+			<span class="selo" data-testid="fonte-{k}"
+				>{voltar[k]
+					? 'volta às palavras-chave'
+					: x.manual && (x.manual.rotulo !== x.rotulo || (x.manual.descricao ?? '') !== x.descricao)
+						? 'à mão, ainda não aplicado'
+						: FONTE[x.fonte]}</span
+			>
 		</label>
 		{#if campos[k]}
 			{@const invalido = !voltar[k] && (!campos[k].rotulo.trim() || campos[k].rotulo.trim().length > MAXIMO)}
