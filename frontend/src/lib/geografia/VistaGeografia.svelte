@@ -93,7 +93,7 @@
 		fracos.length
 			? `Em ${fracos.map(([x, y]) => (x === y ? `${x}` : `${x}–${y}`)).join(', ')}, mais de ` +
 					`${formatarPorcentagem(LIMIAR_AVISO)} do peso ${fracos.length === 1 && fracos[0][0] === fracos[0][1] ? 'do ano' : 'de cada ano'} fica com autores sem afiliação informada: ` +
-					'a geografia desses anos é mais incompleta, e comparações com os outros pedem cuidado.'
+					`a geografia ${fracos.length === 1 && fracos[0][0] === fracos[0][1] ? 'desse ano' : 'desses anos'} é mais incompleta, e comparações com os outros pedem cuidado.`
 			: `Em todos os anos, pelo menos ${formatarPorcentagem(1 - LIMIAR_AVISO)} do peso tem afiliação informada.`
 	);
 	const colunasCobertura = ['Ano', 'Instituição identificada', 'Afiliação não identificada', 'Sem afiliação'];
