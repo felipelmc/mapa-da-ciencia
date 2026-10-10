@@ -178,7 +178,7 @@ Ficaram para depois, registrados (a 2.2.0 os corrigiu, um por commit, na branch 
     - um link com `comunidade=` e `no=` juntos, que enquadra a comunidade (o nó pode ficar fora da tela)
       (**corrigido na 2.2.0**: o nó tem a prioridade);
     - o Esc que fecha um cartão aberto pelo link, que leva o foco para a busca (o Esc seguinte não solta a
-      comunidade);
+      comunidade) (**corrigido na 2.2.0**: o foco vai para o grafo);
     - o painel de exportar ao lado do grafo, que passa uns pixels da borda;
     - fechar o cartão lendo a colaboração, embaixo do grafo, que a tira da tela (ela volta para o lado do grafo);
 - na Validação, com "Ver como tabela" aberto, a figura grudada volta a passar da altura da janela.

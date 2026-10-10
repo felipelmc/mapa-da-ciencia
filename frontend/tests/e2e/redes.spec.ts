@@ -942,6 +942,34 @@ test('no toque, depois de usar a legenda, tocar num nó não faz a página pular
 	await contexto.close();
 });
 
+test('um cartão aberto pelo link: o primeiro Esc fecha o cartão, o segundo solta a comunidade', async ({ page }) => {
+	const no = central();
+	const c = redes.pessoas.comunidade[no];
+	await page.goto(`${url('RAIZ')}#/redes?comunidade=${c}&no=${encodeURIComponent(redes.pessoas.id[no])}`);
+	await esperarRedes(page, 'coautoria');
+	await expect(page.getByTestId('cartao-no')).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(page.getByTestId('cartao-no')).toHaveCount(0);
+	await expect(page).toHaveURL(new RegExp(`comunidade=${c}`));
+	// o foco vai para o grafo (antes ia para a busca, e o Esc seguinte ficava com o campo de texto)
+	await expect(page.locator('[data-grafo]')).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect(page).not.toHaveURL(/comunidade=/);
+});
+
+test('na busca, o Esc limpa o texto; com ela vazia, solta a comunidade', async ({ page }) => {
+	const c = redes.comunidades.find((x: { rede: string }) => x.rede === 'coautoria').id;
+	await page.goto(`${url('RAIZ')}#/redes?comunidade=${c}`);
+	await esperarRedes(page, 'coautoria');
+	const campo = page.getByRole('combobox', { name: 'Buscar uma pessoa' });
+	await campo.fill('zzz');
+	await campo.press('Escape');
+	await expect(campo).toHaveValue('');
+	await expect(page).toHaveURL(new RegExp(`comunidade=${c}`));
+	await campo.press('Escape');
+	await expect(page).not.toHaveURL(/comunidade=/);
+});
+
 test('o Esc que fecha o menu das revistas, ou sai do modo apresentação, não solta a comunidade', async ({ page }) => {
 	const c = redes.comunidades.find((x: { rede: string }) => x.rede === 'coautoria').id;
 	await page.goto(`${url('RAIZ')}#/redes?comunidade=${c}`);

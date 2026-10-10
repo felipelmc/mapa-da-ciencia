@@ -60,7 +60,8 @@
 			e.preventDefault();
 			escolher(achados[Math.min(ativo, achados.length - 1)]);
 		} else if (e.key === 'Escape') {
-			if (aberta && texto) e.preventDefault();
+			// o Esc que limpa o texto não faz mais nada (não solta a comunidade em destaque nem fecha outra coisa)
+			if (texto) e.preventDefault();
 			texto = '';
 			aberta = false;
 		}

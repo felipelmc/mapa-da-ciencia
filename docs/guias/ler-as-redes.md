@@ -29,7 +29,7 @@ coautores aparecem. Um clique abre o cartão da pessoa, com os artigos dela no r
 um com o peso da parceria no recorte e os documentos em comum; a vizinhança fica acesa, e "Enquadrar o nó" leva o zoom
 até ela. Numa tela larga, a colaboração por ano fica ao lado do grafo; com o cartão aberto, ela desce para baixo dele,
 e o cartão acompanha a rolagem ao lado do grafo (numa tela mais estreita, tudo fica numa coluna: a figura do grafo,
-com a legenda, depois o cartão e, no fim, a colaboração). Esc (ou o ×) fecha o cartão e devolve o foco para onde ele estava. Aberto pela busca ou por um link, o nó já
+com a legenda, depois o cartão e, no fim, a colaboração). Esc (ou o ×) fecha o cartão e devolve o foco para onde ele estava (no cartão aberto pelo link, para o grafo). Aberto pela busca ou por um link, o nó já
 vem enquadrado, mesmo quando está numa dupla ou num trio escondido (que passa a aparecer).
 
 Escolha uma comunidade no seletor da barra do grafo (ou clique nela na lista da legenda) para acendê-la e

@@ -16,6 +16,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - **O editor do codebook no painel não acrescenta mais listas vazias ao `codebook.yaml`.** Salvar pelo painel, mesmo sem mudar nada, escrevia os valores padrão de cada campo opcional (`exemplos: []` em cada categoria, `categorias: []` nas variáveis booleanas e de texto, `rotulo: null`). Agora o arquivo só muda onde a pessoa mudou algo. Uma variável que vira booleana ou de texto no editor também perde as categorias, que o servidor recusava.
 - **As últimas execuções, na vista Projeto do painel, acompanham o job ao vivo.** A etapa que acabou de começar aparecia "na fila" até terminar; agora a lista mostra o mesmo estado do acompanhamento (rodando, concluído, cancelado).
 - **Nas redes, um link com uma comunidade e um nó enquadra o nó.** Aberto direto (ou recarregado), o link com `comunidade=` e `no=` enquadrava a comunidade, e o nó do cartão podia ficar fora da tela. Escolher outra comunidade, na legenda ou no seletor, agora fecha o cartão aberto e enquadra a comunidade.
+- **Nas redes, o Esc solta a comunidade depois de fechar um cartão aberto pelo link.** O cartão aberto pelo link mandava o foco para a busca ao fechar, e o Esc seguinte ficava com o campo de texto. Agora o foco vai para o grafo, e o segundo Esc solta a comunidade; na busca, o Esc limpa o texto e, com o campo vazio, solta a comunidade.
 
 ## [2.1.1] - 2026-09-29
 

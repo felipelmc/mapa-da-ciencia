@@ -236,11 +236,13 @@
 	const opcoesComunidade = $derived(
 		[...nos.comunidades.values()].sort((a, b) => b.n - a.n || a.id - b.id).map((c) => ({ id: c.id, rotulo: `${c.rotulo} (${formatarInteiro(c.n)})` }))
 	);
-	// Esc solta a comunidade em destaque (com o cartão aberto, o Esc é dele, e num campo de texto, do campo)
+	// Esc solta a comunidade em destaque (com o cartão aberto, o Esc é dele, e num campo de texto, do campo; na busca
+	// vazia, que não tem o que limpar, ele solta)
 	function tecla(e: KeyboardEvent) {
 		const alvo = e.target as HTMLElement | null;
 		if (e.key !== 'Escape' || e.defaultPrevented || selecionado !== null || comunidadeEscolhida === null) return;
-		if (alvo?.closest('input, textarea, select')) return;
+		const buscaVazia = alvo instanceof HTMLInputElement && alvo.matches('[data-busca-no]') && !alvo.value;
+		if (alvo?.closest('input, textarea, select') && !buscaVazia) return;
 		if (document.documentElement.dataset.apresentacao === 'sim' || document.querySelector('details[open]')) return;
 		escolherComunidade(null);
 	}
