@@ -76,3 +76,48 @@ def test_tirar_a_ultima_entrada_de_uma_secao_nao_leva_o_cabecalho_da_seguinte(tm
     )
     editar_yaml(arquivo, {"itens": {"a": {"v": 1}, "c": {"v": 3}}}, lambda d: d, substituir=True)
     assert arquivo.read_text(encoding="utf-8") == "itens:\n  a:\n    v: 1\n\n  # --- outra seção ---\n  c:\n    v: 3\n"
+
+
+def test_tirar_a_primeira_entrada_passa_o_cabecalho_para_a_seguinte(tmp_path):
+    arquivo = tmp_path / "x.yaml"
+    arquivo.write_text("topicos:\n  1:\n    rotulo: A\n\n  # --- seção ---\n  2:\n    rotulo: B\n", encoding="utf-8")
+    editar_yaml(arquivo, {"topicos": {2: {"rotulo": "B"}}}, lambda d: d, substituir=True)
+    assert arquivo.read_text(encoding="utf-8") == "topicos:\n  # --- seção ---\n  2:\n    rotulo: B\n"
+
+
+def test_tirar_a_unica_entrada_passa_o_cabecalho_para_a_chave_de_cima(tmp_path):
+    arquivo = tmp_path / "x.yaml"
+    arquivo.write_text(
+        "topicos:\n  1:\n    rotulo: A\n\n# --- macrotemas, escritos à mão ---\nmacrotemas:\n  2:\n    rotulo: M\n",
+        encoding="utf-8",
+    )
+    editar_yaml(arquivo, {"topicos": {1: None}}, lambda d: d, substituir=False, omitir_vazios=True)
+    texto = arquivo.read_text(encoding="utf-8")
+    assert "rotulo: A" not in texto
+    assert "# --- macrotemas, escritos à mão ---\nmacrotemas:\n  2:\n    rotulo: M\n" in texto
+
+
+def test_tirar_uma_entrada_com_comentario_na_linha_leva_so_o_da_linha(tmp_path):
+    arquivo = tmp_path / "x.yaml"
+    arquivo.write_text(
+        "topicos:\n  1:\n    rotulo: A\n  2:\n    rotulo: B  # da entrada\n\n  # --- seção ---\n  3:\n    rotulo: C\n",
+        encoding="utf-8",
+    )
+    editar_yaml(arquivo, {"topicos": {1: {"rotulo": "A"}, 3: {"rotulo": "C"}}}, lambda d: d, substituir=True)
+    assert arquivo.read_text(encoding="utf-8") == (
+        "topicos:\n  1:\n    rotulo: A\n\n  # --- seção ---\n  3:\n    rotulo: C\n"
+    )
+
+
+def test_tirar_um_item_da_lista_mantem_o_cabecalho_do_seguinte(tmp_path):
+    arquivo = tmp_path / "codebook.yaml"
+    arquivo.write_text(
+        "variaveis:\n  - id: a\n    pergunta: A?\n\n  - id: b\n    pergunta: B?\n\n"
+        "  # --- Seção 2: método ---\n  - id: c\n    pergunta: C?\n",
+        encoding="utf-8",
+    )
+    novo = {"variaveis": [{"id": "a", "pergunta": "A?"}, {"id": "c", "pergunta": "C?"}]}
+    editar_yaml(arquivo, novo, lambda d: d, substituir=True, omitir_vazios=True)
+    assert arquivo.read_text(encoding="utf-8") == (
+        "variaveis:\n  - id: a\n    pergunta: A?\n\n  # --- Seção 2: método ---\n  - id: c\n    pergunta: C?\n"
+    )

@@ -69,6 +69,7 @@ def _lista(atual: CommentedSeq, valor: list[Any], *, substituir: bool, omitir_va
     nova = CommentedSeq()
     if atual.fa.flow_style():
         nova.fa.set_flow_style()
+    posicao: dict[int, int] = {}  # índice antigo → índice novo, dos itens que ficam
     for j, item in enumerate(valor):
         chave = _identidade(item)
         if chave in antigos:
@@ -77,10 +78,21 @@ def _lista(atual: CommentedSeq, valor: list[Any], *, substituir: bool, omitir_va
                 _mesclar(velho, item, substituir=substituir, omitir_vazios=omitir_vazios)
                 item = velho
             nova.append(item)
+            posicao[i] = j
             if i in atual.ca.items:
                 nova.ca.items[j] = atual.ca.items[i]
         else:
             nova.append(_sem_vazios(item) if omitir_vazios else item)
+    # o comentário de bloco depois de um item tirado (o cabeçalho de uma seção) passa para o item anterior que fica
+    for i, item in enumerate(atual):
+        if i in posicao or not isinstance(item, CommentedMap) or not len(item):
+            continue
+        no, ultima = _fim_da_entrada(atual, i)
+        slot = no.ca.items.get(ultima)
+        token = slot[2] if slot and len(slot) > 2 else None
+        anteriores = [posicao[k] for k in range(i) if k in posicao]
+        if (texto := _comentario_que_sobra(token)) and anteriores and isinstance(nova[anteriores[-1]], CommentedMap):
+            _juntar_ao_fim(nova, anteriores[-1], token, texto)
     return nova
 
 
@@ -93,42 +105,82 @@ def _fim_da_entrada(no: Any, chave: Any) -> tuple[Any, Any]:
     return no, chave
 
 
-def _tirar(destino: CommentedMap, chave: Any) -> None:
+def _comentario_que_sobra(token: Any) -> str | None:
+    """O comentário de bloco num token do ruamel, sem o comentário da própria linha (que é da entrada tirada). Começa
+    com "\n", como o ruamel escreve um token sem comentário na linha."""
+    if token is None:
+        return None
+    texto = token.value if token.value.startswith("\n") else "\n" + token.value.split("\n", 1)[-1]
+    return texto if "#" in texto else None
+
+
+def _juntar_ao_fim(no: Any, chave: Any, token: Any, texto: str) -> None:
+    """Põe o comentário depois do último valor da entrada `chave` de `no` (onde o ruamel guarda o que vem depois)."""
+    no_fim, ultima = _fim_da_entrada(no, chave)
+    slot = no_fim.ca.items.setdefault(ultima, [None, None, None, None])
+    if slot[2] is None or "#" not in slot[2].value:  # só linhas em branco: a do texto que chega basta
+        token.value = texto
+        slot[2] = token
+    else:
+        slot[2].value = slot[2].value.rstrip("\n") + "\n" + texto.removeprefix("\n")
+
+
+def _por_antes(mapa: CommentedMap, chave: Any, texto: str) -> None:
+    """Põe as linhas de comentário de `texto` antes da `chave` (a primeira entrada que fica, depois de tirar a que
+    vinha antes dela)."""
+    linhas = [linha.strip() for linha in texto.splitlines() if linha.strip().startswith("#")]
+    recuo = next(len(linha) - len(linha.lstrip()) for linha in texto.splitlines() if linha.strip().startswith("#"))
+    mapa.yaml_set_comment_before_after_key(
+        chave, before="\n".join(linha.removeprefix("#").removeprefix(" ") for linha in linhas), indent=recuo
+    )
+
+
+def _tirar(destino: CommentedMap, chave: Any, pai: tuple[CommentedMap, Any] | None = None) -> None:
     """Tira a entrada sem perder o comentário de bloco que vem depois dela (o cabeçalho de uma seção, que o ruamel
-    prende à entrada anterior): ele passa para a entrada que fica antes."""
+    prende à entrada anterior): ele passa para o fim da entrada que fica antes; sem ela, para antes da que vem
+    depois; e, se o mapa ficar vazio, para antes da chave seguinte do nível de cima (`pai`: o mapa e a chave dele)."""
     chaves = list(destino.keys())
     i = chaves.index(chave)
     no, ultima = _fim_da_entrada(destino, chave)
     slot = no.ca.items.get(ultima)
     token = slot[2] if slot and len(slot) > 2 else None
     del destino[chave]
-    if token is None or i == 0:
+    texto = _comentario_que_sobra(token)
+    if texto is None:
         return
-    texto = token.value if token.value.startswith("\n") else token.value.split("\n", 1)[-1]  # sem o comentário da linha
-    if "#" not in texto:
-        return
-    no_ant, ultima_ant = _fim_da_entrada(destino, chaves[i - 1])
-    slot_ant = no_ant.ca.items.setdefault(ultima_ant, [None, None, None, None])
-    if slot_ant[2] is None:
-        token.value = texto if texto.startswith("\n") else "\n" + texto
-        slot_ant[2] = token
-    else:
-        slot_ant[2].value = slot_ant[2].value + texto.removeprefix("\n")
+    if i > 0:
+        _juntar_ao_fim(destino, chaves[i - 1], token, texto)
+    elif i + 1 < len(chaves):
+        _por_antes(destino, chaves[i + 1], texto)
+    elif pai is not None:
+        mapa_pai, chave_pai = pai
+        seguintes = list(mapa_pai.keys())
+        j = seguintes.index(chave_pai)
+        if j + 1 < len(seguintes):
+            _por_antes(mapa_pai, seguintes[j + 1], texto)
 
 
-def _mesclar(destino: CommentedMap, parcial: dict[str, Any], *, substituir: bool, omitir_vazios: bool = False) -> None:
+def _mesclar(
+    destino: CommentedMap,
+    parcial: dict[str, Any],
+    *,
+    substituir: bool,
+    omitir_vazios: bool = False,
+    pai: tuple[CommentedMap, Any] | None = None,
+) -> None:
     """Põe os valores de `parcial` em `destino`, mantendo o que não mudou e os comentários. Com `substituir`,
-    chaves ausentes de `parcial` saem; com `omitir_vazios`, as de valor vazio também (e não são criadas)."""
+    chaves ausentes de `parcial` saem; com `omitir_vazios`, as de valor vazio também (e não são criadas). `pai`: o
+    mapa e a chave onde `destino` está, para um comentário que sobra quando `destino` fica vazio."""
     if substituir:
         for chave in [k for k in destino if k not in parcial]:
-            _tirar(destino, chave)
+            _tirar(destino, chave, pai)
     for chave, valor in parcial.items():
         atual = destino.get(chave)
         if omitir_vazios and _vazio(valor):
             if chave in destino:
-                _tirar(destino, chave)
+                _tirar(destino, chave, pai)
         elif isinstance(valor, dict) and isinstance(atual, CommentedMap):
-            _mesclar(atual, valor, substituir=substituir, omitir_vazios=omitir_vazios)
+            _mesclar(atual, valor, substituir=substituir, omitir_vazios=omitir_vazios, pai=(destino, chave))
         elif isinstance(valor, list) and isinstance(atual, CommentedSeq):
             if _simples(atual) != valor:
                 destino[chave] = _lista(atual, valor, substituir=substituir, omitir_vazios=omitir_vazios)
