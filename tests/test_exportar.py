@@ -298,3 +298,23 @@ def test_so_links_http_viram_url_do_detalhe():
     assert url("https://www.scielo.br/j/op/a/x", "10.1590/abc") == "https://www.scielo.br/j/op/a/x"
     assert url("javascript:alert(1)", "10.1590/abc") == "https://doi.org/10.1590/abc"
     assert url("javascript:alert(1)", None) is None
+
+
+def test_autores_do_openalex_quando_a_articlemeta_nao_tem_nenhum():
+    # a coleta mantém o documento que só o OpenAlex diz quem escreveu, e as redes contam esses autores
+    from mapa_da_ciencia.contrato.exportar import _autor_curto, _autores
+    from mapa_da_ciencia.documento import AutoriaOpenAlex, Documento
+
+    doc = Documento(
+        id="S0104-62762020000100001",
+        fonte="articlemeta",
+        tipo="research-article",
+        ano=2020,
+        autorias_openalex=[
+            AutoriaOpenAlex(nome="Fulana de Tal"),
+            AutoriaOpenAlex(nome="Beltrano Silva"),
+            AutoriaOpenAlex(),
+        ],
+    )
+    assert _autores(doc) == [("Fulana de", "Tal"), ("Beltrano", "Silva")]
+    assert _autor_curto(doc) == "Tal, F.; +1"
