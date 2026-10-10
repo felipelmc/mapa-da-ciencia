@@ -92,3 +92,17 @@ As 20 instituições com mais peso no piloto, conferidas uma a uma: USP, UnB, UF
 uv run python scripts/calibrar_geografia.py projetos/cp-scielo
 uv run python scripts/calibrar_geografia.py projetos/cp-scielo --rotulada docs/decisoes/dados/0008-amostra-geografia.csv
 ```
+
+## Adendo (2.3.0): a UF da `v70` quando a `v240` diverge
+
+A revisão de setembro de 2026 achou a FGV contada no Distrito Federal: 61 afiliações `v240` do piloto dizem "Fundação Getúlio Vargas, Brasília", enquanto o texto original de 34 delas (`v70`) diz São Paulo e o de 13, Brasília. O consenso da instituição (97% DF) também mandava para o DF os vínculos sem cidade, e o remédio, um `uf: SP` no `instituicoes.yaml` do piloto, mandava para São Paulo os da FGV do Rio. A coleta descartava a `v70` de toda afiliação que a `v240` cobria.
+
+Decisão:
+
+- **A coleta guarda a cidade e a UF da `v70`** ao lado da `v240` (`Afiliacao.cidade_v70` e `uf_v70`), por lista branca, como o resto da afiliação.
+- **A UF de um vínculo da `v240` vem da `v70`** quando a `v240` não dá UF (nem pela cidade) ou dá outra, a menos que a instituição confirme a da `v240`: pela UF do `instituicoes.yaml` ou pelo consenso do corpus (90% das afiliações, como no passo 4).
+- **No consenso, o vínculo em que as duas divergem vota na UF da `v70`.** Uma instituição com campi em vários estados fica sem consenso, e cada vínculo segue o próprio texto.
+
+A confirmação existe porque preferir a `v70` sempre estragaria 27 vínculos de outras instituições: a `v70` põe autores da UFMG, da USP e da UFPE em Brasília, no Ceará ou em São Paulo, e o consenso dessas universidades segura a UF certa. Alternativas descartadas: corrigir só pelo `instituicoes.yaml` (um remendo por instituição, que errava nos campi) e ignorar o consenso quando as fontes divergem (a `v70` erraria nos 27).
+
+`geografia/resultado.VERSAO` passou a 3: o resultado guardado de um projeto fica desatualizado, e a correção só vale depois de coletar de novo (os registros saem do cache, sem rede). Os números do piloto estão na explicação da geografia.

@@ -26,6 +26,13 @@ que a fonte escreveu.
 
 Os passos 3 a 6 olham primeiro a unidade que casou (uma escola, um hospital) e só depois a instituição "mãe" para a
 qual ela subiu: a EAESP fica em São Paulo, mesmo que a FGV seja do Rio.
+
+A `v240` (a afiliação normalizada) às vezes põe a instituição na cidade errada: 61 afiliações do piloto dizem
+"Fundação Getúlio Vargas, Brasília", e o texto original (`v70`) de 34 delas diz São Paulo. Por isso, num vínculo da
+`v240`, a UF da `v70` vale antes dos passos 1 e 2 quando a `v240` não dá UF (nem pela cidade) ou dá outra, a menos
+que a instituição confirme a da `v240` (a UF do `instituicoes.yaml` ou a do consenso do passo 4). No consenso, o
+vínculo em que as duas divergem vota na UF da `v70`. A confirmação existe porque a `v70` também erra: ela põe autores
+da UFMG e da USP em Brasília, e o consenso dessas instituições segura a UF certa.
 """
 
 from __future__ import annotations
@@ -75,8 +82,10 @@ class Lugares:
                     continue
                 if v.cidade_fonte:
                     por_cidade[normalizar.chave(v.cidade_fonte)][v.uf_fonte] += 1
+                # onde a v70 contradiz a v240, o vínculo vota na UF do texto original: o consenso diz onde a
+                # instituição está, e uma com campi em vários estados fica sem consenso
                 for id_ in {v.casada, v.instituicao} - {None}:
-                    por_instituicao[id_][v.uf_fonte] += 1
+                    por_instituicao[id_][v.uf_v70 or v.uf_fonte] += 1
         self._cidades = _consenso(por_cidade)
         self._instituicoes = _consenso(por_instituicao)
 
@@ -87,13 +96,22 @@ class Lugares:
     def _da_cidade(self, cidade: str | None) -> str | None:
         return normalizar.uf_da_cidade(cidade) or (self._cidades.get(normalizar.chave(cidade)) if cidade else None)
 
+    def _confirma(self, v: Vinculo, uf: str) -> bool:
+        """Se a instituição do vínculo (a unidade ou a mãe) tem essa UF no `instituicoes.yaml` ou no consenso."""
+        for id_ in (v.casada, v.instituicao):
+            r = self.indice.registros.get(id_) if id_ else None
+            if r is not None and uf in (r.uf, self._instituicoes.get(r.id)):
+                return True
+        return False
+
     def uf(self, v: Vinculo, pais: str | None) -> str | None:
         if pais != "BR":
             return None
-        if v.uf_fonte:
-            return v.uf_fonte
-        if uf := self._da_cidade(v.cidade_fonte):
-            return uf
+        da_fonte = v.uf_fonte or self._da_cidade(v.cidade_fonte)
+        if v.uf_v70 and v.uf_v70 != da_fonte and (da_fonte is None or not self._confirma(v, da_fonte)):
+            return v.uf_v70
+        if da_fonte:
+            return da_fonte
         # primeiro a unidade que casou (a EAESP fica em SP, mesmo que a FGV, a "mãe", seja do RJ), depois a mãe
         for id_ in dict.fromkeys(i for i in (v.casada, v.instituicao) if i):
             r = self.indice.registros.get(id_)

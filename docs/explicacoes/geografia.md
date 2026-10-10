@@ -62,6 +62,8 @@ O país de cada vínculo é o da instituição identificada (o casamento já des
 
 Nos passos 3 a 6, vale primeiro a unidade que casou (uma escola, um hospital) e só depois a instituição "mãe" para a qual ela subiu: a Escola de Administração de Empresas de São Paulo fica em São Paulo, mesmo que a FGV seja do Rio.
 
+A afiliação normalizada (`v240`) às vezes põe a instituição na cidade da sede, e não na do campus: no piloto, 61 afiliações dizem "Fundação Getúlio Vargas, Brasília", e o texto original da mesma afiliação (`v70`) diz São Paulo em 34 delas. Por isso, quando a `v240` não dá UF ou dá uma diferente da `v70`, vale a da `v70`. A exceção é quando a instituição confirma a da `v240`, pelo `instituicoes.yaml` ou porque 90% das afiliações dela no corpus estão nessa UF (contando, nas que divergem, a UF da `v70`). A exceção existe porque a `v70` também erra: ela põe alguns autores da UFMG e da USP em Brasília, e as duas universidades ficam no estado delas.
+
 No piloto, o país é conhecido em 98,9% do peso com afiliação, e a UF em 99,2% do peso brasileiro.
 
 ## Filtrar por lugar
@@ -71,7 +73,7 @@ Na interface, escolher uma UF, um país ou uma instituição põe o lugar no rec
 ## Limitações e vieses
 
 - **Cobertura desigual no tempo.** Nos primeiros anos do piloto, as afiliações vêm quase só como texto livre, e mais autores ficam sem afiliação. A vista mostra a cobertura por ano e avisa dos anos em que mais de 20% do peso fica sem afiliação: comparar esses anos com os recentes exige cuidado.
-- **Instituições com vários campi.** Uma universidade com campi em vários estados recebe uma UF por vínculo, quando a fonte informa, mas a UF da tabela de instituições é a mais comum no corpus.
+- **Instituições com vários campi.** Uma universidade com campi em vários estados recebe uma UF por vínculo, quando a fonte informa, mas a UF da tabela de instituições é a mais comum no corpus. Quando a fonte não dá a cidade em nenhuma das duas versões da afiliação, o vínculo fica com a UF da instituição.
 - **Redes e programas interinstitucionais** (INCTs, programas de pós-graduação de várias universidades) não são instituições no OpenAlex e ficam como não identificados, a menos que o projeto os declare no `instituicoes.yaml`.
 - **Erros das fontes.** Um país errado na `v70` fica errado na contagem; o casamento só não piora o erro.
 - **A amostra de precisão** foi lida pelo Claude, não por um especialista em instituições brasileiras. Ela está [no repositório](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/dados/0008-amostra-geografia.csv), para quem quiser conferir.
