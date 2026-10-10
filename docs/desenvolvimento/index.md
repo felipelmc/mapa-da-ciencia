@@ -137,6 +137,7 @@ O relatório lista os documentos que entraram e saíram, os resumos tirados ou c
 | Júri e redes | O júri de modelos locais com supervisor ([ADR 0015](../decisoes/0015-juri-de-modelos-e-supervisor.md)), as redes de coautoria e de citação ([ADR 0014](../decisoes/0014-redes-de-coautoria-e-citacao.md)) e a [revisão geral](revisao-2026-09.md) | concluído (v2.0.0) |
 | Interface revista | Grafos interativos, telas largas, Validação para quem lê e o site público sem bastidor | concluído (v2.1.0, v2.1.1) |
 | Pendências da 2.1 | O júri na linha das etapas, uma cor por comunidade, as fichas confirmadas na validação e as correções de interface que a [revisão](revisao-2026-09.md) deixou para depois | concluído (v2.2.0) |
+| Recomendações da revisão | O quantil t e a tendência frágil, a concordância por idioma e entre respostas informativas, os resumos conferidos e a UF da `v70` na coleta, a edição dos rótulos e a trava das etapas no painel, as legendas nas figuras exportadas e o piloto refeito, com a [terceira rodada](revisao-2026-09.md#terceira-rodada-230) da revisão | concluído (v2.3.0) |
 
 ## Armadilhas conhecidas
 

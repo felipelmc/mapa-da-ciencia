@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [2.3.0] - 2026-10-10
+
+A versão 2.3.0 aplica as recomendações da revisão de setembro: a tendência dos tópicos passa a usar o quantil da t e a marcar as tendências frágeis, a validação mede a concordância por idioma e entre respostas informativas, e a coleta confere os resumos (fragmentos e idioma declarado), deixa de fora os documentos sem autor e usa a UF do texto original da afiliação quando a versão normalizada diverge (contrato 1.7). No painel, os rótulos dos tópicos podem ser editados e aplicados sem refazer os tópicos, e só uma etapa roda por vez em cada projeto, entre o terminal, o notebook e o painel. As figuras exportadas levam as legendas. O piloto foi refeito a partir do cache, com os rótulos revistos, e a versão passou por uma revisão independente de código, de metodologia e de uso.
+
 ### Adicionado
 
 - **Legendas mais completas na figura exportada (SVG e PNG).** A legenda em SVG das figuras passa a desenhar quadrados, círculos, traços e hachuras, com título, e a quebrar o texto de um item longo em mais de uma linha, medido com a fonte da figura (nada passa da largura). Uma figura pode ter uma legenda só para a exportação, quando a da tela fica no próprio gráfico. Passam a ir na figura exportada as legendas dos valores na Classificação, da escala de cores e das UFs fora da escala no mapa das UFs, da cobertura na Geografia e dos macrotemas do fluxo nos Tópicos. A legenda de "Por ano" leva o nome da variável, e os painéis de "Os macrotemas em cada revista", o nome da revista (e não a sigla), cortado na largura do painel quando é longo.
@@ -375,7 +379,9 @@ Primeira versão marcada: o esqueleto do projeto. Ainda não coleta nem analisa 
   - servidor local do painel (FastAPI) e `mapa painel --exemplo`;
   - site de documentação (Material for MkDocs), com referência gerada a partir do código.
 
-[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.1.1...HEAD
+[Não lançado]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.2.0...v2.3.0
+[2.2.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/felipelmc/mapa-da-ciencia/compare/v1.0.1...v2.0.0
