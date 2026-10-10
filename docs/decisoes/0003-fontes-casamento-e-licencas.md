@@ -127,3 +127,14 @@ A investigação pedida acima para a *Novos Estudos* (38 sem casamento no spike)
 **Correção no M3.** Dez desses resumos de reserva, todos iguais, não eram resumos: o OpenAlex guardava para dez artigos da *Novos Estudos CEBRAP* a apresentação da biblioteca virtual Americanae. A coleta passou a descartar resumos repetidos em documentos diferentes ([Fontes de dados](../explicacoes/fontes.md#openalex)); no piloto, ficam 4.247 artigos com resumo (99,3%) e 4.159 com resumo em inglês.
 
 Reprodução: `mapa novo projetos/cp-scielo` e `mapa coletar -P projetos/cp-scielo`. A tabela sai de `mapa status` e de uma consulta com `mapa_da_ciencia.api.consultar`.
+
+## Adendo (2.3.0): os resumos conferidos na coleta
+
+A revisão de setembro de 2026 achou no piloto cerca de 25 "resumos" que eram fragmentos e cerca de 40 com o idioma declarado errado, usados como vieram. Eles não eram pegos pelo descarte dos resumos repetidos, porque cada um aparece uma vez só. A coleta passou a conferir cada resumo antes de fundir as duplicatas (`fontes/conferencia.py`):
+
+- **Fragmentos saem:** menos de 15 palavras, aviso de repositório (DSpace, DOAJ) ou, no OpenAlex, um texto que começa no meio de uma frase. Na ArticleMeta, um resumo que começa em minúscula fica: é o texto que a revista registrou.
+- **O idioma declarado é conferido** por um detector de palavras funcionais (`idioma.py`): listas de artigos, preposições e conjunções exclusivas de português, espanhol, inglês e francês. Ele só decide com 15 palavras ou mais, 5 palavras funcionais do idioma vencedor e o dobro das do segundo; senão, vale o declarado. O título e as palavras-chave seguem o resumo, salvo quando o título confirma o idioma declarado (na RBPI de 2012, só os resumos estão trocados).
+
+No piloto, o detector confirmou 9.689 resumos, divergiu em 40 e não decidiu em 30. Lidas uma a uma, as 40 divergências estavam certas: 35 trocas de idioma (16 resumos em francês declarados espanhol na *RBCS* de 2020 e 2021, 8 em espanhol declarados português na *Revista de Sociologia e Política*, os pares trocados de dois artigos, e outros) e 5 fragmentos, que já saem pela outra regra. Os 30 sem decisão são curtos ou fragmentos, e mantêm o idioma declarado. Saíram 36 fragmentos, 33 deles do OpenAlex.
+
+Alternativas descartadas: uma biblioteca de detecção de idioma (uma dependência a mais para quatro idiomas, sem ganho na conferência acima) e descartar os resumos do OpenAlex com frases coladas, raspados do PDF (cerca de 40 no piloto), que são o texto do próprio artigo e melhores que o título sozinho.

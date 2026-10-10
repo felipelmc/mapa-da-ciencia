@@ -655,6 +655,12 @@ def coletar(
         )
     if resumo.fundidos:
         console.print(f"[dim]Duplicatas fundidas (mesmo artigo registrado duas vezes): {num(resumo.fundidos, 0)}.[/]")
+    if resumo.conferencia.fragmentos or resumo.conferencia.idiomas:
+        console.print(
+            f"[dim]Resumos conferidos: {num(len(resumo.conferencia.fragmentos), 0)} fragmento(s) tirado(s) (pedaços "
+            f"de outro texto ou avisos de repositório), {num(len(resumo.conferencia.idiomas), 0)} com o idioma "
+            "declarado corrigido.[/]"
+        )
     for doc, original in resumo.possiveis_duplicatas:
         console.print(f"[yellow]Possível duplicata:[/] {doc} parece repetir {original} (mesmo título, ano e 1º autor).")
     for aviso in resumo.avisos:

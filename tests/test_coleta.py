@@ -63,6 +63,9 @@ def test_coleta_opiniao_publica_2024(projeto, apis_falsas):
     assert len(docs) == 25 and all(d.ano == 2024 for d in docs)
     m = ultima_execucao(projeto, "coleta")
     assert m["contagens"]["documentos"] == 25 and m["parametros"]["revistas"] == ["0104-6276"]
+    # a conferência dos resumos fica no manifesto, mesmo sem nada a corrigir
+    assert m["contagens"]["resumos_fragmentos"] == len(m["parametros"]["resumos_fragmentos"])
+    assert m["contagens"]["idiomas_corrigidos"] == len(m["parametros"]["idiomas_corrigidos"])
 
 
 def test_exporta_manifesto_e_revistas_para_o_painel(projeto, apis_falsas):

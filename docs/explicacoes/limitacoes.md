@@ -13,7 +13,7 @@ O `mapa-da-ciencia` descreve uma literatura a partir de títulos, resumos e afil
 
 - Tópicos e classificação leem **só o título e o resumo**. Um resumo é o que o autor escolheu destacar, no espaço de umas 200 palavras. Uma técnica de pesquisa, um período ou um recorte que o artigo deixa claro, mas o resumo não menciona, sai como "não informado".
 - **Idioma.** Os tópicos usam o resumo em inglês de 97% dos artigos do piloto; os outros entram pelo resumo em português ou espanhol (2,1%) ou só pelo título (0,7%), marcados. A classificação lê o resumo em português quando existe (82%) e, se não, o em inglês (18%, três quartos deles das três revistas que publicam só em inglês: BPSR, CINT e RBPI). Um resumo em inglês traduzido às pressas pode não dizer o mesmo que o original. Veja [Como os tópicos são construídos](topicos.md#1-o-texto-de-analise).
-- **Resumos que não são resumos.** No piloto, cerca de 25 "resumos" (0,5%) são fragmentos da fonte (nomes, referências, cabeçalhos, textos de repositório), e cerca de 40 têm o idioma declarado errado. Eles entram nos 99,3% com resumo e são usados nos tópicos e na classificação como vieram.
+- **Resumos que não são resumos.** A coleta tira os fragmentos (nomes, referências, cabeçalhos, textos de repositório: 36 no piloto) e corrige o idioma declarado quando o texto deixa claro qual é (35 no piloto). Escapam o fragmento longo que começa como um resumo e o idioma de um texto curto ou misturado. E cerca de 40 resumos do OpenAlex, raspados do PDF, têm frases coladas ("salário.Trad.Iraci"): ficam, porque são o texto do próprio artigo. Veja [Fontes de dados](fontes.md#openalex).
 
 ## Tópicos
 

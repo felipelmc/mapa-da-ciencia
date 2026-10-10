@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+### Corrigido
+
+- **A coleta confere os resumos.** Um "resumo" que é um fragmento (menos de 15 palavras, o aviso de um repositório, ou um texto do OpenAlex que começa no meio de uma frase) sai, e o documento fica com os outros resumos ou só com o título. O idioma declarado de cada resumo é conferido pelas palavras funcionais (artigos, preposições, conjunções) e corrigido quando um idioma ganha com folga; o título e as palavras-chave seguem o resumo, salvo quando o título confirma o idioma declarado. No piloto, saem 36 fragmentos e 35 resumos mudam de idioma (resumos em francês declarados espanhol, em espanhol declarados português, pares português/inglês trocados). A coleta mostra as duas contagens, e as listas ficam no manifesto.
+
 ## [2.2.0] - 2026-10-10
 
 A versão 2.2.0 fecha as pendências que a revisão da interface da 2.1.0 registrou e deixou para depois: o júri aparece no `mapa status` e na linha das etapas do painel, cada comunidade das redes ganha a própria cor (contrato 1.6), a concordância de uma pessoa passa a contar só as fichas confirmadas, e oito problemas de interface, no Mapa, nas Redes, na Validação e no painel, foram corrigidos, cada um com o seu teste.

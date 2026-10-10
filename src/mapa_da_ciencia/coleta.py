@@ -40,6 +40,7 @@ from mapa_da_ciencia.fontes.articlemeta import (
     revista_do_registro,
 )
 from mapa_da_ciencia.fontes.base import Buscador, ErroFonte, ler_gz, limpar_temporarios
+from mapa_da_ciencia.fontes.conferencia import RelatorioConferencia, conferir_textos
 from mapa_da_ciencia.fontes.dedup import deduplicar
 from mapa_da_ciencia.fontes.importar import FORMATOS, Identificador, Importacao, ler_arquivo
 from mapa_da_ciencia.fontes.importar import colecao_da_url as colecao_da_url
@@ -101,7 +102,8 @@ class ResumoColeta:
 
     `documentos` e `por_revista` contam o que foi gravado no corpus. `fora_do_periodo`, `excluidos_por_tipo`
     e `nao_encontrados` contam o que ficou de fora, e `casamento` conta os documentos por passo da ligação
-    com o OpenAlex. `requisicoes`, `do_cache` e `creditos_openalex` medem o acesso às APIs.
+    com o OpenAlex. `requisicoes`, `do_cache` e `creditos_openalex` medem o acesso às APIs. `conferencia` lista
+    os resumos tirados por serem fragmentos e os que mudaram de idioma.
     """
 
     documentos: int
@@ -119,6 +121,7 @@ class ResumoColeta:
     duracao_s: float
     avisos: list[str]
     plano: Plano
+    conferencia: RelatorioConferencia = field(default_factory=RelatorioConferencia)
 
     @property
     def total_requisicoes(self) -> int:
@@ -132,7 +135,9 @@ class ResumoColeta:
             f"De fora: {num(self.fora_do_periodo, 0)} fora do período, "
             f"{num(sum(self.excluidos_por_tipo.values()), 0)} por tipo, {num(self.nao_encontrados, 0)} não "
             f"encontrado(s). OpenAlex: {num(casados, 0)} casado(s), {num(self.creditos_openalex, 0)} crédito(s). "
-            f"{num(self.total_requisicoes, 0)} requisição(ões), {num(sum(self.do_cache.values()), 0)} do cache."
+            f"{num(self.total_requisicoes, 0)} requisição(ões), {num(sum(self.do_cache.values()), 0)} do cache. "
+            f"Resumos: {num(len(self.conferencia.fragmentos), 0)} fragmento(s) tirado(s), "
+            f"{num(len(self.conferencia.idiomas), 0)} com o idioma corrigido."
         )
 
 
@@ -511,6 +516,7 @@ async def coletar_async(
                     )
         contadores = buscador.contadores
 
+    documentos, conferencia = conferir_textos(documentos)
     documentos, dedup = deduplicar(documentos)
     avisos += [
         f"{doc}: o DOI {doi} é de outro artigo ({dono}, confirmado pelo OpenAlex); o documento ficou sem DOI."
@@ -562,6 +568,7 @@ async def coletar_async(
         duracao_s=round(time.perf_counter() - t0, 2),
         avisos=avisos,
         plano=plano,
+        conferencia=conferencia,
     )
     registrar_execucao(
         projeto,
@@ -580,12 +587,16 @@ async def coletar_async(
             "fundidos": resumo.fundidos,
             "possiveis_duplicatas": len(resumo.possiveis_duplicatas),
             "resumos_descartados": len(dedup.resumos_descartados),
+            "resumos_fragmentos": len(conferencia.fragmentos),
+            "idiomas_corrigidos": len(conferencia.idiomas),
         },
         parametros=_parametros(plano, opcoes)
         | {
             "duplicatas_fundidas": dedup.fundidos,
             "dois_removidos": dedup.dois_removidos,
             "resumos_descartados": dedup.resumos_descartados,
+            "resumos_fragmentos": conferencia.fragmentos,
+            "idiomas_corrigidos": conferencia.idiomas,
         },
     )
     avisos += exportar(projeto)  # manifesto e revistas; tópicos que ficaram de outro corpus, com aviso
