@@ -211,3 +211,48 @@ test('com uma etapa rodando no terminal, o painel não começa outra e avisa at�
 		await page.request.delete(terminal);
 	}
 });
+
+test('o editor dos rótulos grava só o que mudou e aplica sem refazer os tópicos', async ({ page }) => {
+	const topicos = ler('topicos.json');
+	const t0 = topicos.topicos.find((t: { id: number }) => t.id === 0);
+	await page.goto(`${url('PAINEL')}#/projeto`);
+	await page.getByTestId('editar-rotulos').click();
+	const editor = page.getByTestId('editor-rotulos');
+	await expect(editor.locator('#rotulo-t-0')).toHaveValue(t0.rotulo);
+	await expect(editor.getByTestId('salvar-rotulos')).toBeDisabled(); // nada mudou
+	// um acento perdido ("coalizao", e a palavra-chave é "coalizão") não impede de salvar, mas vira aviso
+	await editor.locator('#rotulo-t-0').fill('Coalizao no congresso');
+	await expect(editor.getByTestId('salvar-rotulos')).toHaveText('Salvar e aplicar 1 rótulo');
+	const pedido = page.waitForRequest((r) => r.url().endsWith('/api/rotulos') && r.method() === 'PATCH');
+	const job = page.waitForRequest((r) => r.url().endsWith('/api/etapas/topicos') && r.method() === 'POST');
+	await editor.getByTestId('salvar-rotulos').click();
+	expect((await pedido).postDataJSON()).toEqual({
+		topicos: { '0': { rotulo: 'Coalizao no congresso', descricao: t0.descricao } },
+		macrotemas: {}
+	});
+	expect((await job).postDataJSON()).toEqual({ aplicar_rotulos: true });
+	await expect(editor).toHaveCount(0);
+	await expect(page.getByTestId('aviso-rotulos')).toContainText('“coalizao”');
+	// de volta ao do modelo: a entrada sai do arquivo
+	await expect(page.getByTestId('editar-rotulos')).toBeEnabled({ timeout: 10_000 });
+	await page.getByTestId('editar-rotulos').click();
+	await expect(page.getByTestId('fonte-t:0')).toHaveText('à mão');
+	await page.getByTestId('voltar-t:0').check();
+	const volta = page.waitForRequest((r) => r.url().endsWith('/api/rotulos') && r.method() === 'PATCH');
+	await page.getByTestId('salvar-rotulos').click();
+	expect((await volta).postDataJSON()).toEqual({ topicos: { '0': null }, macrotemas: {} });
+});
+
+test('a gaveta do tópico leva ao editor do rótulo, só no painel', async ({ page }) => {
+	const t = ler('topicos.json').topicos[3];
+	await page.goto(`${url('PAINEL')}#/topicos?topico=${t.id}`);
+	await page.getByTestId('gaveta-topico').getByTestId('editar-rotulo').click();
+	await expect(page).toHaveURL(new RegExp(`#/projeto\\?topico=${t.id}`));
+	await expect(page.locator(`#rotulo-t-${t.id}`)).toBeFocused();
+	await page.getByTestId('editor-rotulos').screenshot({ path: join(TELAS, 'projeto-rotulos.png') });
+	await page.getByRole('button', { name: 'Fechar sem salvar' }).click();
+	await expect(page).not.toHaveURL(/topico=/);
+	await page.goto(`${url('PUBLICADO')}#/topicos?topico=${t.id}`);
+	await expect(page.getByTestId('gaveta-topico')).toBeVisible();
+	await expect(page.getByTestId('editar-rotulo')).toHaveCount(0);
+});

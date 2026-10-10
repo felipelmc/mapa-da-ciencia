@@ -2,7 +2,8 @@
 	/**
 	 * A vista Projeto, só no painel local: as etapas do pipeline numa linha de metrô, o job em andamento ao vivo
 	 * (com cancelar), a estimativa da classificação, os modelos do projeto no Ollama (com o download do que falta)
-	 * e as últimas execuções.
+	 * e as últimas execuções. O editor dos rótulos dos tópicos grava o `rotulos.yaml` e os aplica sem refazer os
+	 * tópicos.
 	 *
 	 * Ao abrir, retoma o acompanhamento de um job que já estava rodando (outra aba, ou antes de um reload).
 	 */
@@ -11,7 +12,9 @@
 	import type { EtapasDoProjeto, Estimativa, FonteApi, InfoModelos, NomeEtapa } from '$lib/dados/api';
 	import { ErroDaApi } from '$lib/dados/pedir';
 	import { formatarData, formatarDuracao, formatarInteiro } from '$lib/formato';
+	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import Assistente from './Assistente.svelte';
+	import EditorRotulos from './EditorRotulos.svelte';
 	import JobAoVivo from './JobAoVivo.svelte';
 	import LinhaDeMetro, { ESTACOES } from './LinhaDeMetro.svelte';
 	import type { Job, JobAoVivo as EstadoJob } from './job';
@@ -25,6 +28,13 @@
 	let aoVivo = $state<EstadoJob | null>(null);
 	let aviso = $state<string | null>(null);
 	let configurando = $state(false);
+	let editandoRotulos = $state(false);
+	let avisosRotulos = $state<string[]>([]);
+	// o link "Editar o rótulo" da gaveta do tópico abre o editor no tópico (`#/projeto?topico=12`)
+	const filtros = $derived(filtrosDaPagina());
+	$effect(() => {
+		if (filtros.topico !== null) editandoRotulos = true;
+	});
 	let salvo = $state(false);
 	let parar: (() => void) | null = null;
 
@@ -138,17 +148,41 @@
 			}}
 			aoPiloto={() => rodar('coleta', { limite: 20 })}
 		/>
+	{:else if editandoRotulos}
+		<EditorRotulos
+			{fonte}
+			foco={filtros.topico}
+			aoFechar={(r) => {
+				editandoRotulos = false;
+				if (filtros.topico !== null) mudarFiltros({ topico: null });
+				avisosRotulos = r.avisos;
+				if (r.salvou) void rodar('topicos', { aplicar_rotulos: true });
+			}}
+		/>
 	{:else}
-		<button type="button" class="configurar" disabled={ocupado} onclick={() => ((configurando = true), (salvo = false))} data-testid="configurar">
-			Configurar o projeto
-		</button>
+		<div class="acoes">
+			<button type="button" class="configurar" disabled={ocupado} onclick={() => ((configurando = true), (salvo = false))} data-testid="configurar">
+				Configurar o projeto
+			</button>
+			<button
+				type="button"
+				class="configurar"
+				disabled={ocupado || etapas?.topicos.estado !== 'em_dia'}
+				title={etapas?.topicos.estado !== 'em_dia' ? 'Os tópicos precisam estar em dia' : undefined}
+				onclick={() => ((editandoRotulos = true), (avisosRotulos = []))}
+				data-testid="editar-rotulos"
+			>
+				Editar os rótulos dos tópicos
+			</button>
+		</div>
 	{/if}
+	{#each avisosRotulos as a (a)}<p class="aviso" role="status" data-testid="aviso-rotulos">{a}</p>{/each}
 
 	{#if fora}
 		<p class="aviso" role="status" data-testid="etapa-fora">{fora.mensagem}</p>
 	{/if}
 	{#if etapas}
-		<LinhaDeMetro {etapas} rodando={aoVivo && !aoVivo.terminado ? aoVivo.etapa : (fora?.etapa ?? null)} {ocupado} aoRodar={(e, o) => rodar(e, o)} {aoSortear} />
+		<LinhaDeMetro {etapas} rodando={aoVivo && !aoVivo.terminado ? aoVivo.etapa : (fora?.etapa ?? null)} {ocupado} aoRodar={(e, o) => rodar(e, o)} {aoSortear} aoEditarRotulos={() => (editandoRotulos = true)} />
 	{:else}
 		<p class="suave" role="status">Carregando as etapas…</p>
 	{/if}
@@ -267,6 +301,12 @@
 	.suave {
 		color: var(--texto-suave);
 		font-size: 0.85rem;
+	}
+
+	.acoes {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
 	}
 
 	.configurar {

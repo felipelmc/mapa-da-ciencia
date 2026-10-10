@@ -53,7 +53,8 @@
 		rodando,
 		ocupado,
 		aoRodar,
-		aoSortear
+		aoSortear,
+		aoEditarRotulos
 	}: {
 		etapas: EtapasDoProjeto;
 		/** A etapa do job em andamento, se houver. */
@@ -61,6 +62,8 @@
 		ocupado: boolean;
 		aoRodar: (etapa: NomeEtapa, opcoes: Record<string, unknown>) => void;
 		aoSortear: (n: number) => void;
+		/** Abre o editor dos rótulos dos tópicos. */
+		aoEditarRotulos?: () => void;
 	} = $props();
 
 	let tamanhoAmostra = $state(200);
@@ -121,6 +124,17 @@
 					{#each e.variacoes as v (v.rotulo)}
 						<button type="button" class="variacao" disabled={ocupado} onclick={() => aoRodar(e.id as NomeEtapa, v.opcoes)}>{v.rotulo}</button>
 					{/each}
+					{#if e.id === 'topicos' && info.estado === 'em_dia'}
+						{#if info.rotulos_pendentes}
+							<p class="ultima" data-testid="rotulos-pendentes">{contar(info.rotulos_pendentes, 'rótulo do arquivo', 'rótulos do arquivo')} ainda não {info.rotulos_pendentes === 1 ? 'aplicado' : 'aplicados'}</p>
+							<button type="button" class="variacao" disabled={ocupado} onclick={() => aoRodar('topicos', { aplicar_rotulos: true })} data-testid="aplicar-rotulos">
+								Aplicar os rótulos editados
+							</button>
+						{/if}
+						{#if aoEditarRotulos}
+							<button type="button" class="variacao" disabled={ocupado} onclick={aoEditarRotulos}>Editar os rótulos</button>
+						{/if}
+					{/if}
 				{/if}
 			</div>
 		</li>

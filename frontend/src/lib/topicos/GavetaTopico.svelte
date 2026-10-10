@@ -93,7 +93,10 @@
 		<button type="button" class="fechar" aria-label="Fechar" onclick={aoFechar}>×</button>
 	</header>
 	{#if topico.descricao}<p class="descricao">{topico.descricao}</p>{/if}
-	<p class="fonte">{FONTE[topico.rotulo_fonte ?? 'llm']}</p>
+	<p class="fonte">
+		{FONTE[topico.rotulo_fonte ?? 'llm']}{#if manifesto.api}
+			· <a href={rota('/projeto', escreverFiltros({ topico: topico.id }))} data-testid="editar-rotulo">Editar o rótulo</a>{/if}
+	</p>
 
 	<section>
 		<h3>No tempo</h3>

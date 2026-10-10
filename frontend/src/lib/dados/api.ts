@@ -16,6 +16,8 @@ export interface EtapaDoProjeto {
 	mudou?: string[];
 	/** No júri, o comando do próximo passo (o júri roda pela linha de comando, não como job). */
 	proximo?: string;
+	/** Nos tópicos em dia, os rótulos do `rotulos.yaml` (ou do editor) ainda não aplicados. */
+	rotulos_pendentes?: number;
 }
 /** Uma etapa que roda fora deste painel (no terminal ou num notebook), que trava o projeto (`trava_etapas.py`). */
 export interface EtapaEmAndamento {
@@ -77,6 +79,34 @@ export interface RevistaDoRetrato {
 }
 
 export type CodebookEditavel = Omit<CodebookContrato, 'versao_contrato' | 'hash'>;
+
+/** Um rótulo escrito à mão, como vai para o `rotulos.yaml`. */
+export interface RotuloManual {
+	rotulo: string;
+	descricao: string;
+}
+interface RotuloAtual {
+	id: number;
+	cor: string;
+	rotulo: string;
+	descricao: string;
+	fonte: 'llm' | 'palavras' | 'manual';
+	/** A entrada do `rotulos.yaml`, se houver. */
+	manual: RotuloManual | null;
+}
+/** `GET /api/rotulos`: os rótulos dos tópicos e dos macrotemas, e quantas entradas do arquivo faltam aplicar. */
+export interface RotulosDoProjeto {
+	topicos: (RotuloAtual & { macro: number; palavras: string[]; n_nucleo: number })[];
+	macrotemas: (RotuloAtual & { topicos: number[] })[];
+	pendentes: number;
+	/** No `PATCH`, os acentos que parecem perdidos (a gravação não é recusada por isso). */
+	avisos?: string[];
+}
+/** O que muda no `rotulos.yaml`: por número, o rótulo novo, ou `null` para voltar ao do modelo. */
+export interface MudancaDeRotulos {
+	topicos?: Record<string, RotuloManual | null>;
+	macrotemas?: Record<string, RotuloManual | null>;
+}
 
 const EVENTOS = ['estado', 'etapa', 'avanco', 'mensagem', 'resumo', 'erro', 'fim'] as const;
 
@@ -165,5 +195,14 @@ export class FonteApi extends FonteEstatica {
 
 	salvarCodebook(codebook: CodebookEditavel): Promise<CodebookEditavel & { hash: string }> {
 		return pedirApi('api/codebook', { method: 'PUT', body: JSON.stringify(codebook) });
+	}
+
+	rotulos(): Promise<RotulosDoProjeto> {
+		return pedirApi('api/rotulos');
+	}
+
+	/** Grava as mudanças no `rotulos.yaml`; a etapa de tópicos (`aplicar_rotulos`) as aplica. */
+	mudarRotulos(mudanca: MudancaDeRotulos): Promise<RotulosDoProjeto> {
+		return pedirApi('api/rotulos', { method: 'PATCH', body: JSON.stringify(mudanca) });
 	}
 }
