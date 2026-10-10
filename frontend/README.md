@@ -5,7 +5,7 @@ App estático em SvelteKit que visualiza o **contrato de dados**: os arquivos JS
 - o **painel local** (`mapa painel`), servido pelo Python em `/`, com os dados em `/dados/` e a API em `/api/`;
 - o **site publicado** (GitHub Pages), servido num subcaminho como `/mapa-da-ciencia/demo/`, sem API e sem regra de reescrita.
 
-> **Estado:** marco M4, em andamento. Já funcionam a casca (trilho, barra superior, dois temas, estado na URL), a capa (Início) com os números do corpus e os macrotemas, e o **Mapa** (regl-scatterplot, `src/lib/graficos/Nuvem.svelte` e `src/lib/mapa/`). As outras vistas mostram um estado vazio que diz em que marco chegam.
+> **Estado:** todas as vistas estão prontas (Início, Mapa, Tópicos, Classificação, Geografia, Validação, Redes e Projeto, que no site publicado vira Metodologia). Numa vista cuja etapa o projeto ainda não rodou, o estado vazio diz o que rodar.
 
 ## Como rodar
 
@@ -75,7 +75,7 @@ frontend/
 │   │   ├── recorte/                  barra do recorte (comum às vistas de análise) e linha do tempo
 │   │   ├── geografia/                vista Geografia: mapas das UFs e do mundo, ranking, escala de cores, malhas
 │   │   ├── redes/                    vista Redes: o cálculo no recorte, o grafo em canvas, o cartão do nó, a busca, os arcos entre UFs, o cânone e a matriz das citações
-│   │   ├── secoes.ts                 as seções: rótulo, rota, ícone, resumo, marco, arquivos usados
+│   │   ├── secoes.ts                 as seções: rótulo, rota, ícone, resumo, arquivos usados
 │   │   └── formato.ts                números e datas em pt-BR
 │   └── routes/                       uma pasta por seção; +layout.svelte abre o projeto
 ├── static/favicon.svg
@@ -267,7 +267,7 @@ As capturas ficam em `test-results/` (ignorado pelo git): `tema-observatorio-144
 
 ## Como acrescentar uma vista
 
-1. Registre a seção em `src/lib/secoes.ts`: rótulo, caminho, ícone (`componentes/icones.ts`), resumo, marco e arquivos do contrato que ela usa.
+1. Registre a seção em `src/lib/secoes.ts`: rótulo, caminho, ícone (`componentes/icones.ts`), resumo e arquivos do contrato que ela usa.
 2. Crie `src/routes/<caminho>/+page.svelte`. Enquanto a vista não existe, `<PaginaDeSecao secao={secao('id')} />` mostra o estado vazio com a lista dos arquivos presentes.
 3. Leia os dados com `usarProjeto().fonte` e trate `null` (arquivo ainda não gerado).
 4. Filtros vão para a URL com `rota(caminho, escreverFiltros(filtros))` e voltam com `lerFiltros(parametrosDoHash(page.url))`.

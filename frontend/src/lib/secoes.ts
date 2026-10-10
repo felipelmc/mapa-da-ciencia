@@ -1,6 +1,6 @@
 /**
- * As seções do app, na ordem do trilho lateral. É o lugar único para rótulo, rota, ícone,
- * a frase que descreve cada vista e o marco em que ela chega.
+ * As seções do app, na ordem do trilho lateral. É o lugar único para rótulo, rota, ícone, a frase que descreve
+ * cada vista e os arquivos do contrato que ela usa.
  */
 import type { Manifesto } from '$lib/contrato/tipos';
 import type { NomeArquivo } from '$lib/dados';
@@ -24,12 +24,8 @@ export interface Secao {
 	icone: NomeIcone;
 	/** Uma frase: o que a vista mostra. Aparece no cabeçalho e no estado vazio. */
 	resumo: string;
-	/** Quando a vista fica pronta, para o estado vazio ("Chega no marco M3"). */
-	chegada: string;
 	/** Arquivos do contrato que a vista usa. O estado vazio mostra quais existem. */
 	arquivos: NomeArquivo[];
-	/** Aparece no trilho, mas desativada, com um selo (ex.: "v2"). */
-	selo?: string;
 	/** Só aparece quando `manifesto.api` é verdadeiro (painel local). */
 	soNoPainel?: boolean;
 	/** No site publicado (sem API), a seção aparece com outro nome e outro resumo (Projeto → Metodologia). */
@@ -40,8 +36,6 @@ export interface Secao {
 	recorte?: boolean;
 }
 
-// Os marcos seguem o plano do projeto (docs/desenvolvimento/index.md): mapa no M3;
-// tópicos no tempo e geografia no M4; classificação e validação no M5; redes depois da 1.0.
 export const SECOES: readonly Secao[] = [
 	{
 		id: 'inicio',
@@ -49,7 +43,6 @@ export const SECOES: readonly Secao[] = [
 		caminho: '/',
 		icone: 'inicio',
 		resumo: 'O corpus em números: documentos, tópicos, revistas, período e macrotemas.',
-		chegada: 'no marco M1',
 		arquivos: ['manifesto', 'revistas', 'topicos']
 	},
 	{
@@ -59,7 +52,6 @@ export const SECOES: readonly Secao[] = [
 		icone: 'mapa',
 		resumo:
 			'Cada documento vira um ponto, e textos parecidos ficam perto. Dá para filtrar por ano, revista e tópico, colorir por categoria e selecionar grupos com o laço.',
-		chegada: 'no marco M3',
 		arquivos: ['documentos', 'topicos'],
 		telaCheia: true,
 		recorte: true
@@ -71,7 +63,6 @@ export const SECOES: readonly Secao[] = [
 		icone: 'topicos',
 		resumo:
 			'Os tópicos do corpus, agrupados em macrotemas, com palavras-chave, documentos representativos e a evolução de cada um ao longo dos anos.',
-		chegada: 'no marco M4',
 		arquivos: ['topicos', 'documentos'],
 		recorte: true
 	},
@@ -82,7 +73,6 @@ export const SECOES: readonly Secao[] = [
 		icone: 'classificacao',
 		resumo:
 			'Como os resumos foram codificados segundo o codebook: a distribuição de cada variável, os cruzamentos e o trecho literal que sustenta cada código.',
-		chegada: 'no marco M5',
 		arquivos: ['codebook', 'classificacoes', 'documentos'],
 		recorte: true
 	},
@@ -93,7 +83,6 @@ export const SECOES: readonly Secao[] = [
 		icone: 'geografia',
 		resumo:
 			'Onde a produção acontece: documentos por UF, país e instituição, com contagem fracionária das afiliações.',
-		chegada: 'no marco M4',
 		arquivos: ['afiliacoes', 'documentos'],
 		recorte: true
 	},
@@ -104,7 +93,6 @@ export const SECOES: readonly Secao[] = [
 		icone: 'validacao',
 		resumo:
 			'Quanto a classificação do modelo concorda com uma codificação de referência (de uma pessoa ou de outro modelo): concordância, kappa, matrizes de confusão e as divergências para revisar.',
-		chegada: 'no marco M5',
 		arquivos: ['validacao', 'codebook']
 	},
 	{
@@ -114,7 +102,6 @@ export const SECOES: readonly Secao[] = [
 		icone: 'redes',
 		resumo:
 			'Quem escreve com quem: a coautoria entre pessoas, a colaboração entre instituições e entre estados, e as obras que o corpus mais cita.',
-		chegada: 'na versão 2.0',
 		arquivos: ['redes', 'citacoes'],
 		recorte: true
 	},
@@ -125,7 +112,6 @@ export const SECOES: readonly Secao[] = [
 		icone: 'projeto',
 		resumo:
 			'Configurar o projeto, acompanhar as etapas do pipeline e editar o codebook, direto no painel local.',
-		chegada: 'no marco M6',
 		arquivos: [],
 		noSite: {
 			rotulo: 'Metodologia',

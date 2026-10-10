@@ -45,13 +45,7 @@
 				<div>
 					<dt>
 						<Icone nome={s.icone} tamanho={18} />
-						{#if s.selo}
-							<span>{s.rotulo}</span>
-						{:else}
-							<a href={rota(s.caminho)}>{s.rotulo}</a>
-						{/if}
-						<!-- só as seções que ainda não existem dizem quando chegam; as outras já estão aqui -->
-						{#if s.selo}<span class="chegada">chega {s.chegada}</span>{/if}
+						<a href={rota(s.caminho)}>{s.rotulo}</a>
 					</dt>
 					<dd>{s.resumo}</dd>
 				</div>
@@ -375,13 +369,6 @@
 	.secoes a {
 		text-decoration-color: var(--linha-forte);
 		text-underline-offset: 3px;
-	}
-
-	.chegada {
-		font-family: var(--fonte-mono);
-		font-size: 0.7rem;
-		font-weight: 400;
-		color: var(--texto-suave);
 	}
 
 	.secoes dd {
