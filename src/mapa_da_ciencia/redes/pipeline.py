@@ -36,6 +36,7 @@ from ..projeto import Projeto
 from ..topicos.resultado import PASTA as PASTA_TOPICOS
 from ..topicos.resultado import Resultado as ResultadoTopicos
 from ..topicos.resultado import assinatura_corpus, ler_atribuicoes
+from ..trava_etapas import etapa
 from . import citacoes as cit
 from .desenho import desenhar, raios_na_vista
 from .grafos import (
@@ -243,6 +244,7 @@ COLUNAS = {
 }
 
 
+@etapa("redes")
 def gerar_redes(projeto: Projeto, progresso: Progresso | None = None) -> ResumoRedes:
     progresso = progresso or ProgressoNulo()
     t0, inicio = time.perf_counter(), datetime.now(UTC)

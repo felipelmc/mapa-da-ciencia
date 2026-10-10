@@ -36,6 +36,7 @@ from mapa_da_ciencia.topicos.rotulos import (
     ler_manuais,
     palavras_do_macrotema,
 )
+from mapa_da_ciencia.trava_etapas import etapa
 
 if TYPE_CHECKING:
     import numpy as np
@@ -92,6 +93,7 @@ def _medoide(pontos: np.ndarray) -> tuple[float, float]:
     return round(float(x), 5), round(float(y), 5)
 
 
+@etapa("topicos")
 def gerar_topicos(
     projeto: Projeto,
     opcoes: OpcoesTopicos | None = None,

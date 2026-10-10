@@ -29,6 +29,7 @@ from .documento import pode_publicar_resumo
 from .pastas import substituir_conteudo
 from .projeto import Projeto
 from .texto import contem_email, orcids_no_texto
+from .trava_etapas import etapa
 
 
 @dataclass
@@ -133,6 +134,7 @@ def conferir_privacidade(dados: Path) -> None:
             )
 
 
+@etapa("publicar")
 def publicar(
     projeto: Projeto, destino: Path | None = None, *, sem_resumos: bool = False, estatico: Path | None = None
 ) -> ResumoPublicacao:

@@ -27,6 +27,8 @@ O navegador abre em `http://127.0.0.1:8765/`. Para encerrar, aperte ++ctrl+c++ n
 
 Cada projeto abre num painel só. Com um painel já aberto no projeto (numa aba esquecida, ou pelo notebook), um segundo `mapa painel` (ou `mapa.painel()`) não abre e diz o endereço do primeiro: dois painéis no mesmo projeto atrapalhariam as etapas um do outro. A trava fica no arquivo `.painel.lock` da pasta do projeto e some quando o painel fecha.
 
+**Uma etapa por vez.** Também roda uma etapa por vez em cada projeto, venha ela do painel, do terminal ou do notebook. Com o painel classificando, um `mapa coletar` no terminal não começa e diz que a classificação está rodando pelo painel, desde quando; com uma coleta rodando no terminal, o painel desativa o botão "Rodar" e mostra o aviso até ela terminar. Etapas que só leem (`mapa status`, `mapa validar metricas`, `mapa juri status`) rodam a qualquer hora. A trava fica no arquivo `.etapa.lock` e é solta mesmo quando o processo cai. No Windows, onde o sistema não oferece essa trava, as etapas não se bloqueiam: rode uma de cada vez.
+
 Num notebook (Jupyter ou Colab), `mapa painel` prenderia a célula. Use a API Python, que deixa o servidor rodando numa *thread*:
 
 ```python

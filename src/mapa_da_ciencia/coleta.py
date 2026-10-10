@@ -68,6 +68,7 @@ from mapa_da_ciencia.progresso import Progresso, ProgressoNulo
 from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.rede import variavel
 from mapa_da_ciencia.texto import normalizar_doi
+from mapa_da_ciencia.trava_etapas import etapa
 
 PASTA_IMPORTADOS = "importados"
 
@@ -655,6 +656,7 @@ def _parametros(plano: Plano, opcoes: OpcoesColeta) -> dict[str, Any]:
     }
 
 
+@etapa("coleta")
 def coletar(projeto: Projeto, opcoes: OpcoesColeta | None = None, progresso: Progresso | None = None) -> ResumoColeta:
     """Roda a coleta. Funciona também dentro de um laço de eventos já ativo (Jupyter, Colab)."""
     try:

@@ -35,6 +35,7 @@ from ..classificacao.resultado import valor_como_texto, valor_do_texto
 from ..config import ErroConfig
 from ..projeto import Projeto
 from ..texto import contem_email, remover_emails
+from ..trava_etapas import etapa
 
 TipoCodificador = Literal["humano", "referencia"]
 PASTA_EXPORTACAO = "validacao"
@@ -182,6 +183,7 @@ def textos_do_projeto(projeto: Projeto) -> list[Texto]:
 ESTRATOS = {"topico": "tópico", "ano": "ano", "revista": "revista"}
 
 
+@etapa("validacao")
 def sortear(projeto: Projeto, *, refazer: bool = False, n: int | None = None) -> Amostra:
     """A amostra do projeto: a guardada, ou uma nova (na primeira vez, ou com `refazer`). `n` troca o tamanho
     de `validacao.n` só neste sorteio."""
@@ -347,6 +349,7 @@ def apagar_respostas(projeto: Projeto, codificador: str, doc: str, variaveis: li
         )
 
 
+@etapa("validacao")
 def importar(
     projeto: Projeto, arquivo: Path, codificador: str, *, tipo: TipoCodificador = "humano"
 ) -> ResumoImportacao:

@@ -22,6 +22,7 @@ from pathlib import Path
 from .. import __version__
 from ..formatar import num
 from ..projeto import Projeto
+from ..trava_etapas import etapa
 from .amostra import ESTRATOS, PASTA_EXPORTACAO
 from .metricas import Metrica, Validacao, calcular
 
@@ -291,6 +292,7 @@ def latex(v: Validacao) -> str:
     return "\n".join(partes) + "\n"
 
 
+@etapa("validacao")
 def gerar(projeto: Projeto) -> tuple[Validacao, dict[str, Path]]:
     """Calcula as métricas e grava `relatorio.md`, `tabelas.tex` e `metricas.json` em `validacao/`."""
     v = calcular(projeto)
