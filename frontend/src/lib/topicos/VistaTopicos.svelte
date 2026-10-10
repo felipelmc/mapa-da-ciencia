@@ -7,6 +7,7 @@
 	 */
 	import type { Topicos } from '$lib/contrato/tipos';
 	import { D, type Cubo } from '$lib/dados/cubo';
+	import { usarProjeto } from '$lib/dados/contexto';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { MODOS, type Modo } from '$lib/estado/url';
 	import { formatarDecimal, formatarInteiro, formatarPeriodo, formatarPorcentagem, formatarPp } from '$lib/formato';
@@ -19,6 +20,9 @@
 	import { metodoDe, separar, tendencias, textoFragil } from './tendencias';
 
 	let { topicos, cubo }: { topicos: Topicos; cubo: Cubo } = $props();
+	const projeto = usarProjeto();
+	/** O nome da revista (a sigla do corpus sozinha não diz qual é, numa figura exportada). */
+	const nomeRevista = (id: string) => projeto.revistas?.revistas.find((r) => r.id === id)?.titulo ?? id.toUpperCase();
 
 	const filtros = $derived(filtrosDaPagina());
 	const em = '/topicos';
@@ -139,8 +143,8 @@
 		if (grupos.frageis)
 			partes.push(
 				grupos.frageis === 1
-					? 'Das marcadas, 1 é frágil: muda de direção sem um dos anos.'
-					: `Das marcadas, ${formatarInteiro(grupos.frageis)} são frágeis: mudam de direção sem um dos anos.`
+					? 'Das marcadas, 1 é frágil: a marcação some sem um dos anos.'
+					: `Das marcadas, ${formatarInteiro(grupos.frageis)} são frágeis: a marcação some sem um dos anos.`
 			);
 		return partes.join(' ');
 	});
@@ -355,7 +359,7 @@
 			</p>
 			<p class="nota" data-testid="cautela-tendencias">
 				Confira a série antes de citar: um pico no primeiro ou no último ano do período (um dossiê temático, por
-				exemplo) pode puxar a tendência. As marcadas como frágeis mudam de direção quando se tira um só ano da série,
+				exemplo) pode puxar a tendência. As marcadas como frágeis deixam de ser marcadas quando se tira um só ano da série,
 				e a linha diz de quais anos elas dependem.
 			</p>
 		{/if}
@@ -375,7 +379,14 @@
 			<div class="multiplos" data-multiplos>
 				{#each porRevista as r (r.id)}
 					<div class="multiplo" class:apagado={filtros.revistas.length > 0 && !filtros.revistas.includes(r.id)}>
-						<button type="button" class="titulo-multiplo" aria-pressed={filtros.revistas.includes(r.id)} onclick={() => alternarRevista(r.id)}>
+						<button
+							type="button"
+							class="titulo-multiplo"
+							title={nomeRevista(r.id)}
+							data-exportar="{nomeRevista(r.id)} ({formatarInteiro(r.total)})"
+							aria-pressed={filtros.revistas.includes(r.id)}
+							onclick={() => alternarRevista(r.id)}
+						>
 							{r.id} <span class="numero">{formatarInteiro(r.total)}</span>
 						</button>
 						<Fluxo

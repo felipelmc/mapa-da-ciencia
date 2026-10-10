@@ -89,8 +89,8 @@
 				distinguível do acaso (regressão logística com intervalo de 95%, corrigida pela dispersão). Com dezenas de
 				tópicos testados, cerca de 1 em 20 aparece por acaso: leia a lista como pistas, não como conclusões.
 				Um pico no primeiro ou no último ano do período escolhido, como um dossiê temático, também pode puxar a
-				tendência. As marcações <strong>frágeis</strong> mudam de direção quando se tira um só ano da série: a
-				lista diz de quais anos elas dependem. Num período curto, quase todas são frágeis.
+				tendência. As marcações <strong>frágeis</strong> somem quando se tira um só ano da série: a
+				lista diz que anos são esses. Num período curto, quase todas são frágeis.
 			</p>
 		</section>
 

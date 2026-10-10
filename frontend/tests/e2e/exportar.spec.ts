@@ -272,11 +272,14 @@ test('os pequenos múltiplos saem inteiros, com o título de cada painel', async
 	await page.goto(`${url('RAIZ')}#/topicos`);
 	const multiplos = page.getByTestId('figura-por-revista');
 	await expect(multiplos.locator('.titulo-multiplo').first()).toBeVisible();
-	const revistas = (await multiplos.locator('.titulo-multiplo').allTextContents()).map((t) => t.trim().split(/\s+/)[0]);
-	expect(revistas.length).toBeGreaterThan(1);
+	// cada painel sai com o nome da revista (a sigla da tela sozinha não diz qual é) e o número de documentos
+	const titulos = await multiplos.locator('.titulo-multiplo').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.exportar ?? ''));
+	const siglas = (await multiplos.locator('.titulo-multiplo').allTextContents()).map((t) => t.trim().split(/\s+/)[0]);
+	expect(titulos.length).toBeGreaterThan(1);
+	expect(titulos.some((t, i) => !t.startsWith(siglas[i]))).toBe(true);
 	const svg = (await baixar(page, 'por-revista', 'SVG')).dados.toString('utf8');
-	for (const r of revistas) expect(svg).toMatch(new RegExp(`>${r} [\\d.]+</text>`));
-	expect(svg.match(/<svg /g)!.length).toBeGreaterThanOrEqual(revistas.length + 1); // um SVG por painel, dentro do da figura
+	for (const t of titulos) expect(svg).toContain(`>${noSvg(t)}</text>`);
+	expect(svg.match(/<svg /g)!.length).toBeGreaterThanOrEqual(titulos.length + 1); // um SVG por painel, dentro do da figura
 	for (const m of ler('topicos.json').macrotemas) expect(svg).toContain(`>${noSvg(m.rotulo)}</text>`); // a legenda
 	writeFileSync(join(TELAS, 'exportar-por-revista-slide.png'), (await baixar(page, 'por-revista', 'PNG', 'slide')).dados);
 

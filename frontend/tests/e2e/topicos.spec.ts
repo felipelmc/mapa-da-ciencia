@@ -110,7 +110,7 @@ test('as tendências frágeis levam a etiqueta, na lista e na gaveta, iguais ao 
 	await page.locator(`li[data-id="${umAno.id}"]`).getByRole('button').click();
 	const gaveta = page.getByTestId('gaveta-topico');
 	await expect(gaveta.getByTestId('fragil-gaveta')).toBeVisible();
-	await expect(gaveta.getByTestId('tendencia-gaveta')).toContainText(`depende de ${umAno.tendencia.anos_decisivos![0]}`);
+	await expect(gaveta.getByTestId('tendencia-gaveta')).toContainText(`a marcação some sem ${umAno.tendencia.anos_decisivos![0]}`);
 });
 
 test('com menos de 5 anos no recorte, a lista pede um período maior', async ({ page }) => {

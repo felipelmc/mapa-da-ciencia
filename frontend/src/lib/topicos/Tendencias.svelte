@@ -2,7 +2,7 @@
 	/**
 	 * "Em alta" e "em queda": os tópicos cuja participação cresce ou cai de forma distinguível do acaso no recorte
 	 * (ADR 0009), com a sparkline (observado e ajustado), a variação em pontos percentuais e o intervalo. Uma
-	 * tendência que muda de direção sem um dos anos leva a etiqueta "frágil", com os anos de que depende.
+	 * tendência cuja marcação some sem um dos anos leva a etiqueta "frágil", com esses anos.
 	 */
 	import { formatarDecimal, formatarPp } from '$lib/formato';
 	import Sparkline from '$lib/graficos/Sparkline.svelte';

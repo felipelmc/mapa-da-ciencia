@@ -40,14 +40,15 @@ export function separar(lista: TendenciaTopico[]) {
 	return { alta, queda, estaveis, insuficientes, frageis, testados: lista.length - insuficientes };
 }
 
-/** De que anos uma tendência frágil depende: "depende de 2011", "depende de 2010 e 2012" ou, com mais de três,
- * "depende de 11 dos 16 anos". `null` para uma tendência que não é frágil. */
+/** Sem que anos a marcação de uma tendência frágil some: "a marcação some sem 2011", "… sem 2010 ou sem 2012" ou,
+ * com mais de três, "… sem qualquer um de 11 dos 16 anos". `null` para uma tendência que não é frágil. Sem um desses
+ * anos, a variação deixa de se distinguir do acaso (na prática, nunca vira a direção oposta). */
 export function textoFragil(t: Pick<Tendencia, 'fragil' | 'anos_decisivos'>, anosUsados: number): string | null {
 	if (!t.fragil) return null;
 	const anos = t.anos_decisivos;
-	if (anos.length > 3) return `depende de ${anos.length} dos ${anosUsados} anos`;
-	const lista = anos.length > 1 ? `${anos.slice(0, -1).join(', ')} e ${anos[anos.length - 1]}` : String(anos[0]);
-	return `depende de ${lista}`;
+	if (anos.length > 3) return `a marcação some sem qualquer um de ${anos.length} dos ${anosUsados} anos`;
+	const lista = anos.length > 1 ? `${anos.slice(0, -1).join(', sem ')} ou sem ${anos[anos.length - 1]}` : String(anos[0]);
+	return `a marcação some sem ${lista}`;
 }
 
 /** O método do gabarito. Os dados até a 1.6 não dizem o quantil e usavam o da normal: sem ele, vale a normal,

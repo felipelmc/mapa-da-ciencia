@@ -220,7 +220,8 @@ function clonarMultiplos(container: HTMLElement): SVGSVGElement {
 			const t = titulo.getBoundingClientRect();
 			const e = getComputedStyle(titulo);
 			const texto = document.createElementNS(NS, 'text');
-			texto.textContent = (titulo.textContent ?? '').replace(/\s+/g, ' ').trim();
+			// `data-exportar`: um título mais completo que o da tela (o nome da revista, e não a sigla)
+			texto.textContent = (titulo.dataset.exportar ?? titulo.textContent ?? '').replace(/\s+/g, ' ').trim();
 			texto.setAttribute('x', String(t.left - base.left));
 			texto.setAttribute('y', String(t.top - base.top + parseFloat(e.fontSize)));
 			texto.setAttribute('style', `font-family:${e.fontFamily};font-size:${e.fontSize};font-weight:${e.fontWeight};fill:${e.color}`);

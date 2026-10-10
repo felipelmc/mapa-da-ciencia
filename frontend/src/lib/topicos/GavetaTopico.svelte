@@ -115,7 +115,7 @@
 			{/if}
 			{#if tend.fragil}
 				<span class="por-que">
-					Sem um dos anos, a tendência muda de direção: {textoFragil(tend, Array.from(porAnoJanela.total).filter((v) => v > 0).length)}.
+					Tendência frágil: {textoFragil(tend, Array.from(porAnoJanela.total).filter((v) => v > 0).length)}. Sem um desses anos, a variação deixa de se distinguir do acaso.
 				</span>
 			{/if}
 		</p>

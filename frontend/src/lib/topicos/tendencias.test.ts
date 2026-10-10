@@ -22,10 +22,10 @@ function t(id: number, direcao: TendenciaTopico['direcao'], pp: number, decisivo
 
 describe('tendências frágeis', () => {
 	it('dizem de que anos dependem', () => {
-		expect(textoFragil(t(1, 'alta', 2, [2011]), 16)).toBe('depende de 2011');
-		expect(textoFragil(t(1, 'alta', 2, [2010, 2012]), 16)).toBe('depende de 2010 e 2012');
-		expect(textoFragil(t(1, 'alta', 2, [2010, 2012, 2014]), 16)).toBe('depende de 2010, 2012 e 2014');
-		expect(textoFragil(t(1, 'alta', 2, [2010, 2011, 2012, 2014]), 16)).toBe('depende de 4 dos 16 anos');
+		expect(textoFragil(t(1, 'alta', 2, [2011]), 16)).toBe('a marcação some sem 2011');
+		expect(textoFragil(t(1, 'alta', 2, [2010, 2012]), 16)).toBe('a marcação some sem 2010 ou sem 2012');
+		expect(textoFragil(t(1, 'alta', 2, [2010, 2012, 2014]), 16)).toBe('a marcação some sem 2010, sem 2012 ou sem 2014');
+		expect(textoFragil(t(1, 'alta', 2, [2010, 2011, 2012, 2014]), 16)).toBe('a marcação some sem qualquer um de 4 dos 16 anos');
 		expect(textoFragil(t(1, 'alta', 2), 16)).toBeNull();
 		expect(textoFragil(t(1, 'estavel', 0), 16)).toBeNull();
 	});
