@@ -7,6 +7,7 @@
 	 */
 	import type { Topicos } from '$lib/contrato/tipos';
 	import { D, type Cubo } from '$lib/dados/cubo';
+	import { usarProjeto } from '$lib/dados/contexto';
 	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import { MODOS, type Modo } from '$lib/estado/url';
 	import { formatarDecimal, formatarInteiro, formatarPeriodo, formatarPorcentagem, formatarPp } from '$lib/formato';
@@ -16,9 +17,12 @@
 	import Fluxo from './Fluxo.svelte';
 	import GavetaTopico from './GavetaTopico.svelte';
 	import Tendencias from './Tendencias.svelte';
-	import { metodoDe, separar, tendencias } from './tendencias';
+	import { metodoDe, separar, tendencias, textoFragil } from './tendencias';
 
 	let { topicos, cubo }: { topicos: Topicos; cubo: Cubo } = $props();
+	const projeto = usarProjeto();
+	/** O nome da revista (a sigla do corpus sozinha não diz qual é, numa figura exportada). */
+	const nomeRevista = (id: string) => projeto.revistas?.revistas.find((r) => r.id === id)?.titulo ?? id.toUpperCase();
 
 	const filtros = $derived(filtrosDaPagina());
 	const em = '/topicos';
@@ -136,6 +140,12 @@
 		if (alta.length) partes.push(`Em alta: ${nomes(alta)}.`);
 		if (queda.length) partes.push(`Em queda: ${nomes(queda)}.`);
 		if (!partes.length) partes.push('Nenhum tópico com tendência distinguível do acaso no recorte.');
+		if (grupos.frageis)
+			partes.push(
+				grupos.frageis === 1
+					? 'Das marcadas, 1 é frágil: a marcação some sem um dos anos.'
+					: `Das marcadas, ${formatarInteiro(grupos.frageis)} são frágeis: a marcação some sem um dos anos.`
+			);
 		return partes.join(' ');
 	});
 	const dadosTendencia = $derived({
@@ -148,7 +158,9 @@
 			'Primeiro ano',
 			'Último ano',
 			'IC 95% da inclinação (inferior)',
-			'IC 95% da inclinação (superior)'
+			'IC 95% da inclinação (superior)',
+			'Frágil',
+			'Anos decisivos'
 		],
 		linhas: [...grupos.alta, ...grupos.queda].map((t) => [
 			rotulosTopicos.get(t.id) ?? String(t.id),
@@ -159,7 +171,9 @@
 			t.anos![0],
 			t.anos![1],
 			numeroCru(t.ic95![0], 6),
-			numeroCru(t.ic95![1], 6)
+			numeroCru(t.ic95![1], 6),
+			t.fragil ? 1 : 0,
+			t.anos_decisivos.join('; ')
 		])
 	});
 	const linhasTendencia = $derived(
@@ -168,7 +182,8 @@
 			t.direcao === 'alta' ? 'em alta' : 'em queda',
 			formatarPp(t.pp_periodo!),
 			`${formatarDecimal(100 * t.prop_inicio!)}% → ${formatarDecimal(100 * t.prop_fim!)}%`,
-			`${formatarDecimal(t.ic95![0], 3)} a ${formatarDecimal(t.ic95![1], 3)}`
+			`${formatarDecimal(t.ic95![0], 3)} a ${formatarDecimal(t.ic95![1], 3)}`,
+			textoFragil(t, t.observado.filter((v) => v !== null).length) ?? 'não'
 		])
 	);
 
@@ -269,6 +284,7 @@
 		{colunas}
 		{linhas}
 		dados={dadosFluxo}
+		legenda={{ itens: nivel.ids.map((i) => ({ texto: nivel.rotulos.get(i) ?? String(i), cor: nivel.cores.get(i) ?? 'var(--linha-forte)' })) }}
 	>
 		{#snippet controles()}
 			<div class="modos" role="group" aria-label="Modo">
@@ -316,7 +332,7 @@
 		id="tendencias"
 		titulo="Em alta e em queda"
 		resumo={resumoTendencias}
-		colunas={['Tópico', 'Tendência', 'Variação', 'Participação ajustada', 'IC 95% da inclinação']}
+		colunas={['Tópico', 'Tendência', 'Variação', 'Participação ajustada', 'IC 95% da inclinação', 'Frágil']}
 		linhas={linhasTendencia}
 		dados={dadosTendencia}
 	>
@@ -343,8 +359,8 @@
 			</p>
 			<p class="nota" data-testid="cautela-tendencias">
 				Confira a série antes de citar: um pico no primeiro ou no último ano do período (um dossiê temático, por
-				exemplo) pode puxar a tendência, e nem toda marcação é firme: algumas são marginais e somem quando se tira um
-				só ano da série.
+				exemplo) pode puxar a tendência. As marcadas como frágeis deixam de ser marcadas quando se tira um só ano da série,
+				e a linha diz de quais anos elas dependem.
 			</p>
 		{/if}
 	</Figura>
@@ -358,11 +374,19 @@
 			colunas={colunasRevista}
 			linhas={porRevista.map((r) => [r.id, ...r.matriz.map((l) => formatarInteiro(somaDe(l))), formatarInteiro(r.total)])}
 			dados={{ colunas: colunasRevista, linhas: porRevista.map((r) => [r.id, ...r.matriz.map(somaDe), r.total]) }}
+			legenda={{ itens: idsMacro.map((i) => ({ texto: rotulosMacro.get(i) ?? String(i), cor: coresMacro.get(i) ?? 'var(--linha-forte)' })) }}
 		>
-			<div class="multiplos">
+			<div class="multiplos" data-multiplos>
 				{#each porRevista as r (r.id)}
 					<div class="multiplo" class:apagado={filtros.revistas.length > 0 && !filtros.revistas.includes(r.id)}>
-						<button type="button" class="titulo-multiplo" aria-pressed={filtros.revistas.includes(r.id)} onclick={() => alternarRevista(r.id)}>
+						<button
+							type="button"
+							class="titulo-multiplo"
+							title={nomeRevista(r.id)}
+							data-exportar="{nomeRevista(r.id)} ({formatarInteiro(r.total)})"
+							aria-pressed={filtros.revistas.includes(r.id)}
+							onclick={() => alternarRevista(r.id)}
+						>
 							{r.id} <span class="numero">{formatarInteiro(r.total)}</span>
 						</button>
 						<Fluxo

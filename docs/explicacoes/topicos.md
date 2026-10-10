@@ -16,7 +16,7 @@ Nem todo artigo tem resumo em inglês. O texto de análise nunca junta idiomas d
 | `reserva` | Não há resumo no idioma de análise | Título e resumo em outro idioma, na ordem: português, espanhol, inglês, francês |
 | `so_titulo` | O documento não tem resumo | Só o título, de preferência no idioma de análise |
 
-A reserva funciona porque o modelo de embeddings é multilíngue: num teste com os artigos do piloto que têm os dois resumos, 99,9% dos resumos em português encontraram a própria versão em inglês como vizinho mais próximo. No piloto de ciência política (4.275 documentos), 4.159 entram com o resumo em inglês, 88 (2,1%) como reserva e 28 (0,7%) só pelo título. A marca aparece no cartão de cada documento no mapa e nas contagens da etapa. Um documento sem título nem resumo fica fora dos tópicos.
+A reserva funciona porque o modelo de embeddings é multilíngue: num teste com os artigos do piloto que têm os dois resumos, 99,9% dos resumos em português encontraram a própria versão em inglês como vizinho mais próximo. No piloto de ciência política (4.265 documentos), 4.161 entram com o resumo em inglês, 45 (1,1%) como reserva e 59 (1,4%) só pelo título. A marca aparece no cartão de cada documento no mapa e nas contagens da etapa. Um documento sem título nem resumo fica fora dos tópicos. O idioma de cada resumo é o que a coleta conferiu: um resumo em francês que a fonte declara como espanhol entra como francês ([Fontes de dados](fontes.md#openalex)).
 
 ## 2. Embeddings
 
@@ -54,7 +54,7 @@ O [HDBSCAN](https://scikit-learn.org/stable/modules/clustering.html#hdbscan) pro
 - `topicos.min_samples`: quão conservador é o agrupamento. Valores maiores deixam mais documentos de fora.
 - `topicos.selecao`: `leaf`, o padrão, fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` prefere tópicos maiores, mas uma mudança pequena nos dados pode trocar um tópico grande por vários pequenos.
 
-Os padrões foram calibrados no piloto ([registro da calibração](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0007-parametros-dos-topicos.md)): 57 tópicos, com números parecidos nas três sementes testadas e nenhum tópico acima de 3,5% do corpus no núcleo (4,9% com os reatribuídos).
+Os padrões foram calibrados no piloto ([registro da calibração](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0007-parametros-dos-topicos.md)): 57 tópicos na coleta da calibração (61 na coleta refeita da 2.3.0), com números parecidos nas três sementes testadas e nenhum tópico acima de 3,5% do corpus no núcleo (4,9% com os reatribuídos).
 
 Os documentos que o HDBSCAN agrupa formam o **núcleo** de cada tópico. Os demais ficam como **ruído**: não pertencem claramente a nenhuma região densa. O ruído não é um erro, e sim uma informação: são trabalhos isolados, de fronteira ou que misturam assuntos. Com menos de 50 documentos, não há tópicos: a etapa para e sugere ampliar o recorte.
 
@@ -107,7 +107,7 @@ A cada execução, o HDBSCAN numera os tópicos de um jeito. Para que as cores, 
 - Os macrotemas persistem: um tópico casado continua no macrotema que tinha, e um tópico novo entra no macrotema do tópico casado mais parecido. A aglomeração só roda de novo quando menos da metade dos tópicos casa, ou com `mapa topicos --refazer-macrotemas`. Refazê-la a cada execução mudaria de cor metade dos tópicos do piloto.
 - Trocar o modelo de embeddings ou o idioma de análise recomeça o casamento (os números continuam de onde pararam).
 
-No piloto, rodar de novo com outra semente mantém o número e a cor de 50 dos 57 tópicos; tirar os artigos de 2010 também mantém 50 dos 57.
+Na calibração, no piloto, rodar de novo com outra semente mantém o número e a cor de 50 dos 57 tópicos; tirar os artigos de 2010 também mantém 50 dos 57.
 
 ## 11. Rótulos
 
@@ -116,7 +116,7 @@ Cada tópico e cada macrotema ganha um **rótulo** curto e uma **descrição** e
 Alguns cuidados:
 
 - **Acentos.** Modelos pequenos às vezes perdem acentos ("Genero" em vez de "Gênero"). O rótulo é conferido contra as palavras-chave e os títulos; se uma palavra perdeu o acento, o modelo recebe um pedido que aponta a palavra. Se ainda assim faltar, o acento é corrigido pela forma do vocabulário. Só contam palavras de quatro letras ou mais cuja forma sem acento não é também uma palavra: "e" e "é", "a" e "à" ou "critica" e "crítica" nunca são trocadas.
-- **Caixa de frase.** O modelo é orientado a usar maiúscula só na primeira palavra, nas siglas e nos nomes próprios, mas o `qwen3.5:9b` ainda devolve alguns rótulos com Iniciais Maiúsculas. O `rotulos.yaml` (abaixo) corrige os que incomodarem.
+- **Caixa de frase.** O modelo é orientado a usar maiúscula só na primeira palavra, nas siglas e nos nomes próprios, mas o `qwen3.5:9b` ainda devolve alguns rótulos com Iniciais Maiúsculas ("Agenda Legislativa e Processo no Congresso"). Por isso, cada palavra depois da primeira só mantém a maiúscula se aparece assim na maioria das vezes no meio das frases dos resumos em português do tópico (ou do corpus, quando o tópico tem menos de três ocorrências dela). "Congresso", "Brasil" e "Estado" ficam; "Legislativa" e "Processo", não. Num empate, a maiúscula sai: na *Opinião Pública*, "Propaganda" aparece com maiúscula em 8 das 16 vezes, todas no nome do Horário Gratuito de Propaganda Eleitoral. Uma palavra rara, com menos de três ocorrências no corpus, fica como o modelo escreveu. Siglas ficam como estão, e os rótulos do `rotulos.yaml` (abaixo) nunca mudam. Nos rótulos do piloto antes da 2.3.0, ela corrigiria 15 dos 36 escritos pelo modelo; na coleta refeita, corrigiu 12 dos 33.
 - **Estabilidade.** Um tópico que continua o mesmo de uma execução para outra (veja a seção anterior) e cujas palavras-chave mudaram pouco mantém o rótulo, sem chamar o modelo de novo, desde que o rótulo tenha sido escrito pela versão atual das instruções ao modelo.
 - **Cache.** As respostas ficam no `estado.sqlite`: rodar de novo sem mudanças não chama o modelo.
 - **Memória.** O modelo só é carregado se couber na memória livre, e a etapa para, sem perder o que já foi feito, se a memória acabar no meio.
@@ -136,16 +136,19 @@ macrotemas:
 
 Escreva sempre a `descricao` junto com o `rotulo`: uma entrada só com o rótulo deixa o tópico (ou o macrotema) sem descrição. O que está no `rotulos.yaml` tem prioridade sobre o modelo, e continua valendo nas execuções seguintes, porque o número do tópico é estável. Sem modelo de linguagem (`mapa topicos --sem-rotulos`), os rótulos são as três palavras-chave mais fortes.
 
+Para aplicar o `rotulos.yaml` sem refazer os tópicos, rode `mapa topicos --aplicar-rotulos` (ou use o editor de rótulos do painel, na vista Projeto). Ele troca só os rótulos, sem chamar o modelo, e exporta de novo; as redes também não precisam ser refeitas, porque o nome de cada comunidade sai dos rótulos atuais. Um macrotema de um tópico só leva o nome dele. Duas coisas esperam a próxima `mapa topicos` completa: o rótulo do modelo de um tópico cuja entrada saiu do arquivo (até lá, ele fica com as palavras-chave) e o rótulo de um macrotema de vários tópicos escrito pelo modelo, que foi escrito a partir dos rótulos antigos. O `mapa status` e a linha das etapas do painel avisam quando há rótulos do arquivo ainda não aplicados.
+
 ## 12. Em alta e em queda
 
 Um tópico está **em alta** quando a participação dele no corpus (documentos do tópico ÷ documentos do ano) cresce de forma distinguível do acaso ao longo do período, e **em queda** quando diminui. A regra ([registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0009-tendencia-dos-topicos.md)):
 
 - uma regressão logística da participação anual, com o ano como variável; a inclinação diz se a participação cresce ou cai;
-- o intervalo de 95% da inclinação é corrigido pela dispersão da série (quase-binomial): dossiês temáticos fazem picos isolados, que não devem contar como tendência;
+- o intervalo de 95% da inclinação é corrigido pela dispersão da série (quase-binomial): dossiês temáticos fazem picos isolados, que não devem contar como tendência. Como a dispersão é estimada com poucos anos, o intervalo usa o quantil da t de Student (com anos − 2 graus de liberdade), um pouco mais largo que o da normal;
 - o tópico só é marcado quando o intervalo não inclui zero; com menos de 5 anos com documentos ou menos de 10 documentos do tópico, não há tendência calculada;
-- o tamanho da mudança é dado em **pontos percentuais**: a diferença entre a participação ajustada no primeiro e no último ano.
+- o tamanho da mudança é dado em **pontos percentuais**: a diferença entre a participação ajustada no primeiro e no último ano;
+- uma tendência é **frágil** quando depende de um ano só: refeita sem um dos anos, ela deixa de ser marcada (fica estável ou sem dados suficientes) em ao menos uma das retiradas. A lista a marca e diz de quais anos ela depende. Com o período curto de um recorte (5 ou 6 anos), quase toda marcação é frágil.
 
-No piloto, 13 dos 57 tópicos são marcados: 7 em alta (como identificação partidária e polarização, +4,1 pontos percentuais de 2010 a 2025, e comunicação política nas redes sociais, +2,5) e 6 em queda (como cobertura da imprensa e política, −2,0). Com 57 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço). Um dossiê no primeiro ou no último ano da janela (o período inteiro ou o filtrado) ainda pode aparecer como tendência: confira a série antes de citar.
+No piloto, 11 dos 61 tópicos são marcados: 7 em alta (como federalismo, capacidades estatais e implementação de políticas, +3,9 pontos percentuais de 2010 a 2025, e bolsonarismo, direita e populismo, +3,0) e 4 em queda (como desenvolvimento, Estado e modelos de capitalismo, −1,6). Quatro das 11 são frágeis: três das quedas (teoria social, modernidade e teoria crítica; cobertura da imprensa e política; representação política, sociedade civil e crise democrática) e uma alta (geografia do voto e eleições municipais, que depende de 13 dos 16 anos). Com 61 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço). Um dossiê no primeiro ou no último ano da janela (o período inteiro ou o filtrado) ainda pode aparecer como tendência: confira a série antes de citar.
 
 ## 13. Onde ficam os resultados
 

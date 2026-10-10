@@ -54,7 +54,7 @@
 					{/if}
 					{#if m.tendencia && (m.tendencia.direcao === 'alta' || m.tendencia.direcao === 'queda') && m.tendencia.pp_periodo != null}
 						<span class="tendencia" data-testid="tendencia-macro" title="Variação da participação no período, pela tendência ajustada">
-							{m.tendencia.direcao === 'alta' ? '↑' : '↓'} {formatarDecimal(Math.abs(m.tendencia.pp_periodo), 1)} p.p.
+							{m.tendencia.direcao === 'alta' ? '↑' : '↓'} {formatarDecimal(Math.abs(m.tendencia.pp_periodo), 1)} p.p.{#if m.tendencia.fragil === true}<span class="fragil" title="A marcação some sem um dos anos da série"> frágil</span>{/if}
 						</span>
 					{/if}
 				</span>
@@ -106,7 +106,7 @@
 
 	li {
 		display: grid;
-		grid-template-columns: 1.25rem minmax(12rem, 1.4fr) 11.5rem 6.5rem minmax(6rem, 1fr) 12.5rem;
+		grid-template-columns: 1.25rem minmax(12rem, 1.4fr) 12.5rem 6.5rem minmax(6rem, 1fr) 12.5rem;
 		align-items: center;
 		gap: 1rem;
 		padding: 0.75rem 0;
@@ -143,7 +143,18 @@
 		gap: 0.5rem;
 	}
 
+	/* a etiqueta vai embaixo da variação: lado a lado, as duas passavam da coluna e cobriam o número de tópicos */
+	.fragil {
+		padding: 0 0.3rem;
+		border: 1px dashed var(--texto-suave);
+		border-radius: 0.5rem;
+	}
+
 	.tendencia {
+		display: inline-flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.15rem;
 		font-family: var(--fonte-mono);
 		font-size: 0.72rem;
 		color: var(--texto-suave);
@@ -182,8 +193,8 @@
 		background: var(--cor);
 	}
 
-	/* a linha inteira pede ~55rem (as colunas fixas e os espaços); abaixo disso, a série e os números descem */
-	@container (max-width: 56rem) {
+	/* a linha inteira pede ~56rem (as colunas fixas e os espaços); abaixo disso, a série e os números descem */
+	@container (max-width: 57rem) {
 		li {
 			grid-template-columns: 1.25rem minmax(0, 1fr) auto;
 			gap: 0.35rem 0.75rem;

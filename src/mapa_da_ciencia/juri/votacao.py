@@ -20,6 +20,7 @@ from ..config import ErroConfig
 from ..llm.ollama import Ollama
 from ..progresso import Progresso
 from ..projeto import Projeto
+from ..trava_etapas import etapa
 from ..validacao import amostra as va
 from .agregacao import Voto
 
@@ -70,6 +71,7 @@ def gravado(projeto: Projeto, membro: str, textos: list[Texto]) -> bool:
     return docs is not None and {t.doc for t in textos} <= docs
 
 
+@etapa("juri")
 def votar(projeto: Projeto, *, progresso: Progresso | None = None) -> ResumoVotacao:
     """Classifica com cada membro o que ainda falta da amostra de validação."""
     membros = membros_do_juri(projeto)

@@ -149,10 +149,13 @@ test('o CSV sai com números crus, que o R e o pandas leem sem limpeza', async (
 	const [cabTend, ...tendencias] = await csvDe('tendencias');
 	expect(cabTend).toContain('IC 95% da inclinação (inferior)');
 	expect(tendencias.length).toBeGreaterThan(0);
+	expect(cabTend.slice(-2)).toEqual(['Frágil', 'Anos decisivos']);
 	for (const l of tendencias) {
 		expect(l[1]).toMatch(/^(alta|queda)$/);
-		for (const c of l.slice(2)) expect(c, l.join(',')).toMatch(NUMERO);
+		for (const c of l.slice(2, -1)) expect(c, l.join(',')).toMatch(NUMERO);
 		expect(Math.sign(Number(l[2]))).toBe(l[1] === 'alta' ? 1 : -1);
+		// os anos de que uma tendência frágil depende, separados por "; " (vazio numa tendência firme)
+		expect(l.at(-1)).toMatch(l.at(-2) === '1' ? /^\d{4}(; \d{4})*$/ : /^$/);
 	}
 });
 
@@ -223,4 +226,72 @@ test('os CSVs das Redes saem com números crus', async ({ page }) => {
 	);
 	const [, ...matriz] = await csvDe('fluxo-citacoes');
 	numericas(matriz, matriz[0].map((_, k) => k).slice(1));
+});
+
+/** O texto como fica dentro do SVG (com as entidades do XML). */
+const noSvg = (t: string) => t.trim().replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+/** A cor do texto da legenda que diz `texto`, no SVG exportado. */
+const corDoTexto = (svg: string, texto: string) => svg.match(new RegExp(`<text [^>]*fill="([^"]+)"[^>]*>${texto}</text>`))?.[1];
+
+test('as legendas vão na figura exportada: Classificação, Geografia e Tópicos', async ({ page }) => {
+	// Classificação: os valores da variável, cada um com a sua amostra
+	await page.goto(`${url('RAIZ')}#/classificacao`);
+	await expect(page.getByTestId('figura-por-ano').getByTestId('legenda-valor').first()).toBeVisible();
+	const valores = await page.getByTestId('figura-por-ano').getByTestId('legenda-valor').allTextContents();
+	expect(valores.length).toBeGreaterThan(1);
+	const porAno = (await baixar(page, 'por-ano', 'SVG')).dados.toString('utf8');
+	for (const v of valores) expect(porAno).toContain(`>${noSvg(v)}</text>`);
+
+	// Geografia: o título, o "nenhum" e as classes da escala, nas cores de cada tema
+	await page.goto(`${url('RAIZ')}#/geografia`);
+	await expect(page.getByTestId('figura-ufs')).toHaveAttribute('data-pronto', 'sim');
+	const artigo = (await baixar(page, 'ufs', 'SVG', 'artigo-2')).dados.toString('utf8');
+	const telao = (await baixar(page, 'ufs', 'SVG', 'telao')).dados.toString('utf8');
+	for (const svg of [artigo, telao]) {
+		expect(svg).toContain('>Peso fracionário:</text>');
+		expect(svg).toContain('>nenhum</text>');
+		expect(svg).toMatch(/<rect x="[\d.]+" y="[\d.]+" width="[\d.]+" height="[\d.]+" fill="(?!url)/);
+	}
+	writeFileSync(join(TELAS, 'exportar-ufs-slide.png'), (await baixar(page, 'ufs', 'PNG', 'slide')).dados);
+	expect(corDoTexto(artigo, 'nenhum')).toBeTruthy();
+	expect(corDoTexto(artigo, 'nenhum')).not.toBe(corDoTexto(telao, 'nenhum'));
+	const cobertura = (await baixar(page, 'cobertura', 'SVG')).dados.toString('utf8');
+	await expect(page.getByTestId('figura-cobertura').locator('[data-legenda] > li').first()).toBeAttached();
+	const categorias = await page.getByTestId('figura-cobertura').locator('[data-legenda] > li').allTextContents();
+	for (const c of categorias) expect(cobertura).toContain(`>${noSvg(c)}</text>`);
+
+	// Tópicos: os macrotemas do fluxo, que na tela ficam no próprio gráfico
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(page.getByTestId('figura-fluxo')).toHaveAttribute('data-pronto', 'sim');
+	const fluxo = (await baixar(page, 'fluxo', 'SVG')).dados.toString('utf8');
+	for (const m of ler('topicos.json').macrotemas) expect(fluxo).toContain(`>${noSvg(m.rotulo)}</text>`);
+	expect(fluxo).toContain('>Sem tópico</text>');
+});
+
+test('os pequenos múltiplos saem inteiros, com o título de cada painel', async ({ page }) => {
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	const multiplos = page.getByTestId('figura-por-revista');
+	await expect(multiplos.locator('.titulo-multiplo').first()).toBeVisible();
+	// cada painel sai com o nome da revista (a sigla da tela sozinha não diz qual é) e o número de documentos
+	const titulos = await multiplos.locator('.titulo-multiplo').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.exportar ?? ''));
+	const siglas = (await multiplos.locator('.titulo-multiplo').allTextContents()).map((t) => t.trim().split(/\s+/)[0]);
+	expect(titulos.length).toBeGreaterThan(1);
+	expect(titulos.some((t, i) => !t.startsWith(siglas[i]))).toBe(true);
+	const svg = (await baixar(page, 'por-revista', 'SVG')).dados.toString('utf8');
+	// um nome longo é cortado com "…" na largura do painel, e o número de documentos fica
+	const escapar = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	for (const t of titulos) {
+		const [, nome, n] = t.match(/^(.*) \((.*)\)$/)!;
+		expect(svg).toMatch(new RegExp(`>${escapar(noSvg(nome.slice(0, 5)))}[^<]*\\(${escapar(n)}\\)</text>`));
+	}
+	expect(svg.match(/<svg /g)!.length).toBeGreaterThanOrEqual(titulos.length + 1); // um SVG por painel, dentro do da figura
+	for (const m of ler('topicos.json').macrotemas) expect(svg).toContain(`>${noSvg(m.rotulo)}</text>`); // a legenda
+	writeFileSync(join(TELAS, 'exportar-por-revista-slide.png'), (await baixar(page, 'por-revista', 'PNG', 'slide')).dados);
+
+	await page.goto(`${url('RAIZ')}#/redes`);
+	const colaboracao = page.getByTestId('figura-colaboracao');
+	await expect(colaboracao.locator('h3').first()).toBeVisible();
+	const series = await colaboracao.locator('h3').allTextContents();
+	const svgColaboracao = (await baixar(page, 'colaboracao', 'SVG')).dados.toString('utf8');
+	for (const s of series) expect(svgColaboracao).toContain(`>${noSvg(s)}</text>`);
 });

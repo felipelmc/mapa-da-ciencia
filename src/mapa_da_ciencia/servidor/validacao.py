@@ -28,6 +28,7 @@ from pydantic import BaseModel, Field
 from mapa_da_ciencia.config import ErroConfig
 from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.servidor.origem import conferir_origem
+from mapa_da_ciencia.trava_etapas import EtapaEmAndamento, uma_etapa_por_vez
 
 
 class RespostaVariavel(BaseModel):
@@ -142,8 +143,11 @@ def rotas_validacao(projeto: Projeto) -> APIRouter:
         if va.ler(projeto) is not None and not corpo.refazer:
             raise HTTPException(409, "A amostra já foi sorteada. Mande `refazer: true` para sortear outra.")
         try:
-            a = va.sortear(projeto, refazer=corpo.refazer, n=corpo.n)
-            va.exportar(projeto, a)
+            with uma_etapa_por_vez(projeto, "validacao"):  # o sorteio e a exportação, numa trava só
+                a = va.sortear(projeto, refazer=corpo.refazer, n=corpo.n)
+                va.exportar(projeto, a)
+        except EtapaEmAndamento as e:  # outra etapa roda no projeto (pelo painel, no terminal ou num notebook)
+            raise HTTPException(409, str(e)) from e
         except ErroConfig as e:
             raise HTTPException(422, str(e)) from e
         return {

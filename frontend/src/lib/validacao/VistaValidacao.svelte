@@ -6,6 +6,7 @@
 	 * - a tabela do par escolhido: concordância, kappa com IC 95%, PABAK e alfa por variável;
 	 * - a variável escolhida: matriz de confusão, precisão e revocação por categoria e as divergências com a
 	 *   evidência que o modelo citou (no painel local, de todos os codificadores; no site, só das referências);
+	 * - a concordância do par por idioma e entre respostas informativas (contrato 1.7);
 	 * - a comparação entre modelos (McNemar) e a evidência literal de cada modelo na amostra.
 	 *
 	 * No site publicado, que é para quem lê, os participantes aparecem pelo nome legível (`nomes.ts`), e não pelo id
@@ -22,6 +23,7 @@
 	import { KAPPA_FRACO } from '$lib/classificacao/agregar';
 	import MatrizConfusao from './MatrizConfusao.svelte';
 	import { nomesLegiveis } from './nomes';
+	import { celulaSubconjunto, colunasSubconjuntos, composicaoDaAmostra } from './subconjuntos';
 
 	let {
 		validacao,
@@ -170,6 +172,18 @@
 			.join(', ')
 			.replace(/, ([^,]+)$/, ' e $1')
 	);
+	// ---- subconjuntos: por idioma e entre respostas informativas
+	const colunasSub = $derived(colunasSubconjuntos(doPar));
+	const linhasSub = $derived(
+		doPar.map((m) => [nomeVariavel(m.variavel), celulaSubconjunto(m, null), ...colunasSub.map((c) => celulaSubconjunto(m, c.chave))])
+	);
+	const dadosSub = $derived({
+		colunas: ['Variável', 'Subconjunto', 'Idioma', 'n', 'Concordância', 'Kappa', 'PABAK'],
+		linhas: doPar.flatMap((m) =>
+			(m.subconjuntos ?? []).map((s) => [nomeVariavel(m.variavel), s.tipo, s.idioma ?? null, s.n, cru(s.concordancia), cru(s.kappa), cru(s.pabak)])
+		)
+	});
+	const idiomasDaAmostra = $derived(composicaoDaAmostra(validacao.amostra.n, validacao.amostra.idiomas));
 	/** O valor-p do McNemar: "< 0,001" em vez de "= 0,000". */
 	const textoP = (p: number) => (p < 0.001 ? '< 0,001' : `= ${formatarDecimal(p, 3)}`);
 	const titulo = (doc: string) => {
@@ -182,7 +196,7 @@
 	<header class="cabecalho">
 		<h1>Validação</h1>
 		<p class="lide" data-testid="lide-validacao">
-			Amostra de {formatarInteiro(validacao.amostra.n)} documentos, estratificada por {ESTRATOS[validacao.amostra.estratificar_por] ?? validacao.amostra.estratificar_por}{#if api}{' '}(semente
+			Amostra de {formatarInteiro(validacao.amostra.n)} documentos{#if idiomasDaAmostra.length > 1}{' '}({#each idiomasDaAmostra as [rotulo, n], i (rotulo)}{i ? (i === idiomasDaAmostra.length - 1 ? ' e ' : ', ') : ''}{formatarInteiro(n)} {rotulo}{/each}){/if}, estratificada por {ESTRATOS[validacao.amostra.estratificar_por] ?? validacao.amostra.estratificar_por}{#if api}{' '}(semente
 				{validacao.amostra.semente}){/if}.
 			{#each participantes as p, i (p.nome)}{i ? (i === participantes.length - 1 ? ' e ' : ', ') : 'Responderam: '}<strong>{nome(p.nome)}</strong> ({TIPOS[p.tipo]}, {formatarInteiro(p.n)}){/each}.
 		</p>
@@ -330,6 +344,52 @@
 			</section>
 		{/if}
 	</div>
+
+	{#snippet subconjuntos()}
+		<Figura
+			id="subconjuntos"
+			titulo="Por idioma e entre respostas informativas"
+			resumo="Kappa de {quem(ref)} × {quem(comp)} (a concordância, nas variáveis de texto) em partes da amostra, com o número de documentos de cada uma. Respostas informativas: só os documentos em que nenhum dos dois respondeu “não informado”."
+			colunas={['Variável', 'Todos', ...colunasSub.map((c) => c.rotulo)]}
+			linhas={linhasSub}
+			dados={dadosSub}
+		>
+			<div class="rolagem-lateral">
+				<table class="metricas" data-testid="tabela-subconjuntos">
+					<thead>
+						<tr>
+							<th scope="col">Variável</th>
+							<th scope="col" class="num">Todos</th>
+							{#each colunasSub as c (c.chave)}<th scope="col" class="num">{c.rotulo}</th>{/each}
+						</tr>
+					</thead>
+					<tbody>
+						{#each linhasSub as [variavel, ...celulas], i (doPar[i].variavel)}
+							<tr>
+								<th scope="row">{variavel}</th>
+								{#each celulas as c, j (j)}<td class="num" class:suave={c === 'não se aplica'}>{c}</td>{/each}
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+			<p class="suave">
+				Entre parênteses, o número de documentos; "—" quando são menos de 20 ou quando as respostas não variaram.
+				Se a concordância cai entre as respostas informativas, boa parte do acordo era sobre resumos que não dizem nada
+				sobre a variável.
+			</p>
+		</Figura>
+	{/snippet}
+	{#if colunasSub.length}
+		{#if api}
+			{@render subconjuntos()}
+		{:else}
+			<details class="recolhido" data-testid="subconjuntos-recolhido">
+				<summary>Por idioma e entre respostas informativas</summary>
+				<div class="tecnico">{@render subconjuntos()}</div>
+			</details>
+		{/if}
+	{/if}
 
 	{#snippet tecnico()}
 		{#if validacao.comparacoes_modelos?.length}
@@ -494,6 +554,8 @@
 
 	.tecnico {
 		display: grid;
+		/* sem o minmax, a tabela larga não encolhe dentro do bloco e alarga a página no celular */
+		grid-template-columns: minmax(0, 1fr);
 		gap: 1.5rem;
 	}
 

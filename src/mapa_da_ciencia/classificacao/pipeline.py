@@ -28,6 +28,7 @@ from ..manifesto import registrar_execucao
 from ..progresso import Progresso, ProgressoNulo
 from ..projeto import Projeto
 from ..topicos.resultado import assinatura_corpus
+from ..trava_etapas import etapa
 from ..validacao.amostra import ler as ler_amostra
 from .executor import Classificacao, Classificador, textos_para_classificar
 from .prompt import VERSAO_PROMPT
@@ -108,6 +109,7 @@ def _linhas(c: Classificacao, variaveis: list[str]) -> list[dict]:
     ]
 
 
+@etapa("classificacao")
 def classificar(
     projeto: Projeto, opcoes: OpcoesClassificacao | None = None, progresso: Progresso | None = None
 ) -> ResumoClassificacao:

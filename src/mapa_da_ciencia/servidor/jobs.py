@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import os
 import sqlite3
 import threading
 import time
@@ -25,6 +26,8 @@ from typing import Any, Literal
 
 from ..progresso import Progresso
 from ..projeto import Projeto
+from ..trava_etapas import mensagem as mensagem_da_trava
+from ..trava_etapas import origem, quem_roda
 
 EstadoJob = Literal["na_fila", "rodando", "concluido", "falhou", "cancelado"]
 ATIVOS = ("na_fila", "rodando")
@@ -64,6 +67,22 @@ class Ocupado(Exception):
     def __init__(self, job: Job) -> None:
         super().__init__(f"Já há uma etapa rodando ({job.etapa}). Espere terminar ou cancele.")
         self.job = job
+
+
+class OcupadoFora(Exception):
+    """Uma etapa roda fora deste painel: num terminal, num notebook ou em outro processo (`trava_etapas`)."""
+
+    def __init__(self, mensagem: str, dono: dict[str, Any]) -> None:
+        super().__init__(mensagem)
+        self.dono = dono
+
+
+def fora_do_painel(projeto: Projeto) -> dict[str, Any] | None:
+    """O dono da trava das etapas quando não é um job deste painel, ou `None`."""
+    dono = quem_roda(projeto)
+    if dono is None or (dono.get("origem") == "painel" and dono.get("pid") == os.getpid()):
+        return None
+    return dono
 
 
 @dataclass
@@ -190,6 +209,9 @@ class Jobs:
             ativo = self.ativo()
             if ativo is not None:
                 raise Ocupado(ativo)
+            # baixar um modelo não escreve no projeto: pode rodar com uma etapa no terminal
+            if etapa != "modelo" and (dono := fora_do_painel(self.projeto)) is not None:
+                raise OcupadoFora(mensagem_da_trava(self.projeto, dono), dono)
             job = Job(uuid.uuid4().hex[:12], etapa, opcoes or {}, "na_fila", _agora())
             with self._conectar() as con:
                 con.execute(
@@ -219,7 +241,8 @@ class Jobs:
         self.emitir(id_, "estado", {"estado": "rodando"})
         progresso = ProgressoSSE(self, id_, parar)
         try:
-            resumo = resumo_como_dict(self.etapas[job.etapa](self.projeto, job.opcoes, progresso))
+            with origem("painel"):  # a trava das etapas diz que esta roda pelo painel
+                resumo = resumo_como_dict(self.etapas[job.etapa](self.projeto, job.opcoes, progresso))
         except Cancelado:
             progresso.fim()
             self._mudar(id_, estado="cancelado", fim=_agora())

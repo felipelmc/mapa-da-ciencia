@@ -22,6 +22,7 @@ from pathlib import Path
 from .. import __version__
 from ..formatar import num
 from ..projeto import Projeto
+from ..trava_etapas import etapa
 from .amostra import ESTRATOS, PASTA_EXPORTACAO
 from .metricas import Metrica, Validacao, calcular
 
@@ -45,6 +46,37 @@ def _kappa(m: Metrica) -> str:
 
 def _pares(v: Validacao) -> list[tuple[str, str]]:
     return list(dict.fromkeys((m.referencia, m.comparado) for m in v.metricas))
+
+
+IDIOMAS = {"pt": "Português", "en": "Inglês", "es": "Espanhol", "fr": "Francês"}
+
+
+def _celula(m: Metrica, kappa: float | None, concordancia: float | None, n: int) -> str:
+    """Kappa (ou a concordância, numa variável de texto) e o n; "— (n)" quando o subconjunto é pequeno demais."""
+    valor = _pct(concordancia) if not m.rotulos else _f(kappa)
+    return f"{valor} ({num(n, 0)})"
+
+
+def subconjuntos(v: Validacao, ref: str, comp: str) -> tuple[list[str], list[list[str]]] | None:
+    """A tabela dos subconjuntos de um par (cabeçalho e linhas), ou `None` se nenhuma métrica tem subconjunto."""
+    metricas = [m for m in v.metricas if (m.referencia, m.comparado) == (ref, comp)]
+    chaves = list(dict.fromkeys((s.tipo, s.idioma) for m in metricas for s in m.subconjuntos))
+    if not chaves:
+        return None
+
+    def nome(tipo: str, idioma: str | None) -> str:
+        return "Informativas" if tipo == "informativas" else IDIOMAS.get(idioma or "", idioma or "?")
+
+    cabecalho = ["Variável", "Todos", *(nome(*c) for c in chaves)]
+    linhas = []
+    for m in metricas:
+        por = {(s.tipo, s.idioma): s for s in m.subconjuntos}
+        linha = [m.variavel, _celula(m, m.kappa, m.concordancia, m.n)]
+        for c in chaves:
+            s = por.get(c)
+            linha.append("não se aplica" if s is None else _celula(m, s.kappa, s.concordancia, s.n))
+        linhas.append(linha)
+    return cabecalho, linhas
 
 
 def _tabela_md(linhas: list[list[str]], cabecalho: list[str]) -> str:
@@ -104,6 +136,16 @@ def markdown(v: Validacao, *, projeto: str) -> str:
             "",
             _tabela_md(linhas, ["Variável", "n", "Concordância", "Kappa [IC 95%]", "PABAK", "Alfa"]),
         ]
+        if tabela := subconjuntos(v, ref, comp):
+            cabecalho, sub = tabela
+            partes += [
+                "",
+                'Por idioma do texto lido e entre respostas informativas (nenhuma das duas é "não informado"): '
+                'kappa (a concordância, nas variáveis de texto) e o número de documentos; "—" quando são menos '
+                "de 20.",
+                "",
+                _tabela_md([[f"`{x[0]}`", *x[1:]] for x in sub], cabecalho),
+            ]
 
     principais = [(ref, comp) for ref, comp in _pares(v) if comp == v.modelo_principal and tipos[ref] != "modelo"]
     for ref, comp in principais:
@@ -229,9 +271,28 @@ def latex(v: Validacao) -> str:
                 f"{_f(m.alfa).replace('—', '---')} \\\\"
             )
         partes += [r"    \bottomrule", r"  \end{tabular}", r"\end{table}"]
+        if tabela := subconjuntos(v, ref, comp):
+            cabecalho, sub = tabela
+            partes += [
+                "",
+                r"\begin{table}[htbp]",
+                r"  \centering",
+                f"  \\caption{{Concordância entre {_tex(ref)} e {_tex(comp)} por idioma e entre respostas informativas "
+                r"($\kappa$, ou a concordância nas variáveis de texto, e $n$)}",
+                f"  \\label{{{rotulo.replace('tab:concordancia-', 'tab:subconjuntos-')}}}",
+                f"  \\begin{{tabular}}{{l{'r' * (len(cabecalho) - 1)}}}",
+                r"    \toprule",
+                "    " + " & ".join(_tex(c) for c in cabecalho) + r" \\",
+                r"    \midrule",
+                *("    " + " & ".join(_tex(c).replace("—", "---") for c in linha) + r" \\" for linha in sub),
+                r"    \bottomrule",
+                r"  \end{tabular}",
+                r"\end{table}",
+            ]
     return "\n".join(partes) + "\n"
 
 
+@etapa("validacao")
 def gerar(projeto: Projeto) -> tuple[Validacao, dict[str, Path]]:
     """Calcula as métricas e grava `relatorio.md`, `tabelas.tex` e `metricas.json` em `validacao/`."""
     v = calcular(projeto)

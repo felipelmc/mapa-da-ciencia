@@ -15,7 +15,7 @@ Convenções:
 - Nenhum arquivo do contrato pode conter e-mails ou codificações humanas individuais (as divergências de
   `validacao.json` vêm só de codificadores de referência; as de pessoas ficam na API local do painel).
 
-Versão atual: **1.6**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
+Versão atual: **1.7**. Os JSON Schemas ficam em [`contrato/schema/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/schema), e um exemplo sintético completo em [`contrato/exemplo/dados/`](https://github.com/felipelmc/mapa-da-ciencia/tree/main/contrato/exemplo/dados).
 
 | Arquivo | Modelo |
 |---|---|
@@ -41,7 +41,7 @@ a interface lê.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `api` | sim/não | **obrigatório** | True no painel local (há API); False no site estático publicado. |
 | `gerado_em` | datetime | **obrigatório** |  |
 | `projeto` | [ProjetoInfo](#projetoinfo) | **obrigatório** | Identificação do projeto. |
@@ -119,7 +119,7 @@ Revistas presentes no corpus, com o número de documentos de cada uma.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `revistas` | lista de [Revista](#revista) | **obrigatório** | Uma revista do corpus. |
 
 ### Revista
@@ -142,7 +142,7 @@ Tabela principal: um documento por posição, com coordenadas no mapa, tópico e
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
 | `colunas` | [ColunasDocumentos](#colunasdocumentos) | **obrigatório** | Colunas da tabela de documentos (todas com `n` itens, na mesma ordem). |
 | `dicionarios` | [DicionariosDocumentos](#dicionariosdocumentos) | **obrigatório** | Valores por trás dos índices das colunas categóricas. |
@@ -186,7 +186,7 @@ Afiliações com contagem fracionária, base da vista de geografia.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n` | inteiro | **obrigatório** |  |
 | `colunas` | [ColunasAfiliacoes](#colunasafiliacoes) | **obrigatório** | Colunas da tabela longa de afiliações: uma linha por documento × (instituição, UF, país), pesos somados. |
 | `dicionarios` | [DicionariosAfiliacoes](#dicionariosafiliacoes) | **obrigatório** | Instituições, UFs e países por trás dos índices. |
@@ -233,7 +233,7 @@ Um dos 64 fragmentos de detalhes, carregados sob demanda.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `fragmento` | texto | **obrigatório** |  |
 | `documentos` | mapa de texto para [Detalhe](#detalhe) | **obrigatório** | O que a interface mostra ao abrir um documento: resumo, autores, licença e evidências. |
 
@@ -303,7 +303,7 @@ Tópicos e macrotemas do corpus, com as séries por ano.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `anos` | lista de inteiro | **obrigatório** |  |
 | `total_por_ano` | lista de inteiro | **obrigatório** |  |
 | `parametros` | mapa de texto para número ou inteiro ou texto | **obrigatório** |  |
@@ -353,6 +353,8 @@ Tendência da participação anual no período inteiro, sem filtros: o gabarito 
 | `pp_por_ano` | número ou vazio | vazio |  |
 | `anos` | par de inteiro e inteiro ou vazio | vazio |  |
 | `motivo` | `"poucos_anos"` \| `"poucos_documentos"` \| `"sem_variacao"` \| `"sem_convergencia"` ou vazio | vazio | Por que não há tendência, quando é `insuficiente`. |
+| `fragil` | sim/não ou vazio | vazio | Só em alta ou em queda: `true` quando, refeita sem um dos anos, a tendência muda de direção (ou fica sem dados suficientes) em ao menos uma das retiradas. Ausente nos dados até a 1.6. |
+| `anos_decisivos` | lista de inteiro | vazio | Os anos cuja retirada muda a direção de uma tendência frágil. |
 
 ### Topico
 
@@ -392,12 +394,13 @@ Como a tendência é calculada. O painel lê daqui os parâmetros para recalcula
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `modelo` | `"logistica_binomial"` | `"logistica_binomial"` |  |
-| `dispersao` | `"quase"` \| `"binomial"` | `"quase"` |  |
-| `nivel` | número | `0.95` |  |
-| `z` | número | `1.959963984540054` |  |
-| `anos_minimos` | inteiro | `5` |  |
-| `docs_minimos` | inteiro | `10` |  |
+| `modelo` | `"logistica_binomial"` | `"logistica_binomial"` | Regressão logística da participação anual, com o ano como variável. |
+| `dispersao` | `"quase"` \| `"binomial"` | `"quase"` | `quase`: o erro-padrão é corrigido pela dispersão de Pearson; `binomial`: não é. |
+| `nivel` | número | `0.95` | Nível do intervalo da inclinação. |
+| `quantil` | `"t"` \| `"normal"` | `"t"` | Quantil do intervalo: `t` (de Student, com anos − 2 graus de liberdade, quando a dispersão é estimada) ou `normal`. Ausente nos dados até a 1.6, que usavam a normal. |
+| `z` | número | `1.959963984540054` | Quantil da normal no nível pedido: o valor crítico com `quantil: normal`. |
+| `anos_minimos` | inteiro | `5` | Anos com documentos no recorte para haver tendência. |
+| `docs_minimos` | inteiro | `10` | Documentos do tópico no período para haver tendência. |
 
 ## `codebook.json`
 
@@ -407,7 +410,7 @@ Cópia publicada do codebook, com o hash que identifica a versão usada.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `nome` | texto | **obrigatório** |  |
 | `versao` | texto | **obrigatório** |  |
 | `hash` | texto | **obrigatório** |  |
@@ -445,7 +448,7 @@ Resumo da classificação por codebook: modelo, cobertura e contagens por catego
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `modelo` | texto | **obrigatório** |  |
 | `hash_codebook` | texto | **obrigatório** |  |
 | `cobertura` | número | **obrigatório** | Fração dos documentos com classificação válida. |
@@ -476,7 +479,7 @@ Resultados da validação da classificação: concordância por variável e por 
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `amostra` | [AmostraInfo](#amostrainfo) | **obrigatório** | Como a amostra de validação foi sorteada. |
 | `metricas` | lista de [MetricaVariavel](#metricavariavel) | **obrigatório** | Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável. |
 | `modelos` | lista de texto | **obrigatório** |  |
@@ -497,6 +500,7 @@ Como a amostra de validação foi sorteada.
 | `n` | inteiro | **obrigatório** |  |
 | `estratificar_por` | texto | **obrigatório** |  |
 | `semente` | inteiro | **obrigatório** |  |
+| `idiomas` | mapa de texto para inteiro | vazio | Documentos da amostra por idioma do texto lido. Vazio até a 1.6. |
 
 ### MetricaVariavel
 
@@ -518,6 +522,7 @@ Nas de múltipla escolha, `variavel` é `id:categoria` (uma variável sim/não p
 | `comparado` | texto | `""` |  |
 | `por_classe` | lista de [MetricaClasse](#metricaclasse) | vazio | Precisão, revocação e F1 de uma categoria, tomando o primeiro do par como referência. |
 | `circular` | sim/não | `false` | Os dois participantes são da mesma família de modelo (a referência e o supervisor do júri, por exemplo): um limite superior, e não uma medida independente. |
+| `subconjuntos` | lista de [MetricaSubconjunto](#metricasubconjunto) | vazio | A concordância por idioma (quando a amostra tem mais de um) e entre respostas informativas. Vazio nos dados até a 1.6. |
 
 ### Matriz
 
@@ -539,6 +544,22 @@ Precisão, revocação e F1 de uma categoria, tomando o primeiro do par como ref
 | `precisao` | número ou vazio | **obrigatório** |  |
 | `revocacao` | número ou vazio | **obrigatório** |  |
 | `f1` | número ou vazio | **obrigatório** |  |
+
+### MetricaSubconjunto
+
+A concordância de um par numa parte da amostra. Sem matriz nem métricas por classe: num grupo pequeno, elas
+mostrariam as respostas de cada documento.
+
+| Campo | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `tipo` | `"idioma"` \| `"informativas"` | **obrigatório** | `idioma`: os documentos cujo texto lido está em `idioma`; `informativas`: os documentos em que nenhuma das duas respostas é de sem-informação ("não informado", "não se aplica"). |
+| `idioma` | texto ou vazio | vazio | Código do idioma, no subconjunto por idioma. |
+| `n` | inteiro | **obrigatório** |  |
+| `concordancia` | número ou vazio | vazio | Ausente com menos de 20 documentos, como as outras métricas. |
+| `kappa` | número ou vazio | vazio |  |
+| `kappa_ic95` | par de número e número ou vazio | vazio |  |
+| `pabak` | número ou vazio | vazio |  |
+| `alfa` | número ou vazio | vazio |  |
 
 ### Divergencia
 
@@ -629,7 +650,7 @@ Gabarito calculado no Python para testar o filtro cruzado do frontend.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `topico_ano_revista` | lista de tupla | **obrigatório** | (tópico, ano, revista, n). |
 | `uf` | mapa de texto para número | **obrigatório** | Contagem fracionária por UF (sigla). |
 | `pais` | mapa de texto para número | **obrigatório** | Contagem fracionária por país (ISO alfa-2). |
@@ -651,7 +672,7 @@ Coautoria (pessoas), colaboração entre instituições e as séries da colabora
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `pessoas` | [ColunasPessoas](#colunaspessoas) | **obrigatório** | As pessoas (autores identificados), em colunas. `x` e `y` só para quem teve coautor (o desenho da rede). |
 | `autorias` | [AutoriasRede](#autoriasrede) | **obrigatório** | Quem escreveu cada documento: pares (índice do documento em `documentos.json`, índice da pessoa). |
 | `instituicoes` | [ColunasInstituicoesRede](#colunasinstituicoesrede) ou vazio | vazio | As instituições que colaboraram com outra, com o desenho da rede (os ids são os de `afiliacoes.json`). |
@@ -744,7 +765,7 @@ A rede de citação pelas referências do OpenAlex e o cânone.
 
 | Campo | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `versao_contrato` | texto | `"1.6"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
+| `versao_contrato` | texto | `"1.7"` | Versão do contrato. Versões 1.x só acrescentam campos: quem lê 1.0 lê qualquer 1.x. |
 | `n_referencias` | lista de inteiro | **obrigatório** | Referências de cada documento resolvidas no OpenAlex (0: casado, sem nenhuma); -1: sem casamento. |
 | `internas` | [ArestasCitacao](#arestascitacao) | **obrigatório** | Citações dentro do corpus: índices de documentos (quem cita → quem é citado). |
 | `canone` | lista de [ObraCitada](#obracitada) | **obrigatório** | Uma obra de fora do corpus entre as mais citadas (o cânone), na ordem de `n` (e do id, no empate). |

@@ -92,3 +92,22 @@ As 20 instituições com mais peso no piloto, conferidas uma a uma: USP, UnB, UF
 uv run python scripts/calibrar_geografia.py projetos/cp-scielo
 uv run python scripts/calibrar_geografia.py projetos/cp-scielo --rotulada docs/decisoes/dados/0008-amostra-geografia.csv
 ```
+
+## Adendo (2.3.0): a UF da `v70` quando a `v240` diverge
+
+A revisão de setembro de 2026 achou a FGV contada no Distrito Federal: 61 vínculos do piloto (48 afiliações `v240`) dizem "Fundação Getúlio Vargas, Brasília", enquanto o texto original de 34 dessas afiliações (`v70`) diz São Paulo e o de 13, Brasília. O consenso da instituição (97% DF) também mandava para o DF os vínculos sem cidade, e o remédio, um `uf: SP` no `instituicoes.yaml` do piloto, mandava para São Paulo os da FGV do Rio. A coleta descartava a `v70` de toda afiliação que a `v240` cobria.
+
+Decisão:
+
+- **A coleta guarda a cidade e a UF da `v70`** ao lado da `v240` (`Afiliacao.cidade_v70` e `uf_v70`), por lista branca, como o resto da afiliação.
+- **Quando a UF da `v70` diverge da `v240`** (ou só a `v70` dá o lugar), decide o consenso do corpus para a instituição (90% das afiliações, como no passo 4), se ele confirma a `v240` ou, sem lugar na `v240`, se contradiz a `v70`; sem consenso, vale a `v70`.
+- **No consenso, o vínculo em que as duas divergem vota na UF da `v70`.** Uma instituição com campi em vários estados (a FGV) fica sem consenso, e cada vínculo segue o próprio texto.
+- O `instituicoes.yaml` continua valendo só para os vínculos sem lugar em nenhuma das duas versões.
+
+O consenso pesa porque preferir a `v70` sempre estragaria vínculos de outras instituições. A `v70` põe autores da UFMG, da USP e da UFPE em Brasília, no Ceará ou em São Paulo (27 vínculos com a `v240` divergente). E, quando a `v240` não dá o lugar, a `v70` às vezes traz o endereço do autor, e não o da instituição (um autor da USP em Brasília, dois da Unicamp no Rio e em Curitiba, um da UFS em São Paulo). Um filtro que descartasse a `v70` quando a cidade dela é a de outra afiliação do mesmo artigo (o endereço copiado) foi medido e descartado: o padrão aparece tanto nesses erros quanto nos acertos (a FGV e a USP em São Paulo, a PUC Minas e a UFMG em Belo Horizonte). Também foi descartado corrigir só pelo `instituicoes.yaml`, um remendo por instituição, que errava nos campi.
+
+**No piloto**, a regra mudou a UF de 76 vínculos (do peso: DF −17,5, RJ +8,4, SP +7,9, BA +2,7, CE −2,7). São 60 da FGV, que deixa de ser contada em Brasília e cuja escola do Rio deixa de ir para São Paulo pelo remendo do `instituicoes.yaml`, e 16 de outras instituições, quase todos campi fora da sede que a `v240` punha na sede: a Fiocruz Minas, a Unilab em São Francisco do Conde (BA), a UFFS em Erechim (RS), a Univasf no Piauí, a ESPM no Rio e o Exército em Manaus. Um é erro da `v70`: um autor da Universidade Federal do Tocantins, também da PUC-Rio, posto no Rio.
+
+O remendo da FGV no `instituicoes.yaml` do piloto (`uf: SP`) ficou para os 40 vínculos sem lugar em nenhuma das duas versões. Quatro deles dizem "Brasília DF", sem separador, que a normalização não lê (uma lacuna conhecida; eles deviam ir para o DF). Sem o remendo, a maior parte iria para o Rio, a cidade do registro do OpenAlex. Dos 196 vínculos da FGV com lugar, 146 (74,5%) são de São Paulo. Com a regra, a UF é conhecida em 99,3% do peso brasileiro (eram 99,2%).
+
+`geografia/resultado.VERSAO` passou a 3: o resultado guardado de um projeto fica desatualizado, e a correção só vale depois de coletar de novo (os registros saem do cache, sem rede).

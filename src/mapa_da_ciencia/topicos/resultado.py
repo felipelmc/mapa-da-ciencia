@@ -95,6 +95,12 @@ class Resultado:
         tmp_json.write_text(json.dumps(asdict(self), ensure_ascii=False, indent=1), encoding="utf-8")
         os.replace(tmp_json, pasta / ARQUIVO_RESULTADO)
 
+    def gravar_rotulos(self, pasta: Path) -> None:
+        """Grava só o `resultado.json` (de forma atômica): os rótulos mudaram, as atribuições não."""
+        tmp_json = pasta / (ARQUIVO_RESULTADO + ".tmp")
+        tmp_json.write_text(json.dumps(asdict(self), ensure_ascii=False, indent=1), encoding="utf-8")
+        os.replace(tmp_json, pasta / ARQUIVO_RESULTADO)
+
     @classmethod
     def ler(cls, pasta: Path) -> Resultado | None:
         arquivo = pasta / ARQUIVO_RESULTADO

@@ -29,6 +29,7 @@ class OpcoesColetaPainel(_Opcoes):
 class OpcoesTopicosPainel(_Opcoes):
     sem_rotulos: bool = False
     refazer_embeddings: bool = False
+    aplicar_rotulos: bool = False  # só aplica o rotulos.yaml, sem refazer os tópicos (o editor de rótulos)
 
 
 class OpcoesGeografiaPainel(_Opcoes):
@@ -53,9 +54,13 @@ def _coleta(p: Projeto, o: dict[str, Any], progresso: Progresso) -> Any:
 
 
 def _topicos(p: Projeto, o: dict[str, Any], progresso: Progresso) -> Any:
+    from ..topicos.aplicar import aplicar_rotulos
     from ..topicos.pipeline import OpcoesTopicos, gerar_topicos
 
-    return gerar_topicos(p, OpcoesTopicos(**OpcoesTopicosPainel(**o).model_dump()), progresso)
+    opcoes = OpcoesTopicosPainel(**o)
+    if opcoes.aplicar_rotulos:
+        return aplicar_rotulos(p, progresso)
+    return gerar_topicos(p, OpcoesTopicos(**opcoes.model_dump(exclude={"aplicar_rotulos"})), progresso)
 
 
 def _geografia(p: Projeto, o: dict[str, Any], progresso: Progresso) -> Any:

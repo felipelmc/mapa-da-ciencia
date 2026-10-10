@@ -20,13 +20,16 @@ Cada gráfico do painel (e do site publicado) tem, embaixo, o botão **Exportar*
 
 Os tamanhos de artigo usam sempre o tema **Prancha**, feito para papel, mesmo que a tela esteja no Observatório. No SVG, a largura vai em milímetros: ao inserir a figura no editor de texto, ela já entra no tamanho da coluna.
 
-O fundo da figura é sempre opaco, na cor do tema, para o texto não sumir num slide escuro. As legendas das figuras das Redes (as cores dos macrotemas, o peso das ligações, as maiores comunidades, os macrotemas de quem cita no cânone) vão junto, embaixo do gráfico, e a figura se lê sozinha.
+O fundo da figura é sempre opaco, na cor do tema, para o texto não sumir num slide escuro. As legendas vão junto, embaixo do gráfico, nas cores do tema escolhido, e a figura se lê sozinha: os valores da variável na Classificação, a escala de cores e as UFs fora da escala (em hachura) no mapa das UFs, as categorias da cobertura na Geografia, os macrotemas do fluxo nos Tópicos e, nas Redes, as cores dos macrotemas, o peso das ligações, as maiores comunidades e os macrotemas de quem cita no cânone. Um item longo quebra em mais de uma linha, e nada passa da largura da figura. Os pequenos múltiplos (os macrotemas em cada revista, a colaboração por ano) saem inteiros, cada painel com o título dele.
 
 ## O que não vai
 
-- Os controles e as outras legendas feitas em HTML fora do gráfico (a escala de cores dos mapas, os botões de modo) não entram no SVG nem no PNG. Descreva a escala na legenda da figura, ou use o CSV.
+- Os controles (os botões de modo, os filtros) não entram no SVG nem no PNG.
+- A escala das espessuras na colaboração entre estados fica na nota da figura, e não no arquivo: descreva-a na legenda do artigo, ou use o CSV.
 - As redes de coautoria e de instituições são desenhadas num canvas, por causa dos milhares de nós: no SVG, os nós e as linhas entram como imagem (em dobro da resolução da tela), e só os rótulos, a legenda e os textos são vetoriais.
-- Figuras que são tabelas (o cruzamento da vista Classificação, o ranking das instituições) só exportam o CSV.
+- O texto acompanha a escala da figura: uma figura que na tela é estreita (como "A colaboração por ano", ao lado de outra numa tela larga) sai com as letras proporcionalmente maiores que uma figura larga exportada no mesmo tamanho. Para letras parecidas em várias figuras de um artigo, exporte-as com a janela na mesma largura, ou ajuste o tamanho da figura no editor de texto.
+- Figuras que são tabelas (o cruzamento da vista Classificação, o ranking das instituições, as tabelas da Validação, a lista em alta e em queda) só exportam o CSV.
+- A nuvem da vista Mapa não é uma figura exportável: para uma imagem dela, use a captura de tela do navegador.
 
 ## Citar
 

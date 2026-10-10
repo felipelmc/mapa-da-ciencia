@@ -19,7 +19,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-VERSAO_CONTRATO = "1.6"
+VERSAO_CONTRATO = "1.7"
 # 1.1: marcas do texto de análise, fonte do rótulo, núcleo dos tópicos, ruído por ano
 # 1.2: tendências (com o método), séries dos macrotemas, sem tópico por ano, geografia completa
 # 1.3: classificação por variável, evidência dispensada e campo da evidência, participantes da validação com o
@@ -352,17 +352,36 @@ class Tendencia(_Base):
     pp_por_ano: float | None = None
     anos: tuple[int, int] | None = None
     motivo: MotivoTendencia | None = Field(None, description="Por que não há tendência, quando é `insuficiente`.")
+    fragil: bool | None = Field(
+        None,
+        description="Só em alta ou em queda: `true` quando, refeita sem um dos anos, a tendência muda de direção (ou "
+        "fica sem dados suficientes) em ao menos uma das retiradas. Ausente nos dados até a 1.6.",
+    )
+    anos_decisivos: list[int] = Field(
+        default_factory=list, description="Os anos cuja retirada muda a direção de uma tendência frágil."
+    )
 
 
 class MetodoTendencia(_Base):
     """Como a tendência é calculada. O painel lê daqui os parâmetros para recalcular com os filtros."""
 
-    modelo: Literal["logistica_binomial"] = "logistica_binomial"
-    dispersao: Literal["quase", "binomial"] = "quase"
-    nivel: float = 0.95
-    z: float = 1.959963984540054
-    anos_minimos: int = 5
-    docs_minimos: int = 10
+    modelo: Literal["logistica_binomial"] = Field(
+        "logistica_binomial", description="Regressão logística da participação anual, com o ano como variável."
+    )
+    dispersao: Literal["quase", "binomial"] = Field(
+        "quase", description="`quase`: o erro-padrão é corrigido pela dispersão de Pearson; `binomial`: não é."
+    )
+    nivel: float = Field(0.95, description="Nível do intervalo da inclinação.")
+    quantil: Literal["t", "normal"] = Field(
+        "t",
+        description="Quantil do intervalo: `t` (de Student, com anos − 2 graus de liberdade, quando a dispersão é "
+        "estimada) ou `normal`. Ausente nos dados até a 1.6, que usavam a normal.",
+    )
+    z: float = Field(
+        1.959963984540054, description="Quantil da normal no nível pedido: o valor crítico com `quantil: normal`."
+    )
+    anos_minimos: int = Field(5, description="Anos com documentos no recorte para haver tendência.")
+    docs_minimos: int = Field(10, description="Documentos do tópico no período para haver tendência.")
 
 
 class Topico(_Base):
@@ -508,6 +527,23 @@ class MetricaClasse(_Base):
     f1: float | None
 
 
+class MetricaSubconjunto(_Base):
+    """A concordância de um par numa parte da amostra. Sem matriz nem métricas por classe: num grupo pequeno, elas
+    mostrariam as respostas de cada documento."""
+
+    tipo: Literal["idioma", "informativas"] = Field(
+        description="`idioma`: os documentos cujo texto lido está em `idioma`; `informativas`: os documentos em que "
+        'nenhuma das duas respostas é de sem-informação ("não informado", "não se aplica").'
+    )
+    idioma: str | None = Field(None, description="Código do idioma, no subconjunto por idioma.")
+    n: int
+    concordancia: float | None = Field(None, description="Ausente com menos de 20 documentos, como as outras métricas.")
+    kappa: float | None = None
+    kappa_ic95: tuple[float, float] | None = None
+    pabak: float | None = None
+    alfa: float | None = None
+
+
 class MetricaVariavel(_Base):
     """Concordância entre dois participantes (codificador × modelo, codificadores ou modelos) numa variável.
     Nas de múltipla escolha, `variavel` é `id:categoria` (uma variável sim/não por categoria)."""
@@ -528,6 +564,11 @@ class MetricaVariavel(_Base):
         False,
         description="Os dois participantes são da mesma família de modelo (a referência e o supervisor do júri, "
         "por exemplo): um limite superior, e não uma medida independente.",
+    )
+    subconjuntos: list[MetricaSubconjunto] = Field(
+        default_factory=list,
+        description="A concordância por idioma (quando a amostra tem mais de um) e entre respostas informativas. "
+        "Vazio nos dados até a 1.6.",
     )
 
 
@@ -550,6 +591,9 @@ class AmostraInfo(_Base):
     n: int
     estratificar_por: str
     semente: int
+    idiomas: dict[str, int] = Field(
+        default_factory=dict, description="Documentos da amostra por idioma do texto lido. Vazio até a 1.6."
+    )
 
 
 class Participante(_Base):

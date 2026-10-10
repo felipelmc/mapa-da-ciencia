@@ -108,7 +108,7 @@
 	{#if dica}
 		<Dica x={dica.x} y={dica.y} linhas={linhasDica} />
 	{/if}
-	<ul class="legenda">
+	<ul class="legenda" data-legenda>
 		{#each CATEGORIAS as c (c.chave)}
 			<li><span class="caixa" style:background={c.cor}></span>{c.rotulo}</li>
 		{/each}

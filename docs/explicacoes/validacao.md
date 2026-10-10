@@ -28,22 +28,31 @@ A concordância com uma referência responde a uma pergunta mais fraca que a val
 
 Para cada variável e cada par de participantes, sobre os documentos que os dois responderam: concordância simples, kappa de Cohen com intervalo de 95% por *bootstrap*, PABAK, alfa de Krippendorff nominal, matriz de confusão e precisão, revocação e F1 por categoria. Entre dois modelos comparados com a mesma referência, o teste de McNemar exato. O kappa e a precisão/revocação são conferidos com o scikit-learn nos testes, e o alfa com o exemplo publicado por Krippendorff.
 
+Cada par tem também a concordância em duas partes da amostra:
+
+- **por idioma** do texto lido, quando a amostra tem mais de um. Um modelo pode ler pior os resumos em inglês do que os em português, e a média esconde isso;
+- **entre respostas informativas**: só os documentos em que nenhum dos dois respondeu "não informado" ou "não se aplica". Numa variável que os resumos raramente informam, concordar que o resumo não diz nada é fácil e infla a concordância. O subconjunto mostra se os dois concordam quando há o que classificar. Ele não existe nas booleanas ("não" é uma resposta) nem nas variáveis sem a categoria "não informado".
+
+Com menos de 20 documentos, o subconjunto mostra só quantos documentos tem: o kappa de 20 documentos já tem um intervalo de 0,3 a 0,5 de largura. Os subconjuntos não trazem matriz de confusão nem métricas por categoria: num grupo pequeno, elas mostrariam as respostas de cada documento.
+
 ## O que o piloto mostrou
 
-Na amostra de 200 artigos, `qwen3.5:9b` contra a referência `claude-opus`:
+Na amostra de 200 artigos, `qwen3.5:9b` contra a referência `claude-opus`. São 199 pares: desde a 2.3.0, um dos documentos sorteados não tem resumo (o único que tinha era um fragmento), e o modelo deixou de classificá-lo:
 
 | Variável | Concordância | Kappa (IC 95%) |
 |---|---|---|
-| Brasil como caso | 96% | 0,93 (0,87 a 0,98) |
-| Recorte geográfico | 78% | 0,74 (0,67 a 0,80) |
+| Brasil como caso | 97% | 0,94 (0,89 a 0,98) |
+| Recorte geográfico | 79% | 0,74 (0,68 a 0,81) |
 | Abordagem metodológica | 77% | 0,67 (0,59 a 0,75) |
-| Subárea | 68% | 0,63 (0,55 a 0,70) |
-| Técnica ou fonte de dados | 44% | 0,37 (0,30 a 0,45) |
+| Subárea | 68% | 0,63 (0,56 a 0,70) |
+| Técnica ou fonte de dados | 45% | 0,37 (0,30 a 0,45) |
 | Período analisado (texto) | 84% | — |
 
-A técnica de pesquisa é a variável fraca, e a matriz de confusão mostra por quê: em 44 das 111 divergências, a referência respondeu "bibliografia" e o modelo, "não informado". São ensaios teóricos: o modelo entende que o resumo não informa uma técnica, e a referência lê a literatura como a fonte do estudo. A definição de "bibliografia" no codebook de exemplo ("a literatura ou autores clássicos são a fonte principal, típico de textos teóricos e revisões") não diz o que fazer quando o resumo não fala da fonte. É um problema do codebook, não só do modelo, e o caminho é reescrever as definições, classificar de novo e medir outra vez (veja [Ler kappa e PABAK](../guias/ler-kappa-e-pabak.md#o-que-fazer-com-uma-variavel-fraca)).
+Os subconjuntos dizem onde estão as divergências. Entre as respostas informativas, a técnica sobe de 0,37 para 0,56 (124 documentos, 0,46 a 0,66): boa parte do desacordo é sobre o resumo informar ou não a técnica. Por idioma, o modelo concorda menos nos resumos em inglês (40 documentos) em quatro das cinco variáveis com kappa, como a abordagem (0,70 em português e 0,57 em inglês) e o recorte geográfico (0,78 e 0,58); a técnica é a exceção (0,37 e 0,41). Com 40 documentos, os intervalos do inglês são largos: 0,38 a 0,74 na abordagem.
 
-O período analisado é uma variável de texto livre, sem kappa, e a maior parte dos 84% vem da ausência: 115 dos 168 acertos são "não se aplica" nos dois. Dizer se o resumo tem um período concorda mais (93%, kappa 0,85); quando os dois dão um período, 77% coincidem; e, entre os 85 artigos em que algum dos dois deu um período, a concordância é de 62%. A variável também mostrou uma ambiguidade: resumos que dizem "a partir dos anos 1990" ou "nos últimos vinte anos" não têm um período fechado, e o codebook não diz como responder nesses casos.
+A técnica de pesquisa é a variável fraca, e a matriz de confusão mostra por quê: em 43 das 110 divergências, a referência respondeu "bibliografia" e o modelo, "não informado". São ensaios teóricos: o modelo entende que o resumo não informa uma técnica, e a referência lê a literatura como a fonte do estudo. A definição de "bibliografia" no codebook de exemplo ("a literatura ou autores clássicos são a fonte principal, típico de textos teóricos e revisões") não diz o que fazer quando o resumo não fala da fonte. É um problema do codebook, não só do modelo, e o caminho é reescrever as definições, classificar de novo e medir outra vez (veja [Ler kappa e PABAK](../guias/ler-kappa-e-pabak.md#o-que-fazer-com-uma-variavel-fraca)).
+
+O período analisado é uma variável de texto livre, sem kappa, e a maior parte dos 84% vem da ausência: 114 dos 167 acertos são "não se aplica" nos dois. Dizer se o resumo tem um período (e não "não se aplica" ou "não informado") concorda mais (93%, kappa 0,85); quando os dois dão um período, 77% coincidem; e, entre os 83 artigos em que algum dos dois deu um período, a concordância é de 64%. A variável também mostrou uma ambiguidade: resumos que dizem "a partir dos anos 1990" ou "nos últimos vinte anos" não têm um período fechado, e o codebook não diz como responder nesses casos.
 
 ## Limitações
 

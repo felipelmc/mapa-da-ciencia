@@ -37,10 +37,23 @@ A técnica é a variável fraca: 44 das 111 divergências são ensaios teóricos
 
 Os lotes do codificador de referência trouxeram um desvio: em alguns resumos sem ano final, o período analisado foi deduzido do ano embutido no identificador do artigo ou da data de publicação. Esses casos foram refeitos só com o título e o resumo antes da importação, e a instrução passou a proibir explicitamente o identificador e a data. O desvio mostra uma ambiguidade do codebook (períodos abertos ou relativos) que também afeta a codificação humana.
 
-A comparação com outros modelos locais não foi feita: o `qwen3.5:4b` não está instalado (o plano não baixa modelos) e o `gemma4:26b` (17 GB) não cabe na memória livre ao lado do resto. O código da comparação (McNemar exato) está pronto e testado.
+A comparação com outros modelos locais não foi feita: o `qwen3.5:4b` não está instalado (o plano não baixa modelos) e o `gemma4:26b` (17 GB) não cabe na memória livre ao lado do resto. O código da comparação (McNemar exato) está pronto e testado. (Feita na 2.0.0, com o júri: o `qwen3.5:4b` e o `gemma4:12b` contra o `qwen3.5:9b`, no [ADR 0015](0015-juri-de-modelos-e-supervisor.md#números-do-piloto).)
 
 ## Consequências
 
 - As métricas contra `claude-opus` não autorizam dizer que a classificação "acerta"; o relatório e a documentação dizem isso explicitamente. Quando uma pessoa codificar a amostra, o mesmo relatório passa a mostrar a comparação humana ao lado, e a comparação `claude-opus` × pessoa mede a própria referência.
 - Com 200 documentos, categorias raras têm pouco suporte: o IC do kappa e o suporte por classe aparecem sempre ao lado dos números.
 - Mudar o codebook invalida a classificação (ADR 0011), mas não as codificações: elas continuam guardadas, e as de variáveis que mudaram de definição precisam ser refeitas à mão.
+
+## Adendo (2.3.0): concordância por idioma e entre respostas informativas
+
+A revisão de setembro de 2026 recomendou separar a concordância por idioma e entre respostas informativas: na média, um modelo que lê pior os resumos em inglês e uma concordância inflada por "não informado" ficam escondidos. **Decisão:** cada métrica de um par passa a trazer subconjuntos (`validacao/metricas.py`):
+
+- **por idioma** do texto lido (o mesmo que o modelo e as pessoas leram, `textos_do_projeto`), quando a amostra tem dois idiomas ou mais;
+- **entre respostas informativas**: os documentos em que as duas respostas não são de sem-informação (`classificacao.codebook.sem_informacao`). Ficam de fora as booleanas, em que "não" é uma resposta, as categóricas sem categoria de sem-informação e, na múltipla escolha, a categoria "não informado" binarizada. A resposta inteira de uma múltipla precisa ser informativa antes da binarização por categoria; no texto, só a concordância.
+- **Mínimo de 20 documentos:** abaixo disso, só o n. Com 20, o intervalo do kappa por *bootstrap* já tem 0,3 a 0,5 de largura.
+
+Os subconjuntos vão para o `validacao.json` (sem matriz nem métricas por classe, que num grupo pequeno mostrariam as respostas de cada documento), para o relatório e para a vista Validação, e não mudam as métricas do conjunto, o relatório do júri nem a escolha da referência. Alternativas descartadas: estratificar a amostra por idioma (ela já está sorteada e codificada) e uma métrica de concordância própria para variáveis com "não informado" (mais difícil de ler que o kappa no subconjunto).
+
+Os números do piloto estão em `docs/explicacoes/validacao.md` (O que o piloto mostrou).
+

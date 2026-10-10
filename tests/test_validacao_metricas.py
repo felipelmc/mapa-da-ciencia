@@ -180,6 +180,66 @@ def test_fichas_nao_confirmadas_nao_entram(projeto, tmp_path):
     assert r.metrica("abordagem", "maria", "qwen3.5:4b").n == 2
 
 
+def test_subconjuntos_por_idioma_e_entre_respostas_informativas(projeto, tmp_path, monkeypatch):
+    from dataclasses import replace
+
+    a = va.sortear(projeto)
+    _codificar(projeto, a.docs, tmp_path, "claude-opus", set(a.docs[:3]))
+    # a referência diz "não informado" na técnica de 4 documentos; o modelo falso responde sempre a primeira
+    sem_info = set(a.docs[-4:])
+    linhas = [json.loads(x) for x in (tmp_path / "claude-opus.jsonl").read_text().splitlines()]
+    for linha in linhas:
+        if linha["doc"] in sem_info:
+            linha["respostas"]["tecnica_principal"]["valor"] = "nao_informado"
+    (tmp_path / "claude-opus.jsonl").write_text("\n".join(json.dumps(x) for x in linhas))
+    va.importar(projeto, tmp_path / "claude-opus.jsonl", "claude-opus", tipo="referencia")
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    # metade da amostra "em inglês"
+    ingles = set(a.docs[::2])
+    textos = va.textos_do_projeto(projeto)
+    em_dois = [replace(t, idioma="en" if t.doc in ingles else "pt") for t in textos]
+    monkeypatch.setattr(va, "textos_do_projeto", lambda _p: em_dois)
+
+    r = vm.calcular(projeto, reamostras=50, minimo_subconjunto=4)
+    assert r.amostra["idiomas"] == {"en": 6, "pt": 6}
+    m = r.metrica("abordagem", "claude-opus", "qwen3.5:4b")
+    por = {(s.tipo, s.idioma): s for s in m.subconjuntos}
+    assert set(por) == {("idioma", "en"), ("idioma", "pt"), ("informativas", None)}
+    referencia = {(c["doc"], c["variavel"]): c["valor"] for c in va.codificacoes(projeto, "claude-opus")}
+    modelo = ler_valores(projeto, "qwen3.5:4b")
+    for idioma, docs in (("en", [d for d in a.docs if d in ingles]), ("pt", [d for d in a.docs if d not in ingles])):
+        x = [referencia[(d, "abordagem")] for d in docs]
+        y = [modelo[(d, "abordagem")] for d in docs]
+        assert por[("idioma", idioma)].n == 6
+        assert por[("idioma", idioma)].concordancia == pytest.approx(np.mean(np.array(x) == np.array(y)))
+        if len(set(x) | set(y)) > 1 and por[("idioma", idioma)].kappa is not None:
+            assert por[("idioma", idioma)].kappa == pytest.approx(cohen_kappa_score(x, y), abs=1e-12)
+    # entre as respostas informativas, os 4 "não informado" saem: a técnica concorda em todos os outros
+    tec = r.metrica("tecnica_principal", "claude-opus", "qwen3.5:4b")
+    inf = next(s for s in tec.subconjuntos if s.tipo == "informativas")
+    assert tec.concordancia == pytest.approx(8 / 12) and (inf.n, inf.concordancia) == (8, 1.0)
+    # a booleana não tem o subconjunto ("não" é uma resposta), nem a categórica sem "não informado"
+    for variavel in ("brasil_como_caso", "recorte_geografico"):
+        tipos = {s.tipo for s in r.metrica(variavel, "claude-opus", "qwen3.5:4b").subconjuntos}
+        assert tipos == {"idioma"}
+    # com o mínimo padrão (20), cada subconjunto traz só o n
+    r = vm.calcular(projeto, reamostras=10)
+    s = r.metrica("abordagem", "claude-opus", "qwen3.5:4b").subconjuntos[0]
+    assert (s.n, s.concordancia, s.kappa) == (6, None, None)
+    # uma amostra num idioma só não tem o recorte por idioma
+    monkeypatch.setattr(va, "textos_do_projeto", lambda _p: [replace(t, idioma="pt") for t in textos])
+    r = vm.calcular(projeto, reamostras=10, minimo_subconjunto=4)
+    assert r.amostra["idiomas"] == {"pt": 12}
+    assert {s.tipo for s in r.metrica("abordagem", "claude-opus", "qwen3.5:4b").subconjuntos} == {"informativas"}
+
+
+def ler_valores(projeto, modelo):
+    from mapa_da_ciencia.classificacao.resultado import PASTA, ler_linhas, resultados
+
+    r = next(x for x in resultados(projeto.dados / PASTA) if x.modelo.startswith(modelo))
+    return {(x["doc"], x["variavel"]): x["valor"] for x in ler_linhas(projeto.dados / PASTA, r.modelo, r.hash_codebook)}
+
+
 def test_cli_validar_metricas(projeto, tmp_path):
     from typer.testing import CliRunner
 
@@ -202,6 +262,7 @@ def test_texto_normalizado():
     n = vm.normalizar_texto
     assert n("1994 - 2018") == n("1994–2018") == n("1994—2018")
     assert n("Não se aplica") == n("nao  se aplica")
+    assert n("nao_se_aplica") == n("Não se aplica")  # o modelo às vezes escreve o nome da categoria
 
 
 def test_relatorio(projeto, tmp_path):
@@ -221,9 +282,15 @@ def test_relatorio(projeto, tmp_path):
     assert "## Por classe: `claude-opus` (referência) × `qwen3.5:4b`" in md
     assert "## Comparação entre modelos" in md and "## Divergências com `qwen3.5:4b`" in md
     assert md.count("(marcado como incerto)") == 3 and "citando «" in md
+    # os subconjuntos: a amostra é toda em português (sem recorte por idioma), e com 12 documentos o subconjunto
+    # das respostas informativas fica abaixo do mínimo: só o n
+    assert "| Variável | Todos | Informativas |" in md and "| `periodo_analisado` | 100% (12) | — (12) |" in md
+    assert "| `brasil_como_caso` | — (12) | não se aplica |" in md
     tex = arquivos["latex"].read_text(encoding="utf-8")
-    assert tex.count(r"\begin{table}") == 3 and r"tecnica\_principal & 12 & 100\% &" in tex
+    assert tex.count(r"\begin{table}") == 6 and r"tecnica\_principal & 12 & 100\% &" in tex
     assert r"\label{tab:concordancia-claude-opus-qwen3-5-4b}" in tex
+    assert r"\label{tab:subconjuntos-claude-opus-qwen3-5-4b}" in tex
+    assert r"periodo\_analisado & 100\% (12) & --- (12)" in tex
     dados = json.loads(arquivos["json"].read_text(encoding="utf-8"))
     assert dados["modelo_principal"] == "qwen3.5:4b" and len(dados["divergencias"]) == 3
     assert {a.parent.name for a in arquivos.values()} == {"validacao"}
@@ -231,3 +298,23 @@ def test_relatorio(projeto, tmp_path):
     r = CliRunner().invoke(app, ["validar", "relatorio", "-P", str(projeto.raiz)], env={"COLUMNS": "160"})
     assert r.exit_code == 0, r.output
     assert "Relatório gravado" in r.output and "validacao/relatorio.md" in r.output
+
+
+def test_subconjuntos_no_contrato_sem_matriz(projeto, tmp_path):
+    from pathlib import Path
+
+    from mapa_da_ciencia.contrato import modelos as m
+    from mapa_da_ciencia.contrato.classificacao import validacao_contrato
+
+    a = va.sortear(projeto)
+    _codificar(projeto, a.docs, tmp_path, "claude-opus", set(a.docs[:3]))
+    mapa.classificar(projeto, somente_amostra=True, progresso=False)
+    c = validacao_contrato(vm.calcular(projeto, reamostras=10))
+    assert c.amostra.idiomas == {"pt": 12}  # a amostra do teste é toda em português
+    x = next(x for x in c.metricas if x.variavel == "abordagem" and x.comparado == "qwen3.5:4b")
+    assert [(s.tipo, s.n, s.kappa) for s in x.subconjuntos] == [("informativas", 12, None)]
+    # num grupo pequeno, a matriz e as métricas por classe mostrariam as respostas de cada documento
+    assert not {"matriz", "por_classe"} & set(m.MetricaSubconjunto.model_fields)
+    # o site publicado mantém os subconjuntos
+    publicado = Path(__file__).parents[1] / "contrato" / "exemplo-publicado" / "dados" / "validacao.json"
+    assert any(x["subconjuntos"] for x in json.loads(publicado.read_text(encoding="utf-8"))["metricas"])

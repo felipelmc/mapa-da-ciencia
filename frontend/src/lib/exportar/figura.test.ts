@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { larguraPx, nomeDeArquivo, numeroCru, paraCsv, PRESETS } from './figura';
+import { caberNaLargura, fonteDoCanvas, larguraPx, legendaEmSvg, nomeDeArquivo, numeroCru, paraCsv, PRESETS, type ItemLegenda } from './figura';
 
 describe('exportar', () => {
 	it('CSV com BOM, aspas quando precisa e CRLF', () => {
@@ -23,5 +23,62 @@ describe('exportar', () => {
 		expect(nomeDeArquivo('Por ano')).toBe('por-ano');
 		expect(nomeDeArquivo('Concordância × referência')).toBe('concordancia-referencia');
 		expect(nomeDeArquivo('?!')).toBe('figura');
+	});
+});
+
+describe('legenda em SVG', () => {
+	// uma medida fixa (cada caractere vale 0,6 do tamanho), para o teste não depender das fontes
+	const medir = (texto: string, tamanho: number) => texto.length * tamanho * 0.6;
+	const opcoes = { x: 10, y: 100, largura: 300, k: 1, fonte: 'Inter', cor: '#333', medir };
+	const item = (texto: string, forma?: 'circulo' | 'quadrado' | 'linha' | 'hachura'): ItemLegenda => ({
+		texto,
+		titulo: false,
+		amostra: forma ? { forma, cor: '#c00', opacidade: 1, largura: 2, fundo: '#fff' } : null
+	});
+	const textos = (svg: string) => [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)"[^>]*>([^<]*)<\/text>/g)];
+
+	it('nada passa da largura, e um texto longo quebra em mais de uma linha', () => {
+		const longo = 'Federalismo, capacidades estatais e implementação de políticas sociais nos municípios brasileiros';
+		const { svg } = legendaEmSvg([item('Um', 'circulo'), item(longo, 'quadrado'), item('Dois', 'linha')], opcoes);
+		for (const [, x, , texto] of textos(svg)) expect(Number(x) + medir(texto, 11)).toBeLessThanOrEqual(10 + 300 + 1e-9);
+		const doLongo = textos(svg).filter(([, , , t]) => longo.includes(t) && t !== 'Um' && t !== 'Dois');
+		expect(doLongo.length).toBeGreaterThanOrEqual(2);
+		expect(new Set(doLongo.map(([, , y]) => y)).size).toBe(doLongo.length); // uma linha embaixo da outra
+	});
+
+	it('o título abre uma linha; as formas, a hachura nos defs e o texto escapado', () => {
+		const titulo: ItemLegenda = { texto: 'Peso fracionário:', titulo: true, amostra: null };
+		const r = legendaEmSvg([item('A & B', 'quadrado'), titulo, item('fora da escala', 'hachura')], opcoes);
+		const [primeiro, segundo] = textos(r.svg);
+		expect(Number(segundo[2])).toBeGreaterThan(Number(primeiro[2]));
+		expect(r.svg).toContain('A &amp; B');
+		expect(r.svg).toMatch(/<rect [^>]*fill="#c00"/);
+		expect(r.defs).toMatch(/<pattern id="leg-hachura-2"/);
+		expect(r.svg).toContain('fill="url(#leg-hachura-2)"');
+		expect(r.altura).toBeGreaterThan(0);
+	});
+
+	it('sem itens, nada', () => {
+		expect(legendaEmSvg([], opcoes)).toEqual({ svg: '', defs: '', altura: 0 });
+	});
+});
+
+describe('caberNaLargura', () => {
+	const medir = (t: string) => t.length * 10; // 10 px por caractere
+	it('deixa o texto que cabe e corta o que não cabe, mantendo o número entre parênteses', () => {
+		expect(caberNaLargura('Dados (412)', 200, medir)).toBe('Dados (412)');
+		const cortado = caberNaLargura('Revista Brasileira de Política Internacional (403)', 200, medir);
+		expect(cortado.endsWith('… (403)')).toBe(true);
+		expect(medir(cortado)).toBeLessThanOrEqual(200);
+		expect(caberNaLargura('Um nome comprido sem número', 100, medir)).toMatch(/…$/);
+	});
+});
+
+describe('fonteDoCanvas', () => {
+	it('põe o peso antes do tamanho, como pede o atalho font do CSS', () => {
+		// "13.6px 600 Família" não é um font válido, e o canvas mediria com a fonte padrão (o nome não era cortado)
+		expect(fonteDoCanvas(13.6, '"Instrument Sans", sans-serif', '600')).toBe('600 13.6px "Instrument Sans", sans-serif');
+		expect(fonteDoCanvas(12, 'serif', '400')).toBe('12px serif');
+		expect(fonteDoCanvas(12, 'serif')).toBe('12px serif');
 	});
 });

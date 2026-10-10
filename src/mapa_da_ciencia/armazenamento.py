@@ -43,7 +43,7 @@ ESQUEMA: dict[str, str] = {
     "autores": "STRUCT(nome VARCHAR, sobrenome VARCHAR, orcid VARCHAR, afiliacoes VARCHAR[])[]",
     "afiliacoes": (
         "STRUCT(id VARCHAR, instituicao VARCHAR, divisoes VARCHAR[], cidade VARCHAR, uf VARCHAR, "
-        "pais VARCHAR, fonte VARCHAR)[]"
+        "pais VARCHAR, fonte VARCHAR, cidade_v70 VARCHAR, uf_v70 VARCHAR)[]"
     ),
     "afiliacoes_fonte": "VARCHAR",
     "autorias_openalex": (

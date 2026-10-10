@@ -33,6 +33,7 @@ from mapa_da_ciencia.llm.base import ErroProvedor
 from mapa_da_ciencia.llm.perfis import PERFIS, ram_total_gb, sugerir_perfil
 from mapa_da_ciencia.manifesto import status_das_etapas
 from mapa_da_ciencia.projeto import MODELOS_DE_PROJETO, Projeto, ProjetoNaoEncontrado
+from mapa_da_ciencia.trava_etapas import uma_etapa_por_vez
 
 app = typer.Typer(
     name="mapa",
@@ -230,6 +231,32 @@ def _mostrar_topicos(p: Projeto) -> None:
         console.print(
             "[yellow]Os tópicos são de antes da última coleta.[/] Rode [bold]mapa topicos[/] para atualizá-los."
         )
+        return
+    from mapa_da_ciencia.topicos.aplicar import rotulos_pendentes
+    from mapa_da_ciencia.topicos.rotulos import ler_manuais
+
+    try:
+        pendentes = rotulos_pendentes(resultado, ler_manuais(p.raiz))
+    except ErroConfig as e:
+        console.print(f"[yellow]Aviso:[/] {escape(str(e))}")
+        return
+    if pendentes:
+        console.print(
+            f"[yellow]{num(pendentes, 0)} rótulo(s) do rotulos.yaml ainda não aplicado(s).[/] Rode "
+            "[bold]mapa topicos --aplicar-rotulos[/] (sem refazer os tópicos nem chamar o modelo)."
+        )
+
+
+def _aplicar_rotulos(projeto: Path) -> None:
+    from mapa_da_ciencia.progresso import ProgressoRich
+    from mapa_da_ciencia.topicos.aplicar import aplicar_rotulos
+
+    with _erros_amigaveis():
+        resumo = aplicar_rotulos(Projeto.abrir(projeto), ProgressoRich(console))
+    console.print(f"\n[bold green]Rótulos aplicados[/]: {escape(str(resumo))}")
+    for aviso in resumo.avisos:
+        console.print(f"[yellow]Aviso:[/] {escape(aviso)}")
+    console.print("Próximo passo: [bold]mapa painel[/] para ver os rótulos novos no mapa.")
 
 
 def _mostrar_classificacao_status(p: Projeto) -> None:
@@ -367,7 +394,8 @@ def _mostrar_corpus(p: Projeto, coleta: dict | None) -> None:
         c = coleta["contagens"]
         console.print(
             f"[dim]Última coleta: ficaram de fora {num(c.get('fora_do_periodo', 0), 0)} fora do período, "
-            f"{num(c.get('excluidos_por_tipo', 0), 0)} por tipo e {num(c.get('nao_encontrados', 0), 0)} não "
+            f"{num(c.get('excluidos_por_tipo', 0), 0)} por tipo, {num(c.get('excluidos_sem_autor', 0), 0)} sem "
+            f"autor e {num(c.get('nao_encontrados', 0), 0)} não "
             f"encontrado(s); {num(c.get('fundidos', 0), 0)} duplicata(s) fundida(s). "
             f"{num(c.get('requisicoes', 0), 0)} requisição(ões), {num(c.get('do_cache', 0), 0)} do cache, "
             f"{num(c.get('creditos_openalex', 0), 0)} crédito(s) do OpenAlex.[/]"
@@ -640,6 +668,10 @@ def coletar(
         console.print(tabela)
     fora = [f"fora do período: {num(resumo.fora_do_periodo, 0)}"]
     fora += [f"{tipo}: {num(n, 0)}" for tipo, n in resumo.excluidos_por_tipo.items()]
+    if sem_autor := resumo.excluidos.get("sem_autor"):
+        fora.append(f"sem autor: {num(len(sem_autor), 0)}")
+    if lista := resumo.excluidos.get("lista"):
+        fora.append(f"pela lista do recorte: {num(len(lista), 0)}")
     if resumo.nao_encontrados:
         fora.append(f"não encontrados na API: {num(resumo.nao_encontrados, 0)}")
     console.print("[dim]Ficaram de fora — " + "; ".join(fora) + ".[/]")
@@ -655,6 +687,12 @@ def coletar(
         )
     if resumo.fundidos:
         console.print(f"[dim]Duplicatas fundidas (mesmo artigo registrado duas vezes): {num(resumo.fundidos, 0)}.[/]")
+    if resumo.conferencia.fragmentos or resumo.conferencia.idiomas:
+        console.print(
+            f"[dim]Resumos conferidos: {num(len(resumo.conferencia.fragmentos), 0)} fragmento(s) tirado(s) (pedaços "
+            f"de outro texto ou avisos de repositório), {num(len(resumo.conferencia.idiomas), 0)} com o idioma "
+            "declarado corrigido.[/]"
+        )
     for doc, original in resumo.possiveis_duplicatas:
         console.print(f"[yellow]Possível duplicata:[/] {doc} parece repetir {original} (mesmo título, ano e 1º autor).")
     for aviso in resumo.avisos:
@@ -683,11 +721,25 @@ def topicos(
             help="Agrupa os tópicos em macrotemas de novo, em vez de manter os da execução anterior (as cores mudam).",
         ),
     ] = False,
+    aplicar_rotulos: Annotated[
+        bool,
+        typer.Option(
+            "--aplicar-rotulos",
+            help="Só aplica o rotulos.yaml aos tópicos já calculados, sem refazê-los e sem o modelo de linguagem.",
+        ),
+    ] = False,
 ) -> None:
     """Descobre os tópicos do corpus, dá um nome a cada um e prepara o mapa do painel."""
     from mapa_da_ciencia.progresso import ProgressoRich
     from mapa_da_ciencia.topicos.pipeline import OpcoesTopicos, gerar_topicos
     from mapa_da_ciencia.topicos.resultado import PASTA, Resultado
+
+    if aplicar_rotulos:
+        if sem_rotulos or refazer_embeddings or semente is not None or refazer_macrotemas:
+            console.print("[bold red]Erro:[/] --aplicar-rotulos não refaz os tópicos: use-o sem as outras opções.")
+            raise typer.Exit(2)
+        _aplicar_rotulos(projeto)
+        return
 
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
@@ -853,8 +905,9 @@ def validar_amostra(
             raise ErroConfig(
                 f"A amostra já foi sorteada, com {len(ja.docs)} documentos. Use --refazer para sortear outra."
             )
-        a = va.sortear(p, refazer=refazer, n=n)
-        arquivo = va.exportar(p, a)
+        with uma_etapa_por_vez(p, "validacao"):  # o sorteio e a exportação, numa trava só
+            a = va.sortear(p, refazer=refazer, n=n)
+            arquivo = va.exportar(p, a)
     novo = ja is None or refazer
     console.print(
         f"[bold green]Amostra {'sorteada' if novo else 'já sorteada'}[/]: {num(len(a.docs), 0)} documentos, "
@@ -897,9 +950,10 @@ def validar_importar(
         if tipo not in ("humano", "referencia"):
             raise ErroConfig(f"Tipo de codificador inválido: {tipo!r}. Use `humano` ou `referencia`.")
         p = Projeto.abrir(projeto)
-        r = va.importar(p, arquivo, codificador, tipo=tipo)  # type: ignore[arg-type]
+        with uma_etapa_por_vez(p, "validacao"):  # a importação e a exportação, numa trava só
+            r = va.importar(p, arquivo, codificador, tipo=tipo)  # type: ignore[arg-type]
+            avisos = exportar(p) if r.documentos else []  # o painel passa a mostrar a concordância
         n_amostra = len(va.ler(p).docs)  # type: ignore[union-attr]
-        avisos = exportar(p) if r.documentos else []  # o painel passa a mostrar a concordância
     console.print(
         f"[bold green]Importado[/]: {num(r.documentos, 0)} de {num(n_amostra, 0)} documentos da amostra "
         f"codificados por [bold]{r.codificador}[/] ({tipo})."
@@ -1086,8 +1140,9 @@ def juri_relatorio(projeto: OpcaoProjeto = Path(".")) -> None:
 
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
-        destino, n = gerar(p)
-        avisos = exportar(p)
+        with uma_etapa_por_vez(p, "juri"):  # o relatório e a exportação, numa trava só
+            destino, n = gerar(p)
+            avisos = exportar(p)
     console.print(f"[bold green]Relatório do júri[/]: [bold]{destino.relative_to(p.raiz)}[/].")
     if n.nao_deliberados:
         console.print(

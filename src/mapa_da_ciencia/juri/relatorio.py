@@ -28,6 +28,7 @@ from ..armazenamento import ler_tabela
 from ..classificacao.resultado import valor_do_texto
 from ..formatar import num
 from ..projeto import Projeto
+from ..trava_etapas import etapa
 from ..validacao import amostra as va
 from ..validacao.metricas import Validacao, calcular, circular, familias_dos_participantes
 from .agregacao import chave
@@ -150,6 +151,7 @@ def _k(v: Validacao, ref: str, outro: str, var: str) -> str:
     return texto
 
 
+@etapa("juri")
 def gerar(projeto: Projeto) -> tuple[Path, NumerosJuri]:
     """Consolida o júri, calcula a validação e grava `validacao/juri.md`."""
     resumo = consolidar(projeto)

@@ -20,11 +20,11 @@ uv run mapa --versao
 O código do repositório não traz a interface do painel compilada (ela precisa do Node.js). Cada [*release*](https://github.com/felipelmc/mapa-da-ciencia/releases) tem um *wheel* com ela pronta, que instala sem clonar nada. Por exemplo, com o `uv`:
 
 ```bash
-uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v2.2.0/mapa_da_ciencia-2.2.0-py3-none-any.whl"
+uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v2.3.0/mapa_da_ciencia-2.3.0-py3-none-any.whl"
 mapa --versao
 ```
 
-Troque `2.2.0` (nos dois lugares do endereço) pela versão da *release* mais recente. Com o `pip`, num ambiente virtual, é o mesmo endereço em `pip install`. Se o terminal responder `command not found: mapa`, o `uv` pôs o comando numa pasta que o terminal ainda não procura (ele avisa isso no fim da instalação). Rode `uv tool update-shell`, feche o terminal e abra outro.
+Troque `2.3.0` (nos dois lugares do endereço) pela versão da *release* mais recente. Com o `pip`, num ambiente virtual, é o mesmo endereço em `pip install`. Se o terminal responder `command not found: mapa`, o `uv` pôs o comando numa pasta que o terminal ainda não procura (ele avisa isso no fim da instalação). Rode `uv tool update-shell`, feche o terminal e abra outro.
 
 ## 2. Ollama
 
@@ -40,7 +40,7 @@ Os modelos precisam caber na memória. O `mapa` sugere um perfil a partir da mem
 | `padrao` | 16 a 32 GB (e a T4 do Colab) | `qwen3-embedding:0.6b` | `qwen3.5:9b` | `qwen3.5:9b` | ~7 GB |
 | `forte` | 32 GB ou mais | `qwen3-embedding:0.6b` | `qwen3.5:9b` | `gemma4:26b` | ~24 GB |
 
-As métricas publicadas do piloto são do `qwen3.5:9b`. O `qwen3.5:4b` do perfil `leve` ainda não passou pela validação ([registro no repositório](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0005-modelo-de-classificacao.md#adendo-2026-09-28-versão-101-o-perfil-leve)): a validação do seu projeto mede a concordância do modelo que você usar.
+As métricas publicadas do piloto são do `qwen3.5:9b`. O `qwen3.5:4b` do perfil `leve` foi medido na mesma amostra, como membro do júri de modelos ([números no repositório](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0015-juri-de-modelos-e-supervisor.md#n%C3%BAmeros-do-piloto)): concorda um pouco menos com a referência na maioria das variáveis (por exemplo, kappa de 0,60 contra 0,67 na abordagem) e mais na técnica. A validação do seu projeto mede a concordância do modelo que você usar.
 
 Baixe os modelos do seu perfil. No perfil `padrao`:
 

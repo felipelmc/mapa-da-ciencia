@@ -70,6 +70,10 @@ async function abrir(page: Page, hash: string) {
 	await page.waitForTimeout(600); // rótulos e contornos entram depois do primeiro desenho
 }
 
+// As barras do topo grudam na tela: numa figura mais alta que a janela, a captura do elemento rola a página e as
+// barras ficariam por cima do começo da figura. Nas capturas de um elemento, elas ficam invisíveis.
+const SEM_BARRAS = 'header.barra, [data-testid="barra-recorte"] { visibility: hidden !important; }';
+
 async function capturar(page: Page, nome: string) {
 	const arquivo = join(DESTINO, `${nome}.png`);
 	await page.screenshot({ path: arquivo });
@@ -131,7 +135,7 @@ try {
 		await page.getByTestId('figura-fluxo').and(page.locator('[data-pronto="sim"]')).waitFor();
 		await page.waitForTimeout(500);
 		await capturar(page, 'topicos');
-		await page.getByTestId('figura-tendencias').screenshot({ path: join(DESTINO, 'topicos-tendencias.png') });
+		await page.getByTestId('figura-tendencias').screenshot({ path: join(DESTINO, 'topicos-tendencias.png'), style: SEM_BARRAS });
 		console.log(join(DESTINO, 'topicos-tendencias.png'));
 
 		// 5. a gaveta do tópico que mais cresceu
@@ -155,7 +159,7 @@ try {
 		await capturar(page, 'geografia');
 		for (const figura of ['mundo', 'cobertura']) {
 			const arquivo = join(DESTINO, `geografia-${figura}.png`);
-			await page.getByTestId(`figura-${figura}`).screenshot({ path: arquivo });
+			await page.getByTestId(`figura-${figura}`).screenshot({ path: arquivo, style: SEM_BARRAS });
 			console.log(arquivo);
 		}
 	} else if (quero('geografia')) {
@@ -168,7 +172,7 @@ try {
 		await page.getByTestId('figura-por-ano').waitFor();
 		await page.waitForTimeout(400);
 		await capturar(page, 'classificacao');
-		await page.getByTestId('figura-cruzamento').screenshot({ path: join(DESTINO, 'classificacao-cruzamento.png') });
+		await page.getByTestId('figura-cruzamento').screenshot({ path: join(DESTINO, 'classificacao-cruzamento.png'), style: SEM_BARRAS });
 		console.log(join(DESTINO, 'classificacao-cruzamento.png'));
 	}
 
@@ -178,7 +182,7 @@ try {
 		await page.getByTestId('tabela-metricas').waitFor();
 		await page.waitForTimeout(300);
 		await capturar(page, 'validacao');
-		await page.getByTestId('matriz-confusao').screenshot({ path: join(DESTINO, 'validacao-matriz.png') });
+		await page.getByTestId('matriz-confusao').screenshot({ path: join(DESTINO, 'validacao-matriz.png'), style: SEM_BARRAS });
 		console.log(join(DESTINO, 'validacao-matriz.png'));
 	}
 	await contexto.close();

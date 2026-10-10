@@ -180,12 +180,22 @@ def _revistas(caminho: Path) -> list[Revista]:
     return lista
 
 
+def _autores(doc: Documento) -> list[tuple[str | None, str | None]]:
+    """(nome, sobrenome) de cada autor: os da ArticleMeta ou, sem nenhum, os nomes das autorias do OpenAlex (a coleta
+    mantém o documento que só o OpenAlex diz quem escreveu, e as redes contam esses autores)."""
+    if doc.autores:
+        return [(a.nome, a.sobrenome) for a in doc.autores]
+    nomes = [a.nome.split() for a in doc.autorias_openalex if a.nome and a.nome.split()]
+    return [(" ".join(n[:-1]) or None, n[-1]) for n in nomes]
+
+
 def _autor_curto(doc: Documento) -> str:
-    if not doc.autores:
+    autores = _autores(doc)
+    if not autores:
         return ""
-    a = doc.autores[0]
-    primeiro = f"{a.sobrenome}, {a.nome[0]}." if a.sobrenome and a.nome else (a.sobrenome or a.nome or "")
-    return primeiro + (f"; +{len(doc.autores) - 1}" if len(doc.autores) > 1 else "")
+    nome, sobrenome = autores[0]
+    primeiro = f"{sobrenome}, {nome[0]}." if sobrenome and nome else (sobrenome or nome or "")
+    return primeiro + (f"; +{len(autores) - 1}" if len(autores) > 1 else "")
 
 
 def _url_segura(url: str | None) -> str | None:
@@ -200,7 +210,7 @@ def _detalhe(doc: Documento, atrib: dict[str, Any], idiomas: list[str]) -> Detal
         resumo=resumo.texto if resumo else None,  # no painel local vai tudo; `mapa publicar` (M7) filtra por licença
         idioma=resumo.idioma if resumo else None,
         palavras_chave=list(dict.fromkeys(t.texto for t in (chaves or doc.palavras_chave))),
-        autores=[" ".join(p for p in (a.nome, a.sobrenome) if p) for a in doc.autores],
+        autores=[" ".join(p for p in par if p) for par in _autores(doc)],
         url=_url_segura(doc.url) or (f"https://doi.org/{doc.doi}" if doc.doi else None),
         licenca=doc.licenca,
         licenca_fonte=doc.licenca_fonte,
@@ -227,6 +237,8 @@ def tendencia_contrato(serie: list[int], total: list[int], anos: list[int]) -> T
         pp_por_ano=r(t.pp_por_ano),
         anos=t.anos,
         motivo=t.motivo,
+        fragil=t.fragil,
+        anos_decisivos=list(t.anos_decisivos),
     )
 
 
@@ -488,7 +500,11 @@ def _redes(
     documentos = arquivos["documentos"]
     macrotemas = arquivos["topicos"].macrotemas  # type: ignore[attr-defined]
     redes, citacoes, gabarito = redes_contrato(
-        projeto, list(documentos.colunas.id), [mt.id for mt in macrotemas], {mt.id: mt.cor for mt in macrotemas}
+        projeto,
+        list(documentos.colunas.id),
+        [mt.id for mt in macrotemas],
+        {mt.id: mt.cor for mt in macrotemas},
+        {t.id: t.rotulo for t in arquivos["topicos"].topicos},  # type: ignore[attr-defined]
     )
     if fora := instituicoes_fora_de_afiliacoes(redes, arquivos.get("afiliacoes")):  # type: ignore[arg-type]
         avisos.append(

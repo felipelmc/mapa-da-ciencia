@@ -680,6 +680,38 @@ def _kappa(a: list[str], b: list[str]) -> tuple[float, float, float]:
 REFERENCIA = "referencia-exemplo"  # um codificador de referência fictício (não humano)
 
 
+# O idioma de cada documento da amostra sintética, fixo e sem gastar o `rng` comum: 18 dos 60 "em inglês", para os
+# subconjuntos por idioma terem um grupo abaixo do mínimo de 20 (só o n) e outro acima. Fictício: os textos do
+# exemplo não mudam de idioma.
+IDIOMAS_DA_AMOSTRA = ["en" if k % 10 in (0, 3, 6) else "pt" for k in range(60)]
+MINIMO_SUBCONJUNTO = 20
+
+
+def _subconjuntos_sinteticos(v, humano: list[str], modelo: list[str]) -> list[m.MetricaSubconjunto]:
+    """A concordância por idioma e, nas categóricas com "não informado", entre as respostas informativas."""
+    from mapa_da_ciencia.classificacao.codebook import SEM_INFORMACAO_CATEGORIAS
+
+    def metrica(tipo, idioma, posicoes) -> m.MetricaSubconjunto:
+        if len(posicoes) < MINIMO_SUBCONJUNTO:
+            return m.MetricaSubconjunto(tipo=tipo, idioma=idioma, n=len(posicoes))
+        po, kappa, pabak = _kappa([humano[k] for k in posicoes], [modelo[k] for k in posicoes])
+        return m.MetricaSubconjunto(
+            tipo=tipo, idioma=idioma, n=len(posicoes), concordancia=round(po, 4), kappa=round(kappa, 4),
+            kappa_ic95=(round(max(kappa - 0.18, -1), 4), round(min(kappa + 0.15, 1), 4)), pabak=round(pabak, 4),
+        )  # fmt: skip
+
+    por_idioma = {idioma: [k for k, i in enumerate(IDIOMAS_DA_AMOSTRA) if i == idioma] for idioma in ("pt", "en")}
+    saida = [metrica("idioma", idioma, posicoes) for idioma, posicoes in por_idioma.items()]
+    if v.tipo == "categorica" and any(c.valor in SEM_INFORMACAO_CATEGORIAS for c in v.categorias):
+        informativas = [
+            k
+            for k, (h, mo) in enumerate(zip(humano, modelo, strict=True))
+            if h not in SEM_INFORMACAO_CATEGORIAS and mo not in SEM_INFORMACAO_CATEGORIAS
+        ]
+        saida.append(metrica("informativas", None, informativas))
+    return saida
+
+
 def _validacao_sintetica(rng, docs, vars_cls, dic_cls) -> tuple[m.Validacao, list[dict]]:
     amostra = rng.sample(docs, 60)
     metricas, divergencias = [], []
@@ -688,6 +720,7 @@ def _validacao_sintetica(rng, docs, vars_cls, dic_cls) -> tuple[m.Validacao, lis
         modelo = [str(d["cls"][v.id]).lower() if v.tipo == "booleana" else d["cls"][v.id] for d in amostra]
         humano = [x if rng.random() > erro else rng.choice(dic_cls[v.id]) for x in modelo]
         po, kappa, pabak = _kappa(humano, modelo)
+        subconjuntos = _subconjuntos_sinteticos(v, humano, modelo)
         rotulos = dic_cls[v.id]
         matriz = [
             [sum(h == r and mo == c for h, mo in zip(humano, modelo, strict=True)) for c in rotulos] for r in rotulos
@@ -715,6 +748,7 @@ def _validacao_sintetica(rng, docs, vars_cls, dic_cls) -> tuple[m.Validacao, lis
                     )
                     for i, (r, linha) in enumerate(zip(rotulos, matriz, strict=True))
                 ],
+                subconjuntos=subconjuntos,
             )
         )
         for d, h, mo in zip(amostra, humano, modelo, strict=True):
@@ -731,7 +765,12 @@ def _validacao_sintetica(rng, docs, vars_cls, dic_cls) -> tuple[m.Validacao, lis
                     )
                 )
     return m.Validacao(
-        amostra=m.AmostraInfo(n=len(amostra), estratificar_por="topico", semente=7),
+        amostra=m.AmostraInfo(
+            n=len(amostra),
+            estratificar_por="topico",
+            semente=7,
+            idiomas={"pt": sum(i != "en" for i in IDIOMAS_DA_AMOSTRA), "en": IDIOMAS_DA_AMOSTRA.count("en")},
+        ),
         metricas=metricas,
         modelos=["exemplo"],
         divergencias=divergencias,

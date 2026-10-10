@@ -19,12 +19,14 @@ from ..classificacao.resultado import documentos_classificados
 from ..llm.ollama import Ollama
 from ..progresso import Progresso, ProgressoNulo
 from ..projeto import Projeto
+from ..trava_etapas import etapa
 from .consolidar import ResumoJuri, consolidar, ler_resumo, registrar_passo, resumir
 from .deliberacao import ResumoDeliberacao, deliberar
 from .estado import PASTA
 from .votacao import carregar_votos, membros_do_juri, textos_da_amostra
 
 
+@etapa("juri")
 def deliberar_juri(projeto: Projeto, progresso: Progresso | None = None) -> tuple[ResumoDeliberacao, ResumoJuri]:
     """A rodada de deliberação sobre os votos atuais, seguida da consolidação."""
     inicio = datetime.now(UTC)

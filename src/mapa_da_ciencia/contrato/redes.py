@@ -70,11 +70,25 @@ def _numero(x: Any) -> float | None:
     return None if x is None else round(float(x), 4)
 
 
+def _rotulo_da_comunidade(c: dict[str, Any], rotulos_topicos: dict[int, str] | None) -> str:
+    """Os rótulos atuais dos dois tópicos mais frequentes da comunidade; sem eles, o gravado pela `mapa redes`."""
+    if rotulos_topicos is None:
+        return c["rotulo"]
+    nomes = [rotulos_topicos[t] for t in list(c["topicos"] or [])[:2] if t in rotulos_topicos]
+    return " · ".join(nomes) or c["rotulo"]
+
+
 def redes_contrato(
-    projeto: Projeto, ids_documentos: list[str], ids_macrotemas: list[int], cores_macrotemas: dict[int, str]
+    projeto: Projeto,
+    ids_documentos: list[str],
+    ids_macrotemas: list[int],
+    cores_macrotemas: dict[int, str],
+    rotulos_topicos: dict[int, str] | None = None,
 ) -> tuple[m.Redes, m.Citacoes | None, dict[str, Any]]:
     """Os dois arquivos e o que vai para o gabarito (`agregados`). `ids_macrotemas`: os ids na ordem de
-    `topicos.macrotemas`; `cores_macrotemas`: a cor de cada um, de onde saem os tons das comunidades."""
+    `topicos.macrotemas`; `cores_macrotemas`: a cor de cada um, de onde saem os tons das comunidades;
+    `rotulos_topicos`: os rótulos atuais, de onde sai o rótulo de cada comunidade (os dois tópicos mais frequentes
+    nela), para que mudar um rótulo não peça rodar as redes de novo."""
     from ..redes.pipeline import PASTA, ResultadoRedes
 
     pasta = projeto.dados / PASTA
@@ -118,7 +132,7 @@ def redes_contrato(
                 documentos=c["documentos"],
                 macro=c["macro"],
                 topicos=list(c["topicos"] or []),
-                rotulo=c["rotulo"],
+                rotulo=_rotulo_da_comunidade(c, rotulos_topicos),
                 cor=cores[(c["rede"], c["id"])],
             )
             for c in comunidades

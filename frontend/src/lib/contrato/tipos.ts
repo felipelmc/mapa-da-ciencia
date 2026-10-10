@@ -813,6 +813,10 @@ export interface Serie {
  */
 export interface Tendencia {
 	anos?: [number, number] | null;
+	/**
+	 * Os anos cuja retirada muda a direção de uma tendência frágil.
+	 */
+	anos_decisivos?: number[];
 	direcao: 'alta' | 'queda' | 'estavel' | 'insuficiente';
 	/**
 	 * φ de Pearson (1 na binomial pura).
@@ -822,6 +826,10 @@ export interface Tendencia {
 	 * Erro-padrão da inclinação, já corrigido pela dispersão.
 	 */
 	erro_padrao?: number | null;
+	/**
+	 * Só em alta ou em queda: `true` quando, refeita sem um dos anos, a tendência muda de direção (ou fica sem dados suficientes) em ao menos uma das retiradas. Ausente nos dados até a 1.6.
+	 */
+	fragil?: boolean | null;
 	ic95?: [number, number] | null;
 	/**
 	 * Inclinação na escala logit, por ano.
@@ -849,11 +857,33 @@ export interface Tendencia {
  * Como a tendência é calculada. O painel lê daqui os parâmetros para recalcular com os filtros.
  */
 export interface MetodoTendencia {
+	/**
+	 * Anos com documentos no recorte para haver tendência.
+	 */
 	anos_minimos?: number;
+	/**
+	 * `quase`: o erro-padrão é corrigido pela dispersão de Pearson; `binomial`: não é.
+	 */
 	dispersao?: 'quase' | 'binomial';
+	/**
+	 * Documentos do tópico no período para haver tendência.
+	 */
 	docs_minimos?: number;
+	/**
+	 * Regressão logística da participação anual, com o ano como variável.
+	 */
 	modelo?: 'logistica_binomial';
+	/**
+	 * Nível do intervalo da inclinação.
+	 */
 	nivel?: number;
+	/**
+	 * Quantil do intervalo: `t` (de Student, com anos − 2 graus de liberdade, quando a dispersão é estimada) ou `normal`. Ausente nos dados até a 1.6, que usavam a normal.
+	 */
+	quantil?: 't' | 'normal';
+	/**
+	 * Quantil da normal no nível pedido: o valor crítico com `quantil: normal`.
+	 */
 	z?: number;
 }
 /**
@@ -946,6 +976,12 @@ export interface Validacao {
  */
 export interface AmostraInfo {
 	estratificar_por: string;
+	/**
+	 * Documentos da amostra por idioma do texto lido. Vazio até a 1.6.
+	 */
+	idiomas?: {
+		[k: string]: number;
+	};
 	n: number;
 	semente: number;
 }
@@ -1106,6 +1142,10 @@ export interface MetricaVariavel {
 	 * Participante tomado como referência (linhas da matriz).
 	 */
 	referencia?: string;
+	/**
+	 * A concordância por idioma (quando a amostra tem mais de um) e entre respostas informativas. Vazio nos dados até a 1.6.
+	 */
+	subconjuntos?: MetricaSubconjunto[];
 	variavel: string;
 }
 /**
@@ -1130,4 +1170,27 @@ export interface MetricaClasse {
 	 * Quantas vezes a referência deu esta categoria.
 	 */
 	suporte: number;
+}
+/**
+ * A concordância de um par numa parte da amostra. Sem matriz nem métricas por classe: num grupo pequeno, elas
+ * mostrariam as respostas de cada documento.
+ */
+export interface MetricaSubconjunto {
+	alfa?: number | null;
+	/**
+	 * Ausente com menos de 20 documentos, como as outras métricas.
+	 */
+	concordancia?: number | null;
+	/**
+	 * Código do idioma, no subconjunto por idioma.
+	 */
+	idioma?: string | null;
+	kappa?: number | null;
+	kappa_ic95?: [number, number] | null;
+	n: number;
+	pabak?: number | null;
+	/**
+	 * `idioma`: os documentos cujo texto lido está em `idioma`; `informativas`: os documentos em que nenhuma das duas respostas é de sem-informação ("não informado", "não se aplica").
+	 */
+	tipo: 'idioma' | 'informativas';
 }

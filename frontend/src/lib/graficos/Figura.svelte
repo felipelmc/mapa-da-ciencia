@@ -18,7 +18,8 @@
 		children,
 		controles,
 		dados = null,
-		n = null
+		n = null,
+		legenda = null
 	}: {
 		titulo: string;
 		resumo: string;
@@ -35,6 +36,11 @@
 		dados?: DadosCsv | null;
 		/** Documentos no recorte, para o rodapé da figura exportada. */
 		n?: number | null;
+		/**
+		 * Uma legenda que só vai para a figura exportada (SVG e PNG), quando a da tela fica no próprio gráfico (as
+		 * cores dos macrotemas nos pequenos múltiplos). `cor` é uma cor CSS (pode ser uma variável).
+		 */
+		legenda?: { titulo?: string; itens: { texto: string; cor: string }[] } | null;
 	} = $props();
 
 	let tabela = $state(false);
@@ -55,6 +61,12 @@
 	<p class="resumo" data-testid="resumo-{id}">{resumo}</p>
 	<div class="grafico">
 		{@render children()}
+		{#if legenda?.itens.length}
+			<!-- só para exportar: a legenda em SVG sai desta lista, com as cores resolvidas no tema do arquivo -->
+			<ul hidden data-legenda={legenda.titulo ?? ''} data-testid="legenda-exportar-{id}">
+				{#each legenda.itens as item (item.texto)}<li><span class="caixa" style:background={item.cor}></span>{item.texto}</li>{/each}
+			</ul>
+		{/if}
 	</div>
 	<div class="acoes">
 		<button

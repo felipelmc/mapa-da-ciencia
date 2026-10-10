@@ -27,6 +27,7 @@ EVIDENCIA_MAXIMA = 200
 # respostas que dispensam evidência: não há trecho a citar quando o resumo não diz nada sobre a variável
 SEM_INFORMACAO_CATEGORIAS = frozenset({"nao_informado", "nao_se_aplica"})
 SEM_INFORMACAO_TEXTOS = frozenset({"", "nao se aplica", "não se aplica", "nao informado", "não informado"})
+SEM_INFORMACAO_POR_EXTENSO = {"nao_se_aplica": "não se aplica", "nao_informado": "não informado"}
 
 
 def _esquema_valor(v: Variavel) -> dict[str, Any]:
@@ -73,7 +74,7 @@ def sem_informacao(v: Variavel, valor: Any) -> bool:
         return valor in SEM_INFORMACAO_CATEGORIAS
     if v.tipo == "multipla":
         return not valor or set(valor) <= SEM_INFORMACAO_CATEGORIAS
-    return str(valor).strip().lower().rstrip(".") in SEM_INFORMACAO_TEXTOS
+    return str(valor).strip().lower().rstrip(".").replace("_", " ") in SEM_INFORMACAO_TEXTOS  # "nao_se_aplica" também
 
 
 @dataclass
@@ -103,7 +104,9 @@ def conferir_valor(v: Variavel, valor: Any) -> tuple[Any, str | None]:
     if v.tipo == "texto":
         if not isinstance(valor, str):
             return valor, "o valor precisa ser um texto"
-        return " ".join(valor.split()), None
+        texto = " ".join(valor.split())
+        # o modelo às vezes escreve o nome da categoria ("nao_se_aplica"): fica a forma por extenso
+        return SEM_INFORMACAO_POR_EXTENSO.get(texto.lower().rstrip("."), texto) if "_" in texto else texto, None
     return valor, None
 
 

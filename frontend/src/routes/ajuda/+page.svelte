@@ -45,13 +45,7 @@
 				<div>
 					<dt>
 						<Icone nome={s.icone} tamanho={18} />
-						{#if s.selo}
-							<span>{s.rotulo}</span>
-						{:else}
-							<a href={rota(s.caminho)}>{s.rotulo}</a>
-						{/if}
-						<!-- só as seções que ainda não existem dizem quando chegam; as outras já estão aqui -->
-						{#if s.selo}<span class="chegada">chega {s.chegada}</span>{/if}
+						<a href={rota(s.caminho)}>{s.rotulo}</a>
 					</dt>
 					<dd>{s.resumo}</dd>
 				</div>
@@ -95,7 +89,8 @@
 				distinguível do acaso (regressão logística com intervalo de 95%, corrigida pela dispersão). Com dezenas de
 				tópicos testados, cerca de 1 em 20 aparece por acaso: leia a lista como pistas, não como conclusões.
 				Um pico no primeiro ou no último ano do período escolhido, como um dossiê temático, também pode puxar a
-				tendência, e algumas marcações são marginais: somem quando se tira um só ano da série.
+				tendência. As marcações <strong>frágeis</strong> somem quando se tira um só ano da série: a
+				lista diz que anos são esses. Num período curto, quase todas são frágeis.
 			</p>
 		</section>
 
@@ -374,13 +369,6 @@
 	.secoes a {
 		text-decoration-color: var(--linha-forte);
 		text-underline-offset: 3px;
-	}
-
-	.chegada {
-		font-family: var(--fonte-mono);
-		font-size: 0.7rem;
-		font-weight: 400;
-		color: var(--texto-suave);
 	}
 
 	.secoes dd {

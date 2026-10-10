@@ -437,6 +437,7 @@ class Vinculo:
     pais_fonte: str | None = None
     uf_fonte: str | None = None
     cidade_fonte: str | None = None
+    uf_v70: str | None = None  # num vínculo da `v240`, a UF que o texto original (`v70`) dá à mesma afiliação
 
 
 @dataclass
@@ -504,6 +505,7 @@ def _texto(af: Afiliacao) -> str:
 
 def _vinculo_da_fonte(af: Afiliacao, autor: int | None, posicao: int) -> Vinculo:
     cidade, uf_cidade = normalizar.separar_cidade_uf(af.cidade)
+    cidade_v70, uf_cidade_v70 = normalizar.separar_cidade_uf(af.cidade_v70)
     return Vinculo(
         autor=autor,
         afiliacao=posicao,
@@ -512,6 +514,7 @@ def _vinculo_da_fonte(af: Afiliacao, autor: int | None, posicao: int) -> Vinculo
         pais_fonte=normalizar.pais(af.pais),
         uf_fonte=normalizar.uf(af.uf) or uf_cidade,
         cidade_fonte=cidade,
+        uf_v70=normalizar.uf(af.uf_v70) or uf_cidade_v70 or normalizar.uf_da_cidade(cidade_v70),
     )
 
 

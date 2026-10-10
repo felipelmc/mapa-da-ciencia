@@ -34,6 +34,7 @@ from ..classificacao.resultado import valor_como_texto, valor_do_texto
 from ..config import ErroConfig
 from ..llm.cache import chave_de
 from ..projeto import Projeto
+from ..trava_etapas import etapa
 from .consolidar import DecisaoFinal, chave_pedido, consolidar, decidir, registrar_passo, respostas_do_supervisor
 from .deliberacao import DELIBERAVEIS
 from .estado import conectar, pasta_pedidos
@@ -144,6 +145,7 @@ def pedidos(projeto: Projeto, *, todos: bool = False) -> tuple[list[dict], list[
     return arbitragem, auditoria
 
 
+@etapa("juri")
 def exportar_pedidos(projeto: Projeto, *, lote: int = 20, todos: bool = False) -> Pedidos:
     """Grava os pedidos em lotes JSONL e as instruções, para um supervisor externo."""
     if (resumo := consolidar(projeto)).nao_deliberados:
@@ -224,6 +226,7 @@ def _ler_respostas(arquivos: Iterable[Path]) -> list[dict[str, Any]]:
     return saida
 
 
+@etapa("juri")
 def importar_respostas(projeto: Projeto, arquivos: list[Path], *, origem: str = "arquivo") -> ResumoRespostas:
     """Confere e guarda as respostas do supervisor (o de `juri.supervisor.nome`), e consolida o júri de novo."""
     inicio = datetime.now(UTC)
@@ -453,6 +456,7 @@ def _normalizar_auditoria(resposta: dict[str, Any], variavel: Any) -> dict[str, 
     return resposta
 
 
+@etapa("juri")
 def supervisionar(
     projeto: Projeto, *, limite_gasto: float | None = None, confirmar: bool = False, cliente: Any = None
 ) -> ResumoSupervisao:

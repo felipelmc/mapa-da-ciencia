@@ -36,7 +36,30 @@ const REVISTAS = [
 	{ issn: '1981-3821', acronimo: 'bpsr', titulo: 'Brazilian Political Science Review', areas: ['Ciências Humanas'] }
 ];
 
-export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
+interface TopicoContrato {
+	id: number;
+	macro_id: number;
+	rotulo: string;
+	descricao: string;
+	rotulo_fonte?: string;
+	cor: string;
+	palavras_chave: [string, number][];
+	n_nucleo?: number;
+}
+interface MacroContrato {
+	id: number;
+	rotulo: string;
+	descricao?: string;
+	cor: string;
+	topicos: number[];
+}
+type Manual = { rotulo: string; descricao: string };
+
+/** `topicos`: o topicos.json do exemplo, de onde saem os rótulos que o editor do painel lê e grava. */
+export function criarPainelFalso(
+	codebookInicial: Record<string, unknown>,
+	topicos?: { topicos: TopicoContrato[]; macrotemas: MacroContrato[] }
+) {
 	const jobs: JobFalso[] = [];
 	let config: Record<string, unknown> = {
 		versao_config: 1,
@@ -55,6 +78,44 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 	let codebook: Record<string, unknown> = { ...codebookInicial, hash: 'h0' };
 	const instalados = new Set(['qwen3-embedding:0.6b', 'qwen3.5:4b']);
 	let amostra: { n: number; codificados: number } | null = null;
+	// uma etapa rodando "no terminal" (POST/DELETE /api/__teste/terminal), como a trava das etapas do Python
+	let noTerminal: Record<string, unknown> | null = null;
+	// os rótulos: os atuais (como no resultado.json) e o rotulos.yaml (as entradas à mão)
+	const atuais = new Map<string, Manual & { fonte: string }>();
+	for (const t of topicos?.topicos ?? []) atuais.set(`t:${t.id}`, { rotulo: t.rotulo, descricao: t.descricao, fonte: t.rotulo_fonte ?? 'llm' });
+	for (const m of topicos?.macrotemas ?? []) atuais.set(`m:${m.id}`, { rotulo: m.rotulo, descricao: m.descricao ?? '', fonte: 'llm' });
+	const manuais = new Map<string, Manual>();
+	/** Como `aplicar_rotulos`: as entradas à mão valem; as que saíram do arquivo voltam às palavras-chave. */
+	const aplicarRotulos = () => {
+		for (const [k, atual] of atuais) {
+			const m = manuais.get(k);
+			if (m) atuais.set(k, { ...m, fonte: 'manual' });
+			else if (atual.fonte === 'manual') atuais.set(k, { rotulo: 'palavras, chave', descricao: 'Palavras-chave.', fonte: 'palavras' });
+		}
+	};
+	const pendentes = () =>
+		[...atuais].filter(([k, a]) => {
+			const m = manuais.get(k);
+			return m ? m.rotulo !== a.rotulo || m.descricao !== a.descricao || a.fonte !== 'manual' : a.fonte === 'manual';
+		}).length;
+	const semAcento = (p: string) => p.normalize('NFD').replace(/\p{M}/gu, '');
+	function rotulosAtuais() {
+		const entrada = (k: string) => manuais.get(k) ?? null;
+		return {
+			topicos: (topicos?.topicos ?? []).map((t) => {
+				const a = atuais.get(`t:${t.id}`)!;
+				return {
+					id: t.id, macro: t.macro_id, cor: t.cor, rotulo: a.rotulo, descricao: a.descricao, fonte: a.fonte,
+					palavras: t.palavras_chave.slice(0, 10).map(([p]) => p), n_nucleo: t.n_nucleo ?? 0, manual: entrada(`t:${t.id}`)
+				};
+			}),
+			macrotemas: (topicos?.macrotemas ?? []).map((m) => {
+				const a = atuais.get(`m:${m.id}`)!;
+				return { id: m.id, cor: m.cor, rotulo: a.rotulo, descricao: a.descricao, fonte: a.fonte, topicos: m.topicos, manual: entrada(`m:${m.id}`) };
+			}),
+			pendentes: pendentes()
+		};
+	}
 	const agora = () => new Date().toISOString();
 	const semEventos = (j: JobFalso) => {
 		const { eventos, ouvintes, timer, conexoes, ...resto } = j;
@@ -150,19 +211,73 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 		const metodo = req.method ?? 'GET';
 		const ativo = () => jobs.find((j) => j.estado === 'na_fila' || j.estado === 'rodando');
 
+		if (metodo === 'GET' && caminho === 'projeto/em-andamento') {
+			json(res, 200, { em_andamento: noTerminal ?? null });
+			return true;
+		}
+
 		if (metodo === 'GET' && caminho === 'projeto/etapas') {
 			const feitos = new Set(jobs.filter((j) => j.estado === 'concluido').map((j) => j.etapa));
 			const estado = (e: string, padrao: string) => (feitos.has(e) ? 'em_dia' : padrao);
 			const ultima = { fim: '2026-09-26T12:00:00+00:00', duracao_s: 12.5, contagens: { documentos: 1500 } };
 			json(res, 200, {
 				coleta: { estado: estado('coleta', 'em_dia'), ultima },
-				topicos: { estado: estado('topicos', 'em_dia'), ultima },
+				topicos: { estado: estado('topicos', 'em_dia'), ultima, ...(pendentes() ? { rotulos_pendentes: pendentes() } : {}) },
 				geografia: { estado: estado('geografia', 'em_dia'), ultima },
 				redes: feitos.has('redes') ? { estado: 'em_dia', ultima } : { estado: 'desatualizada', ultima, mudou: ['o pessoas.yaml'] },
 				classificacao: { estado: estado('classificacao', 'desatualizada'), ultima },
 				validacao: { estado: 'pendente', ultima: null, ...(amostra ? { amostra } : {}) },
 				// o júri só vem num projeto com `juri.membros` (o do exemplo tem); ele não roda pelo painel
-				juri: { estado: 'incompleta', ultima, proximo: 'mapa juri exportar-pedidos (e depois importar-respostas)' }
+				juri: { estado: 'incompleta', ultima, proximo: 'mapa juri exportar-pedidos (e depois importar-respostas)' },
+				...(noTerminal ? { em_andamento: noTerminal } : {})
+			});
+			return true;
+		}
+		if (caminho === 'rotulos') {
+			if (!topicos) return (json(res, 404, { detail: 'O projeto ainda não tem tópicos.' }), true);
+			if (metodo === 'GET') return (json(res, 200, rotulosAtuais()), true);
+			void corpoDe(req).then((corpo) => {
+				// como `PATCH /api/rotulos`: números que existem, rótulo não vazio; `null` tira a entrada
+				const avisos: string[] = [];
+				for (const [grupo, letra] of [['topicos', 't'], ['macrotemas', 'm']] as const) {
+					for (const [id, e] of Object.entries((corpo[grupo] ?? {}) as Record<string, Manual | null>)) {
+						const k = `${letra}:${id}`;
+						if (!atuais.has(k)) return json(res, 422, { detail: `Não há ${grupo.slice(0, -1)} ${id} nos tópicos atuais.` });
+						if (e && !e.rotulo.trim()) return json(res, 422, { detail: 'o rótulo não pode ficar vazio' });
+					}
+				}
+				for (const [grupo, letra] of [['topicos', 't'], ['macrotemas', 'm']] as const) {
+					for (const [id, e] of Object.entries((corpo[grupo] ?? {}) as Record<string, Manual | null>)) {
+						const k = `${letra}:${id}`;
+						if (e === null) manuais.delete(k);
+						else manuais.set(k, { rotulo: e.rotulo.trim(), descricao: (e.descricao ?? '').trim() });
+						const t = topicos.topicos.find((x) => letra === 't' && String(x.id) === id);
+						for (const [p] of t?.palavras_chave ?? []) {
+							const base = semAcento(p);
+							// como `acentos_perdidos`: uma palavra do rótulo é a forma sem acento de uma palavra-chave
+							if (e && base !== p && base.length >= 4 && e.rotulo.toLowerCase().split(/\s+/).includes(base))
+								avisos.push(`Tópico ${id}: “${base}” perdeu o acento? As palavras do tópico têm “${p}”.`);
+						}
+					}
+				}
+				json(res, 200, { ...rotulosAtuais(), avisos });
+			});
+			return true;
+		}
+		if (caminho === '__teste/terminal') {
+			void corpoDe(req).then((corpo) => {
+				const etapa = String(corpo.etapa ?? 'coleta');
+				noTerminal =
+					metodo === 'POST'
+						? {
+								etapa,
+								origem: 'terminal',
+								pid: 4242,
+								inicio: '2026-10-10T14:02:00-03:00',
+								mensagem: `A etapa ${etapa} está rodando em outro terminal ou notebook (processo 4242) desde as 14:02. Espere terminar e rode de novo: duas etapas ao mesmo tempo no mesmo projeto estragam os dados uma da outra.`
+							}
+						: null;
+				json(res, 200, { ok: true });
 			});
 			return true;
 		}
@@ -178,6 +293,10 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 					return json(res, 404, { detail: `Etapa desconhecida: ${etapa}.` });
 				const a = ativo();
 				if (a) return json(res, 409, { detail: { mensagem: `Já há uma etapa rodando (${a.etapa}).`, job: semEventos(a) } });
+				// como `jobs.iniciar`: uma etapa no terminal trava o projeto (baixar um modelo, não)
+				if (noTerminal && etapa !== 'modelo')
+					return json(res, 409, { detail: { mensagem: noTerminal.mensagem, em_andamento: noTerminal } });
+				if (etapa === 'topicos' && opcoes.aplicar_rotulos) aplicarRotulos(); // como `aplicar_rotulos`
 				json(res, 202, semEventos(iniciar(etapa, opcoes)));
 			});
 			return true;

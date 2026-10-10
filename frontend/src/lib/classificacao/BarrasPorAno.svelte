@@ -99,7 +99,7 @@
 	{#if dica}<Dica x={dica.x} y={dica.y} linhas={dica.linhas} />{/if}
 </div>
 
-<ul class="legenda" aria-label="Valores">
+<ul class="legenda" aria-label="Valores" data-legenda="{variavel.rotulo}:">
 	{#each variavel.valores as _, v (v)}
 		<li>
 			<button type="button" aria-pressed={escolhido === v} onclick={() => aoEscolher(v)} data-testid="legenda-valor">

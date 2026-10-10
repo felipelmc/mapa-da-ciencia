@@ -12,13 +12,13 @@ Os modelos rodam no seu computador, via [Ollama](https://ollama.com): nenhum tex
 
 *In English: [see below](#in-english).*
 
-> **Status:** versão 2.2.0: a coleta, os tópicos no mapa e no tempo, a geografia, a classificação por codebook com validação, o júri de modelos locais com supervisor, as redes de coautoria e de citação, tudo também pela interface, a publicação como site estático, as figuras para artigo e a oficina no Colab.
+> **Status:** versão 2.3.0: a coleta, os tópicos no mapa e no tempo, a geografia, a classificação por codebook com validação, o júri de modelos locais com supervisor, as redes de coautoria e de citação, tudo também pela interface, a publicação como site estático, as figuras para artigo e a oficina no Colab.
 
-![O painel do piloto: o mapa de 4.275 artigos de dez revistas de ciência política no SciELO Brasil acendendo ano a ano, de 2010 a 2025, e depois as vistas Tópicos, Geografia e Classificação](https://raw.githubusercontent.com/felipelmc/mapa-da-ciencia/main/docs/imagens/painel.gif)
+![O painel do piloto: o mapa de 4.265 artigos de dez revistas de ciência política no SciELO Brasil acendendo ano a ano, de 2010 a 2025, e depois as vistas Tópicos, Geografia e Classificação](https://raw.githubusercontent.com/felipelmc/mapa-da-ciencia/main/docs/imagens/painel.gif)
 
 ## Veja
 
-- **[Demo](https://felipelamarca.com/mapa-da-ciencia/demo/)**: o piloto, com os 4.275 artigos de ciência política do SciELO Brasil de 2010 a 2025, publicado com `mapa publicar`.
+- **[Demo](https://felipelamarca.com/mapa-da-ciencia/demo/)**: o piloto, com os 4.265 artigos de ciência política do SciELO Brasil de 2010 a 2025, publicado com `mapa publicar`.
 - **[Oficina no Colab](https://colab.research.google.com/github/felipelmc/mapa-da-ciencia/blob/main/notebooks/oficina_colab.ipynb)**: um mapa da *Opinião Pública* do zero, numa GPU gratuita do Google, em uns 30 minutos.
 - **[O site do projeto](https://felipelamarca.com/mapa-da-ciencia/)**: os artigos do piloto como um céu que se forma, ano a ano, e as histórias que eles contam.
 
@@ -29,7 +29,7 @@ Os modelos rodam no seu computador, via [Ollama](https://ollama.com): nenhum tex
 Com o [uv](https://docs.astral.sh/uv/) instalado, o *wheel* da última [*release*](https://github.com/felipelmc/mapa-da-ciencia/releases) traz a interface pronta:
 
 ```bash
-uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v2.2.0/mapa_da_ciencia-2.2.0-py3-none-any.whl"
+uv tool install "https://github.com/felipelmc/mapa-da-ciencia/releases/download/v2.3.0/mapa_da_ciencia-2.3.0-py3-none-any.whl"
 mapa painel --exemplo
 ```
 

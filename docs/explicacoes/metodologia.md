@@ -16,11 +16,11 @@ Os artigos são listados na ArticleMeta do SciELO, revista a revista, e filtrado
 - **Descrição:** palavras-chave por c-TF-IDF sobre o núcleo de cada tópico; rótulo e descrição em português escritos pelo `qwen3.5:9b` a partir de 15 termos e 5 títulos representativos; macrotemas por aglomeração de Ward dos centros dos tópicos (até 7).
 - **Estabilidade:** índice de Rand ajustado entre três sementes, sobre os documentos que estão no núcleo nas duas execuções.
 
-No piloto: 57 tópicos em 7 macrotemas, ARI 0,89; 66,5% dos documentos no núcleo, 22,5% reatribuídos e 11% sem tópico. Veja [Como os tópicos são construídos](topicos.md) e o [registro da calibração](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0007-parametros-dos-topicos.md).
+No piloto: 61 tópicos em 7 macrotemas, ARI 0,90; 64,2% dos documentos no núcleo, 23,4% reatribuídos e 12,5% sem tópico. Veja [Como os tópicos são construídos](topicos.md) e o [registro da calibração](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0007-parametros-dos-topicos.md).
 
 ## 3. Tópicos no tempo
 
-A tendência de cada tópico é a inclinação de uma regressão logística quase-binomial da sua participação anual no corpus, com intervalo de 95% (erro padrão corrigido pela dispersão). Um tópico está "em alta" ou "em queda" quando o intervalo não inclui zero, e a variação é dada em pontos percentuais por ano. No piloto, 13 dos 57 tópicos. Veja [Em alta e em queda](topicos.md#12-em-alta-e-em-queda) e o [registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0009-tendencia-dos-topicos.md).
+A tendência de cada tópico é a inclinação de uma regressão logística quase-binomial da sua participação anual no corpus, com intervalo de 95% (erro padrão corrigido pela dispersão e quantil da t de Student). Um tópico está "em alta" ou "em queda" quando o intervalo não inclui zero, e a variação é dada em pontos percentuais por ano. No piloto, 13 dos 57 tópicos. Veja [Em alta e em queda](topicos.md#12-em-alta-e-em-queda) e o [registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0009-tendencia-dos-topicos.md).
 
 ## 4. Geografia
 
@@ -28,7 +28,7 @@ Cada afiliação de autor (a normalizada da ArticleMeta, `v240`, ou o texto livr
 
 ## 5. Classificação
 
-Um modelo local (`qwen3.5:9b`, temperatura 0, contexto de 8.192 *tokens*) lê o título e o resumo no idioma de exibição (português em 82% do piloto) ou, na falta dele, em inglês (18%, 757 artigos) e responde às perguntas do codebook num JSON com esquema fixo, citando antes de cada valor o trecho do resumo que o justifica (até 200 caracteres). O `mapa` confere se o trecho está no resumo (literal, aproximado ou ausente) e, quando uma evidência obrigatória não está, pede uma nova resposta uma vez. No piloto (4.247 resumos): 100% de JSON válido na primeira tentativa, 93,4% das evidências literais e 9,6 s por resumo (mediana) num notebook. Veja [Classificação ancorada em evidência](classificacao.md) e o [registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0011-classificacao-ancorada-em-evidencia.md).
+Um modelo local (`qwen3.5:9b`, temperatura 0, contexto de 8.192 *tokens*) lê o título e o resumo no idioma de exibição (português em 82% do piloto) ou, na falta dele, em inglês (18%, 768 artigos) e responde às perguntas do codebook num JSON com esquema fixo, citando antes de cada valor o trecho do resumo que o justifica (até 200 caracteres). O `mapa` confere se o trecho está no resumo (literal, aproximado ou ausente) e, quando uma evidência obrigatória não está, pede uma nova resposta uma vez. No piloto (4.206 resumos): 100% de JSON válido na primeira tentativa, 93,4% das evidências literais e 9,6 s por resumo (mediana) num notebook. Veja [Classificação ancorada em evidência](classificacao.md) e o [registro da decisão](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0011-classificacao-ancorada-em-evidencia.md).
 
 ## 6. Validação
 

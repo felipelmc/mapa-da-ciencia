@@ -123,3 +123,25 @@ def test_tratar_substitui_o_registro_ao_chegar(tmp_path, apis_falsas):
             return await buscar_registros(b, pids, tratar=lambda pid, registro: (pid, len(registro["citations"])))
 
     assert asyncio.run(buscar()) == {pids[0]: (pids[0], 2), pids[1]: None}  # desconhecido continua None
+
+
+def test_a_cidade_e_a_uf_da_v70_ficam_junto_da_v240():
+    # a v240 põe a afiliação na cidade da sede; o texto original (v70) diz onde o autor está, e traz um e-mail
+    registro = {
+        "code": "S0104-62762024000100200",
+        "collection": "scl",
+        "publication_year": "2024",
+        "document_type": "research-article",
+        "article": {
+            "v240": [{"i": "aff1", "_": "Fundação Getulio Vargas", "c": "Brasília", "s": "DF", "p": "BR"}],
+            "v70": [
+                {"i": "aff1", "_": "Fundação Getulio Vargas", "c": "São Paulo", "s": "SP", "e": "fulana@fgv.br"},
+                {"i": "aff2", "_": "Universidade de Brasília", "c": "Brasília", "s": "DF"},
+            ],
+        },
+    }
+    doc = normalizar(registro, OP)
+    fgv, unb = doc.afiliacoes
+    assert (fgv.fonte, fgv.cidade, fgv.uf, fgv.cidade_v70, fgv.uf_v70) == ("v240", "Brasília", "DF", "São Paulo", "SP")
+    assert (unb.fonte, unb.uf, unb.uf_v70) == ("v70", "DF", None)  # só na v70: a UF já é a dela
+    assert not contem_email(doc.model_dump())

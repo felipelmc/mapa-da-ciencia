@@ -70,20 +70,11 @@
 	>
 		<ul>
 			{#each secoes as s (s.id)}
-				<li class:separado={s.selo || s.soNoPainel || s.noSite}>
-					{#if s.selo}
-						<span class="item desativado" title="Chega {s.chegada}">
-							<Icone nome={s.icone} />
-							<span class="rotulo">{s.rotulo}</span>
-							<span class="selo" aria-hidden="true">{s.selo}</span>
-							<span class="visualmente-oculto">(desativada; chega {s.chegada})</span>
-						</span>
-					{:else}
-						<a class="item" href={destino(s)} aria-current={ativa(s) ? 'page' : undefined}>
-							<Icone nome={s.icone} />
-							<span class="rotulo">{s.rotulo}</span>
-						</a>
-					{/if}
+				<li class:separado={s.soNoPainel || s.noSite}>
+					<a class="item" href={destino(s)} aria-current={ativa(s) ? 'page' : undefined}>
+						<Icone nome={s.icone} />
+						<span class="rotulo">{s.rotulo}</span>
+					</a>
 				</li>
 			{/each}
 		</ul>
@@ -225,21 +216,6 @@
 		background: var(--acento);
 	}
 
-	.desativado {
-		color: var(--texto-fraco);
-		cursor: not-allowed;
-	}
-
-	.selo {
-		margin-left: auto;
-		padding: 0.05rem 0.4rem;
-		border: 1px solid var(--linha-forte);
-		border-radius: 999px;
-		font-family: var(--fonte-mono);
-		font-size: 0.68rem;
-		letter-spacing: 0.06em;
-	}
-
 	.rodape {
 		margin: auto 0 0;
 		padding: 0.9rem 0.6rem 0;
@@ -307,11 +283,6 @@
 			mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent);
 		}
 
-		/* uma seção desativada (que ainda não chegou) não ocupa lugar na barra estreita */
-		li:has(.desativado) {
-			display: none;
-		}
-
 		ul {
 			grid-auto-flow: column;
 			/* 72 px, inteiros: com as oito seções (as Redes entre elas), 70,4 px deixavam a última cortada em fração de
@@ -343,12 +314,5 @@
 			height: 2px;
 		}
 
-		.selo {
-			position: absolute;
-			top: 0.15rem;
-			right: 0.35rem;
-			margin: 0;
-			font-size: 0.58rem;
-		}
 	}
 </style>

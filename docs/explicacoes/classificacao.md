@@ -30,7 +30,7 @@ O `mapa` confere cada evidência contra o texto, sem depender do modelo:
 | `ausente` | o trecho não está no texto | 1,7% |
 | `dispensada` | evidência vazia numa resposta sem informação | 258 das 1.200 respostas |
 
-Na rodada completa (4.247 resumos, codebook publicado): 93,4% literais, 4,7% aproximadas e 1,9% ausentes.
+Na rodada completa (4.206 resumos, codebook publicado): 93,4% literais, 4,7% aproximadas e 1,9% ausentes.
 
 Nos dois primeiros casos, a posição do trecho no texto fica guardada, e o painel o marca no resumo. Uma evidência ausente não quer dizer que a resposta está errada, mas que ela não está ancorada: vale ler o resumo.
 

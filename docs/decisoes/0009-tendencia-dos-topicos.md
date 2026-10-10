@@ -29,7 +29,7 @@ O Felipe escolheu uma regressão logística da participação anual do tópico, 
 
 1. **Modelo:** regressão logística binomial da participação anual do tópico (documentos do tópico ÷ documentos do ano), com o ano como única variável, centrado na média dos anos usados. Anos sem nenhum documento ficam de fora.
 2. **Dispersão quase-binomial:** o erro-padrão da inclinação é multiplicado por √φ, com φ = max(1, X² de Pearson ÷ (anos − 2)). A binomial pura continua disponível (`metodo_tendencia.dispersao` no contrato).
-3. **Direção:** "em alta" se o intervalo de 95% (Wald, z = 1,96) da inclinação está todo acima de zero; "em queda" se está todo abaixo; "estável" nos demais casos.
+3. **Direção:** "em alta" se o intervalo de 95% (Wald, z = 1,96; desde a 2.3.0, com o quantil da t, veja o adendo) da inclinação está todo acima de zero; "em queda" se está todo abaixo; "estável" nos demais casos.
 4. **Mínimos:** 5 anos com documentos e 10 documentos do tópico no período. Abaixo disso, ou quando a estimativa diverge (todos os documentos do tópico num ano extremo), a tendência é "insuficiente".
 5. **Tamanho da mudança:** pontos percentuais entre as participações ajustadas no primeiro e no último ano (`pp_periodo`), e por ano (`pp_por_ano`). É o que a sparkline mostra, e é mais fácil de ler do que a inclinação no logit.
 6. **Uma implementação de referência** em Python puro (`topicos/tendencia.py`), espelhada em TypeScript no navegador; os casos de `contrato/casos/tendencia.json` garantem que as duas dão o mesmo resultado, e o `topicos.json` traz o gabarito do período inteiro.
@@ -47,3 +47,43 @@ Alternativas descartadas: regressão linear na participação (ignora que a vari
 ## Como reproduzir
 
     uv run python scripts/tendencias.py projetos/cp-scielo
+
+## Adendo (2.3.0): o quantil t e a tendência frágil
+
+A revisão de setembro de 2026 recomendou duas mudanças, que a seção Evidência já tinha medido: três das 13 marcações do piloto eram marginais, sumiam com o quantil t(14) no lugar do z e não resistiam à retirada de um ano.
+
+### O quantil t
+
+A dispersão φ é estimada com os resíduos de anos − 2 graus de liberdade (14 no período inteiro do piloto, menos num recorte do painel). Com a escala estimada, o intervalo de Wald com o quantil da normal fica estreito demais: o `summary.glm` do R e o `statsmodels` usam a t nesse caso. **Decisão:** com a dispersão quase-binomial, o intervalo usa o quantil 97,5% da t de Student com anos usados − 2 graus de liberdade (2,145 com 16 anos, 2,571 com 7); a binomial pura, que não estima a escala, continua com o da normal.
+
+- **Implementação:** sem scipy, nos dois lados. P(|T| ≤ t) tem forma fechada para graus de liberdade inteiros (Abramowitz e Stegun, 26.7.3 e 26.7.4, só com `atan`, `sin` e `cos`), invertida por bisseção (`quantil_t` em Python, `quantilT` em `glm.ts`). O erro relativo contra o `scipy.stats.t.ppf` é de 6·10⁻¹⁴, de 1 a 500 graus de liberdade; `contrato/casos/quantil_t.json` confere os dois lados.
+- **Contrato 1.7:** `metodo_tendencia.quantil` (`t` ou `normal`). Os dados até a 1.6 não trazem o campo e foram calculados com a normal: a interface usa a normal quando ele falta, e um site publicado antes continua batendo com o próprio gabarito.
+- **Efeito nos tópicos da 2.2.0** (`scripts/tendencias.py`, que agora mostra as duas colunas): de 13 marcações, ficam 10 (6 em alta, 4 em queda). Saem as três marginais: teoria social, modernidade e teoria crítica; artes, cinema e crítica cultural; pensamento político brasileiro e marxismo.
+
+Alternativas descartadas: continuar com o z (o intervalo fica estreito com 16 pontos e escala estimada) e corrigir para comparações múltiplas (a vista é descritiva, e o aviso na interface continua).
+
+### A tendência frágil
+
+Uma marcação pode depender de um ano só: um dossiê no começo ou no fim do período (a Consequência acima) ou um ano atípico no meio. **Decisão:** uma tendência em alta ou em queda é **frágil** quando, refeita pela mesma regra sem um dos anos usados, muda de direção (ou fica sem dados suficientes) em ao menos uma das retiradas. O contrato traz `Tendencia.fragil` e `anos_decisivos` (os anos cuja retirada muda a direção), e a interface marca a tendência com uma etiqueta "frágil" e diz de que anos ela depende.
+
+- **Por que "ao menos uma retirada":** a regra não tem um corte arbitrário (uma fração das retiradas) e diz qual ano pesa, o que a pessoa pode conferir na série. Com o mínimo de 5 anos (um recorte curto no painel), toda marcação é frágil, porque sem qualquer um dos anos sobram 4: é o comportamento certo, e a interface diz isso.
+- **Custo:** um ajuste por ano, só para os tópicos marcados. No pior caso do piloto (todos os 57 tópicos, 17 ajustes cada), 42 ms em Python puro; no navegador, com os filtros, só os marcados são refeitos.
+- **Paridade:** a mesma conta em Python e em `glm.ts`. O gerador dos casos recusa uma série em que um limite do intervalo fique a menos de 10⁻⁶ de zero, no ajuste completo ou numa retirada, para que um arredondamento diferente nos dois lados não mude a fragilidade.
+- **Efeito nos tópicos da 2.2.0, com o quantil t:** 4 das 10 marcações são frágeis. Federalismo, capacidades estatais e implementação de políticas depende de 2010 e 2012; cobertura da imprensa e política, de 2011; representação política na sociedade civil, de 2011 e 2013; competição eleitoral municipal, de 11 dos 16 anos. As outras 6 resistem a qualquer retirada.
+
+Alternativas descartadas: marcar como frágil só quando mais de um quarto das retiradas muda a direção (no piloto, só a competição eleitoral municipal; um corte arbitrário que esconde a dependência de um ano) e o erro-padrão *jackknife* (outra regra de decisão, mais difícil de explicar que "sem 2011, fica estável").
+
+
+### No piloto refeito
+
+Com a coleta refeita na 2.3.0 (4.265 documentos, 61 tópicos), a regra em uso (quase-binomial com o quantil t) marca 11 tópicos: 7 em alta e 4 em queda. Com o quantil da normal seriam 12, e com a binomial pura, 16. Quatro das 11 marcações são frágeis:
+
+- **Em queda:** teoria social, modernidade e teoria crítica (depende de 6 anos); cobertura da imprensa e política (de 2010, 2011, 2022 e 2024); representação política, sociedade civil e crise democrática (de 7 anos).
+- **Em alta:** geografia do voto e eleições municipais (de 13 dos 16 anos).
+
+As 7 firmes são seis altas e uma queda:
+
+- **Em alta:** federalismo, capacidades estatais e implementação de políticas (+3,9 pontos percentuais de 2010 a 2025); bolsonarismo, direita e populismo (+3,0); religião e política, conservadorismo e fascismo (+2,8); comunicação política nas redes sociais (+2,4); movimentos feministas e lutas por direitos LGBTI+ (+2,0); presidencialismo de coalizão, ministérios e nomeações (+1,5).
+- **Em queda:** desenvolvimento, Estado e modelos de capitalismo (−1,6).
+
+O federalismo, frágil nos tópicos da 2.2.0, ficou firme. O núcleo do tópico mudou com a coleta refeita: ganhou os conselhos de políticas públicas (14 títulos).

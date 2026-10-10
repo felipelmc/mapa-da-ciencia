@@ -9,24 +9,29 @@ codebook.
 - `GET /api/estimativa/classificacao`: quantos documentos faltam classificar e quanto tempo isso deve levar;
 - `GET /api/revistas`: as revistas correntes do SciELO Brasil, para escolher as fontes;
 - `GET` e `PATCH /api/configuracao`, `GET` e `PUT /api/codebook`: lidos e gravados sem perder os comentários do YAML
-  (`edicao.py`), validados antes de ir para o disco, e recusados enquanto uma etapa roda.
+  (`edicao.py`), validados antes de ir para o disco, e recusados enquanto uma etapa roda;
+- `GET` e `PATCH /api/rotulos`: os rótulos dos tópicos e dos macrotemas (o atual, a fonte e a entrada do
+  `rotulos.yaml`), e as mudanças no `rotulos.yaml` (`null` tira uma entrada), que a etapa de tópicos aplica com
+  `aplicar_rotulos` (sem refazer os tópicos nem chamar o modelo).
 """
 
 from __future__ import annotations
 
 import dataclasses
+import io
 import re
 from dataclasses import dataclass
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from ..config import Codebook, ConfigProjeto, ErroConfig
 from ..llm.base import ErroProvedor
 from ..manifesto import estados_das_etapas
 from ..projeto import Projeto
-from .jobs import Jobs, Ocupado
+from ..trava_etapas import mensagem as mensagem_da_trava
+from .jobs import Jobs, Ocupado, fora_do_painel
 from .origem import conferir_origem
 
 NOME_MODELO = re.compile(r"^[\w.:/-]{1,80}$")
@@ -34,6 +39,29 @@ NOME_MODELO = re.compile(r"^[\w.:/-]{1,80}$")
 
 class PedidoDownload(BaseModel):
     modelo: str = Field(pattern=NOME_MODELO.pattern)
+
+
+class RotuloEditado(BaseModel):
+    """O rótulo e a descrição de um tópico (ou macrotema), escritos à mão no editor do painel."""
+
+    model_config = ConfigDict(extra="forbid")
+    rotulo: str = Field(min_length=1, max_length=80)
+    descricao: str = Field("", max_length=1000)
+
+
+class PedidoRotulos(BaseModel):
+    """O que muda no `rotulos.yaml`: por número, o rótulo novo, ou `null` para voltar ao do modelo."""
+
+    model_config = ConfigDict(extra="forbid")
+    topicos: dict[int, RotuloEditado | None] = Field(default_factory=dict)
+    macrotemas: dict[int, RotuloEditado | None] = Field(default_factory=dict)
+
+
+CABECALHO_ROTULOS = """\
+# rotulos.yaml: rótulos dos tópicos e dos macrotemas escritos à mão (aqui ou pelo editor do painel).
+# Cada entrada vale para o número do tópico (ou do macrotema) que aparece no painel, tem prioridade sobre o modelo e
+# continua valendo quando os tópicos são refeitos. `mapa topicos --aplicar-rotulos` aplica sem refazer os tópicos.
+"""
 
 
 @dataclass
@@ -62,11 +90,24 @@ def rotas_projeto(projeto: Projeto, jobs: Jobs) -> APIRouter:
     def _livre() -> None:
         if (ativo := jobs.ativo()) is not None:
             raise HTTPException(409, f"Espere a etapa {ativo.etapa} terminar (ou cancele-a) antes de mudar o projeto.")
+        if (dono := fora_do_painel(projeto)) is not None:
+            raise HTTPException(409, mensagem_da_trava(projeto, dono))
 
     @rotas.get("/projeto/etapas")
     def etapas() -> dict[str, Any]:
-        """O estado de cada etapa do pipeline, para a linha de metrô da vista Projeto."""
-        return estados_das_etapas(projeto)
+        """O estado de cada etapa do pipeline, para a linha de metrô da vista Projeto. Com uma etapa rodando fora do
+        painel (no terminal ou num notebook), `em_andamento` diz qual, onde e desde quando."""
+        estados = estados_das_etapas(projeto)
+        if (dono := fora_do_painel(projeto)) is not None:
+            estados["em_andamento"] = dono | {"mensagem": mensagem_da_trava(projeto, dono)}
+        return estados
+
+    @rotas.get("/projeto/em-andamento")
+    def em_andamento() -> dict[str, Any]:
+        """Só a etapa que roda fora do painel (`em_andamento`, ou `null`), sem o estado das etapas: uma consulta leve,
+        que a vista Projeto faz a cada poucos segundos para notar uma etapa que começou no terminal."""
+        dono = fora_do_painel(projeto)
+        return {"em_andamento": dono | {"mensagem": mensagem_da_trava(projeto, dono)} if dono is not None else None}
 
     @rotas.get("/modelos")
     def modelos() -> dict[str, Any]:
@@ -193,5 +234,102 @@ def rotas_projeto(projeto: Projeto, jobs: Jobs) -> APIRouter:
             raise HTTPException(422, str(e)) from e
         projeto._codebook = novo
         return {**novo.model_dump(mode="json"), "hash": novo.hash()}
+
+    def _resultado_dos_topicos():
+        from ..topicos.resultado import PASTA, Resultado
+
+        r = Resultado.ler(projeto.dados / PASTA)
+        if r is None:
+            raise HTTPException(404, "O projeto ainda não tem tópicos: rode a etapa Tópicos antes dos rótulos.")
+        return r
+
+    @rotas.get("/rotulos")
+    def rotulos() -> dict[str, Any]:
+        """Os rótulos dos tópicos e dos macrotemas: o atual, a fonte (`llm`, `palavras` ou `manual`), as palavras-chave
+        e a entrada do `rotulos.yaml`; `pendentes` conta as entradas do arquivo ainda não aplicadas."""
+        from ..topicos.aplicar import rotulos_pendentes
+        from ..topicos.rotulos import ler_manuais
+
+        r = _resultado_dos_topicos()
+        try:
+            manuais = ler_manuais(projeto.raiz)
+        except ErroConfig as e:
+            raise HTTPException(422, str(e)) from e
+
+        def entrada(grupo: dict, i: int) -> dict[str, str] | None:
+            return grupo[i].model_dump() if i in grupo else None
+
+        return {
+            "topicos": [
+                {
+                    "id": t.id,
+                    "macro": t.macro,
+                    "cor": t.cor,
+                    "rotulo": t.rotulo,
+                    "descricao": t.descricao,
+                    "fonte": t.rotulo_fonte,
+                    "palavras": [p for p, _ in t.palavras[:10]],
+                    "n_nucleo": t.n_nucleo,
+                    "manual": entrada(manuais.topicos, t.id),
+                }
+                for t in r.topicos
+            ],
+            "macrotemas": [
+                {
+                    "id": m.id,
+                    "cor": m.cor,
+                    "rotulo": m.rotulo,
+                    "descricao": m.descricao,
+                    "fonte": m.rotulo_fonte,
+                    "topicos": m.topicos,
+                    "manual": entrada(manuais.macrotemas, m.id),
+                }
+                for m in r.macrotemas
+            ],
+            "pendentes": rotulos_pendentes(r, manuais),
+        }
+
+    @rotas.patch("/rotulos", dependencies=[Depends(conferir_origem)])
+    def mudar_rotulos(pedido: PedidoRotulos) -> dict[str, Any]:
+        """Grava as mudanças no `rotulos.yaml`, sem perder os comentários, e devolve os rótulos (`rotulos()`) com
+        `avisos` de acentos que parecem perdidos (pelo vocabulário do tópico; a gravação não é recusada por isso)."""
+        from ..edicao import _sem_vazios, _yaml, editar_yaml
+        from ..topicos.rotulos import ARQUIVO_MANUAL, _Manuais, acentos_perdidos
+
+        _livre()
+        r = _resultado_dos_topicos()
+        ids = {"topicos": {t.id for t in r.topicos}, "macrotemas": {m.id for m in r.macrotemas}}
+        nomes = {"topicos": "tópico", "macrotemas": "macrotema"}
+        faltam = [f"{nomes[g]} {i}" for g in ids for i in getattr(pedido, g) if i not in ids[g]]
+        if faltam:
+            raise HTTPException(422, f"Não há {', '.join(faltam)} nos tópicos atuais.")
+        # uma descrição vazia não vai para o arquivo (e tira a que existia); `null` tira a entrada
+        parcial = {
+            g: {i: None if e is None else {"rotulo": e.rotulo.strip(), "descricao": e.descricao.strip() or None}
+                for i, e in getattr(pedido, g).items()}
+            for g in ids
+            if getattr(pedido, g)
+        }  # fmt: skip
+        arquivo = projeto.raiz / ARQUIVO_MANUAL
+        try:
+            if arquivo.exists():
+                editar_yaml(arquivo, parcial, _Manuais.model_validate, omitir_vazios=True)
+            else:  # o primeiro rótulo à mão: o arquivo nasce com um cabeçalho que explica o formato
+                conteudo = {g: d for g, d in _sem_vazios(parcial).items() if d}
+                _Manuais.model_validate(conteudo)
+                texto = io.StringIO()
+                if conteudo:
+                    _yaml().dump(conteudo, texto)
+                arquivo.write_text(CABECALHO_ROTULOS + texto.getvalue(), encoding="utf-8")
+        except (ErroConfig, ValidationError) as e:
+            raise HTTPException(422, str(e)) from e
+        palavras = {t.id: [p for p, _ in t.palavras] for t in r.topicos}
+        avisos = [
+            f"Tópico {i}: “{sem}” perdeu o acento? As palavras do tópico têm “{com}”."
+            for i, e in pedido.topicos.items()
+            if e is not None
+            for sem, com in acentos_perdidos(f"{e.rotulo} {e.descricao}", palavras.get(i, [])).items()
+        ]
+        return {**rotulos(), "avisos": avisos}
 
     return rotas

@@ -22,6 +22,7 @@ from ..manifesto import registrar_execucao
 from ..progresso import Progresso, ProgressoNulo
 from ..projeto import Projeto
 from ..topicos.resultado import assinatura_corpus
+from ..trava_etapas import etapa
 from . import instituicoes as inst
 from .casamento import NIVEIS, Casador, Indice
 from .contagem import Lugares, cobertura, contar
@@ -61,6 +62,7 @@ class ResumoGeografia:
         )
 
 
+@etapa("geografia")
 def gerar_geografia(projeto: Projeto, progresso: Progresso | None = None) -> ResumoGeografia:
     progresso = progresso or ProgressoNulo()
     inicio, t0 = datetime.now(UTC), time.perf_counter()

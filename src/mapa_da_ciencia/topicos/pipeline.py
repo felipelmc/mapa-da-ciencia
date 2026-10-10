@@ -10,6 +10,7 @@ Cada passo pesado tem cache (embeddings, reduções, rótulos): rodar de novo se
 from __future__ import annotations
 
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
@@ -27,6 +28,7 @@ from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.topicos.resultado import PASTA, MacroResultado, Resultado, TopicoResultado, assinatura_corpus
 from mapa_da_ciencia.topicos.rotulos import (
     VERSAO_PROMPT,
+    Caixa,
     EntradaTopico,
     ResumoRotulos,
     Rotulador,
@@ -34,6 +36,7 @@ from mapa_da_ciencia.topicos.rotulos import (
     ler_manuais,
     palavras_do_macrotema,
 )
+from mapa_da_ciencia.trava_etapas import etapa
 
 if TYPE_CHECKING:
     import numpy as np
@@ -90,6 +93,7 @@ def _medoide(pontos: np.ndarray) -> tuple[float, float]:
     return round(float(x), 5), round(float(y), 5)
 
 
+@etapa("topicos")
 def gerar_topicos(
     projeto: Projeto,
     opcoes: OpcoesTopicos | None = None,
@@ -197,6 +201,15 @@ def gerar_topicos(
         t = docs[doc_id].texto_em("titulos", list(idiomas))
         return t.texto if t else ""
 
+    def caixa_de(ids: Iterable[str]) -> Caixa:
+        """A caixa das palavras no meio das frases dos resumos em português (a conferência dos rótulos)."""
+        caixa = Caixa()
+        for i in ids:
+            for r in docs[i].resumos:
+                if r.idioma == "pt":
+                    caixa.contar(r.texto)
+        return caixa
+
     entradas: dict[int, EntradaTopico] = {}
     for b in range(k_brutos):
         tid = est.ids[b]
@@ -205,7 +218,11 @@ def gerar_topicos(
         vale = velho and velho.rotulo and (velho.rotulo_fonte != "llm" or velho.versao_rotulo == VERSAO_PROMPT)
         rotulo_velho = Rotulo(velho.rotulo, velho.descricao or "", velho.rotulo_fonte) if vale else None
         entradas[tid] = EntradaTopico(
-            [t for t, _ in palavras[b]], [titulo(i) for i in reps[b]], rotulo_velho, velho.palavras if velho else []
+            [t for t, _ in palavras[b]],
+            [titulo(i) for i in reps[b]],
+            rotulo_velho,
+            velho.palavras if velho else [],
+            caixa_de(nucleos[b]),
         )
     por_macro: dict[int, list[int]] = {}
     for b in sorted(range(k_brutos), key=lambda b: -tamanhos[b]):
@@ -213,7 +230,9 @@ def gerar_topicos(
     tamanho_de = {est.ids[b]: tamanhos[b] for b in range(k_brutos)}
     palavras_de = {est.ids[b]: palavras[b] for b in range(k_brutos)}
     manuais = ler_manuais(projeto.raiz)
-    rotulador = Rotulador(cfg.modelos.rotulos, projeto.estado, ollama=ollama, progresso=progresso)
+    rotulador = Rotulador(
+        cfg.modelos.rotulos, projeto.estado, ollama=ollama, progresso=progresso, caixa_corpus=caixa_de(e.ids)
+    )
     try:
         rotulos = rotulador.topicos(entradas, sem_llm=opcoes.sem_rotulos, manuais=manuais)
         palavras_macro = {m: palavras_do_macrotema(ts, palavras_de, tamanho_de) for m, ts in por_macro.items()}
@@ -225,6 +244,11 @@ def gerar_topicos(
     finally:
         rotulador.fim()
         progresso.fim()
+
+    # redes de antes da 2.3.0 (com os rótulos na assinatura): a assinatura nova, antes de os rótulos mudarem
+    from mapa_da_ciencia.redes.pipeline import atualizar_assinatura_legada
+
+    atualizar_assinatura_legada(projeto)
 
     # ---- identidade (com os rótulos) e resultado
     for tid, r in rotulos.items():
@@ -342,6 +366,7 @@ def gerar_topicos(
             "sem_topico": resumo.sem_topico,
             "casados": resumo.casados,
             "rotulos_llm": rotulador.resumo.chamadas,
+            "caixa_corrigida": rotulador.resumo.caixa_corrigida,
         },
         modelos=modelos,
         parametros={**parametros, "estabilidade_ari": ari},

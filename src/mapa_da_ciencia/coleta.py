@@ -40,6 +40,7 @@ from mapa_da_ciencia.fontes.articlemeta import (
     revista_do_registro,
 )
 from mapa_da_ciencia.fontes.base import Buscador, ErroFonte, ler_gz, limpar_temporarios
+from mapa_da_ciencia.fontes.conferencia import RelatorioConferencia, conferir_textos
 from mapa_da_ciencia.fontes.dedup import deduplicar
 from mapa_da_ciencia.fontes.importar import FORMATOS, Identificador, Importacao, ler_arquivo
 from mapa_da_ciencia.fontes.importar import colecao_da_url as colecao_da_url
@@ -67,6 +68,7 @@ from mapa_da_ciencia.progresso import Progresso, ProgressoNulo
 from mapa_da_ciencia.projeto import Projeto
 from mapa_da_ciencia.rede import variavel
 from mapa_da_ciencia.texto import normalizar_doi
+from mapa_da_ciencia.trava_etapas import etapa
 
 PASTA_IMPORTADOS = "importados"
 
@@ -101,7 +103,9 @@ class ResumoColeta:
 
     `documentos` e `por_revista` contam o que foi gravado no corpus. `fora_do_periodo`, `excluidos_por_tipo`
     e `nao_encontrados` contam o que ficou de fora, e `casamento` conta os documentos por passo da ligação
-    com o OpenAlex. `requisicoes`, `do_cache` e `creditos_openalex` medem o acesso às APIs.
+    com o OpenAlex. `requisicoes`, `do_cache` e `creditos_openalex` medem o acesso às APIs. `conferencia` lista
+    os resumos tirados por serem fragmentos e os que mudaram de idioma; `excluidos`, os documentos que o recorte
+    deixou de fora (`sem_autor` e `lista`).
     """
 
     documentos: int
@@ -119,6 +123,8 @@ class ResumoColeta:
     duracao_s: float
     avisos: list[str]
     plano: Plano
+    conferencia: RelatorioConferencia = field(default_factory=RelatorioConferencia)
+    excluidos: dict[str, list[str]] = field(default_factory=dict)
 
     @property
     def total_requisicoes(self) -> int:
@@ -130,9 +136,13 @@ class ResumoColeta:
             f"{num(self.documentos, 0)} documento(s) de {len(self.por_revista)} revista(s), "
             f"{periodo(self.plano.anos)}, em {num(self.duracao_s)} s. "
             f"De fora: {num(self.fora_do_periodo, 0)} fora do período, "
-            f"{num(sum(self.excluidos_por_tipo.values()), 0)} por tipo, {num(self.nao_encontrados, 0)} não "
+            f"{num(sum(self.excluidos_por_tipo.values()), 0)} por tipo, "
+            f"{num(len(self.excluidos.get('sem_autor', [])), 0)} sem autor, "
+            f"{num(len(self.excluidos.get('lista', [])), 0)} pela lista do recorte, {num(self.nao_encontrados, 0)} não "
             f"encontrado(s). OpenAlex: {num(casados, 0)} casado(s), {num(self.creditos_openalex, 0)} crédito(s). "
-            f"{num(self.total_requisicoes, 0)} requisição(ões), {num(sum(self.do_cache.values()), 0)} do cache."
+            f"{num(self.total_requisicoes, 0)} requisição(ões), {num(sum(self.do_cache.values()), 0)} do cache. "
+            f"Resumos: {num(len(self.conferencia.fragmentos), 0)} fragmento(s) tirado(s), "
+            f"{num(len(self.conferencia.idiomas), 0)} com o idioma corrigido."
         )
 
 
@@ -247,6 +257,28 @@ async def _enriquecer(
     progresso.avancar()
     outros = [d for d in documentos if d.revista_issn not in {r.issn for r in plano.revistas}]
     return saida + outros
+
+
+def _excluir(
+    documentos: list[Documento], sem_autor: bool, lista: list[str]
+) -> tuple[list[Documento], dict[str, list[str]], list[str]]:
+    """Tira do corpus os documentos sem autor (se `sem_autor`: nenhum na ArticleMeta e nenhuma autoria com nome no
+    OpenAlex) e os da lista do recorte (PID, DOI ou id do OpenAlex). Devolve (documentos, excluídos por motivo,
+    entradas da lista que não acharam nenhum documento)."""
+    pedidos = {(normalizar_doi(x) or x.strip().removeprefix("openalex:")).upper(): x for x in lista}
+    achados: set[str] = set()
+    ficam: list[Documento] = []
+    excluidos: dict[str, list[str]] = {}
+    for doc in documentos:
+        chaves = {c.upper() for c in (doc.id, doc.pid, doc.doi, doc.openalex_id) if c} & set(pedidos)
+        if chaves:
+            achados |= chaves
+            excluidos.setdefault("lista", []).append(doc.id)
+        elif sem_autor and not doc.autores and not any(a.nome for a in doc.autorias_openalex):
+            excluidos.setdefault("sem_autor", []).append(doc.id)
+        else:
+            ficam.append(doc)
+    return ficam, excluidos, [x for chave, x in pedidos.items() if chave not in achados]
 
 
 def _colecao_da_obra(obra: dict) -> str | None:
@@ -474,6 +506,14 @@ async def coletar_async(
                 excluidos[doc.tipo or "sem tipo"] += 1
             else:
                 documentos.append(doc)
+        # depois do OpenAlex (os pedidos não mudam e saem do cache) e antes das instituições, das referências e da
+        # deduplicação: um documento excluído não traz instituições nem absorve uma duplicata
+        recorte = projeto.config.recorte
+        documentos, excluidos_recorte, nao_achados_lista = _excluir(
+            documentos, recorte.excluir_sem_autor, recorte.excluir
+        )
+        if nao_achados_lista:
+            avisos.append("Da lista `recorte.excluir`, não apareceu na coleta: " + ", ".join(nao_achados_lista) + ".")
 
         # registros das instituições que o OpenAlex associou aos autores (siglas, nomes, local, linhagem):
         # a base do casamento das afiliações na geografia
@@ -512,6 +552,8 @@ async def coletar_async(
         contadores = buscador.contadores
 
     documentos, dedup = deduplicar(documentos)
+    # depois da deduplicação: os resumos repetidos (textos padrão) já saíram e não entram nas contagens
+    documentos, conferencia = conferir_textos(documentos)
     avisos += [
         f"{doc}: o DOI {doi} é de outro artigo ({dono}, confirmado pelo OpenAlex); o documento ficou sem DOI."
         for doc, doi, dono in dedup.dois_removidos
@@ -562,6 +604,8 @@ async def coletar_async(
         duracao_s=round(time.perf_counter() - t0, 2),
         avisos=avisos,
         plano=plano,
+        conferencia=conferencia,
+        excluidos=excluidos_recorte,
     )
     registrar_execucao(
         projeto,
@@ -580,12 +624,19 @@ async def coletar_async(
             "fundidos": resumo.fundidos,
             "possiveis_duplicatas": len(resumo.possiveis_duplicatas),
             "resumos_descartados": len(dedup.resumos_descartados),
+            "excluidos_sem_autor": len(excluidos_recorte.get("sem_autor", [])),
+            "excluidos_pela_lista": len(excluidos_recorte.get("lista", [])),
+            "resumos_fragmentos": len(conferencia.fragmentos),
+            "idiomas_corrigidos": len(conferencia.idiomas),
         },
         parametros=_parametros(plano, opcoes)
         | {
             "duplicatas_fundidas": dedup.fundidos,
             "dois_removidos": dedup.dois_removidos,
             "resumos_descartados": dedup.resumos_descartados,
+            "excluidos": excluidos_recorte,
+            "resumos_fragmentos": conferencia.fragmentos,
+            "idiomas_corrigidos": conferencia.idiomas,
         },
     )
     avisos += exportar(projeto)  # manifesto e revistas; tópicos que ficaram de outro corpus, com aviso
@@ -606,6 +657,7 @@ def _parametros(plano: Plano, opcoes: OpcoesColeta) -> dict[str, Any]:
     }
 
 
+@etapa("coleta")
 def coletar(projeto: Projeto, opcoes: OpcoesColeta | None = None, progresso: Progresso | None = None) -> ResumoColeta:
     """Roda a coleta. Funciona também dentro de um laço de eventos já ativo (Jupyter, Colab)."""
     try:

@@ -28,6 +28,8 @@ Cada registro da ArticleMeta vira um **documento** com títulos, resumos e palav
 - **Afiliações das duas versões.** A versão normalizada da afiliação (`v240`, com país em código ISO) é usada quando existe. As afiliações que ela não cobre vêm da versão original (`v70`).
 - **Autores segundo o OpenAlex.** Do OpenAlex, o documento guarda também os autores na ordem da obra, com as instituições que o OpenAlex reconheceu (com o identificador [ROR](https://ror.org), o país, o tipo e as instituições acima dela) e o texto de afiliação de cada um, sem e-mails. É a base da [geografia](geografia.md): as afiliações da ArticleMeta são casadas com essas instituições.
 
+O tipo de documento vem da revista, e nem sempre é o certo: encartes de dados e apresentações de dossiê às vezes estão registrados como artigos de pesquisa. Como quase sempre não têm autor, a coleta deixa de fora os documentos sem nenhum autor em nenhuma das duas fontes, e o recorte pode listar outros a excluir ([Montar um recorte](../guias/recorte.md#documentos-que-nao-sao-artigos)).
+
 As referências citadas por cada artigo (cerca de 90% do tamanho de um registro) não entram no documento, só a contagem delas. Elas continuam guardadas nas respostas brutas, e a coleta extrai delas, por lista branca, uma tabela à parte (`dados/referencias_articlemeta.parquet`: título, até três autores e o ano de cada referência), que as [redes](redes.md) usam para medir a cobertura e conferir a autoria do cânone.
 
 ## OpenAlex
@@ -54,7 +56,14 @@ Depois do enriquecimento, a coleta busca os **registros das instituições** que
 
 Quando a ArticleMeta não traz resumo de um artigo e o OpenAlex traz, o resumo do OpenAlex entra como **reserva**, marcado com a origem (`openalex`). O mesmo vale para o título: no piloto, seis artigos da *Opinião Pública* e da *Novos Estudos* de 2010 a 2013 estão sem título na ArticleMeta.
 
-O resumo de reserva nem sempre é um resumo. Às vezes o OpenAlex guarda um texto raspado da página do artigo: no piloto, dez artigos da *Novos Estudos CEBRAP* tinham como "resumo" a mesma apresentação, em espanhol, da biblioteca virtual Americanae. Por isso, **um resumo que se repete em documentos diferentes é descartado**. Um resumo do OpenAlex sai assim que aparece em outro documento. Um da ArticleMeta só sai quando se repete em três ou mais documentos, porque artigos publicados em duas partes podem dividir o mesmo resumo. O documento fica com os resumos que sobrarem, ou só com o título, e a coleta avisa quantos resumos saíram. O descarte não pega um texto que não é resumo e aparece uma vez só: no piloto, cerca de 25 "resumos" são fragmentos (nomes, referências, cabeçalhos, textos de repositório) e continuam no corpus ([Limitações e vieses](limitacoes.md#resumos-nao-artigos)).
+O resumo de reserva nem sempre é um resumo. Às vezes o OpenAlex guarda um texto raspado da página do artigo: no piloto, dez artigos da *Novos Estudos CEBRAP* tinham como "resumo" a mesma apresentação, em espanhol, da biblioteca virtual Americanae. Por isso, **um resumo que se repete em documentos diferentes é descartado**. Um resumo do OpenAlex sai assim que aparece em outro documento. Um da ArticleMeta só sai quando se repete em três ou mais documentos, porque artigos publicados em duas partes podem dividir o mesmo resumo. O documento fica com os resumos que sobrarem, ou só com o título, e a coleta avisa quantos resumos saíram.
+
+Um texto que não é resumo e aparece uma vez só escapa desse descarte. Por isso, depois da deduplicação, **a coleta confere cada resumo**:
+
+- **Fragmentos saem.** Sai um texto com menos de 15 palavras ("Resumo", um nome, "Keywords…"), um aviso de repositório ("Made available in DSpace…") ou um resumo do OpenAlex que começa no meio de uma frase, sem maiúscula ("2] Ibid", "na revista Encontros com a…"). Uma pontuação de abertura ("¿", "(", aspas) ou um número ("2013 foi…") antes da maiúscula não conta como meio de frase. No piloto, foram 36, 33 deles do OpenAlex.
+- **O idioma declarado é conferido.** As fontes erram o idioma de alguns resumos: na *RBCS* de 2020 e 2021, os resumos em francês vêm marcados como espanhol; na *Revista de Sociologia e Política*, resumos em espanhol vêm como português; em dois artigos, o português e o inglês estão trocados. O `mapa` reconhece o idioma pelas palavras funcionais (artigos, preposições, conjunções) e, quando um idioma ganha com folga, o resumo passa a ele. O título e as palavras-chave do mesmo idioma seguem o resumo, a não ser que o próprio título confirme o idioma declarado. No piloto, 35 resumos mudaram de idioma.
+
+A coleta mostra as duas contagens no fim, e as listas ficam no manifesto da coleta. O que sobra são textos raspados com frases coladas ("salário.Trad.Iraci"): o OpenAlex junta as linhas do PDF sem espaço. Eles ficam, porque são o texto do próprio artigo ([Limitações e vieses](limitacoes.md#resumos-nao-artigos)).
 
 ## E o search.scielo.org?
 
@@ -89,17 +98,17 @@ Se, depois disso, um DOI ainda aparece em dois documentos diferentes, ele fica s
 
 ## Cobertura no piloto
 
-Ciência política no SciELO Brasil, 10 revistas, de 2010 a 2025 (coletado em 26/09/2026 com `mapa coletar`):
+Ciência política no SciELO Brasil, 10 revistas, de 2010 a 2025 (coletado em 26/09/2026 com `mapa coletar` e de novo, do cache, em 10/10/2026, com a conferência dos resumos e sem os documentos sem autor):
 
 | | Documentos | % |
 |---|---|---|
-| Artigos de pesquisa ou revisão (o corpus) | 4.275 | 100 |
-| Com resumo | 4.247 | 99,3 |
-| Com resumo em inglês | 4.159 | 97,3 |
-| Com DOI | 4.262 | 99,7 |
-| Com afiliação normalizada (`v240`) | 2.523 | 59,0 |
+| Artigos de pesquisa ou revisão (o corpus) | 4.265 | 100 |
+| Com resumo | 4.206 | 98,6 |
+| Com resumo em inglês | 4.161 | 97,6 |
+| Com DOI | 4.252 | 99,7 |
+| Com afiliação normalizada (`v240`) | 2.523 | 59,2 |
 | Com afiliação só em texto livre (`v70`) | 1.418 | 33,2 |
-| Casados com o OpenAlex | 4.249 | 99,4 |
-| Com licença Creative Commons | 4.249 | 99,4 |
+| Casados com o OpenAlex | 4.239 | 99,4 |
+| Com licença Creative Commons | 4.239 | 99,4 |
 
-A ArticleMeta tem 4.947 registros dessas revistas no período. Ficam de fora 670 de outros tipos (resenhas, editoriais, erratas...), e 2 artigos carregados duas vezes são fundidos. Os números por revista estão no [registro da coleta](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0003-fontes-casamento-e-licencas.md#adendo-2026-09-26-marco-m2-a-coleta-de-produção), no repositório.
+A ArticleMeta tem 4.947 registros dessas revistas no período. Ficam de fora 670 de outros tipos (resenhas, editoriais, erratas...) e 10 sem autor, e 2 artigos carregados duas vezes são fundidos. Com resumo são 41 a menos que na primeira coleta: os fragmentos saíram, e alguns documentos ficaram só com o título. Os números por revista estão no [registro da coleta](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0003-fontes-casamento-e-licencas.md#adendo-2026-09-26-marco-m2-a-coleta-de-produção), no repositório.

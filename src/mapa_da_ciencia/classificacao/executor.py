@@ -28,7 +28,7 @@ from ..llm.cache import CacheLLM, chave_de
 from ..llm.memoria import garantir_modelo, memoria_critica
 from ..llm.ollama import Ollama
 from ..progresso import Progresso, ProgressoNulo
-from .codebook import esquema, sem_informacao, validar
+from .codebook import conferir_valor, esquema, sem_informacao, validar
 from .evidencia import Conferencia, conferir
 from .prompt import VERSAO_PROMPT, assinatura, mensagem_correcao, mensagem_documento, mensagem_sistema
 
@@ -201,11 +201,17 @@ class Classificador:
         }
 
     def _montar(self, texto: Texto, guardado: dict[str, Any], *, do_cache: bool) -> Classificacao:
+        # os valores passam de novo pela normalização (idempotente): uma regra nova dela vale também para o cache,
+        # sem chamar o modelo de novo
+        variaveis = {v.id: v for v in self.codebook.variaveis}
+        valores = {
+            k: conferir_valor(variaveis[k], x)[0] if k in variaveis else x for k, x in guardado["valores"].items()
+        }
         return Classificacao(
             doc=texto.doc,
-            valores=guardado["valores"],
+            valores=valores,
             evidencias=guardado["evidencias"],
-            conferencias=self._conferir(texto, guardado["valores"], guardado["evidencias"]),
+            conferencias=self._conferir(texto, valores, guardado["evidencias"]),
             tentativas=guardado["tentativas"],
             valida_na_primeira=guardado["valida_na_primeira"],
             segundos=guardado["segundos"],

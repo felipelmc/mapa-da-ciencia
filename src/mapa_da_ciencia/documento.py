@@ -52,6 +52,12 @@ class Afiliacao(_Base):
     uf: str | None = Field(None, description="Estado como a fonte escreve (nome ou sigla).")
     pais: str | None = Field(None, description="País como a fonte escreve (ISO-2 na `v240`, nome na `v70`).")
     fonte: Literal["v240", "v70", "openalex"]
+    cidade_v70: str | None = Field(
+        None,
+        description="Numa afiliação da `v240`, a cidade que a `v70` (o texto original) dá à mesma afiliação: a "
+        "`v240` às vezes põe a instituição na cidade da sede, e não na do campus.",
+    )
+    uf_v70: str | None = Field(None, description="Numa afiliação da `v240`, a UF que a `v70` dá à mesma afiliação.")
 
 
 class Autor(_Base):

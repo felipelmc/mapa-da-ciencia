@@ -188,10 +188,52 @@ const NS = 'http://www.w3.org/2000/svg';
 const escapar = (t: string) =>
 	t.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
-/** O primeiro gráfico SVG da figura (o que vale exportar), ignorando ícones e sparklines pequenas. */
-export function graficoDe(figura: HTMLElement): SVGSVGElement | null {
+/** O gráfico da figura (o que vale exportar): os pequenos múltiplos inteiros (`[data-multiplos]`, cada filho um painel
+ * com um SVG e o título), ou o primeiro gráfico SVG, ignorando ícones e sparklines pequenas. */
+export function graficoDe(figura: HTMLElement): SVGSVGElement | HTMLElement | null {
+	const multiplos = figura.querySelector<HTMLElement>('.grafico [data-multiplos]');
+	if (multiplos?.querySelector('svg')) return multiplos;
 	const svgs = Array.from(figura.querySelectorAll<SVGSVGElement>('.grafico svg'));
 	return svgs.find((s) => s.getBoundingClientRect().width >= 200) ?? null;
+}
+
+/** Os pequenos múltiplos num SVG só: cada painel na posição da tela, com o título em `<text>` e a opacidade dele
+ * (um painel apagado pelo recorte continua apagado). */
+function clonarMultiplos(container: HTMLElement): SVGSVGElement {
+	const base = container.getBoundingClientRect();
+	const saida = document.createElementNS(NS, 'svg') as SVGSVGElement;
+	saida.setAttribute('viewBox', `0 0 ${base.width} ${base.height}`);
+	for (const painel of Array.from(container.children) as HTMLElement[]) {
+		const svg = painel.querySelector<SVGSVGElement>('svg');
+		if (!svg) continue;
+		const grupo = document.createElementNS(NS, 'g');
+		const opacidade = getComputedStyle(painel).opacity;
+		if (opacidade && opacidade !== '1') grupo.setAttribute('opacity', opacidade);
+		const r = svg.getBoundingClientRect();
+		const clone = svg.cloneNode(true) as SVGSVGElement;
+		fixarEstilos(svg, clone);
+		for (const [nome, valor] of [['x', r.left - base.left], ['y', r.top - base.top], ['width', r.width], ['height', r.height]] as const)
+			clone.setAttribute(nome, String(valor));
+		clone.removeAttribute('style');
+		const titulo = painel.querySelector<HTMLElement>('[data-titulo-painel], h3, .titulo-multiplo');
+		if (titulo) {
+			const t = titulo.getBoundingClientRect();
+			const e = getComputedStyle(titulo);
+			const texto = document.createElementNS(NS, 'text');
+			// `data-exportar`: um título mais completo que o da tela (o nome da revista, e não a sigla), cortado na largura
+			// do painel (o SVG não quebra a linha, e um nome longo entraria no painel do lado)
+			const medir = medidor(e.fontFamily, e.fontWeight);
+			const completo = (titulo.dataset.exportar ?? titulo.textContent ?? '').replace(/\s+/g, ' ').trim();
+			texto.textContent = caberNaLargura(completo, painel.getBoundingClientRect().width - 4, (x) => medir(x, parseFloat(e.fontSize)));
+			texto.setAttribute('x', String(t.left - base.left));
+			texto.setAttribute('y', String(t.top - base.top + parseFloat(e.fontSize)));
+			texto.setAttribute('style', `font-family:${e.fontFamily};font-size:${e.fontSize};font-weight:${e.fontWeight};fill:${e.color}`);
+			grupo.append(texto);
+		}
+		grupo.append(clone);
+		saida.append(grupo);
+	}
+	return saida;
 }
 
 /**
@@ -200,71 +242,176 @@ export function graficoDe(figura: HTMLElement): SVGSVGElement | null {
  */
 type Rasterizavel = HTMLElement & { rasterizar?: () => string };
 
-/** Um item de legenda da figura (`[data-legenda] li`): o texto e a amostra (uma cor ou um traço). */
+/** A amostra de um item de legenda: um círculo, um quadrado, um traço ou uma hachura, com a cor resolvida no tema. */
+export interface AmostraLegenda {
+	forma: 'circulo' | 'quadrado' | 'linha' | 'hachura';
+	cor: string;
+	opacidade: number;
+	/** A espessura do traço (`linha`). */
+	largura?: number;
+	/** O fundo da hachura. */
+	fundo?: string;
+}
+
+/** Um item de legenda da figura (`[data-legenda] li`): o texto e a amostra. */
 export interface ItemLegenda {
 	texto: string;
 	/** Um título ("Peso da parceria:"), que começa uma linha nova. */
 	titulo: boolean;
-	cor: string | null;
-	traco: { cor: string; largura: number; opacidade: number } | null;
-	opacidade: number;
+	amostra: AmostraLegenda | null;
 }
 
 const transparente = (cor: string) => !cor || cor === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(cor);
 
-/** As legendas em HTML da figura (listas com `data-legenda`), com as cores do tema aplicado no momento. */
+/** A amostra de um item: a hachura (um `rect` com `fill="url(#…)"`), o traço (`svg line`) ou a cor de fundo de um
+ * `span` (`.bolinha`/`.cor`, um círculo; `.caixa`/`.amostra`, um quadrado). */
+function amostraDe(li: HTMLElement, figura: HTMLElement): AmostraLegenda | null {
+	const hachura = li.querySelector<SVGRectElement>('svg rect[fill^="url("]');
+	if (hachura) {
+		const id = hachura.getAttribute('fill')!.match(/url\(#([^)]+)\)/)?.[1];
+		const padrao = id ? figura.querySelector(`[id="${CSS.escape(id)}"]`) : null;
+		const traco = padrao?.querySelector('line, path');
+		const fundo = padrao?.querySelector('rect');
+		return {
+			forma: 'hachura',
+			cor: traco ? getComputedStyle(traco).stroke : getComputedStyle(li).color,
+			fundo: fundo ? getComputedStyle(fundo).fill : 'none',
+			opacidade: 1
+		};
+	}
+	const linha = li.querySelector<SVGLineElement>('svg line');
+	if (linha) {
+		const t = getComputedStyle(linha);
+		return { forma: 'linha', cor: t.stroke, largura: parseFloat(t.strokeWidth) || 1, opacidade: Number(t.opacity) || 1 };
+	}
+	const span = li.querySelector<HTMLElement>('.bolinha, .cor, .caixa, .amostra');
+	if (!span) return null;
+	const s = getComputedStyle(span);
+	if (transparente(s.backgroundColor)) return null;
+	const forma = span.matches('.caixa, .amostra') ? 'quadrado' : 'circulo';
+	return { forma, cor: s.backgroundColor, opacidade: Number(s.opacity) || 1 };
+}
+
+/** As legendas em HTML da figura (listas com `data-legenda`; o valor do atributo, se houver, é o título), com as cores
+ * do tema aplicado no momento. */
 export function legendaDe(figura: HTMLElement): ItemLegenda[] {
 	const itens: ItemLegenda[] = [];
-	for (const li of figura.querySelectorAll<HTMLElement>('.grafico [data-legenda] > li')) {
-		const texto = (li.textContent ?? '').replace(/\s+/g, ' ').trim();
-		if (!texto) continue;
-		const amostra = li.querySelector<HTMLElement>('.bolinha, .caixa, .cor');
-		const linha = li.querySelector<SVGLineElement>('svg line');
-		const s = amostra ? getComputedStyle(amostra) : null;
-		const t = linha ? getComputedStyle(linha) : null;
-		itens.push({
-			texto,
-			titulo: li.classList.contains('titulo-legenda'),
-			cor: s && !transparente(s.backgroundColor) ? s.backgroundColor : null,
-			opacidade: s ? Number(s.opacity) || 1 : 1,
-			traco: t
-				? { cor: t.stroke, largura: parseFloat(t.strokeWidth) || 1, opacidade: Number(t.opacity) || 1 }
-				: null
-		});
+	for (const lista of figura.querySelectorAll<HTMLElement>('.grafico [data-legenda]')) {
+		const titulo = lista.dataset.legenda?.trim();
+		if (titulo) itens.push({ texto: titulo, titulo: true, amostra: null });
+		for (const li of lista.querySelectorAll<HTMLElement>(':scope > li')) {
+			const texto = (li.textContent ?? '').replace(/\s+/g, ' ').trim();
+			if (!texto) continue;
+			itens.push({ texto, titulo: li.classList.contains('titulo-legenda'), amostra: amostraDe(li, figura) });
+		}
 	}
 	return itens;
 }
 
-/** A legenda em SVG, em linhas que quebram na largura `w`; devolve o SVG e a altura ocupada. */
-function legendaEmSvg(itens: ItemLegenda[], x0: number, y0: number, w: number, k: number, fonte: string, cor: string) {
-	const tamanho = 11 * k;
-	const linha = 17 * k;
-	const partes: string[] = [];
-	let [x, y] = [x0, y0 + tamanho];
-	for (const it of itens) {
-		const amostra = it.cor || it.traco ? 16 * k : 0;
-		const largura = amostra + it.texto.length * tamanho * 0.52 + 14 * k;
-		if (x > x0 && (it.titulo || x + largura > x0 + w)) [x, y] = [x0, y + linha];
-		if (it.cor) {
-			partes.push(
-				`<circle cx="${x + 5 * k}" cy="${y - tamanho * 0.35}" r="${4.5 * k}" fill="${it.cor}" fill-opacity="${it.opacidade}"/>`
-			);
-		} else if (it.traco) {
-			partes.push(
-				`<line x1="${x}" x2="${x + 12 * k}" y1="${y - tamanho * 0.35}" y2="${y - tamanho * 0.35}" stroke="${it.traco.cor}" stroke-width="${it.traco.largura * k}" stroke-opacity="${it.traco.opacidade}" stroke-linecap="round"/>`
-			);
-		}
-		partes.push(
-			`<text x="${x + amostra}" y="${y}" font-family="${escapar(fonte)}" font-size="${tamanho}" fill="${cor}">${escapar(it.texto)}</text>`
-		);
-		x += largura;
+export interface OpcoesLegenda {
+	x: number;
+	y: number;
+	/** A largura disponível: nada passa dela. */
+	largura: number;
+	/** A escala do texto da figura. */
+	k: number;
+	fonte: string;
+	cor: string;
+	/** A largura de um texto no tamanho dado (o `measureText` do canvas, com a fonte da figura). */
+	medir: (texto: string, tamanho: number) => number;
+}
+
+/** Quebra o texto por palavras em linhas de até `largura`. */
+function quebrar(texto: string, largura: number, tamanho: number, medir: OpcoesLegenda['medir']): string[] {
+	const linhas: string[] = [];
+	let atual = '';
+	for (const palavra of texto.split(' ')) {
+		const tentativa = atual ? `${atual} ${palavra}` : palavra;
+		if (atual && medir(tentativa, tamanho) > largura) {
+			linhas.push(atual);
+			atual = palavra;
+		} else atual = tentativa;
 	}
-	return { svg: partes.join('\n'), altura: itens.length ? y - y0 + linha * 0.6 : 0 };
+	return atual ? [...linhas, atual] : linhas;
+}
+
+/** A legenda em SVG nativo (sem `foreignObject`, que o PNG não desenha em todo navegador): os itens lado a lado, em
+ * linhas que quebram na largura, e o texto de um item longo em mais de uma linha. Devolve o SVG, as definições
+ * (as hachuras) e a altura ocupada. */
+export function legendaEmSvg(itens: ItemLegenda[], o: OpcoesLegenda): { svg: string; defs: string; altura: number } {
+	if (!itens.length) return { svg: '', defs: '', altura: 0 };
+	const { x: x0, largura: w, k, medir } = o;
+	const tamanho = 11 * k;
+	const passo = 15 * k;
+	const separacao = 14 * k;
+	const partes: string[] = [];
+	const defs: string[] = [];
+	let x = x0;
+	let y = o.y + tamanho;
+	itens.forEach((it, n) => {
+		const amostra = it.amostra ? 16 * k : 0;
+		const linhas = quebrar(it.texto, w - amostra, tamanho, medir);
+		const largura = amostra + Math.max(...linhas.map((l) => medir(l, tamanho)));
+		if (x > x0 && (it.titulo || linhas.length > 1 || x + largura > x0 + w)) [x, y] = [x0, y + passo + 2 * k];
+		const meio = y - tamanho * 0.35;
+		const a = it.amostra;
+		if (a?.forma === 'circulo') {
+			partes.push(`<circle cx="${x + 5 * k}" cy="${meio}" r="${4.5 * k}" fill="${a.cor}" fill-opacity="${a.opacidade}"/>`);
+		} else if (a?.forma === 'quadrado') {
+			partes.push(`<rect x="${x}" y="${meio - 5 * k}" width="${10 * k}" height="${10 * k}" fill="${a.cor}" fill-opacity="${a.opacidade}"/>`);
+		} else if (a?.forma === 'linha') {
+			partes.push(
+				`<line x1="${x}" x2="${x + 12 * k}" y1="${meio}" y2="${meio}" stroke="${a.cor}" stroke-width="${(a.largura ?? 1) * k}" stroke-opacity="${a.opacidade}" stroke-linecap="round"/>`
+			);
+		} else if (a?.forma === 'hachura') {
+			const id = `leg-hachura-${n}`;
+			defs.push(
+				`<pattern id="${id}" width="${4 * k}" height="${4 * k}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="${4 * k}" height="${4 * k}" fill="${a.fundo ?? 'none'}"/><line x1="0" y1="0" x2="0" y2="${4 * k}" stroke="${a.cor}" stroke-width="${1.5 * k}"/></pattern>`
+			);
+			partes.push(`<rect x="${x}" y="${meio - 5 * k}" width="${10 * k}" height="${10 * k}" fill="url(#${id})" stroke="${a.cor}" stroke-width="${0.5 * k}"/>`);
+		}
+		linhas.forEach((linha, j) => {
+			const peso = it.titulo ? ' font-weight="600"' : '';
+			partes.push(
+				`<text x="${x + amostra}" y="${y + j * passo}" font-family="${escapar(o.fonte)}" font-size="${tamanho}" fill="${o.cor}"${peso}>${escapar(linha)}</text>`
+			);
+		});
+		y += (linhas.length - 1) * passo;
+		if (linhas.length > 1) [x, y] = [x0 + w + 1, y]; // depois de um item longo, o próximo começa outra linha
+		else x += largura + separacao;
+	});
+	return { svg: partes.join('\n'), defs: defs.join(''), altura: y - o.y + passo * 0.6 };
+}
+
+/** Mede um texto com o `measureText` do canvas, na família dada (depois de as fontes carregarem). */
+/** O texto inteiro, se cabe na largura; senão, cortado com "…", mantendo um número entre parênteses no fim ("(430)"). */
+export function caberNaLargura(texto: string, largura: number, medir: (texto: string) => number): string {
+	if (medir(texto) <= largura) return texto;
+	const [, nome, sufixo] = texto.match(/^(.*?)( \([^)]*\))?$/) ?? [texto, texto, ''];
+	let corte = nome.length;
+	while (corte > 1 && medir(`${nome.slice(0, corte).trimEnd()}…${sufixo ?? ''}`) > largura) corte -= 1;
+	return `${nome.slice(0, corte).trimEnd()}…${sufixo ?? ''}`;
+}
+
+/** Mede o texto no canvas. O `font` do canvas é o atalho do CSS: o peso vem antes do tamanho ("600 13.6px Família");
+ * fora dessa ordem, ele é ignorado e a medida sai com a fonte padrão (10px sans-serif). */
+export function fonteDoCanvas(tamanho: number, familia: string, peso = ''): string {
+	return `${peso && peso !== '400' && peso !== 'normal' ? `${peso} ` : ''}${tamanho}px ${familia}`;
+}
+
+function medidor(fonte: string, peso = ''): OpcoesLegenda['medir'] {
+	const ctx = document.createElement('canvas').getContext('2d');
+	return (texto, tamanho) => {
+		if (!ctx) return texto.length * tamanho * 0.55;
+		ctx.font = fonteDoCanvas(tamanho, fonte, peso);
+		return ctx.measureText(texto).width;
+	};
 }
 
 export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Preset): Promise<string | null> {
 	const grafico = graficoDe(figura);
 	if (!grafico) return null;
+	const multiplos = !(grafico instanceof SVGSVGElement);
 	const caixa = grafico.getBoundingClientRect();
 	const w = caixa.width;
 	const h = caixa.height;
@@ -273,11 +420,15 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 	const { clone, fundo, texto, suave, familias, imagem, legenda } = comTema(tema, () => {
 		const imagem = raster?.rasterizar?.() ?? null;
 		const legenda = legendaDe(figura);
-		const clone = grafico.cloneNode(true) as SVGSVGElement;
-		fixarEstilos(grafico, clone);
+		let clone: SVGSVGElement;
+		if (multiplos) clone = clonarMultiplos(grafico);
+		else {
+			clone = grafico.cloneNode(true) as SVGSVGElement;
+			fixarEstilos(grafico, clone);
+		}
 		const s = getComputedStyle(document.body);
 		const familias = new Set<string>();
-		for (const el of [grafico, ...grafico.querySelectorAll('text')]) {
+		for (const el of [grafico, ...grafico.querySelectorAll('text, h3, .titulo-multiplo, [data-titulo-painel]')]) {
 			getComputedStyle(el)
 				.fontFamily.split(',')
 				.forEach((f) => familias.add(f.replaceAll(/['"]/g, '').trim()));
@@ -305,7 +456,8 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 	const topo = margem + 30 * k + (meta.recorte ? 22 * k : 0) + 12 * k;
 	const rodape = 22 * k + margem;
 	const W = w + 2 * margem;
-	const leg = legendaEmSvg(legenda, margem, topo + h + 12 * k, w, k, fonteTexto, suave);
+	await document.fonts?.ready; // o measureText precisa das fontes carregadas
+	const leg = legendaEmSvg(legenda, { x: margem, y: topo + h + 12 * k, largura: w, k, fonte: fonteTexto, cor: suave, medir: medidor(fonteTexto) });
 	const H = topo + h + (leg.altura ? leg.altura + 12 * k : 0) + rodape;
 	const fontes = await fontesEmbutidas(familias);
 	const data = new Date().toLocaleDateString('pt-BR');
@@ -328,7 +480,7 @@ export async function montarSvg(figura: HTMLElement, meta: Metadados, preset: Pr
 			: `width="${W}" height="${H}"`;
 	return [
 		`<svg xmlns="${NS}" ${tamanho} viewBox="0 0 ${W} ${H}">`,
-		`<defs><style>${fontes}</style></defs>`,
+		`<defs><style>${fontes}</style>${leg.defs}</defs>`,
 		`<rect width="${W}" height="${H}" fill="${fundo}"/>`,
 		`<text x="${margem}" y="${margem + 24 * k}" font-family="${escapar(fonteTitulo)}" font-size="${24 * k}" fill="${texto}">${escapar(meta.titulo)}</text>`,
 		meta.recorte

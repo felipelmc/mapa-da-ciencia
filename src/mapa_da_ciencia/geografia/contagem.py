@@ -26,6 +26,15 @@ que a fonte escreveu.
 
 Os passos 3 a 6 olham primeiro a unidade que casou (uma escola, um hospital) e só depois a instituição "mãe" para a
 qual ela subiu: a EAESP fica em São Paulo, mesmo que a FGV seja do Rio.
+
+A `v240` (a afiliação normalizada) às vezes põe a instituição na cidade errada: 61 vínculos do piloto (48 afiliações)
+dizem "Fundação Getúlio Vargas, Brasília", e o texto original (`v70`) de 34 dessas afiliações diz São Paulo. Por
+isso, num vínculo da `v240` em que a UF da `v70` diverge da UF dos passos 1 e 2 (ou só a `v70` dá o lugar), vale a
+`v70`, salvo quando o consenso do passo 4 confirma a UF da `v240` ou, se a `v240` não dá o lugar, aponta outra UF. No
+consenso, o vínculo em que as duas divergem vota na UF da `v70`, e uma instituição com campi em vários estados (a
+FGV) fica sem consenso. O consenso pesa porque a `v70` também erra: ela põe autores da UFMG em Brasília e, quando a
+`v240` não dá o lugar, às vezes traz o endereço do autor em outra cidade (um autor da USP em Brasília, da Unicamp no
+Rio).
 """
 
 from __future__ import annotations
@@ -75,8 +84,10 @@ class Lugares:
                     continue
                 if v.cidade_fonte:
                     por_cidade[normalizar.chave(v.cidade_fonte)][v.uf_fonte] += 1
+                # onde a v70 contradiz a v240, o vínculo vota na UF do texto original: o consenso diz onde a
+                # instituição está, e uma com campi em vários estados fica sem consenso
                 for id_ in {v.casada, v.instituicao} - {None}:
-                    por_instituicao[id_][v.uf_fonte] += 1
+                    por_instituicao[id_][v.uf_v70 or v.uf_fonte] += 1
         self._cidades = _consenso(por_cidade)
         self._instituicoes = _consenso(por_instituicao)
 
@@ -87,13 +98,23 @@ class Lugares:
     def _da_cidade(self, cidade: str | None) -> str | None:
         return normalizar.uf_da_cidade(cidade) or (self._cidades.get(normalizar.chave(cidade)) if cidade else None)
 
+    def _consenso(self, v: Vinculo) -> str | None:
+        """A UF do consenso do corpus para a unidade que casou, senão para a mãe."""
+        return next((uf for i in (v.casada, v.instituicao) if i and (uf := self._instituicoes.get(i))), None)
+
     def uf(self, v: Vinculo, pais: str | None) -> str | None:
         if pais != "BR":
             return None
-        if v.uf_fonte:
-            return v.uf_fonte
-        if uf := self._da_cidade(v.cidade_fonte):
-            return uf
+        da_fonte = v.uf_fonte or self._da_cidade(v.cidade_fonte)
+        if v.uf_v70 and v.uf_v70 != da_fonte:
+            # a v240 e o texto original divergem (ou só o original dá o lugar): decide o consenso da instituição,
+            # quando ele confirma a v240 ou, sem lugar na v240, contradiz a v70; senão, vale a v70
+            firme = self._consenso(v)
+            if firme is not None and firme != v.uf_v70 and da_fonte in (None, firme):
+                return firme
+            return v.uf_v70
+        if da_fonte:
+            return da_fonte
         # primeiro a unidade que casou (a EAESP fica em SP, mesmo que a FGV, a "mãe", seja do RJ), depois a mãe
         for id_ in dict.fromkeys(i for i in (v.casada, v.instituicao) if i):
             r = self.indice.registros.get(id_)

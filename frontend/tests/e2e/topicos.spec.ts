@@ -83,16 +83,34 @@ test('em alta e em queda: sem recorte, a lista é a do gabarito do Python', asyn
 	await page.screenshot({ path: join(TELAS, 'topicos-tendencias-1440x900.png'), fullPage: true });
 });
 
-test('a ajuda das tendências avisa do pico na borda do período e das marcações marginais', async ({ page }) => {
+test('a ajuda das tendências avisa do pico na borda do período e das marcações frágeis', async ({ page }) => {
 	await page.goto(`${url('RAIZ')}#/topicos`);
 	await expect(page.getByTestId('cautela-tendencias')).toContainText('primeiro ou no último ano do período');
-	await expect(page.getByTestId('cautela-tendencias')).toContainText('marginais');
+	await expect(page.getByTestId('cautela-tendencias')).toContainText('frágeis');
 	// a nota vale para qualquer projeto: nada de números de um corpus em particular
 	await expect(page.getByTestId('cautela-tendencias')).not.toContainText(/piloto|\d+ das \d+/);
 	await page.goto(`${url('RAIZ')}#/ajuda`);
 	const ajuda = page.getByText(/pico no primeiro ou no último ano/);
 	await expect(ajuda).toBeVisible();
 	await expect(ajuda).not.toContainText(/piloto|\d+ das \d+|três das/);
+});
+
+test('as tendências frágeis levam a etiqueta, na lista e na gaveta, iguais ao gabarito', async ({ page }) => {
+	type T = { id: number; tendencia: { direcao: string; fragil?: boolean | null; anos_decisivos?: number[] } };
+	const marcados = (topicos.topicos as T[]).filter((t) => ['alta', 'queda'].includes(t.tendencia.direcao));
+	const frageis = marcados.filter((t) => t.tendencia.fragil);
+	expect(frageis.length).toBeGreaterThan(0); // o exemplo tem tendências frágeis
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	for (const t of marcados) {
+		const item = page.locator(`[data-testid^="lista-"] li[data-id="${t.id}"]`);
+		await expect(item.getByTestId('marca-fragil')).toHaveCount(t.tendencia.fragil ? 1 : 0);
+	}
+	// a gaveta de uma tendência frágil diz de que ano ela depende
+	const umAno = frageis.find((t) => t.tendencia.anos_decisivos!.length === 1)!;
+	await page.locator(`li[data-id="${umAno.id}"]`).getByRole('button').click();
+	const gaveta = page.getByTestId('gaveta-topico');
+	await expect(gaveta.getByTestId('fragil-gaveta')).toBeVisible();
+	await expect(gaveta.getByTestId('tendencia-gaveta')).toContainText(`a marcação some sem ${umAno.tendencia.anos_decisivos![0]}`);
 });
 
 test('com menos de 5 anos no recorte, a lista pede um período maior', async ({ page }) => {

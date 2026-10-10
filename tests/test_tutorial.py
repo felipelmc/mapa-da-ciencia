@@ -105,9 +105,10 @@ def test_parte_2_topicos(tmp_path, apis_falsas, monkeypatch):
     saidas = _rodar(PARTE_2, monkeypatch, antes=_semear, pular=COLETA)
 
     assert "Modelos do perfil" in saidas["diagnostico"][0]
-    primeira, segunda = saidas["topicos"]
+    primeira, segunda, aplicar = saidas["topicos"]
     assert "Tópicos prontos" in primeira and "Macrotema" in primeira and "Rótulos (" in primeira
     assert "mantiveram o número e a cor" in segunda and "Embeddings novos: 0" in segunda
+    assert "Rótulos aplicados" in aplicar  # o rotulos.yaml do passo 8 (no teste, sem entradas)
     assert "Tópicos:" in saidas["status"][0] and "rótulos: llm" in saidas["status"][0]
     assert (tmp_path / "projetos" / "op" / "saida" / "dados" / "topicos.json").exists()
 

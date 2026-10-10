@@ -172,3 +172,110 @@ def test_redes_e_uma_etapa_do_painel():
     assert "redes" in ETAPAS_DO_PAINEL and OPCOES["redes"]().model_dump() == {}
     with pytest.raises(pydantic.ValidationError):
         OPCOES["redes"](limite=3)
+
+
+# ---------------------------------------------------------------- rótulos dos tópicos
+ROTULOS_COM_SECOES = """\
+# rotulos.yaml — exemplo. Rótulos corrigidos à mão.
+topicos:
+  # --- rótulos que os títulos desmentem ---
+  14:  # era "Política externa sob Lula"
+    rotulo: Política externa brasileira
+    descricao: Os trabalhos analisam a política externa brasileira.
+  26:  # a descrição do modelo termina truncada
+    rotulo: Cooperação Sul-Sul e desenvolvimento
+    descricao: Os trabalhos analisam a cooperação Sul-Sul.
+
+  # --- rótulos que nomeiam só uma parte do tópico ---
+  0:  # era "Capacidades estatais municipais"
+    rotulo: Federalismo e capacidades estatais
+    descricao: Os trabalhos analisam o federalismo.
+macrotemas:
+  1:
+    rotulo: Instituições e políticas
+    descricao: As instituições políticas.
+"""
+
+
+def _com_topicos(projeto):
+    """Um resultado de tópicos mínimo (quatro tópicos em dois macrotemas), sem rodar a etapa."""
+    from mapa_da_ciencia.topicos.resultado import PASTA, MacroResultado, Resultado, TopicoResultado
+
+    def topico(i, macro, rotulo, palavras):
+        return TopicoResultado(i, macro, rotulo, f"Sobre {rotulo}.", "llm", "#336699",
+                               [(p, 1.0) for p in palavras], [], 10, (0.0, 0.0))  # fmt: skip
+
+    Resultado(
+        assinatura="x", gerado_em="2026-10-10T00:00:00+00:00", parametros={}, estabilidade_ari=None, ruido=0,
+        reatribuidos=0, modelos={},
+        topicos=[topico(0, 1, "Capacidades estatais", ["federalismo", "estado"]),
+                 topico(14, 1, "Política externa", ["política", "externa", "itamaraty"]),
+                 topico(26, 2, "Cooperação", ["cooperação", "sul"]),
+                 topico(30, 2, "Gênero", ["gênero", "mulheres"])],
+        macrotemas=[MacroResultado(1, "Estado", "", "llm", "#336699", [0, 14]),
+                    MacroResultado(2, "Internacional", "", "llm", "#996633", [26, 30])],
+    ).gravar(projeto.dados / PASTA, [{"id": "d1", "topico": 0, "atribuicao": "cluster", "x": 0.0, "y": 0.0,
+                                      "vizinhos": [], "idioma_analise": "en", "fonte_analise": "resumo"}])  # fmt: skip
+
+
+def test_rotulos_pelo_painel(cliente, projeto):
+    assert cliente.get("/api/rotulos").status_code == 404  # sem tópicos
+    _com_topicos(projeto)
+    r = cliente.get("/api/rotulos").json()
+    assert [t["id"] for t in r["topicos"]] == [0, 14, 26, 30] and r["pendentes"] == 0
+    assert r["topicos"][1]["palavras"] == ["política", "externa", "itamaraty"] and r["topicos"][1]["manual"] is None
+
+    # o primeiro rótulo à mão cria o arquivo, com um cabeçalho; um acento que parece perdido vira aviso
+    r = cliente.patch("/api/rotulos", json={"topicos": {"14": {"rotulo": "Politica externa", "descricao": ""}}})
+    assert r.status_code == 200, r.text
+    texto = (projeto.raiz / "rotulos.yaml").read_text(encoding="utf-8")
+    assert texto.startswith("# rotulos.yaml: rótulos") and "rotulo: Politica externa" in texto
+    assert "descricao" not in texto  # uma descrição vazia não vai para o arquivo
+    corpo = r.json()
+    assert corpo["topicos"][1]["manual"] == {"rotulo": "Politica externa", "descricao": ""}
+    assert corpo["pendentes"] == 1 and any("“politica”" in a and "“política”" in a for a in corpo["avisos"])
+
+    # um número que não existe e um rótulo vazio são recusados, sem mudar o arquivo
+    assert cliente.patch("/api/rotulos", json={"topicos": {"999": {"rotulo": "X"}}}).status_code == 422
+    assert cliente.patch("/api/rotulos", json={"topicos": {"14": {"rotulo": ""}}}).status_code == 422
+    assert (projeto.raiz / "rotulos.yaml").read_text(encoding="utf-8") == texto
+
+
+def test_rotulos_pelo_painel_mantem_os_comentarios(cliente, projeto):
+    _com_topicos(projeto)
+    arquivo = projeto.raiz / "rotulos.yaml"
+    arquivo.write_text(ROTULOS_COM_SECOES, encoding="utf-8")
+    # tirar a última entrada de uma seção não leva junto o cabeçalho da seção seguinte (que o ruamel prende a ela)
+    r = cliente.patch("/api/rotulos", json={"topicos": {"26": None, "30": {"rotulo": "Gênero e política"}}})
+    assert r.status_code == 200, r.text
+    texto = arquivo.read_text(encoding="utf-8")
+    assert "26:" not in texto and "Cooperação Sul-Sul" not in texto
+    for comentario in ("# rotulos.yaml — exemplo", "# --- rótulos que os títulos desmentem ---",
+                       '# era "Política externa sob Lula"', "# --- rótulos que nomeiam só uma parte do tópico ---",
+                       '# era "Capacidades estatais municipais"'):  # fmt: skip
+        assert comentario in texto, comentario
+    assert texto.index("# --- rótulos que nomeiam") < texto.index("  0:")
+    assert yaml.safe_load(texto)["topicos"][30] == {"rotulo": "Gênero e política"}
+
+
+def test_rotulos_recusados_com_uma_etapa_rodando(cliente, projeto):
+    from mapa_da_ciencia.trava_etapas import uma_etapa_por_vez
+
+    _com_topicos(projeto)
+    segurando, soltar = threading.Event(), threading.Event()
+
+    def terminal():
+        with uma_etapa_por_vez(projeto, "topicos"):
+            segurando.set()
+            soltar.wait(10)
+
+    t = threading.Thread(target=terminal)
+    t.start()
+    try:
+        assert segurando.wait(5)
+        r = cliente.patch("/api/rotulos", json={"topicos": {"14": {"rotulo": "Outro"}}})
+        assert r.status_code == 409 and "topicos" in r.json()["detail"]
+    finally:
+        soltar.set()
+        t.join()
+    assert not (projeto.raiz / "rotulos.yaml").exists()

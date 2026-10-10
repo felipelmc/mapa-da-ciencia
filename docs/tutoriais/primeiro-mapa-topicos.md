@@ -37,7 +37,7 @@ cd projetos/op
 uv run mapa coletar
 ```
 
-Sem `--anos`, o recorte vai de 2010 a 2025, o padrão do modelo de projeto. A coleta leva um ou dois minutos na primeira vez e deve reunir perto de 400 artigos: quando escrevemos este tutorial, foram 396. O número pode variar um pouco, porque a revista continua publicando e a ArticleMeta corrige registros de vez em quando.
+Sem `--anos`, o recorte vai de 2010 a 2025, o padrão do modelo de projeto. A coleta leva um ou dois minutos na primeira vez e deve reunir perto de 400 artigos: quando escrevemos este tutorial, foram 388. O número pode variar um pouco, porque a revista continua publicando e a ArticleMeta corrige registros de vez em quando.
 
 ## 3. Gere os tópicos
 
@@ -47,7 +47,7 @@ uv run mapa topicos
 
 Na primeira vez leva alguns minutos. O `mapa`:
 
-1. monta o **texto de análise** de cada artigo: o título e o resumo em inglês. Na *Opinião Pública*, 388 artigos têm resumo em inglês; 7 entram com o resumo em português e 1 só com o título. Esses 8 ficam marcados no cartão do mapa;
+1. monta o **texto de análise** de cada artigo: o título e o resumo em inglês. Na *Opinião Pública*, todos os 388 artigos têm resumo em inglês. Em outras revistas, um artigo sem resumo nesse idioma entra com o resumo em outro idioma ou só com o título, e fica marcado no cartão do mapa;
 2. calcula os **embeddings** e os guarda em `dados/embeddings/`;
 3. projeta os vetores em duas dimensões, para o mapa, e procura **regiões densas** de artigos parecidos: cada região é um tópico;
 4. extrai as **palavras-chave** que distinguem cada tópico dos outros;
@@ -57,16 +57,16 @@ Na primeira vez leva alguns minutos. O `mapa`:
 A saída começa com os números principais, seguidos da tabela dos macrotemas com os rótulos escritos pelo modelo:
 
 ```text
-Tópicos prontos: 15 tópicos em 5 macrotemas, 396 documentos: 278 no núcleo, 86 reatribuídos, 32 sem
-tópico (ARI 0,77), …
+Tópicos prontos: 16 tópicos em 5 macrotemas, 388 documentos: 275 no núcleo, 90 reatribuídos, 23 sem
+tópico (ARI 0,85), …
 ```
 
 Os números podem mudar um pouco de uma máquina para outra, mas a leitura é a mesma:
 
-- **núcleo**: os 278 artigos que estão bem dentro de algum tópico. São eles que definem as palavras-chave e os contornos do mapa;
-- **reatribuídos**: 86 artigos que ficaram entre regiões e foram postos no tópico da maioria dos seus vizinhos mais parecidos;
-- **sem tópico**: 32 artigos que não se parecem o bastante com nenhum grupo. Não é erro: são temas raros no recorte e aparecem no mapa em cinza;
-- **ARI**: a estabilidade dos tópicos, de 0 a 1, quando o cálculo é repetido com outras sementes aleatórias. Com 400 artigos ela fica em 0,77: os temas grandes se repetem, mas as fronteiras entre temas vizinhos mudam. No projeto piloto, com 4.300 artigos de dez revistas, ela chega a 0,89.
+- **núcleo**: os 275 artigos que estão bem dentro de algum tópico. São eles que definem as palavras-chave e os contornos do mapa;
+- **reatribuídos**: 90 artigos que ficaram entre regiões e foram postos no tópico da maioria dos seus vizinhos mais parecidos;
+- **sem tópico**: 23 artigos que não se parecem o bastante com nenhum grupo. Não é erro: são temas raros no recorte e aparecem no mapa em cinza;
+- **ARI**: a estabilidade dos tópicos, de 0 a 1, quando o cálculo é repetido com outras sementes aleatórias. Com 400 artigos ela fica em 0,85: os temas grandes se repetem, mas as fronteiras entre temas vizinhos mudam um pouco. No projeto piloto, com 4.300 artigos de dez revistas, ela chega a 0,90.
 
 A página [Como os tópicos são construídos](../explicacoes/topicos.md) explica cada passo em detalhe.
 
@@ -77,10 +77,10 @@ A página [Como os tópicos são construídos](../explicacoes/topicos.md) explic
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓
     ┃ Macrotema                             ┃ Tópicos ┃ Documentos ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━┩
-    │ ● política, democracia, confiança     │ 4       │ 103        │
-    │ ● campanha, campanhas, twitter        │ 5       │ 87         │
-    │ ● pública, brasileira, folha paulo    │ 3       │ 42         │
-    │ ● deputados, ministérios, legislativo │ 2       │ 35         │
+    │ ● voto, campanha, campanhas           │ 5       │ 90         │
+    │ ● confiança, conselhos, participação  │ 5       │ 87         │
+    │ ● corrupção, escândalos, cobertura    │ 3       │ 54         │
+    │ ● deputados, ministérios, legislativo │ 2       │ 33         │
     │ ● deliberação, critérios, teoria      │ 1       │ 11         │
     └───────────────────────────────────────┴─────────┴────────────┘
     ```
@@ -96,7 +96,7 @@ uv run mapa topicos
 Agora a etapa termina em segundos, e a saída diz:
 
 ```text
-15 tópico(s) mantiveram o número e a cor da execução anterior.
+16 tópico(s) mantiveram o número e a cor da execução anterior.
 Embeddings novos: 0 (os demais vieram do cache).
 ```
 
@@ -111,7 +111,7 @@ uv run mapa status
 A seção **Corpus** ganhou uma linha para os tópicos:
 
 ```text
-Tópicos: 15 em 5 macrotemas (ARI 0,77); núcleo 70%, reatribuídos 22%, sem tópico 8%; rótulos: llm.
+Tópicos: 16 em 5 macrotemas (ARI 0,85); núcleo 71%, reatribuídos 23%, sem tópico 6%; rótulos: llm.
 ```
 
 Se você coletar de novo e o corpus mudar, essa linha avisa que os tópicos ficaram desatualizados até a próxima execução de `mapa topicos`.
@@ -160,7 +160,7 @@ crescimento = """
 mapa.consultar(p, crescimento)
 ```
 
-O número do tópico é o mesmo do painel (o tópico −1 reúne os artigos sem tópico). No nosso teste, o que mais cresceu foi o de campanhas nas redes sociais, com Twitter e Facebook entre as palavras-chave: 5 artigos até 2017 e 23 desde 2018. Logo atrás veio um tópico sobre a direita e o eleitorado de Jair Bolsonaro, que não existia antes de 2018 (12 artigos).
+O número do tópico é o mesmo do painel (o tópico −1 reúne os artigos sem tópico). No nosso teste, o que mais cresceu foi o de campanhas nas redes sociais, com Twitter e Facebook entre as palavras-chave: 5 artigos até 2017 e 23 desde 2018. Logo atrás veio um tópico sobre a direita radical e o eleitorado de Jair Bolsonaro, que não existia antes de 2018 (16 artigos).
 
 ## 8. Corrija um rótulo (opcional)
 
@@ -173,7 +173,13 @@ topicos:
     descricao: Campanhas eleitorais e comunicação política no Twitter e no Facebook.
 ```
 
-Escreva também a descrição: uma entrada só com o rótulo deixa o tópico sem descrição. Rode `uv run mapa topicos` de novo: o rótulo escrito à mão tem prioridade sobre o do modelo e fica marcado como manual.
+Escreva também a descrição: uma entrada só com o rótulo deixa o tópico sem descrição. Para aplicar a correção sem refazer os tópicos (e sem o modelo de linguagem), rode:
+
+```bash
+uv run mapa topicos --aplicar-rotulos
+```
+
+O rótulo escrito à mão tem prioridade sobre o do modelo, fica marcado como manual e continua valendo quando você rodar `uv run mapa topicos` de novo. No painel, o mesmo se faz pelo editor de rótulos, na vista Projeto.
 
 ## O que você fez
 

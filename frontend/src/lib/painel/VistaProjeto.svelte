@@ -2,7 +2,8 @@
 	/**
 	 * A vista Projeto, só no painel local: as etapas do pipeline numa linha de metrô, o job em andamento ao vivo
 	 * (com cancelar), a estimativa da classificação, os modelos do projeto no Ollama (com o download do que falta)
-	 * e as últimas execuções.
+	 * e as últimas execuções. O editor dos rótulos dos tópicos grava o `rotulos.yaml` e os aplica sem refazer os
+	 * tópicos.
 	 *
 	 * Ao abrir, retoma o acompanhamento de um job que já estava rodando (outra aba, ou antes de um reload).
 	 */
@@ -11,7 +12,9 @@
 	import type { EtapasDoProjeto, Estimativa, FonteApi, InfoModelos, NomeEtapa } from '$lib/dados/api';
 	import { ErroDaApi } from '$lib/dados/pedir';
 	import { formatarData, formatarDuracao, formatarInteiro } from '$lib/formato';
+	import { filtrosDaPagina, mudarFiltros } from '$lib/estado/filtros';
 	import Assistente from './Assistente.svelte';
+	import EditorRotulos from './EditorRotulos.svelte';
 	import JobAoVivo from './JobAoVivo.svelte';
 	import LinhaDeMetro, { ESTACOES } from './LinhaDeMetro.svelte';
 	import type { Job, JobAoVivo as EstadoJob } from './job';
@@ -25,10 +28,44 @@
 	let aoVivo = $state<EstadoJob | null>(null);
 	let aviso = $state<string | null>(null);
 	let configurando = $state(false);
+	let editandoRotulos = $state(false);
+	let avisosRotulos = $state<string[]>([]);
+	// o link "Editar o rótulo" da gaveta do tópico abre o editor no tópico (`#/projeto?topico=12`)
+	const filtros = $derived(filtrosDaPagina());
+	$effect(() => {
+		if (filtros.topico !== null) editandoRotulos = true;
+	});
 	let salvo = $state(false);
 	let parar: (() => void) | null = null;
 
-	const ocupado = $derived(!!aoVivo && !aoVivo.terminado);
+	/** Uma etapa que roda fora do painel (no terminal ou num notebook): o painel não começa outra até ela terminar. */
+	const fora = $derived(etapas?.em_andamento ?? null);
+	const ocupado = $derived((!!aoVivo && !aoVivo.terminado) || !!fora);
+	// o 409 de uma etapa que rodava fora some quando ela termina (o "Rodar" volta a valer); enquanto o painel ainda não
+	// a viu na linha das etapas, o aviso fica, para o clique não ficar sem resposta
+	let viuFora = false;
+	$effect(() => {
+		if (fora) viuFora = true;
+		else if (viuFora) {
+			viuFora = false;
+			if (aviso?.includes('está rodando')) aviso = null;
+		}
+	});
+	// a cada 5 s, uma consulta leve diz se uma etapa começou (ou terminou) fora do painel; quando isso muda, a linha das
+	// etapas é consultada de novo (essa consulta lê o corpus e leva alguns segundos)
+	$effect(() => {
+		const timer = setInterval(() => {
+			void fonte
+				.emAndamento()
+				.then(({ em_andamento }) => {
+					const agora = em_andamento ? `${em_andamento.pid}:${em_andamento.etapa}` : null;
+					if (agora !== (fora ? `${fora.pid}:${fora.etapa}` : null))
+						void fonte.etapas().then((e) => (etapas = e)).catch(() => {});
+				})
+				.catch(() => {});
+		}, 5000);
+		return () => clearInterval(timer);
+	});
 	const NOMES: Record<string, string> = {
 		...Object.fromEntries(ESTACOES.map((e) => [e.id, e.rotulo])),
 		modelo: 'Download do modelo'
@@ -66,6 +103,8 @@
 			historico = [job, ...historico];
 		} catch (e) {
 			aviso = e instanceof ErroDaApi ? e.message : `Não foi possível começar: ${(e as Error).message}`;
+			// uma etapa começou fora do painel depois da última consulta: a linha passa a mostrá-la
+			void fonte.etapas().then((x) => (etapas = x)).catch(() => {});
 		}
 	}
 
@@ -113,7 +152,8 @@
 		</p>
 	</header>
 
-	{#if aviso}<p class="aviso" role="alert" data-testid="aviso-projeto">{aviso}</p>{/if}
+	<!-- o 409 de uma etapa que roda fora diz o mesmo que o aviso dela, logo abaixo: uma vez basta -->
+	{#if aviso && aviso !== fora?.mensagem}<p class="aviso" role="alert" data-testid="aviso-projeto">{aviso}</p>{/if}
 	{#if salvo}<p class="ok-salvo" role="status" data-testid="projeto-salvo">Projeto salvo. As etapas afetadas aparecem desatualizadas na linha.</p>{/if}
 
 	{#if configurando}
@@ -126,14 +166,41 @@
 			}}
 			aoPiloto={() => rodar('coleta', { limite: 20 })}
 		/>
+	{:else if editandoRotulos}
+		<EditorRotulos
+			{fonte}
+			foco={filtros.topico}
+			aoFechar={(r) => {
+				editandoRotulos = false;
+				if (filtros.topico !== null) mudarFiltros({ topico: null });
+				avisosRotulos = r.avisos;
+				if (r.salvou) void rodar('topicos', { aplicar_rotulos: true });
+			}}
+		/>
 	{:else}
-		<button type="button" class="configurar" disabled={ocupado} onclick={() => ((configurando = true), (salvo = false))} data-testid="configurar">
-			Configurar o projeto
-		</button>
+		<div class="acoes">
+			<button type="button" class="configurar" disabled={ocupado} onclick={() => ((configurando = true), (salvo = false))} data-testid="configurar">
+				Configurar o projeto
+			</button>
+			<button
+				type="button"
+				class="configurar"
+				disabled={ocupado || etapas?.topicos.estado !== 'em_dia'}
+				title={etapas?.topicos.estado !== 'em_dia' ? 'Os tópicos precisam estar em dia' : undefined}
+				onclick={() => ((editandoRotulos = true), (avisosRotulos = []))}
+				data-testid="editar-rotulos"
+			>
+				Editar os rótulos dos tópicos
+			</button>
+		</div>
 	{/if}
+	{#each avisosRotulos as a (a)}<p class="aviso" role="status" data-testid="aviso-rotulos">{a}</p>{/each}
 
+	{#if fora}
+		<p class="aviso" role="status" data-testid="etapa-fora">{fora.mensagem}</p>
+	{/if}
 	{#if etapas}
-		<LinhaDeMetro {etapas} rodando={ocupado ? (aoVivo?.etapa ?? null) : null} {ocupado} aoRodar={(e, o) => rodar(e, o)} {aoSortear} />
+		<LinhaDeMetro {etapas} rodando={aoVivo && !aoVivo.terminado ? aoVivo.etapa : (fora?.etapa ?? null)} {ocupado} aoRodar={(e, o) => rodar(e, o)} {aoSortear} aoEditarRotulos={() => (editandoRotulos = true)} />
 	{:else}
 		<p class="suave" role="status">Carregando as etapas…</p>
 	{/if}
@@ -252,6 +319,12 @@
 	.suave {
 		color: var(--texto-suave);
 		font-size: 0.85rem;
+	}
+
+	.acoes {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
 	}
 
 	.configurar {

@@ -40,6 +40,8 @@ Há quatro tipos de variável:
 | `booleana` | sim ou não | o Brasil é um caso analisado? |
 | `texto` | resposta livre e curta | período analisado ("1994–2018") |
 
+Numa variável de texto, "não se aplica" e "não informado" dizem que o resumo não traz a informação. O modelo às vezes escreve essas respostas como o nome de uma categoria (`nao_se_aplica`), e o `mapa` as passa para a forma por extenso, também nas respostas guardadas: elas contam como sem informação nas figuras e na validação.
+
 Todos os campos estão na [referência do codebook](../referencia/codebook.md).
 
 ## Como o modelo responde

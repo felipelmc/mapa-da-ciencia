@@ -2,7 +2,11 @@
  * Tendência de uma série no tempo (ADR 0009), espelho de `src/mapa_da_ciencia/topicos/tendencia.py`: regressão
  * logística da participação anual (sucessos = documentos do tópico no ano, ensaios = documentos do ano), com o
  * ano centrado, Newton com meio passo, erro-padrão corrigido pela dispersão de Pearson (quase-binomial) e
- * intervalo de Wald. O tamanho da mudança vem das participações ajustadas no primeiro e no último ano.
+ * intervalo de Wald, com o quantil da t de anos − 2 graus de liberdade quando a dispersão é estimada (desde a
+ * 2.3.0; antes, o da normal). O tamanho da mudança vem das participações ajustadas no primeiro e no último ano.
+ *
+ * Uma tendência marcada é frágil quando, refeita sem um dos anos, muda de direção (ou fica sem dados suficientes)
+ * em ao menos uma das retiradas; `anos_decisivos` lista esses anos.
  *
  * Os casos de `contrato/casos/tendencia.json` (gerados pelo Python) garantem que as duas versões concordam.
  */
@@ -23,12 +27,16 @@ export interface Tendencia {
 	pp_por_ano: number | null;
 	anos: [number, number] | null;
 	motivo: Motivo | null;
+	/** Só em alta ou em queda: se retirar um ano muda a direção. */
+	fragil: boolean | null;
+	anos_decisivos: number[];
 }
 
 export const METODO_PADRAO: Required<MetodoTendencia> = {
 	modelo: 'logistica_binomial',
 	dispersao: 'quase',
 	nivel: 0.95,
+	quantil: 't',
 	z: 1.959963984540054,
 	anos_minimos: 5,
 	docs_minimos: 10
@@ -37,6 +45,54 @@ export const METODO_PADRAO: Required<MetodoTendencia> = {
 const INCLINACAO_MAXIMA = 10;
 const ITERACOES_MAXIMAS = 100;
 const TOLERANCIA = 1e-10;
+
+/** P(|T| ≤ t) para a t de Student com `gl` inteiro: a forma fechada de Abramowitz e Stegun (26.7.3 e 26.7.4). */
+function probT(t: number, gl: number): number {
+	const theta = Math.atan(t / Math.sqrt(gl));
+	const seno = Math.sin(theta);
+	const cosseno2 = Math.cos(theta) ** 2;
+	if (gl % 2) {
+		let termo = Math.cos(theta);
+		let soma = termo;
+		for (let k = 3; k < gl - 1; k += 2) {
+			termo *= ((k - 1) / k) * cosseno2;
+			soma += termo;
+		}
+		return (2 / Math.PI) * (theta + (gl > 1 ? seno * soma : 0));
+	}
+	let termo = 1;
+	let soma = 1;
+	for (let k = 2; k < gl - 1; k += 2) {
+		termo *= ((k - 1) / k) * cosseno2;
+		soma += termo;
+	}
+	return seno * soma;
+}
+
+const quantis = new Map<string, number>();
+
+/** O quantil `nivel` (0,975 num intervalo de 95%) da t de Student com `gl` graus de liberdade, por bisseção. */
+export function quantilT(nivel: number, gl: number): number {
+	const chave = `${nivel}:${gl}`;
+	const guardado = quantis.get(chave);
+	if (guardado !== undefined) return guardado;
+	if (gl < 1 || !(nivel > 0.5 && nivel < 1)) throw new RangeError('quantil da t fora do domínio');
+	const alvo = 2 * nivel - 1;
+	let baixo = 0;
+	let alto = 1;
+	while (probT(alto, gl) < alvo) {
+		baixo = alto;
+		alto *= 2;
+	}
+	for (let i = 0; i < 100; i += 1) {
+		const meio = (baixo + alto) / 2;
+		if (probT(meio, gl) < alvo) baixo = meio;
+		else alto = meio;
+	}
+	const q = (baixo + alto) / 2;
+	quantis.set(chave, q);
+	return q;
+}
 
 const expit = (eta: number) => (eta >= 0 ? 1 / (1 + Math.exp(-eta)) : Math.exp(eta) / (1 + Math.exp(eta)));
 const softplus = (eta: number) => (eta > 0 ? eta + Math.log1p(Math.exp(-eta)) : Math.log1p(Math.exp(eta)));
@@ -133,7 +189,9 @@ const insuficiente = (motivo: Motivo, anos: [number, number] | null): Tendencia 
 	pp_periodo: null,
 	pp_por_ano: null,
 	anos,
-	motivo
+	motivo,
+	fragil: null,
+	anos_decisivos: []
 });
 
 /** Tendência da série `n` (documentos do tópico por ano) sobre `total` (documentos de cada ano). */
@@ -146,6 +204,18 @@ export function tendencia(
 	const m = { ...METODO_PADRAO, ...metodo };
 	const usados: [number, number, number][] = [];
 	for (let i = 0; i < anos.length; i += 1) if (total[i] > 0) usados.push([anos[i], n[i], total[i]]);
+	const t = tendenciaDosAnos(usados, m);
+	if (t.direcao !== 'alta' && t.direcao !== 'queda') return t;
+	const decisivos: number[] = [];
+	for (let i = 0; i < usados.length; i += 1) {
+		const sem = [...usados.slice(0, i), ...usados.slice(i + 1)];
+		if (tendenciaDosAnos(sem, m).direcao !== t.direcao) decisivos.push(usados[i][0]);
+	}
+	return { ...t, fragil: decisivos.length > 0, anos_decisivos: decisivos };
+}
+
+/** A tendência dos anos `usados` ([ano, documentos do tópico, documentos do ano]), sem a fragilidade. */
+function tendenciaDosAnos(usados: [number, number, number][], m: Required<MetodoTendencia>): Tendencia {
 	const periodo: [number, number] | null = usados.length ? [usados[0][0], usados[usados.length - 1][0]] : null;
 	if (usados.length < m.anos_minimos) return insuficiente('poucos_anos', periodo);
 	const xs = usados.map((u) => u[0]);
@@ -158,7 +228,8 @@ export function tendencia(
 	if (!ajuste) return insuficiente('sem_convergencia', periodo);
 	const phi = m.dispersao === 'quase' ? Math.max(1, ajuste.pearson / (usados.length - 2)) : 1;
 	const ep = ajuste.erroPadrao * Math.sqrt(phi);
-	const ic: [number, number] = [ajuste.inclinacao - m.z * ep, ajuste.inclinacao + m.z * ep];
+	const q = m.quantil === 't' && m.dispersao === 'quase' ? quantilT(0.5 + m.nivel / 2, usados.length - 2) : m.z;
+	const ic: [number, number] = [ajuste.inclinacao - q * ep, ajuste.inclinacao + q * ep];
 	const direcao: Direcao = ic[0] > 0 ? 'alta' : ic[1] < 0 ? 'queda' : 'estavel';
 	const [primeiro, ultimo] = periodo!;
 	const p0 = expit(ajuste.intercepto + ajuste.inclinacao * (primeiro - ajuste.mediaAnos));
@@ -175,7 +246,9 @@ export function tendencia(
 		pp_periodo: pp,
 		pp_por_ano: pp / (ultimo - primeiro),
 		anos: periodo,
-		motivo: null
+		motivo: null,
+		fragil: null,
+		anos_decisivos: []
 	};
 }
 

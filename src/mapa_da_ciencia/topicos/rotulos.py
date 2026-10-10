@@ -12,6 +12,12 @@ tópicos. Cuidados, do spike M0b (ADR 0005):
   errou assim no piloto).
 - **Estabilidade.** Um tópico casado com o da execução anterior (`identidade.py`) cujas palavras-chave mudaram
   pouco mantém o rótulo, sem chamar o modelo.
+- **Caixa de frase.** O prompt pede maiúscula só na primeira palavra, nas siglas e nos nomes próprios, e o modelo
+  às vezes escreve em caixa de título ("Agenda Legislativa e Processo no Congresso"). Cada palavra depois da
+  primeira só fica com a maiúscula se, no meio das frases dos resumos em português do tópico (ou do corpus, quando o
+  tópico tem menos de 3 ocorrências), ela aparece com maiúscula na maioria das vezes: "Congresso" e "Brasil"
+  ficam, "Legislativa" e "Processo" não. Siglas ficam. A conferência vale também para os rótulos do cache e os
+  reaproveitados, e nada do que ela muda vai para o cache: por isso, mudar a regra não pede subir `VERSAO_PROMPT`.
 - **Edição à mão.** `rotulos.yaml`, na pasta do projeto, tem prioridade sobre tudo (`rotulo_fonte: manual`).
 - **Memória.** O modelo só é carregado se couber na memória livre, e a etapa para limpa se a memória acabar no
   meio; os rótulos prontos ficam no cache (`estado.sqlite`) e a próxima execução continua de onde parou.
@@ -29,7 +35,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from mapa_da_ciencia.config import ErroConfig, ModeloLLM, ler_yaml
 from mapa_da_ciencia.llm.base import ErroProvedor
@@ -67,6 +73,58 @@ SISTEMA_MACRO = (
 )
 
 
+@dataclass
+class Caixa:
+    """Quantas vezes cada palavra aparece no meio de uma frase, e quantas delas com maiúscula, em textos corridos."""
+
+    maiusculas: Counter[str] = field(default_factory=Counter)
+    total: Counter[str] = field(default_factory=Counter)
+
+    def contar(self, texto: str) -> Caixa:
+        inicio = True  # a primeira palavra do texto e a que vem depois de um ponto não contam
+        for m in _PALAVRA_OU_PONTO.finditer(texto):
+            palavra = m.group(0)
+            if palavra in ".!?:":
+                inicio = True
+                continue
+            if not inicio:
+                chave = palavra.casefold()
+                self.total[chave] += 1
+                self.maiusculas[chave] += palavra[0].isupper()
+            inicio = False
+        return self
+
+    def __add__(self, outra: Caixa) -> Caixa:
+        return Caixa(self.maiusculas + outra.maiusculas, self.total + outra.total)
+
+
+_PALAVRA_OU_PONTO = re.compile(r"[^\W\d_]+|[.!?:]")
+OCORRENCIAS_MINIMAS = 3  # no meio das frases, para decidir a caixa de uma palavra
+
+
+def conferir_caixa(rotulo: str, *caixas: Caixa) -> str:
+    """O rótulo em caixa de frase: uma palavra com maiúscula depois da primeira só fica assim se aparece com
+    maiúscula, no meio das frases, na maioria das vezes na primeira contagem com ocorrências bastantes (a do tópico,
+    depois a do corpus). Num empate, sai a maiúscula: ele vem de um nome próprio maior ("Defensoria Pública",
+    "Horário Gratuito de Propaganda Eleitoral"), que não faz da palavra sozinha um nome próprio. Siglas, letras soltas
+    e palavras sem ocorrências bastantes ficam como estão."""
+    primeira = True
+
+    def trocar(m: re.Match) -> str:
+        nonlocal primeira
+        palavra = m.group(0)
+        if primeira or len(palavra) == 1 or palavra.isupper() or not palavra[0].isupper():
+            primeira = False
+            return palavra
+        chave = palavra.casefold()
+        for c in caixas:
+            if c.total[chave] >= OCORRENCIAS_MINIMAS:
+                return palavra if 2 * c.maiusculas[chave] > c.total[chave] else palavra.lower()
+        return palavra
+
+    return re.sub(r"[^\W\d_]+", trocar, rotulo)
+
+
 @dataclass(frozen=True)
 class Rotulo:
     rotulo: str
@@ -80,6 +138,7 @@ class EntradaTopico:
     titulos: list[str]
     anterior: Rotulo | None = None  # do tópico casado na execução anterior
     palavras_anteriores: list[str] = field(default_factory=list)
+    caixa: Caixa = field(default_factory=Caixa)  # dos resumos em português do tópico
 
 
 @dataclass
@@ -89,6 +148,7 @@ class ResumoRotulos:
     reaproveitados: int = 0
     manuais: int = 0
     acentos_corrigidos: int = 0
+    caixa_corrigida: int = 0
     modelo: str = ""
 
 
@@ -195,6 +255,19 @@ class _RotuloManual(BaseModel):
     rotulo: str
     descricao: str = ""
 
+    @field_validator("rotulo")
+    @classmethod
+    def _rotulo_numa_linha(cls, rotulo: str) -> str:
+        rotulo = " ".join(rotulo.split())
+        if not rotulo:
+            raise ValueError("o rótulo não pode ficar vazio")
+        return rotulo
+
+    @field_validator("descricao")
+    @classmethod
+    def _descricao_sem_sobras(cls, descricao: str) -> str:
+        return " ".join(descricao.split())
+
 
 class _Manuais(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -223,8 +296,10 @@ class Rotulador:
         *,
         ollama: Ollama | None = None,
         progresso: Progresso | None = None,
+        caixa_corpus: Caixa | None = None,
     ) -> None:
         self.cfg = cfg
+        self.caixa_corpus = caixa_corpus or Caixa()
         self.ollama = ollama or Ollama()
         self.progresso = progresso or ProgressoNulo()
         self.estado = estado
@@ -298,6 +373,15 @@ class Rotulador:
             raise ErroProvedor(f"{self.cfg.modelo} devolveu um rótulo vazio.")
         return {"rotulo": rotulo, "descricao": descricao}
 
+    def _em_caixa_de_frase(self, r: Rotulo, *caixas: Caixa) -> Rotulo:
+        if r.fonte != "llm":
+            return r
+        rotulo = conferir_caixa(r.rotulo, *caixas, self.caixa_corpus)
+        if rotulo == r.rotulo:
+            return r
+        self.resumo.caixa_corrigida += 1
+        return Rotulo(rotulo, r.descricao, r.fonte)
+
     def fim(self) -> None:
         if self._carregou:
             self.ollama.descarregar(self.cfg.modelo)
@@ -330,7 +414,7 @@ class Rotulador:
                     pedido += "\n\nTítulos representativos:\n" + "\n".join(f"- {x}" for x in e.titulos[:5])
                     saida[t] = self._perguntar(cache, SISTEMA_TOPICO, pedido, e.palavras + e.titulos)
                     self.progresso.avancar()
-        return saida
+        return {t: self._em_caixa_de_frase(r, entradas[t].caixa) for t, r in saida.items()}
 
     def macrotemas(
         self,
@@ -360,7 +444,7 @@ class Rotulador:
                 nomes = [rotulos_topicos[t].rotulo for t in topicos]
                 pedido = "Tópicos desta área:\n" + "\n".join(f"- {n}" for n in nomes)
                 pedido += "\n\nPalavras-chave da área: " + ", ".join(termos[:10])
-                saida[m] = self._perguntar(cache, SISTEMA_MACRO, pedido, nomes + termos)
+                saida[m] = self._em_caixa_de_frase(self._perguntar(cache, SISTEMA_MACRO, pedido, nomes + termos))
         return saida
 
 

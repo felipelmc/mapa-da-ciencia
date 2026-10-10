@@ -922,6 +922,48 @@ def test_redes_de_ponta_a_ponta(projeto):
     assert agregados["arestas_coautoria"] > 0 and agregados["canone_n"] == [citacoes.canone[0].n]
 
 
+def test_mudar_o_rotulo_de_um_topico_nao_desatualiza_as_redes(projeto):
+    """O rótulo de uma comunidade vem dos rótulos atuais dos tópicos, na exportação: mudar um rótulo (no
+    rotulos.yaml ou pelo painel) não pede rodar as redes de novo."""
+    from mapa_da_ciencia.redes.pipeline import PASTA, ResultadoRedes, assinatura_entradas, partes_das_entradas
+
+    gerar_redes(projeto)
+    caminho = projeto.dados / "topicos" / "resultado.json"
+    original = caminho.read_text(encoding="utf-8")
+    try:
+        exportar(projeto)
+        redes = m.Redes.model_validate_json((projeto.saida / "dados" / "redes.json").read_text(encoding="utf-8"))
+        comunidade = next(c for c in redes.comunidades if c.topicos)
+        alvo = comunidade.topicos[0]
+        resultado = json.loads(original)
+        for t in resultado["topicos"]:
+            if t["id"] == alvo:
+                t["rotulo"], t["rotulo_fonte"] = "Um rótulo novo", "manual"
+        caminho.write_text(json.dumps(resultado, ensure_ascii=False), encoding="utf-8")
+        assert redes_em_dia(projeto) is True
+        exportar(projeto)
+        redes = m.Redes.model_validate_json((projeto.saida / "dados" / "redes.json").read_text(encoding="utf-8"))
+        novo = next(c for c in redes.comunidades if (c.rede, c.id) == (comunidade.rede, comunidade.id))
+        assert novo.rotulo.startswith("Um rótulo novo")
+        # as redes de antes da 2.3.0 (com os rótulos no hash dos tópicos) continuam em dia, também depois de mudar um
+        # rótulo pelo `aplicar_rotulos` (ele regrava a assinatura no formato novo antes)
+        from mapa_da_ciencia.topicos.aplicar import aplicar_rotulos
+
+        r = ResultadoRedes.ler(projeto.dados / PASTA)
+        r.entradas = assinatura_entradas(projeto, partes_das_entradas(projeto, legado=True))
+        r.gravar(projeto.dados / PASTA)
+        assert redes_em_dia(projeto) is True
+        (projeto.raiz / "rotulos.yaml").write_text(f"topicos:\n  {alvo}:\n    rotulo: Outro rótulo\n", encoding="utf-8")
+        aplicar_rotulos(projeto)
+        assert redes_em_dia(projeto) is True
+        redes = m.Redes.model_validate_json((projeto.saida / "dados" / "redes.json").read_text(encoding="utf-8"))
+        assert any(c.rotulo.startswith("Outro rótulo") for c in redes.comunidades)
+    finally:
+        caminho.write_text(original, encoding="utf-8")
+        (projeto.raiz / "rotulos.yaml").unlink(missing_ok=True)
+        gerar_redes(projeto)
+
+
 def test_comunidades_do_mesmo_macrotema_tem_tons_diferentes():
     """Cada comunidade ganha um tom do macrotema dela: a maior de cada rede fica com a cor do macrotema, as outras do
     mesmo macrotema com tons diferentes (no mesmo matiz, legíveis nos dois fundos); sem macrotema, sem cor."""

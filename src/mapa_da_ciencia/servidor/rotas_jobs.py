@@ -1,7 +1,7 @@
 """Rotas das etapas e dos jobs do painel.
 
 - `POST /api/etapas/{etapa}`: começa uma etapa (coleta, tópicos, geografia, classificação) com as opções no corpo;
-  409 se já houver uma rodando.
+  409 se já houver uma rodando (neste painel, ou fora dele: no terminal ou num notebook).
 - `GET /api/jobs` e `GET /api/jobs/{id}`: os jobs recentes e o estado de um.
 - `GET /api/jobs/{id}/eventos`: o progresso ao vivo, em Server-Sent Events. Cada evento leva `id:` (a sequência);
   quem reconecta manda `Last-Event-ID` (ou `?desde=`) e recebe só o que perdeu. A conexão fecha no evento `fim`, e
@@ -21,7 +21,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 
-from .jobs import Jobs, Ocupado
+from .jobs import Jobs, Ocupado, OcupadoFora
 from .origem import conferir_origem
 
 BATIMENTO = 15.0
@@ -55,6 +55,8 @@ def rotas_jobs(jobs: Jobs, opcoes: dict[str, type] | None = None) -> APIRouter:
             return dataclasses.asdict(jobs.iniciar(etapa, corpo))
         except Ocupado as e:
             raise HTTPException(409, {"mensagem": str(e), "job": dataclasses.asdict(e.job)}) from e
+        except OcupadoFora as e:  # uma etapa roda no terminal ou num notebook
+            raise HTTPException(409, {"mensagem": str(e), "em_andamento": e.dono}) from e
 
     @rotas.get("/jobs")
     def listar() -> list[dict[str, Any]]:

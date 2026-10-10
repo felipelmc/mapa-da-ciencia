@@ -123,3 +123,30 @@ def test_uf_da_unidade_que_casou_antes_da_mae():
                 nivel="openalex")  # fmt: skip
     (p,) = contar([Casamento("d", 1, [v])], Indice(registros))
     assert (p.instituicao, p.uf) == ("FGV", "SP")
+
+
+def _v240(inst: str, uf: str | None, uf_v70: str | None, cidade: str | None = None) -> Vinculo:
+    return Vinculo(autor=0, afiliacao=0, fonte="v240", texto=inst, casada=inst, instituicao=inst, nivel="autoria",
+                   pais_fonte="BR", uf_fonte=uf, cidade_fonte=cidade, uf_v70=uf_v70)  # fmt: skip
+
+
+def _ufs(vinculos: list[Vinculo], registros: dict) -> list[str | None]:
+    casamentos = [Casamento(f"d{k}", 1, [v]) for k, v in enumerate(vinculos)]
+    por_doc = {p.doc: p.uf for p in contar(casamentos, Indice(registros))}
+    return [por_doc[f"d{k}"] for k in range(len(vinculos))]
+
+
+def test_a_v70_corrige_a_cidade_da_sede_na_v240():
+    # a v240 põe a FGV em Brasília; o texto original (v70) diz São Paulo na maioria, e Brasília em parte
+    registros = {"FGV": Registro("FGV", "Fundação Getulio Vargas", pais="BR", regiao="Rio de Janeiro")}
+    vinculos = [_v240("FGV", "DF", "SP")] * 6 + [_v240("FGV", "DF", "DF")] * 2 + [_v240("FGV", None, "RJ")]
+    assert _ufs(vinculos, registros) == ["SP"] * 6 + ["DF"] * 2 + ["RJ"]
+
+
+def test_a_v70_nao_vence_o_consenso_da_instituicao():
+    # a v70 também erra: um autor da UFMG que ela põe em Brasília continua em Minas
+    registros = {"UFMG": Registro("UFMG", "Universidade Federal de Minas Gerais", pais="BR")}
+    vinculos = [_v240("UFMG", "MG", None)] * 12 + [_v240("UFMG", "MG", "MG")] * 8 + [_v240("UFMG", "MG", "DF")]
+    # sem o lugar na v240, a v70 às vezes traz o endereço do autor, e não o da universidade
+    vinculos.append(_v240("UFMG", None, "DF"))
+    assert _ufs(vinculos, registros) == ["MG"] * 22

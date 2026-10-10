@@ -27,6 +27,8 @@ O navegador abre em `http://127.0.0.1:8765/`. Para encerrar, aperte ++ctrl+c++ n
 
 Cada projeto abre num painel só. Com um painel já aberto no projeto (numa aba esquecida, ou pelo notebook), um segundo `mapa painel` (ou `mapa.painel()`) não abre e diz o endereço do primeiro: dois painéis no mesmo projeto atrapalhariam as etapas um do outro. A trava fica no arquivo `.painel.lock` da pasta do projeto e some quando o painel fecha.
 
+**Uma etapa por vez.** Também roda uma etapa por vez em cada projeto, venha ela do painel, do terminal ou do notebook. Com o painel classificando, um `mapa coletar` no terminal não começa e diz que a classificação está rodando pelo painel, desde quando; com uma coleta rodando no terminal, o painel desativa o botão "Rodar" e mostra o aviso até ela terminar. Etapas que só leem (`mapa status`, `mapa validar metricas`, `mapa juri status`) rodam a qualquer hora. A trava fica no arquivo `.etapa.lock` e é solta mesmo quando o processo cai. No Windows, onde o sistema não oferece essa trava, as etapas não se bloqueiam: rode uma de cada vez.
+
 Num notebook (Jupyter ou Colab), `mapa painel` prenderia a célula. Use a API Python, que deixa o servidor rodando numa *thread*:
 
 ```python
@@ -90,6 +92,14 @@ O botão **Configurar o projeto** abre um assistente em cinco passos, sobre o pr
 5. **Revisão:** o que muda e o que isso refaz (uma revista nova refaz a coleta e as etapas seguintes; uma definição nova do codebook refaz a classificação).
 
 Nada é gravado antes da revisão. Ao salvar, o `mapa.yaml` e o `codebook.yaml` mudam só no que mudou, e os comentários dos arquivos ficam. **Salvar e rodar um piloto** coleta só 20 documentos, para conferir o recorte antes da coleta inteira. Enquanto uma etapa roda, o projeto não pode ser mudado.
+
+### Editar os rótulos dos tópicos
+
+Com os tópicos em dia, o botão **Editar os rótulos dos tópicos** (também na estação Tópicos, e no link "Editar o rótulo" da gaveta de cada tópico, na vista Tópicos) abre os rótulos agrupados por macrotema. Cada tópico mostra o rótulo e a descrição atuais, quem os escreveu (o modelo, as palavras-chave ou você), as palavras-chave mais fortes e quantos documentos tem; o rótulo tem até 80 caracteres e não pode ficar vazio.
+
+**Salvar e aplicar** grava só o que mudou no `rotulos.yaml` da pasta do projeto, sem perder os comentários do arquivo, e aplica os rótulos sem refazer os tópicos nem chamar o modelo: o mapa, os tópicos e as redes passam a mostrar os nomes novos. Se uma palavra parece ter perdido o acento ("coalizao", quando as palavras-chave do tópico têm "coalizão"), o editor avisa antes de aplicar: o arquivo já foi gravado, e você corrige e salva de novo ou aplica assim mesmo. **Tirar a correção à mão** tira a entrada do arquivo: até a etapa Tópicos rodar inteira de novo, o tópico fica com as palavras-chave, e só então volta o rótulo do modelo. O botão de salvar e as mensagens ficam no pé da tela, e sair do editor com mudanças não salvas pergunta antes. Um macrotema de um tópico só leva o nome dele; o de vários tópicos, escrito pelo modelo, só muda quando a etapa Tópicos rodar inteira. Quando o `rotulos.yaml` tem rótulos ainda não aplicados (editados no arquivo, por exemplo), a estação Tópicos avisa e oferece **Aplicar os rótulos editados**.
+
+Na CLI, o mesmo é `mapa topicos --aplicar-rotulos` depois de editar o `rotulos.yaml` (veja [Gerar os tópicos](topicos.md)).
 
 Na CLI, as mesmas etapas são `mapa coletar`, `mapa topicos`, `mapa geografia`, `mapa redes` e `mapa classificar`, e o que uma faz a outra enxerga: uma etapa rodada no terminal aparece em dia no painel.
 

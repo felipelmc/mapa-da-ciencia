@@ -191,8 +191,10 @@ def _limpo(valor: str | None) -> str | None:
 def _afiliacoes(artigo: dict) -> tuple[list[Afiliacao], str]:
     v240 = artigo.get("v240") or []
     v70 = artigo.get("v70") or []
+    v70_por_id = {a["i"]: a for a in v70 if a.get("i")}
     saida: list[Afiliacao] = []
     for a in v240:
+        original = v70_por_id.get(a.get("i")) or {}  # a cidade e a UF do texto original, para conferir a v240
         saida.append(
             Afiliacao(
                 id=a.get("i"),
@@ -201,6 +203,8 @@ def _afiliacoes(artigo: dict) -> tuple[list[Afiliacao], str]:
                 uf=_limpo(a.get("s")),
                 pais=_limpo(a.get("p")),
                 fonte="v240",
+                cidade_v70=_limpo(original.get("c")),
+                uf_v70=_limpo(original.get("s")),
             )
         )
     ids_v240 = {a.id for a in saida if a.id}

@@ -3,8 +3,7 @@
  *
  * Toda vista fala com uma `FonteDeDados`, nunca com `fetch` direto. Hoje há duas:
  *
- * - `FonteEstatica`: lê `./dados/*.json` relativo à página. É o modo do site publicado e,
- *   por enquanto, também do painel local.
+ * - `FonteEstatica`: lê `./dados/*.json` relativo à página. É a do site publicado; a `FonteApi` a estende.
  * - `FonteApi`: a do painel local (`mapa painel`), onde `manifesto.api` é verdadeiro. Lê o contrato como a
  *   estática e, além disso, fala com a API do painel (etapas como jobs ao vivo, modelos, configuração e
  *   codebook). As vistas que dependem dela conferem `capacidades` antes.

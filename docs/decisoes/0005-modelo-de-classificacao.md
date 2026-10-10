@@ -77,3 +77,19 @@ A página `spikes/saida/s03_leitura.md` mostra as respostas lado a lado com os r
 ## Adendo (2026-09-28, versão 1.0.1): o perfil `leve`
 
 O perfil `leve` (8 a 16 GB) usa o `qwen3.5:4b` na classificação e nos rótulos desde o primeiro perfil, porque o `qwen3.5:9b` precisa de uns 8 GB livres e não cabe com folga nessas máquinas. A medida que esta decisão pedia antes de adotá-lo (o `qwen3.5:4b` contra o `qwen3.5:9b` na amostra de validação) ainda não foi feita ([ADR 0012](0012-validacao-e-codificador-de-referencia.md)). Até lá, quem usa o perfil `leve` deve olhar a concordância da própria amostra (`mapa validar metricas`) antes de publicar.
+
+## Adendo (2.3.0)
+
+### Os rótulos editados sem refazer os tópicos
+
+A consequência acima pedia que o pesquisador pudesse editar os rótulos na interface. A conferência dos acentos entrou no M3; a edição entra na 2.3.0, em duas partes:
+
+- **`mapa topicos --aplicar-rotulos`** (`topicos/aplicar.py`) aplica o `rotulos.yaml` aos tópicos já calculados, sem refazer o agrupamento nem chamar o modelo, e exporta. Um rótulo manual que sai do arquivo volta às palavras-chave até a próxima `mapa topicos`, que traz o do modelo do cache. O manifesto da etapa de tópicos continua o da última execução completa.
+- **O editor de rótulos do painel** grava no `rotulos.yaml` (sem perder os comentários, como o editor do codebook) e roda a aplicação como um job da etapa de tópicos.
+
+Para que mudar um rótulo não desatualize as redes, o rótulo de cada comunidade passou a ser calculado na exportação, com os rótulos atuais (veja o adendo do ADR 0014 e o CHANGELOG).
+
+### O `qwen3.5:4b` do perfil `leve`, medido
+
+A medida que o adendo da 1.0.1 pedia foi feita na 2.0.0, com o júri de modelos ([ADR 0015](0015-juri-de-modelos-e-supervisor.md#números-do-piloto)): o `qwen3.5:4b` classificou a amostra de validação do piloto como membro do júri, e o kappa dele contra a referência pode ser lido ao lado do `qwen3.5:9b`. Ele é pior na `abordagem` (0,60 contra 0,67), em `brasil_como_caso` (0,79 contra 0,93) e na `subarea` (0,58 contra 0,63), melhor na `tecnica_principal` (0,48 contra 0,37) e empata no `recorte_geografico` (0,74). O `leve` continua com ele, porque é o que cabe na memória dessas máquinas, e o padrão continua o `qwen3.5:9b`. Os rótulos de tópicos que o `qwen3.5:4b` escreve não foram medidos.
+

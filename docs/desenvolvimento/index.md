@@ -95,6 +95,16 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | `src/mapa_da_ciencia/geografia/dados/municipios.csv` | `uv run python scripts/gerar_municipios.py` (1 requisição ao IBGE) | Quando o IBGE criar municípios |
 | `tests/fixtures/articlemeta/` | `uv run python scripts/recortar_fixtures.py` (precisa do cache do spike, `spikes/saida/brutos/`) | Ao precisar de novos casos de teste; os e-mails reais viram `anonimo@exemplo.invalid` |
 
+### Refazer o piloto com segurança
+
+Uma mudança na coleta, nos tópicos ou na geografia pede refazer o piloto, e o piloto alimenta a demo, a abertura e os números da documentação. Antes de tocar nele, copie a pasta duas vezes para fora do iCloud (uma cópia congelada e uma de ensaio), rode as etapas na de ensaio e compare:
+
+```bash
+uv run python scripts/comparar_rodadas.py /tmp/cp-scielo-antes /tmp/cp-scielo-novo > comparacao.md
+```
+
+O relatório lista os documentos que entraram e saíram, os resumos tirados ou com o idioma trocado, os textos de análise e de classificação que mudaram (o que vai chamar o modelo de novo), as UFs e os vínculos que mudaram, e cada tópico ao lado do de mesmo número na rodada anterior, com o Jaccard dos núcleos e o `rotulos.yaml`. Os tópicos marcados "rever" e as entradas do `rotulos.yaml` sem tópico pedem uma nova leitura dos rótulos antes de publicar.
+
 ## Convenções
 
 - **Português** em tudo: interface, documentação, mensagens, identificadores de domínio (`coletar`, `topicos`, `revistas`).
@@ -106,7 +116,7 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 ## Fazer uma release
 
 1. Na branch do marco, o commit `chore(versao): X.Y.Z` muda a versão no `pyproject.toml`, no `CITATION.cff` (com a data), no `frontend/package.json` e no endereço do *wheel* (README, guia de instalação, tutoriais "Explorar o exemplo" e "Seu primeiro mapa" e API Python), regenera o caderno da oficina (`scripts/gerar_notebook.py`) e fecha a seção do `CHANGELOG.md`. Com o CI verde, merge `--no-ff` na `main`, tag `vX.Y.Z` e push das duas.
-2. Publique a *release* no GitHub a partir da tag, com a seção do CHANGELOG como notas (`gh release create vX.Y.Z --notes-file …`). Para atualizar a demo, anexe o site do piloto como `piloto-publicado.zip` (o conteúdo da pasta gerada por `mapa publicar`, com o `index.html` na raiz do zip).
+2. Publique a *release* no GitHub a partir da tag, com a seção do CHANGELOG como notas (`gh release create vX.Y.Z --notes-file …`). Para atualizar a demo, anexe o site do piloto como `piloto-publicado.zip` (o conteúdo da pasta gerada por `mapa publicar`, com o `index.html` na raiz do zip). Antes de publicar, rode `npm run empacotar` em `frontend/`: o `mapa publicar` e o `mapa painel` usam a interface empacotada em `src/mapa_da_ciencia/web/estatico/`, e não o `frontend/build`, e sem isso a demo sai com a interface da versão anterior.
 3. O workflow **Release** (`.github/workflows/release.yml`) roda sozinho: confere que a tag bate com a versão, constrói o *wheel* com a interface, confere os metadados com `twine check` (o README vira a página do PyPI, então imagens e links precisam de endereço completo), testa-o sem Node, anexa-o à *release* e roda de novo o workflow **Documentação** na `main`, que publica a demo em `/demo/` a partir da *release* mais recente.
 4. **PyPI**, depois de configurado uma vez: crie o projeto `mapa-da-ciencia` no PyPI com este repositório e o workflow `release.yml` como *trusted publisher* (ambiente `pypi`), crie o ambiente `pypi` no GitHub (*Settings › Environments*) e a variável de repositório `PUBLICAR_NO_PYPI` = `true`. A partir daí, cada *release* também vai para o PyPI.
 5. **Zenodo**: a integração GitHub–Zenodo está ligada desde a 1.0.1. Cada *release* publicada ganha um DOI de versão, com os metadados de `.zenodo.json` (o arquivamento leva de minutos a quase uma hora; acompanhe em *zenodo.org › GitHub*), sob o DOI de conceito [10.5281/zenodo.22998585](https://doi.org/10.5281/zenodo.22998585), que está no `CITATION.cff`, no README, na metodologia e no rodapé da abertura (lido do `CITATION.cff` por `overrides/hooks.py`). Uma *release* só vira DOI se o `.zenodo.json` for válido: a licença usa o id do vocabulário do Zenodo (`mit`).
@@ -127,6 +137,7 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | Júri e redes | O júri de modelos locais com supervisor ([ADR 0015](../decisoes/0015-juri-de-modelos-e-supervisor.md)), as redes de coautoria e de citação ([ADR 0014](../decisoes/0014-redes-de-coautoria-e-citacao.md)) e a [revisão geral](revisao-2026-09.md) | concluído (v2.0.0) |
 | Interface revista | Grafos interativos, telas largas, Validação para quem lê e o site público sem bastidor | concluído (v2.1.0, v2.1.1) |
 | Pendências da 2.1 | O júri na linha das etapas, uma cor por comunidade, as fichas confirmadas na validação e as correções de interface que a [revisão](revisao-2026-09.md) deixou para depois | concluído (v2.2.0) |
+| Recomendações da revisão | O quantil t e a tendência frágil, a concordância por idioma e entre respostas informativas, os resumos conferidos e a UF da `v70` na coleta, a edição dos rótulos e a trava das etapas no painel, as legendas nas figuras exportadas e o piloto refeito, com a [terceira rodada](revisao-2026-09.md#terceira-rodada-230) da revisão | concluído (v2.3.0) |
 
 ## Armadilhas conhecidas
 

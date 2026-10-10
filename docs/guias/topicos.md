@@ -13,10 +13,10 @@ Depois da coleta, `mapa topicos` descobre os assuntos do corpus, dá um nome a c
 mapa topicos
 ```
 
-A primeira execução no piloto (4.275 artigos) leva cerca de 4 minutos nos embeddings e uns 3 nos rótulos, com uma chamada ao modelo por tópico e por macrotema (64 no piloto). As seguintes levam segundos: embeddings, reduções do UMAP e rótulos ficam em cache. A saída termina com os macrotemas e os números da etapa:
+A primeira execução no piloto (4.265 artigos) leva cerca de 4 minutos nos embeddings e uns 3 nos rótulos, com uma chamada ao modelo por tópico e por macrotema (68 no piloto). As seguintes levam segundos: embeddings, reduções do UMAP e rótulos ficam em cache. A saída termina com os macrotemas e os números da etapa:
 
 ```text
-Tópicos prontos: 57 tópicos em 7 macrotemas, 4.275 documentos: 2.845 no núcleo, 963 reatribuídos, 467 sem tópico (ARI 0,89), em 13 s.
+Tópicos prontos: 61 tópicos em 7 macrotemas, 4.265 documentos: 2.736 no núcleo, 996 reatribuídos, 533 sem tópico (ARI 0,90), em 10 s.
 ```
 
 - **Núcleo**: os documentos que o agrupamento reuniu em cada tópico.
@@ -44,7 +44,7 @@ Para analisar os tópicos num notebook, a view `atribuicoes` da [API Python](../
 
 ## Ajustar
 
-- **Rótulos.** Para corrigir o nome de um tópico, escreva-o, com a descrição, no arquivo `rotulos.yaml` da pasta do projeto, pelo número do tópico ([como](../explicacoes/topicos.md#11-rotulos)). O que está lá tem prioridade e continua valendo nas próximas execuções.
+- **Rótulos.** Para corrigir o nome de um tópico, escreva-o, com a descrição, no arquivo `rotulos.yaml` da pasta do projeto, pelo número do tópico ([como](../explicacoes/topicos.md#11-rotulos)), e rode `mapa topicos --aplicar-rotulos`, que troca só os rótulos, sem refazer os tópicos nem chamar o modelo. No painel, o editor de rótulos da vista Projeto faz as duas coisas. O que está no arquivo tem prioridade e continua valendo nas próximas execuções.
 - **Parâmetros.** A seção `topicos:` do `mapa.yaml` controla o tamanho mínimo dos tópicos, o número de macrotemas e a reatribuição (veja a [referência da configuração](../referencia/configuracao.md)). Os padrões foram calibrados no piloto (veja [Como os tópicos são construídos](../explicacoes/topicos.md)). Para um corpus muito diferente, refaça a calibração com o script do código-fonte, que não vem no *wheel* (clone o repositório):
 
     ```bash

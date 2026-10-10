@@ -84,7 +84,7 @@
 		linhas: anos.map((a, j) => [a, porAno[j]?.documentos ?? 0, ...series.map((s) => (s.valores[j] === null ? null : numeroCru(s.valores[j]!)))])
 	}}
 >
-	<div class="series">
+	<div class="series" data-multiplos>
 		{#each series as s (s.id)}
 			<SerieAnual id={s.id} titulo={s.titulo} {anos} valores={s.valores} formato={s.formato} {janela} />
 		{/each}

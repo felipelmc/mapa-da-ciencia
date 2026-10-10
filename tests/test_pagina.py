@@ -56,6 +56,30 @@ def test_numeros_e_historias(pagina, projeto):
     assert h["ingles"] is None  # sem o corpus (Parquet), não há a história do idioma
 
 
+def test_a_maior_alta_e_firme_e_as_frageis_sao_contadas(pagina, projeto):
+    caminho = projeto / "saida" / "dados" / "topicos.json"
+    topicos = json.loads(caminho.read_text(encoding="utf-8"))
+    em_alta = sorted(
+        (t for t in topicos["topicos"] if t["tendencia"]["direcao"] == "alta"),
+        key=lambda t: -t["tendencia"]["pp_periodo"],
+    )
+    marcados = [t for t in topicos["topicos"] if t["tendencia"]["direcao"] in ("alta", "queda")]
+    alta = pagina.gerar(projeto)["historias"]["alta"]
+    assert alta["frageis"] == sum(bool(t["tendencia"]["fragil"]) for t in marcados) > 0
+    # a maior alta frágil cede o lugar à maior firme
+    em_alta[0]["tendencia"]["fragil"] = True
+    caminho.write_text(json.dumps(topicos), encoding="utf-8")
+    alta = pagina.gerar(projeto)["historias"]["alta"]
+    firme = next(t for t in em_alta[1:] if not t["tendencia"]["fragil"])
+    assert alta["topico"] == firme["id"] and not alta["fragil"]
+    # um topicos.json de antes do contrato 1.7, sem `fragil`, ainda gera a história
+    for t in topicos["topicos"]:
+        t["tendencia"].pop("fragil", None)
+    caminho.write_text(json.dumps(topicos), encoding="utf-8")
+    alta = pagina.gerar(projeto)["historias"]["alta"]
+    assert alta["topico"] == em_alta[0]["id"] and alta["frageis"] == 0
+
+
 def test_historia_da_colaboracao_reconta_a_serie_do_redes_json(pagina, projeto, capsys):
     """A recontagem por artigo (para ter os denominadores) reproduz a série publicada, ano a ano."""
     col = pagina.gerar(projeto)["historias"]["colaboracao"]

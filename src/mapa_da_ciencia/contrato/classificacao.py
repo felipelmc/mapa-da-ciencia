@@ -145,7 +145,10 @@ def validacao_contrato(v: Validacao, *, so_referencia: bool = True) -> m.Validac
     tipos = {p.nome: p.tipo for p in v.participantes}
     return m.Validacao(
         amostra=m.AmostraInfo(
-            n=v.amostra["n"], estratificar_por=v.amostra["estratificar_por"], semente=v.amostra["semente"]
+            n=v.amostra["n"],
+            estratificar_por=v.amostra["estratificar_por"],
+            semente=v.amostra["semente"],
+            idiomas=v.amostra.get("idiomas", {}),
         ),
         metricas=[
             m.MetricaVariavel(
@@ -170,6 +173,19 @@ def validacao_contrato(v: Validacao, *, so_referencia: bool = True) -> m.Validac
                         f1=_r(c.f1),
                     )
                     for c in x.por_classe
+                ],
+                subconjuntos=[
+                    m.MetricaSubconjunto(
+                        tipo=s.tipo,
+                        idioma=s.idioma,
+                        n=s.n,
+                        concordancia=_r(s.concordancia),
+                        kappa=_r(s.kappa),
+                        kappa_ic95=(_r(s.kappa_ic95[0]), _r(s.kappa_ic95[1])) if s.kappa_ic95 else None,
+                        pabak=_r(s.pabak),
+                        alfa=_r(s.alfa),
+                    )
+                    for s in x.subconjuntos
                 ],
             )
             for x in v.metricas

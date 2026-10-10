@@ -308,6 +308,29 @@ test('no painel, a validação continua toda aberta, sem blocos recolhidos', asy
 	await expect(page.getByTestId('lide-validacao')).toContainText('juri-supervisor');
 });
 
+test('no site publicado, a concordância por idioma e entre respostas informativas começa recolhida', async ({ page }) => {
+	await page.goto(`${url('PUBLICADO')}#/validacao`);
+	const { pt, en } = validacao.amostra.idiomas;
+	await expect(page.getByTestId('lide-validacao')).toContainText(`Amostra de ${validacao.amostra.n} documentos (${pt} em português e ${en} em inglês)`);
+	const bloco = page.getByTestId('subconjuntos-recolhido');
+	await expect(bloco).toBeVisible();
+	await expect(page.getByTestId('tabela-subconjuntos')).toBeHidden();
+	await bloco.locator('summary').click();
+	const tabela = page.getByTestId('tabela-subconjuntos');
+	await expect(tabela).toBeVisible();
+	await expect(tabela.locator('thead')).toContainText('Inglês');
+	await expect(tabela.locator('thead')).toContainText('Respostas informativas');
+	await expect(tabela.locator('tbody')).toContainText(`— (${en})`); // abaixo do mínimo de 20: só o n
+	await expect(tabela.locator('tbody')).toContainText('não se aplica');
+});
+
+test('no painel, a concordância por subconjunto aparece aberta', async ({ page }) => {
+	await page.goto(`${url('PAINEL')}#/validacao`);
+	await expect(page.getByTestId('tabela-subconjuntos')).toBeVisible();
+	await expect(page.getByTestId('subconjuntos-recolhido')).toHaveCount(0);
+	await page.locator('#figura-subconjuntos, [data-testid="figura-subconjuntos"]').first().screenshot({ path: join(TELAS, 'validacao-subconjuntos.png') });
+});
+
 test('no site publicado, o cartão não mostra os votos do júri, e a licença tem nome legível', async ({ page }) => {
 	const problemas = vigiar(page);
 	await page.goto(`${url('PUBLICADO')}#/mapa?doc=${encodeURIComponent('exemplo:00689')}`);

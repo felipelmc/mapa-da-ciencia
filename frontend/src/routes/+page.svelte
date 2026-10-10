@@ -270,7 +270,8 @@
 	}
 
 	.numero-item {
-		flex: 1 1 0;
+		/* a base é o conteúdo: com base 0, as colunas ficavam iguais e "2010–2025" invadia a vizinha */
+		flex: 1 1 auto;
 		min-width: 11rem;
 		display: grid;
 		align-content: start;
