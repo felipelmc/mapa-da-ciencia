@@ -11,8 +11,9 @@ Cada função que escreve em `dados/` ou `saida/`, ou que carrega um modelo, rod
 não começa: sai com `EtapaEmAndamento`, que diz quem roda e desde quando. Na mesma thread, a trava é reentrante (a
 votação do júri chama a classificação; `mapa importar`, a coleta). O sistema solta a trava se o processo morrer.
 
-`quem_roda` lê o dono sem travar (o painel consulta antes de começar um job e a cada poucos segundos): um arquivo vazio,
-ou com o PID de um processo que já não existe, quer dizer livre. Sem `fcntl` (Windows), não há trava.
+`quem_roda` lê o dono (o painel consulta antes de começar um job e a cada poucos segundos): um arquivo vazio, ou com o
+PID de um processo que já não existe, quer dizer livre; com o PID de um processo vivo, uma sonda confere se a trava
+está mesmo presa (o PID pode ser de outro processo, depois de uma queda). Sem `fcntl` (Windows), não há trava.
 """
 
 from __future__ import annotations
@@ -167,7 +168,10 @@ def etapa(nome: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
 
 
 def quem_roda(projeto: Projeto) -> dict[str, Any] | None:
-    """O dono da trava (`pid`, `etapa`, `origem`, `inicio`), ou `None` se nenhuma etapa roda. Lê sem travar."""
+    """O dono da trava (`pid`, `etapa`, `origem`, `inicio`), ou `None` se nenhuma etapa roda.
+
+    Lê o arquivo sem travar. Só quando ele aponta para um processo vivo, confere a trava com uma sonda (`LOCK_SH`
+    sem esperar): um `kill -9` deixa o PID no arquivo, e o sistema pode dar esse número a outro processo."""
     try:
         texto = (projeto.raiz / ARQUIVO).read_text(encoding="utf-8")
     except OSError:
@@ -176,7 +180,25 @@ def quem_roda(projeto: Projeto) -> dict[str, Any] | None:
         dono = json.loads(texto) if texto.strip() else {}
     except json.JSONDecodeError:
         return None
-    return dono if dono and _vivo(dono.get("pid")) else None
+    if not dono or not _vivo(dono.get("pid")):
+        return None
+    try:
+        import fcntl
+    except ImportError:  # Windows: sem trava, vale o arquivo
+        return dono
+    try:
+        arquivo = open(projeto.raiz / ARQUIVO, encoding="utf-8")  # noqa: SIM115 (fechado no finally)
+    except OSError:
+        return dono
+    try:
+        fcntl.flock(arquivo, fcntl.LOCK_SH | fcntl.LOCK_NB)
+    except BlockingIOError:
+        return dono
+    else:
+        fcntl.flock(arquivo, fcntl.LOCK_UN)
+        return None  # o arquivo ficou de uma etapa que caiu
+    finally:
+        arquivo.close()
 
 
 def _fora_do_git(projeto: Projeto) -> None:

@@ -117,3 +117,28 @@ def test_as_etapas_que_escrevem_no_projeto_sao_travadas():
     assert all(getattr(f, "__etapa__", None) for f in travadas), [
         f.__name__ for f in travadas if not hasattr(f, "__etapa__")
     ]
+
+
+def test_a_exportacao_depois_da_importacao_continua_travada(projeto, monkeypatch, tmp_path):
+    """`importar_codificacoes` importa e exporta: entre as duas, outra etapa não pode começar a exportar também."""
+    from types import SimpleNamespace
+
+    import mapa_da_ciencia.api as mapa
+    from mapa_da_ciencia.contrato import exportar as modulo_exportar
+    from mapa_da_ciencia.validacao import amostra as va
+
+    visto = {}
+    monkeypatch.setattr(va, "importar", lambda *a, **k: SimpleNamespace(documentos=1))
+    monkeypatch.setattr(
+        modulo_exportar, "exportar", lambda p: visto.update(dono=quem_roda(p), outra=_em_outra_thread(p)) or []
+    )
+    mapa.importar_codificacoes(projeto, tmp_path / "x.jsonl", "maria")
+    assert visto["dono"]["etapa"] == "validacao" and isinstance(visto["outra"], EtapaEmAndamento)
+
+
+def test_arquivo_velho_com_pid_reaproveitado_nao_trava(projeto):
+    # um `kill -9` deixou o arquivo; o PID dele é agora de outro processo vivo (o 1), mas a trava está solta
+    (projeto.raiz / ARQUIVO).write_text(json.dumps({"pid": 1, "etapa": "classificacao", "origem": "terminal"}))
+    assert quem_roda(projeto) is None
+    with uma_etapa_por_vez(projeto, "coleta"):
+        assert quem_roda(projeto)["etapa"] == "coleta"

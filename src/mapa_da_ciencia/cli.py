@@ -33,6 +33,7 @@ from mapa_da_ciencia.llm.base import ErroProvedor
 from mapa_da_ciencia.llm.perfis import PERFIS, ram_total_gb, sugerir_perfil
 from mapa_da_ciencia.manifesto import status_das_etapas
 from mapa_da_ciencia.projeto import MODELOS_DE_PROJETO, Projeto, ProjetoNaoEncontrado
+from mapa_da_ciencia.trava_etapas import uma_etapa_por_vez
 
 app = typer.Typer(
     name="mapa",
@@ -904,8 +905,9 @@ def validar_amostra(
             raise ErroConfig(
                 f"A amostra já foi sorteada, com {len(ja.docs)} documentos. Use --refazer para sortear outra."
             )
-        a = va.sortear(p, refazer=refazer, n=n)
-        arquivo = va.exportar(p, a)
+        with uma_etapa_por_vez(p, "validacao"):  # o sorteio e a exportação, numa trava só
+            a = va.sortear(p, refazer=refazer, n=n)
+            arquivo = va.exportar(p, a)
     novo = ja is None or refazer
     console.print(
         f"[bold green]Amostra {'sorteada' if novo else 'já sorteada'}[/]: {num(len(a.docs), 0)} documentos, "
@@ -948,9 +950,10 @@ def validar_importar(
         if tipo not in ("humano", "referencia"):
             raise ErroConfig(f"Tipo de codificador inválido: {tipo!r}. Use `humano` ou `referencia`.")
         p = Projeto.abrir(projeto)
-        r = va.importar(p, arquivo, codificador, tipo=tipo)  # type: ignore[arg-type]
+        with uma_etapa_por_vez(p, "validacao"):  # a importação e a exportação, numa trava só
+            r = va.importar(p, arquivo, codificador, tipo=tipo)  # type: ignore[arg-type]
+            avisos = exportar(p) if r.documentos else []  # o painel passa a mostrar a concordância
         n_amostra = len(va.ler(p).docs)  # type: ignore[union-attr]
-        avisos = exportar(p) if r.documentos else []  # o painel passa a mostrar a concordância
     console.print(
         f"[bold green]Importado[/]: {num(r.documentos, 0)} de {num(n_amostra, 0)} documentos da amostra "
         f"codificados por [bold]{r.codificador}[/] ({tipo})."
@@ -1137,8 +1140,9 @@ def juri_relatorio(projeto: OpcaoProjeto = Path(".")) -> None:
 
     with _erros_amigaveis():
         p = Projeto.abrir(projeto)
-        destino, n = gerar(p)
-        avisos = exportar(p)
+        with uma_etapa_por_vez(p, "juri"):  # o relatório e a exportação, numa trava só
+            destino, n = gerar(p)
+            avisos = exportar(p)
     console.print(f"[bold green]Relatório do júri[/]: [bold]{destino.relative_to(p.raiz)}[/].")
     if n.nao_deliberados:
         console.print(
