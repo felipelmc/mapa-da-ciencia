@@ -164,7 +164,7 @@
 			{/each}
 		</p>
 	{/if}
-	<ul class="legenda" aria-label="Legenda: peso fracionário">
+	<ul class="legenda" aria-label="Legenda: peso fracionário" data-legenda="Peso fracionário:">
 		<li><span class="caixa" style:background="var(--seq-vazio)"></span>nenhum</li>
 		{#each legenda as item (item.texto)}
 			<li><span class="caixa" style:background={item.cor}></span>{item.texto}</li>

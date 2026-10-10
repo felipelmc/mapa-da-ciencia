@@ -280,6 +280,7 @@
 		{colunas}
 		{linhas}
 		dados={dadosFluxo}
+		legenda={{ itens: nivel.ids.map((i) => ({ texto: nivel.rotulos.get(i) ?? String(i), cor: nivel.cores.get(i) ?? 'var(--linha-forte)' })) }}
 	>
 		{#snippet controles()}
 			<div class="modos" role="group" aria-label="Modo">

@@ -227,3 +227,43 @@ test('os CSVs das Redes saem com números crus', async ({ page }) => {
 	const [, ...matriz] = await csvDe('fluxo-citacoes');
 	numericas(matriz, matriz[0].map((_, k) => k).slice(1));
 });
+
+/** O texto como fica dentro do SVG (com as entidades do XML). */
+const noSvg = (t: string) => t.trim().replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+/** A cor do texto da legenda que diz `texto`, no SVG exportado. */
+const corDoTexto = (svg: string, texto: string) => svg.match(new RegExp(`<text [^>]*fill="([^"]+)"[^>]*>${texto}</text>`))?.[1];
+
+test('as legendas vão na figura exportada: Classificação, Geografia e Tópicos', async ({ page }) => {
+	// Classificação: os valores da variável, cada um com a sua amostra
+	await page.goto(`${url('RAIZ')}#/classificacao`);
+	await expect(page.getByTestId('figura-por-ano').getByTestId('legenda-valor').first()).toBeVisible();
+	const valores = await page.getByTestId('figura-por-ano').getByTestId('legenda-valor').allTextContents();
+	expect(valores.length).toBeGreaterThan(1);
+	const porAno = (await baixar(page, 'por-ano', 'SVG')).dados.toString('utf8');
+	for (const v of valores) expect(porAno).toContain(`>${noSvg(v)}</text>`);
+
+	// Geografia: o título, o "nenhum" e as classes da escala, nas cores de cada tema
+	await page.goto(`${url('RAIZ')}#/geografia`);
+	await expect(page.getByTestId('figura-ufs')).toHaveAttribute('data-pronto', 'sim');
+	const artigo = (await baixar(page, 'ufs', 'SVG', 'artigo-2')).dados.toString('utf8');
+	const telao = (await baixar(page, 'ufs', 'SVG', 'telao')).dados.toString('utf8');
+	for (const svg of [artigo, telao]) {
+		expect(svg).toContain('>Peso fracionário:</text>');
+		expect(svg).toContain('>nenhum</text>');
+		expect(svg).toMatch(/<rect x="[\d.]+" y="[\d.]+" width="[\d.]+" height="[\d.]+" fill="(?!url)/);
+	}
+	writeFileSync(join(TELAS, 'exportar-ufs-slide.png'), (await baixar(page, 'ufs', 'PNG', 'slide')).dados);
+	expect(corDoTexto(artigo, 'nenhum')).toBeTruthy();
+	expect(corDoTexto(artigo, 'nenhum')).not.toBe(corDoTexto(telao, 'nenhum'));
+	const cobertura = (await baixar(page, 'cobertura', 'SVG')).dados.toString('utf8');
+	await expect(page.getByTestId('figura-cobertura').locator('[data-legenda] > li').first()).toBeAttached();
+	const categorias = await page.getByTestId('figura-cobertura').locator('[data-legenda] > li').allTextContents();
+	for (const c of categorias) expect(cobertura).toContain(`>${noSvg(c)}</text>`);
+
+	// Tópicos: os macrotemas do fluxo, que na tela ficam no próprio gráfico
+	await page.goto(`${url('RAIZ')}#/topicos`);
+	await expect(page.getByTestId('figura-fluxo')).toHaveAttribute('data-pronto', 'sim');
+	const fluxo = (await baixar(page, 'fluxo', 'SVG')).dados.toString('utf8');
+	for (const m of ler('topicos.json').macrotemas) expect(fluxo).toContain(`>${noSvg(m.rotulo)}</text>`);
+	expect(fluxo).toContain('>Sem tópico</text>');
+});
