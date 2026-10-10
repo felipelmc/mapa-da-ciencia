@@ -126,6 +126,7 @@ Estes arquivos são **gerados** e versionados. O CI falha se os três primeiros 
 | Página | A abertura do site, "Céu que se forma" | concluído (v1.0.0) |
 | Júri e redes | O júri de modelos locais com supervisor ([ADR 0015](../decisoes/0015-juri-de-modelos-e-supervisor.md)), as redes de coautoria e de citação ([ADR 0014](../decisoes/0014-redes-de-coautoria-e-citacao.md)) e a [revisão geral](revisao-2026-09.md) | concluído (v2.0.0) |
 | Interface revista | Grafos interativos, telas largas, Validação para quem lê e o site público sem bastidor | concluído (v2.1.0, v2.1.1) |
+| Pendências da 2.1 | O júri na linha das etapas, uma cor por comunidade, as fichas confirmadas na validação e as correções de interface que a [revisão](revisao-2026-09.md) deixou para depois | concluído (v2.2.0) |
 
 ## Armadilhas conhecidas
 

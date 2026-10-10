@@ -163,7 +163,7 @@ um link com `busca=voto%26partido` perdia o "partido" numa recarga.
 
 Ficaram para depois, registrados (a 2.2.0 os corrigiu, um por commit, na branch `pendencias-2.2`):
 
-- a cor dos nós por comunidade (hoje é a do macrotema, e várias comunidades dividem a mesma cor) (**corrigido na
+- a cor dos nós por comunidade (era a do macrotema, e várias comunidades dividiam a mesma cor) (**corrigido na
   2.2.0**: cada comunidade tem um tom próprio do macrotema dela);
 - o cartão do documento, que cobre parte do mapa numa tela de 1440 px (**corrigido na 2.2.0**: o mapa desliza até
   o documento aberto ficar à vista);

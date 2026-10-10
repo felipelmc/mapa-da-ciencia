@@ -4,6 +4,10 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ## [Não lançado]
 
+## [2.2.0] - 2026-10-10
+
+A versão 2.2.0 fecha as pendências que a revisão da interface da 2.1.0 registrou e deixou para depois: o júri aparece no `mapa status` e na linha das etapas do painel, cada comunidade das redes ganha a própria cor (contrato 1.6), a concordância de uma pessoa passa a contar só as fichas confirmadas, e oito problemas de interface, no Mapa, nas Redes, na Validação e no painel, foram corrigidos, cada um com o seu teste.
+
 ### Adicionado
 
 - **O júri no `mapa status` e na linha das etapas do painel.** Num projeto com `juri.membros`, o júri ganha uma linha no `mapa status` (com a amostra classificada por membro e o próximo passo) e uma estação na vista Projeto: incompleto enquanto falta votar, deliberar ou a resposta do supervisor, desatualizado depois de uma mudança no codebook ou quando as decisões gravadas não batem mais com os votos, em dia quando só falta o relatório. A deliberação e a importação das respostas do supervisor passam a deixar um manifesto em `execucoes/`, como as outras etapas. Os passos do júri continuam rodando pela linha de comando.
