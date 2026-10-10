@@ -28,5 +28,17 @@ Até o M5, o painel só mostrava o que a CLI tinha gerado (e, no M5, gravava a c
 
 - `ruamel.yaml` entra como dependência (Python puro).
 - A linha de metrô da vista Projeto mostra o estado de cada etapa (pendente, em dia, incompleta, desatualizada) calculado pelo mesmo código do `mapa status`.
-- Uma etapa rodada pela CLI enquanto o painel está aberto não passa pela fila de jobs; as duas não são impedidas de rodar ao mesmo tempo. O painel mostra o resultado quando a etapa termina.
+- Uma etapa rodada pela CLI enquanto o painel está aberto não passa pela fila de jobs; as duas não são impedidas de rodar ao mesmo tempo. O painel mostra o resultado quando a etapa termina. (Desde a 2.3.0, as duas se impedem: veja o adendo.)
 - O download de um modelo (`ollama pull`) também é um job, com o progresso por camada.
+
+## Adendo (2.3.0): uma etapa por vez, também fora do painel
+
+A consequência acima (uma etapa pela CLI passa por cima da fila) foi registrada como risco e se confirmou na revisão: uma coleta no terminal regravava o corpus enquanto o painel calculava os tópicos, e as duas exportavam `saida/dados/` por cima uma da outra. **Decisão:** toda função que escreve em `dados/` ou `saida/`, ou que carrega um modelo, trava o projeto enquanto roda (`trava_etapas.py`: `flock` num `.etapa.lock` na pasta do projeto, com o PID, a etapa, a origem e a hora; o decorador `@etapa`). A trava é a mesma para a CLI, o notebook e os jobs do painel, e é reentrante na mesma thread (a votação do júri chama a classificação).
+
+- **Na CLI e no notebook**, uma etapa com outra rodando sai com `EtapaEmAndamento` (um `ErroConfig`, que a CLI mostra sem traceback), dizendo qual etapa roda, onde (pelo painel, com o endereço lido do `.painel.lock`, ou em outro terminal ou notebook) e desde quando.
+- **No painel**, `POST /api/etapas/{etapa}` e as rotas que mudam o projeto respondem 409 com `em_andamento`, e `GET /api/projeto/etapas` traz `em_andamento` enquanto a etapa de fora roda; a vista Projeto desativa os botões e consulta de novo a cada 5 s. Baixar um modelo não escreve no projeto e continua liberado.
+- **Sem travar para ler:** `quem_roda` lê o dono do arquivo, e um PID que já não existe quer dizer livre; o sistema solta o `flock` quando o processo morre. Entre a consulta e a trava, uma etapa pode ganhar a corrida: o job do painel falha com a mesma mensagem.
+- Sem `fcntl` (Windows), não há trava, como no `.painel.lock`.
+
+Alternativas descartadas: travar só nos comandos da CLI (o notebook e o painel ficariam de fora, e um comando novo poderia esquecer a trava) e uma fila comum em SQLite (precisaria de um processo dono da fila; o painel nem sempre está aberto).
+

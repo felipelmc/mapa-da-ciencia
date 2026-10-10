@@ -51,8 +51,18 @@ class Etapas:
         progresso.etapa("Tentando")
         raise ErroConfig("O projeto ainda não tem corpus.")
 
+    def travada(self, projeto, opcoes, progresso):
+        """Como uma etapa de verdade: trava o projeto enquanto roda (`trava_etapas`)."""
+        from mapa_da_ciencia.trava_etapas import uma_etapa_por_vez
+
+        with uma_etapa_por_vez(projeto, "travada"):
+            progresso.etapa("Travada", total=1)
+            assert self.liberar.wait(10)
+            progresso.avancar()
+        return ResumoFalso(1)
+
     def registro(self):
-        return {"lenta": self.lenta, "longa": self.longa, "falha": self.falha}
+        return {"lenta": self.lenta, "longa": self.longa, "falha": self.falha, "travada": self.travada}
 
 
 @pytest.fixture
@@ -216,3 +226,53 @@ def test_site_estatico_nao_tem_rotas_de_escrita(tmp_path):
     with TestClient(app, base_url=LOCAL) as c:
         assert c.post("/api/etapas/coleta").status_code in (404, 405)
         assert c.get("/api/jobs").status_code == 404
+
+
+def test_uma_etapa_no_terminal_trava_o_painel(cliente):
+    """Com uma etapa rodando fora do painel (no terminal), o painel não começa outra nem muda o projeto."""
+    from mapa_da_ciencia.trava_etapas import uma_etapa_por_vez
+
+    segurando, soltar = threading.Event(), threading.Event()
+
+    def terminal():
+        with uma_etapa_por_vez(cliente.projeto, "coleta"):
+            segurando.set()
+            soltar.wait(10)
+
+    t = threading.Thread(target=terminal)
+    t.start()
+    try:
+        assert segurando.wait(5)
+        r = cliente.post("/api/etapas/lenta", json={})
+        assert r.status_code == 409 and "outro terminal ou notebook" in r.json()["detail"]["mensagem"]
+        assert r.json()["detail"]["em_andamento"]["etapa"] == "coleta"
+        em_andamento = cliente.get("/api/projeto/etapas").json()["em_andamento"]
+        assert em_andamento["etapa"] == "coleta" and em_andamento["origem"] == "terminal"
+        assert "outro terminal" in em_andamento["mensagem"]
+        r = cliente.patch("/api/configuracao", json={"titulo": "Outro"})
+        assert r.status_code == 409 and "coleta" in r.json()["detail"]
+    finally:
+        soltar.set()
+        t.join()
+    assert "em_andamento" not in cliente.get("/api/projeto/etapas").json()
+    assert cliente.post("/api/etapas/lenta", json={}).status_code == 202
+
+
+def test_uma_etapa_no_painel_trava_o_terminal(cliente, etapas):
+    from typer.testing import CliRunner
+
+    from mapa_da_ciencia.cli import app
+
+    job = cliente.post("/api/etapas/travada", json={}).json()["id"]
+    try:
+        for _ in range(200):  # o job pega a trava na thread dele
+            if (cliente.projeto.raiz / ".etapa.lock").exists() and (cliente.projeto.raiz / ".etapa.lock").read_text():
+                break
+            time.sleep(0.02)
+        r = CliRunner().invoke(app, ["geografia", "-P", str(cliente.projeto.raiz)], env={"COLUMNS": "200"})
+        assert r.exit_code == 1 and "pelo painel" in r.output and "travada" in r.output
+        # o próprio job deste painel não conta como etapa de fora
+        assert "em_andamento" not in cliente.get("/api/projeto/etapas").json()
+    finally:
+        etapas.liberar.set()
+    assert ler_sse(cliente, job)[-1][2] == {"estado": "concluido"}

@@ -55,6 +55,8 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 	let codebook: Record<string, unknown> = { ...codebookInicial, hash: 'h0' };
 	const instalados = new Set(['qwen3-embedding:0.6b', 'qwen3.5:4b']);
 	let amostra: { n: number; codificados: number } | null = null;
+	// uma etapa rodando "no terminal" (POST/DELETE /api/__teste/terminal), como a trava das etapas do Python
+	let noTerminal: Record<string, unknown> | null = null;
 	const agora = () => new Date().toISOString();
 	const semEventos = (j: JobFalso) => {
 		const { eventos, ouvintes, timer, conexoes, ...resto } = j;
@@ -162,7 +164,25 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 				classificacao: { estado: estado('classificacao', 'desatualizada'), ultima },
 				validacao: { estado: 'pendente', ultima: null, ...(amostra ? { amostra } : {}) },
 				// o júri só vem num projeto com `juri.membros` (o do exemplo tem); ele não roda pelo painel
-				juri: { estado: 'incompleta', ultima, proximo: 'mapa juri exportar-pedidos (e depois importar-respostas)' }
+				juri: { estado: 'incompleta', ultima, proximo: 'mapa juri exportar-pedidos (e depois importar-respostas)' },
+				...(noTerminal ? { em_andamento: noTerminal } : {})
+			});
+			return true;
+		}
+		if (caminho === '__teste/terminal') {
+			void corpoDe(req).then((corpo) => {
+				const etapa = String(corpo.etapa ?? 'coleta');
+				noTerminal =
+					metodo === 'POST'
+						? {
+								etapa,
+								origem: 'terminal',
+								pid: 4242,
+								inicio: '2026-10-10T14:02:00-03:00',
+								mensagem: `A etapa ${etapa} está rodando em outro terminal ou notebook (processo 4242) desde as 14:02. Espere terminar e rode de novo: duas etapas ao mesmo tempo no mesmo projeto estragam os dados uma da outra.`
+							}
+						: null;
+				json(res, 200, { ok: true });
 			});
 			return true;
 		}
@@ -178,6 +198,9 @@ export function criarPainelFalso(codebookInicial: Record<string, unknown>) {
 					return json(res, 404, { detail: `Etapa desconhecida: ${etapa}.` });
 				const a = ativo();
 				if (a) return json(res, 409, { detail: { mensagem: `Já há uma etapa rodando (${a.etapa}).`, job: semEventos(a) } });
+				// como `jobs.iniciar`: uma etapa no terminal trava o projeto (baixar um modelo, não)
+				if (noTerminal && etapa !== 'modelo')
+					return json(res, 409, { detail: { mensagem: noTerminal.mensagem, em_andamento: noTerminal } });
 				json(res, 202, semEventos(iniciar(etapa, opcoes)));
 			});
 			return true;

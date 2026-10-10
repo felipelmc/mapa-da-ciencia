@@ -28,7 +28,17 @@
 	let salvo = $state(false);
 	let parar: (() => void) | null = null;
 
-	const ocupado = $derived(!!aoVivo && !aoVivo.terminado);
+	/** Uma etapa que roda fora do painel (no terminal ou num notebook): o painel não começa outra até ela terminar. */
+	const fora = $derived(etapas?.em_andamento ?? null);
+	const ocupado = $derived((!!aoVivo && !aoVivo.terminado) || !!fora);
+	// enquanto ela roda, a linha confere a cada 5 s se já terminou
+	$effect(() => {
+		if (!fora) return;
+		const timer = setInterval(() => {
+			void fonte.etapas().then((e) => (etapas = e)).catch(() => {});
+		}, 5000);
+		return () => clearInterval(timer);
+	});
 	const NOMES: Record<string, string> = {
 		...Object.fromEntries(ESTACOES.map((e) => [e.id, e.rotulo])),
 		modelo: 'Download do modelo'
@@ -66,6 +76,8 @@
 			historico = [job, ...historico];
 		} catch (e) {
 			aviso = e instanceof ErroDaApi ? e.message : `Não foi possível começar: ${(e as Error).message}`;
+			// uma etapa começou fora do painel depois da última consulta: a linha passa a mostrá-la
+			void fonte.etapas().then((x) => (etapas = x)).catch(() => {});
 		}
 	}
 
@@ -132,8 +144,11 @@
 		</button>
 	{/if}
 
+	{#if fora}
+		<p class="aviso" role="status" data-testid="etapa-fora">{fora.mensagem}</p>
+	{/if}
 	{#if etapas}
-		<LinhaDeMetro {etapas} rodando={ocupado ? (aoVivo?.etapa ?? null) : null} {ocupado} aoRodar={(e, o) => rodar(e, o)} {aoSortear} />
+		<LinhaDeMetro {etapas} rodando={aoVivo && !aoVivo.terminado ? aoVivo.etapa : (fora?.etapa ?? null)} {ocupado} aoRodar={(e, o) => rodar(e, o)} {aoSortear} />
 	{:else}
 		<p class="suave" role="status">Carregando as etapas…</p>
 	{/if}

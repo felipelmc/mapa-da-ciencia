@@ -2,7 +2,7 @@
 // sobrevive à queda da primeira conexão SSE), cancelar, retomar depois de um reload e baixar um modelo.
 import { expect, test } from '@playwright/test';
 import { join } from 'node:path';
-import { h1, TELAS, url, vigiar } from './comum';
+import { h1, ler, TELAS, url, vigiar } from './comum';
 
 /** Os problemas, menos os da queda proposital da primeira conexão SSE (ver api-falsa-painel.ts). */
 const semAQueda = (problemas: string[]) =>
@@ -19,9 +19,10 @@ test('no site estático, a seção vira a Metodologia, tirada do manifesto', asy
 	await expect(page.getByTestId('modelos-metodologia')).toContainText('Classificação');
 	// a versão exata dos modelos, o hash e a versão do contrato ficam no bloco recolhido "Para reproduzir"
 	const reproduzir = page.getByTestId('para-reproduzir');
-	await expect(reproduzir.getByText('versão 1.6')).toBeHidden();
+	const versao = `versão ${ler('manifesto.json').versao_contrato}`;
+	await expect(reproduzir.getByText(versao)).toBeHidden();
 	await reproduzir.locator('summary').click();
-	await expect(reproduzir.getByText('versão 1.6')).toBeVisible();
+	await expect(reproduzir.getByText(versao)).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Desenho da validação' })).toBeVisible();
 	expect(problemas).toEqual([]);
 });
@@ -191,4 +192,22 @@ test('no celular, as etapas ficam uma embaixo da outra', async ({ browser }) => 
 	expect(caixas.every(([, , w]) => w > 250)).toBe(true);
 	for (let i = 1; i < caixas.length; i += 1) expect(caixas[i][1]).toBeGreaterThan(caixas[i - 1][1]);
 	await contexto.close();
+});
+
+test('com uma etapa rodando no terminal, o painel não começa outra e avisa até ela terminar', async ({ page }) => {
+	const terminal = `${url('PAINEL')}api/__teste/terminal`;
+	await page.request.post(terminal, { data: { etapa: 'coleta' } });
+	try {
+		await page.goto(`${url('PAINEL')}#/projeto`);
+		await expect(page.getByTestId('etapa-fora')).toContainText('A etapa coleta está rodando em outro terminal ou notebook');
+		await expect(page.getByTestId('estado-coleta')).toHaveText('Rodando…');
+		await expect(page.getByTestId('rodar-topicos')).toBeDisabled();
+		await expect(page.getByTestId('configurar')).toBeDisabled();
+		// terminou no terminal: a linha confere a cada 5 s e volta a liberar
+		await page.request.delete(terminal);
+		await expect(page.getByTestId('etapa-fora')).toHaveCount(0, { timeout: 8000 });
+		await expect(page.getByTestId('rodar-topicos')).toBeEnabled();
+	} finally {
+		await page.request.delete(terminal);
+	}
 });

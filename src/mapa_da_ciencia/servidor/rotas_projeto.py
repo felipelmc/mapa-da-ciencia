@@ -26,7 +26,8 @@ from ..config import Codebook, ConfigProjeto, ErroConfig
 from ..llm.base import ErroProvedor
 from ..manifesto import estados_das_etapas
 from ..projeto import Projeto
-from .jobs import Jobs, Ocupado
+from ..trava_etapas import mensagem as mensagem_da_trava
+from .jobs import Jobs, Ocupado, fora_do_painel
 from .origem import conferir_origem
 
 NOME_MODELO = re.compile(r"^[\w.:/-]{1,80}$")
@@ -62,11 +63,17 @@ def rotas_projeto(projeto: Projeto, jobs: Jobs) -> APIRouter:
     def _livre() -> None:
         if (ativo := jobs.ativo()) is not None:
             raise HTTPException(409, f"Espere a etapa {ativo.etapa} terminar (ou cancele-a) antes de mudar o projeto.")
+        if (dono := fora_do_painel(projeto)) is not None:
+            raise HTTPException(409, mensagem_da_trava(projeto, dono))
 
     @rotas.get("/projeto/etapas")
     def etapas() -> dict[str, Any]:
-        """O estado de cada etapa do pipeline, para a linha de metrô da vista Projeto."""
-        return estados_das_etapas(projeto)
+        """O estado de cada etapa do pipeline, para a linha de metrô da vista Projeto. Com uma etapa rodando fora do
+        painel (no terminal ou num notebook), `em_andamento` diz qual, onde e desde quando."""
+        estados = estados_das_etapas(projeto)
+        if (dono := fora_do_painel(projeto)) is not None:
+            estados["em_andamento"] = dono | {"mensagem": mensagem_da_trava(projeto, dono)}
+        return estados
 
     @rotas.get("/modelos")
     def modelos() -> dict[str, Any]:

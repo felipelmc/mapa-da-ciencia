@@ -17,8 +17,21 @@ export interface EtapaDoProjeto {
 	/** No júri, o comando do próximo passo (o júri roda pela linha de comando, não como job). */
 	proximo?: string;
 }
-/** O júri só vem quando o projeto tem `juri.membros` no `mapa.yaml`. */
-export type EtapasDoProjeto = Record<NomeEtapa | 'validacao', EtapaDoProjeto> & { juri?: EtapaDoProjeto };
+/** Uma etapa que roda fora deste painel (no terminal ou num notebook), que trava o projeto (`trava_etapas.py`). */
+export interface EtapaEmAndamento {
+	etapa: string;
+	origem: 'painel' | 'terminal';
+	pid: number;
+	inicio: string;
+	/** A frase do servidor: qual etapa, onde e desde quando. */
+	mensagem: string;
+}
+/** O júri só vem quando o projeto tem `juri.membros` no `mapa.yaml`; `em_andamento`, quando uma etapa roda fora
+ * do painel. */
+export type EtapasDoProjeto = Record<NomeEtapa | 'validacao', EtapaDoProjeto> & {
+	juri?: EtapaDoProjeto;
+	em_andamento?: EtapaEmAndamento;
+};
 
 export interface Perfil {
 	nome: string;
