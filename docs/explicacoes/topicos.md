@@ -54,7 +54,7 @@ O [HDBSCAN](https://scikit-learn.org/stable/modules/clustering.html#hdbscan) pro
 - `topicos.min_samples`: quão conservador é o agrupamento. Valores maiores deixam mais documentos de fora.
 - `topicos.selecao`: `leaf`, o padrão, fica com as regiões densas mais finas, e os tópicos mudam pouco quando o corpus muda; `eom` prefere tópicos maiores, mas uma mudança pequena nos dados pode trocar um tópico grande por vários pequenos.
 
-Os padrões foram calibrados no piloto ([registro da calibração](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0007-parametros-dos-topicos.md)): 57 tópicos, com números parecidos nas três sementes testadas e nenhum tópico acima de 3,5% do corpus no núcleo (4,9% com os reatribuídos).
+Os padrões foram calibrados no piloto ([registro da calibração](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0007-parametros-dos-topicos.md)): 57 tópicos na coleta da calibração (61 na coleta refeita da 2.3.0), com números parecidos nas três sementes testadas e nenhum tópico acima de 3,5% do corpus no núcleo (4,9% com os reatribuídos).
 
 Os documentos que o HDBSCAN agrupa formam o **núcleo** de cada tópico. Os demais ficam como **ruído**: não pertencem claramente a nenhuma região densa. O ruído não é um erro, e sim uma informação: são trabalhos isolados, de fronteira ou que misturam assuntos. Com menos de 50 documentos, não há tópicos: a etapa para e sugere ampliar o recorte.
 
@@ -107,7 +107,7 @@ A cada execução, o HDBSCAN numera os tópicos de um jeito. Para que as cores, 
 - Os macrotemas persistem: um tópico casado continua no macrotema que tinha, e um tópico novo entra no macrotema do tópico casado mais parecido. A aglomeração só roda de novo quando menos da metade dos tópicos casa, ou com `mapa topicos --refazer-macrotemas`. Refazê-la a cada execução mudaria de cor metade dos tópicos do piloto.
 - Trocar o modelo de embeddings ou o idioma de análise recomeça o casamento (os números continuam de onde pararam).
 
-No piloto, rodar de novo com outra semente mantém o número e a cor de 50 dos 57 tópicos; tirar os artigos de 2010 também mantém 50 dos 57.
+Na calibração, no piloto, rodar de novo com outra semente mantém o número e a cor de 50 dos 57 tópicos; tirar os artigos de 2010 também mantém 50 dos 57.
 
 ## 11. Rótulos
 
@@ -148,7 +148,7 @@ Um tópico está **em alta** quando a participação dele no corpus (documentos 
 - o tamanho da mudança é dado em **pontos percentuais**: a diferença entre a participação ajustada no primeiro e no último ano;
 - uma tendência é **frágil** quando depende de um ano só: refeita sem um dos anos, ela muda de direção (ou fica sem dados suficientes) em ao menos uma das retiradas. A lista a marca e diz de quais anos ela depende. Com o período curto de um recorte (5 ou 6 anos), quase toda marcação é frágil.
 
-No piloto, 13 dos 57 tópicos são marcados: 7 em alta (como identificação partidária e polarização, +4,1 pontos percentuais de 2010 a 2025, e comunicação política nas redes sociais, +2,5) e 6 em queda (como cobertura da imprensa e política, −2,0). Com 57 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço). Um dossiê no primeiro ou no último ano da janela (o período inteiro ou o filtrado) ainda pode aparecer como tendência: confira a série antes de citar.
+No piloto, 11 dos 61 tópicos são marcados: 7 em alta (como federalismo, capacidades estatais e implementação de políticas, +3,9 pontos percentuais de 2010 a 2025, e bolsonarismo, direita e populismo, +3,0) e 4 em queda (como desenvolvimento, Estado e modelos de capitalismo, −1,6). Quatro das 11 são frágeis: três das quedas (teoria social, modernidade e teoria crítica; cobertura da imprensa e política; representação política, sociedade civil e crise democrática) e uma alta (geografia do voto e eleições municipais, que depende de 13 dos 16 anos). Com 61 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço). Um dossiê no primeiro ou no último ano da janela (o período inteiro ou o filtrado) ainda pode aparecer como tendência: confira a série antes de citar.
 
 ## 13. Onde ficam os resultados
 

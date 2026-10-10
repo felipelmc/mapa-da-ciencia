@@ -41,7 +41,7 @@ Nos artigos mais antigos, o OpenAlex tira "afiliações" do texto raspado do PDF
 
 Um artigo de três autores, dois da USP e um da UnB, conta quanto para cada uma? O `mapa` usa a **contagem fracionária**: cada documento vale 1, dividido igualmente entre os autores e, para cada autor, entre as afiliações dele. No exemplo, a USP recebe 2/3 e a UnB, 1/3. Um autor com duas afiliações divide a sua parte entre elas.
 
-Assim, artigos com muitos autores não pesam mais que os outros, e a soma de tudo é exatamente o número de documentos (4.275 no piloto). A vista também mostra a **contagem inteira** (quantos documentos têm alguma afiliação no lugar), que responde a outra pergunta: em quantos artigos a instituição aparece.
+Assim, artigos com muitos autores não pesam mais que os outros, e a soma de tudo é exatamente o número de documentos (4.265 no piloto). A vista também mostra a **contagem inteira** (quantos documentos têm alguma afiliação no lugar), que responde a outra pergunta: em quantos artigos a instituição aparece.
 
 Três casos pedem regra:
 
@@ -64,7 +64,7 @@ Nos passos 3 a 6, vale primeiro a unidade que casou (uma escola, um hospital) e 
 
 A afiliação normalizada (`v240`) às vezes põe a instituição na cidade da sede, e não na do campus: no piloto, 61 afiliações dizem "Fundação Getúlio Vargas, Brasília", e o texto original da mesma afiliação (`v70`) diz São Paulo em 34 delas. Por isso, quando a `v240` não dá UF ou dá uma diferente da `v70`, vale a `v70`, salvo quando o consenso da instituição (a UF de 90% das afiliações dela no corpus, contando, nas que divergem, a da `v70`) confirma a `v240` ou, se a `v240` não dá o lugar, aponta outra UF. A FGV, que tem escolas em São Paulo, no Rio e em Brasília, fica sem consenso, e cada afiliação segue a `v70`. O consenso pesa porque a `v70` também erra: ela põe alguns autores da UFMG em Brasília e, quando a `v240` não dá o lugar, às vezes traz o endereço do autor, e não o da instituição (um autor da USP em Brasília, da Unicamp no Rio). No piloto, a regra mudou a UF de 76 vínculos: 60 da FGV e, entre os outros, campi fora da sede (Fiocruz Minas, a Unilab na Bahia, a UFFS em Erechim) e um erro, um autor da Universidade Federal do Tocantins posto no Rio.
 
-No piloto, o país é conhecido em 98,9% do peso com afiliação, e a UF em 99,2% do peso brasileiro.
+No piloto, o país é conhecido em 98,9% do peso com afiliação, e a UF em 99,3% do peso brasileiro.
 
 ## Filtrar por lugar
 

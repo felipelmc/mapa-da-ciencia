@@ -98,17 +98,17 @@ Se, depois disso, um DOI ainda aparece em dois documentos diferentes, ele fica s
 
 ## Cobertura no piloto
 
-Ciência política no SciELO Brasil, 10 revistas, de 2010 a 2025 (coletado em 26/09/2026 com `mapa coletar`):
+Ciência política no SciELO Brasil, 10 revistas, de 2010 a 2025 (coletado em 26/09/2026 com `mapa coletar` e de novo, do cache, em 10/10/2026, com a conferência dos resumos e sem os documentos sem autor):
 
 | | Documentos | % |
 |---|---|---|
-| Artigos de pesquisa ou revisão (o corpus) | 4.275 | 100 |
-| Com resumo | 4.247 | 99,3 |
-| Com resumo em inglês | 4.159 | 97,3 |
-| Com DOI | 4.262 | 99,7 |
-| Com afiliação normalizada (`v240`) | 2.523 | 59,0 |
+| Artigos de pesquisa ou revisão (o corpus) | 4.265 | 100 |
+| Com resumo | 4.206 | 98,6 |
+| Com resumo em inglês | 4.161 | 97,6 |
+| Com DOI | 4.252 | 99,7 |
+| Com afiliação normalizada (`v240`) | 2.523 | 59,2 |
 | Com afiliação só em texto livre (`v70`) | 1.418 | 33,2 |
-| Casados com o OpenAlex | 4.249 | 99,4 |
-| Com licença Creative Commons | 4.249 | 99,4 |
+| Casados com o OpenAlex | 4.239 | 99,4 |
+| Com licença Creative Commons | 4.239 | 99,4 |
 
-A ArticleMeta tem 4.947 registros dessas revistas no período. Ficam de fora 670 de outros tipos (resenhas, editoriais, erratas...), e 2 artigos carregados duas vezes são fundidos. Os números por revista estão no [registro da coleta](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0003-fontes-casamento-e-licencas.md#adendo-2026-09-26-marco-m2-a-coleta-de-produção), no repositório.
+A ArticleMeta tem 4.947 registros dessas revistas no período. Ficam de fora 670 de outros tipos (resenhas, editoriais, erratas...) e 10 sem autor, e 2 artigos carregados duas vezes são fundidos. Com resumo são 41 a menos que na primeira coleta: os fragmentos saíram, e alguns documentos ficaram só com o título. Os números por revista estão no [registro da coleta](https://github.com/felipelmc/mapa-da-ciencia/blob/main/docs/decisoes/0003-fontes-casamento-e-licencas.md#adendo-2026-09-26-marco-m2-a-coleta-de-produção), no repositório.

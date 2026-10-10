@@ -18,6 +18,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 
 ### Mudado
 
+- **O piloto foi refeito com a 2.3.0** (a demo e os números da documentação). A coleta saiu do cache, sem rede, com a conferência dos resumos, sem os documentos sem autor e com a UF da `v70`. São 4.265 documentos (eram 4.275) e 61 tópicos em 7 macrotemas (eram 57), com 11 tendências, 4 delas frágeis. Os rótulos foram revistos depois da coleta: 53 tópicos e os 7 macrotemas têm rótulo escrito à mão, conferido por um revisor independente que leu os rótulos sem saber quais eram do modelo. O projeto dos tutoriais (*Opinião Pública*) também foi refeito: 388 documentos e 16 tópicos.
 - **A tendência dos tópicos usa o quantil da t de Student.** O intervalo de 95% da inclinação, com a dispersão estimada (quase-binomial), passa a usar o quantil da t com anos − 2 graus de liberdade, e não o da normal: com 16 anos, 2,145 em vez de 1,96. Três tendências marginais do piloto passam a estáveis (de 13 marcadas, ficam 10). O cálculo é o mesmo em Python e no navegador, sem dependências, e o contrato de dados vai à **1.7** (só acréscimo: `metodo_tendencia.quantil`); os dados até a 1.6, calculados com a normal, continuam lidos com a normal.
 
 ### Corrigido
