@@ -27,8 +27,8 @@ uv run mapa geografia
 A etapa leva menos de um segundo. A saída começa assim:
 
 ```text
-Geografia pronta: 859 vínculos de 396 documentos, 94,4% ligados a uma de 145 instituições; país conhecido
-em 99,8% do peso e UF em 97,1% do peso brasileiro, em 0,2 s.
+Geografia pronta: 859 vínculos de 388 documentos, 94,4% ligados a uma de 145 instituições; país conhecido
+em 99,8% do peso e UF em 98,4% do peso brasileiro, em 0,2 s.
 ```
 
 Um **vínculo** é um autor ligado a uma afiliação. O `mapa` casou cada afiliação com uma instituição do OpenAlex: 98% das afiliações normalizadas pelo SciELO (`v240`) e 86% das escritas como texto livre (`v70`). Depois vem a tabela das instituições com mais **peso**:
@@ -93,7 +93,7 @@ A seção **Corpus** ganhou uma linha para a geografia, abaixo da dos tópicos:
 
 ```text
 Geografia: 95,6% dos 859 vínculos ligados a uma de 147 instituições; país conhecido em 99,8% do peso, UF em
-97,4% do peso brasileiro.
+98,7% do peso brasileiro.
 ```
 
 Se você coletar de novo ou mudar o `instituicoes.yaml`, essa linha avisa que a geografia ficou para trás até a próxima execução de `mapa geografia`.
@@ -106,7 +106,7 @@ uv run mapa painel
 
 Abra a vista **Tópicos**. O fluxo mostra os cinco macrotemas ano a ano; troque para o modo **100%** para ver a participação de cada um. Clique no macrotema de comunicação política e eleições para abrir os tópicos dele (o nome foi escrito pelo modelo de linguagem, e o seu pode ser outro).
 
-Abaixo do fluxo, a lista **em alta e em queda** mostra os tópicos cuja participação mudou de forma distinguível do acaso. Na *Opinião Pública*, três estão em alta, todos ligados às eleições recentes: a direita radical e o voto bolsonarista (+15,8 pontos percentuais de 2010 a 2025), a comunicação política em redes sociais (+14,8) e a direita brasileira (+6,7). A deliberação em ambientes online está em queda (−8,1). Clique num deles para abrir a gaveta, com a série, as palavras-chave e os artigos representativos.
+Abaixo do fluxo, a lista **em alta e em queda** mostra os tópicos cuja participação mudou de forma distinguível do acaso. Na *Opinião Pública*, dois estão em alta, os dois ligados às eleições recentes: a direita radical e o voto bolsonarista (+19,2 pontos percentuais de 2010 a 2025) e a comunicação política em redes sociais (+14,5). Dois estão em queda, e os dois levam a etiqueta **frágil**: o voto e os programas sociais nas eleições (−13,4), que depende de 2010 e 2011, e a deliberação em ambientes online (−8,1), que depende de 2012, 2021 e 2023. Clique num deles para abrir a gaveta, com a série, as palavras-chave e os artigos representativos.
 
 O guia [Ler os tópicos no tempo](../guias/ler-os-topicos.md) explica os modos e por que a lista pede cuidado.
 
@@ -139,7 +139,7 @@ por_uf = """
 mapa.consultar(p, por_uf)
 ```
 
-Na *Opinião Pública*, São Paulo soma 66,4 de peso em 88 artigos, Minas Gerais 57,6 em 74 e o Distrito Federal 53,0 em 70 (com o Cefor que você declarou). A tabela `vinculos` guarda cada autor ligado a uma instituição, com o texto da fonte e como o casamento foi feito, e `instituicoes` guarda os nomes, siglas e lugares.
+Na *Opinião Pública*, São Paulo soma 75,9 de peso em 97 artigos, Minas Gerais 58,1 em 74 e o Distrito Federal 42,7 em 55 (com o Cefor que você declarou). A tabela `vinculos` guarda cada autor ligado a uma instituição, com o texto da fonte e como o casamento foi feito, e `instituicoes` guarda os nomes, siglas e lugares.
 
 ## O que você fez
 
