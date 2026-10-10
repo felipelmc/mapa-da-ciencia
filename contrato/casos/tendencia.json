@@ -76,7 +76,9 @@
     2010,
     2025
    ],
-   "motivo": null
+   "motivo": null,
+   "fragil": false,
+   "anos_decisivos": []
   }
  },
  {
@@ -156,7 +158,9 @@
     2010,
     2025
    ],
-   "motivo": null
+   "motivo": null,
+   "fragil": false,
+   "anos_decisivos": []
   }
  },
  {
@@ -236,7 +240,9 @@
     2010,
     2025
    ],
-   "motivo": null
+   "motivo": null,
+   "fragil": null,
+   "anos_decisivos": []
   }
  },
  {
@@ -316,7 +322,16 @@
     2010,
     2025
    ],
-   "motivo": null
+   "motivo": null,
+   "fragil": true,
+   "anos_decisivos": [
+    2010,
+    2013,
+    2014,
+    2021,
+    2022,
+    2023
+   ]
   }
  },
  {
@@ -396,7 +411,9 @@
     2010,
     2025
    ],
-   "motivo": null
+   "motivo": null,
+   "fragil": null,
+   "anos_decisivos": []
   }
  },
  {
@@ -476,7 +493,11 @@
     2010,
     2025
    ],
-   "motivo": null
+   "motivo": null,
+   "fragil": true,
+   "anos_decisivos": [
+    2023
+   ]
   }
  },
  {
@@ -532,7 +553,9 @@
     2015,
     2021
    ],
-   "motivo": null
+   "motivo": null,
+   "fragil": null,
+   "anos_decisivos": []
   }
  },
  {
@@ -588,7 +611,9 @@
     2015,
     2022
    ],
-   "motivo": null
+   "motivo": null,
+   "fragil": null,
+   "anos_decisivos": []
   }
  },
  {
@@ -629,7 +654,9 @@
     2010,
     2013
    ],
-   "motivo": "poucos_anos"
+   "motivo": "poucos_anos",
+   "fragil": null,
+   "anos_decisivos": []
   }
  },
  {
@@ -688,7 +715,9 @@
     2010,
     2019
    ],
-   "motivo": "poucos_documentos"
+   "motivo": "poucos_documentos",
+   "fragil": null,
+   "anos_decisivos": []
   }
  },
  {
@@ -735,7 +764,9 @@
     2010,
     2015
    ],
-   "motivo": "sem_variacao"
+   "motivo": "sem_variacao",
+   "fragil": null,
+   "anos_decisivos": []
   }
  },
  {
@@ -794,7 +825,9 @@
     2010,
     2019
    ],
-   "motivo": "sem_convergencia"
+   "motivo": "sem_convergencia",
+   "fragil": null,
+   "anos_decisivos": []
   }
  },
  {
@@ -874,7 +907,9 @@
     2010,
     2025
    ],
-   "motivo": null
+   "motivo": null,
+   "fragil": false,
+   "anos_decisivos": []
   }
  },
  {
@@ -954,7 +989,9 @@
     2010,
     2025
    ],
-   "motivo": null
+   "motivo": null,
+   "fragil": null,
+   "anos_decisivos": []
   }
  },
  {
@@ -1034,7 +1071,16 @@
     2010,
     2025
    ],
-   "motivo": null
+   "motivo": null,
+   "fragil": true,
+   "anos_decisivos": [
+    2010,
+    2011,
+    2012,
+    2013,
+    2022,
+    2025
+   ]
   }
  }
 ]

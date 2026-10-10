@@ -213,6 +213,14 @@
           "default": null,
           "title": "Anos"
         },
+        "anos_decisivos": {
+          "description": "Os anos cuja retirada muda a direção de uma tendência frágil.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Anos Decisivos",
+          "type": "array"
+        },
         "direcao": {
           "enum": [
             "alta",
@@ -248,6 +256,19 @@
           "default": null,
           "description": "Erro-padrão da inclinação, já corrigido pela dispersão.",
           "title": "Erro Padrao"
+        },
+        "fragil": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Só em alta ou em queda: `true` quando, refeita sem um dos anos, a tendência muda de direção (ou fica sem dados suficientes) em ao menos uma das retiradas. Ausente nos dados até a 1.6.",
+          "title": "Fragil"
         },
         "ic95": {
           "anyOf": [

@@ -353,6 +353,8 @@ Tendência da participação anual no período inteiro, sem filtros: o gabarito 
 | `pp_por_ano` | número ou vazio | vazio |  |
 | `anos` | par de inteiro e inteiro ou vazio | vazio |  |
 | `motivo` | `"poucos_anos"` \| `"poucos_documentos"` \| `"sem_variacao"` \| `"sem_convergencia"` ou vazio | vazio | Por que não há tendência, quando é `insuficiente`. |
+| `fragil` | sim/não ou vazio | vazio | Só em alta ou em queda: `true` quando, refeita sem um dos anos, a tendência muda de direção (ou fica sem dados suficientes) em ao menos uma das retiradas. Ausente nos dados até a 1.6. |
+| `anos_decisivos` | lista de inteiro | vazio | Os anos cuja retirada muda a direção de uma tendência frágil. |
 
 ### Topico
 

@@ -143,7 +143,8 @@ Um tópico está **em alta** quando a participação dele no corpus (documentos 
 - uma regressão logística da participação anual, com o ano como variável; a inclinação diz se a participação cresce ou cai;
 - o intervalo de 95% da inclinação é corrigido pela dispersão da série (quase-binomial): dossiês temáticos fazem picos isolados, que não devem contar como tendência. Como a dispersão é estimada com poucos anos, o intervalo usa o quantil da t de Student (com anos − 2 graus de liberdade), um pouco mais largo que o da normal;
 - o tópico só é marcado quando o intervalo não inclui zero; com menos de 5 anos com documentos ou menos de 10 documentos do tópico, não há tendência calculada;
-- o tamanho da mudança é dado em **pontos percentuais**: a diferença entre a participação ajustada no primeiro e no último ano.
+- o tamanho da mudança é dado em **pontos percentuais**: a diferença entre a participação ajustada no primeiro e no último ano;
+- uma tendência é **frágil** quando depende de um ano só: refeita sem um dos anos, ela muda de direção (ou fica sem dados suficientes) em ao menos uma das retiradas. A lista a marca e diz de quais anos ela depende. Com o período curto de um recorte (5 ou 6 anos), quase toda marcação é frágil.
 
 No piloto, 13 dos 57 tópicos são marcados: 7 em alta (como identificação partidária e polarização, +4,1 pontos percentuais de 2010 a 2025, e comunicação política nas redes sociais, +2,5) e 6 em queda (como cobertura da imprensa e política, −2,0). Com 57 tópicos testados, cerca de 3 marcações podem acontecer por acaso: leia a lista como um ponto de partida, não como um teste para cada tópico. No painel, a tendência é recalculada com o recorte (revistas, período, laço). Um dossiê no primeiro ou no último ano da janela (o período inteiro ou o filtrado) ainda pode aparecer como tendência: confira a série antes de citar.
 

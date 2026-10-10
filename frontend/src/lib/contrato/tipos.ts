@@ -813,6 +813,10 @@ export interface Serie {
  */
 export interface Tendencia {
 	anos?: [number, number] | null;
+	/**
+	 * Os anos cuja retirada muda a direção de uma tendência frágil.
+	 */
+	anos_decisivos?: number[];
 	direcao: 'alta' | 'queda' | 'estavel' | 'insuficiente';
 	/**
 	 * φ de Pearson (1 na binomial pura).
@@ -822,6 +826,10 @@ export interface Tendencia {
 	 * Erro-padrão da inclinação, já corrigido pela dispersão.
 	 */
 	erro_padrao?: number | null;
+	/**
+	 * Só em alta ou em queda: `true` quando, refeita sem um dos anos, a tendência muda de direção (ou fica sem dados suficientes) em ao menos uma das retiradas. Ausente nos dados até a 1.6.
+	 */
+	fragil?: boolean | null;
 	ic95?: [number, number] | null;
 	/**
 	 * Inclinação na escala logit, por ano.

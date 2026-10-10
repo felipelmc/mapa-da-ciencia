@@ -62,3 +62,14 @@ A dispersão φ é estimada com os resíduos de anos − 2 graus de liberdade (1
 
 Alternativas descartadas: continuar com o z (o intervalo fica estreito com 16 pontos e escala estimada) e corrigir para comparações múltiplas (a vista é descritiva, e o aviso na interface continua).
 
+### A tendência frágil
+
+Uma marcação pode depender de um ano só: um dossiê no começo ou no fim do período (a Consequência acima) ou um ano atípico no meio. **Decisão:** uma tendência em alta ou em queda é **frágil** quando, refeita pela mesma regra sem um dos anos usados, muda de direção (ou fica sem dados suficientes) em ao menos uma das retiradas. O contrato traz `Tendencia.fragil` e `anos_decisivos` (os anos cuja retirada muda a direção), e a interface marca a tendência com uma etiqueta "frágil" e diz de que anos ela depende.
+
+- **Por que "ao menos uma retirada":** a regra não tem um corte arbitrário (uma fração das retiradas) e diz qual ano pesa, o que a pessoa pode conferir na série. Com o mínimo de 5 anos (um recorte curto no painel), toda marcação é frágil, porque sem qualquer um dos anos sobram 4: é o comportamento certo, e a interface diz isso.
+- **Custo:** um ajuste por ano, só para os tópicos marcados. No pior caso do piloto (todos os 57 tópicos, 17 ajustes cada), 42 ms em Python puro; no navegador, com os filtros, só os marcados são refeitos.
+- **Paridade:** a mesma conta em Python e em `glm.ts`. O gerador dos casos recusa uma série em que um limite do intervalo fique a menos de 10⁻⁶ de zero, no ajuste completo ou numa retirada, para que um arredondamento diferente nos dois lados não mude a fragilidade.
+- **Efeito nos tópicos da 2.2.0, com o quantil t:** 4 das 10 marcações são frágeis. Federalismo, capacidades estatais e implementação de políticas depende de 2010 e 2012; cobertura da imprensa e política, de 2011; representação política na sociedade civil, de 2011 e 2013; competição eleitoral municipal, de 11 dos 16 anos. As outras 6 resistem a qualquer retirada.
+
+Alternativas descartadas: marcar como frágil só quando mais de um quarto das retiradas muda a direção (no piloto, só a competição eleitoral municipal; um corte arbitrário que esconde a dependência de um ano) e o erro-padrão *jackknife* (outra regra de decisão, mais difícil de explicar que "sem 2011, fica estável").
+

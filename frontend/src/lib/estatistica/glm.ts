@@ -5,6 +5,9 @@
  * intervalo de Wald, com o quantil da t de anos − 2 graus de liberdade quando a dispersão é estimada (desde a
  * 2.3.0; antes, o da normal). O tamanho da mudança vem das participações ajustadas no primeiro e no último ano.
  *
+ * Uma tendência marcada é frágil quando, refeita sem um dos anos, muda de direção (ou fica sem dados suficientes)
+ * em ao menos uma das retiradas; `anos_decisivos` lista esses anos.
+ *
  * Os casos de `contrato/casos/tendencia.json` (gerados pelo Python) garantem que as duas versões concordam.
  */
 import type { MetodoTendencia } from '$lib/contrato/tipos';
@@ -24,6 +27,9 @@ export interface Tendencia {
 	pp_por_ano: number | null;
 	anos: [number, number] | null;
 	motivo: Motivo | null;
+	/** Só em alta ou em queda: se retirar um ano muda a direção. */
+	fragil: boolean | null;
+	anos_decisivos: number[];
 }
 
 export const METODO_PADRAO: Required<MetodoTendencia> = {
@@ -183,7 +189,9 @@ const insuficiente = (motivo: Motivo, anos: [number, number] | null): Tendencia 
 	pp_periodo: null,
 	pp_por_ano: null,
 	anos,
-	motivo
+	motivo,
+	fragil: null,
+	anos_decisivos: []
 });
 
 /** Tendência da série `n` (documentos do tópico por ano) sobre `total` (documentos de cada ano). */
@@ -196,6 +204,18 @@ export function tendencia(
 	const m = { ...METODO_PADRAO, ...metodo };
 	const usados: [number, number, number][] = [];
 	for (let i = 0; i < anos.length; i += 1) if (total[i] > 0) usados.push([anos[i], n[i], total[i]]);
+	const t = tendenciaDosAnos(usados, m);
+	if (t.direcao !== 'alta' && t.direcao !== 'queda') return t;
+	const decisivos: number[] = [];
+	for (let i = 0; i < usados.length; i += 1) {
+		const sem = [...usados.slice(0, i), ...usados.slice(i + 1)];
+		if (tendenciaDosAnos(sem, m).direcao !== t.direcao) decisivos.push(usados[i][0]);
+	}
+	return { ...t, fragil: decisivos.length > 0, anos_decisivos: decisivos };
+}
+
+/** A tendência dos anos `usados` ([ano, documentos do tópico, documentos do ano]), sem a fragilidade. */
+function tendenciaDosAnos(usados: [number, number, number][], m: Required<MetodoTendencia>): Tendencia {
 	const periodo: [number, number] | null = usados.length ? [usados[0][0], usados[usados.length - 1][0]] : null;
 	if (usados.length < m.anos_minimos) return insuficiente('poucos_anos', periodo);
 	const xs = usados.map((u) => u[0]);
@@ -226,7 +246,9 @@ export function tendencia(
 		pp_periodo: pp,
 		pp_por_ano: pp / (ultimo - primeiro),
 		anos: periodo,
-		motivo: null
+		motivo: null,
+		fragil: null,
+		anos_decisivos: []
 	};
 }
 

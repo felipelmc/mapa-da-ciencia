@@ -164,3 +164,25 @@ def test_o_metodo_do_contrato_diz_o_quantil():
     from mapa_da_ciencia.contrato.modelos import MetodoTendencia
 
     assert MetodoTendencia().quantil == QUANTIL == "t" and MetodoTendencia().z == Z
+
+
+ANOS16 = list(range(2010, 2026))
+
+
+def test_tendencia_que_depende_do_ultimo_ano_e_fragil():
+    pico_no_fim = [5, 4, 6, 5, 5, 4, 6, 5, 6, 5, 4, 6, 5, 6, 7, 16]
+    t = tendencia(pico_no_fim, [250] * 16, ANOS16)
+    assert t.direcao == "alta" and t.fragil is True and t.anos_decisivos == (2025,)
+
+
+def test_tendencia_robusta_nao_e_fragil_e_estavel_nao_tem_fragilidade():
+    t = tendencia(list(range(4, 20)), [250] * 16, ANOS16)
+    assert t.direcao == "alta" and t.fragil is False and t.anos_decisivos == ()
+    e = tendencia([12] * 16, [300] * 16, ANOS16)
+    assert e.direcao == "estavel" and e.fragil is None
+
+
+def test_com_o_minimo_de_anos_toda_marcacao_e_fragil():
+    # sem qualquer um dos 5 anos, sobram 4, abaixo do mínimo: a tendência depende de todos
+    t = tendencia([5, 10, 15, 20, 25], [400] * 5, list(range(2021, 2026)))
+    assert t.direcao == "alta" and t.fragil is True and t.anos_decisivos == tuple(range(2021, 2026))

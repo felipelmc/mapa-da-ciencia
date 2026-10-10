@@ -227,6 +227,8 @@ def tendencia_contrato(serie: list[int], total: list[int], anos: list[int]) -> T
         pp_por_ano=r(t.pp_por_ano),
         anos=t.anos,
         motivo=t.motivo,
+        fragil=t.fragil,
+        anos_decisivos=list(t.anos_decisivos),
     )
 
 

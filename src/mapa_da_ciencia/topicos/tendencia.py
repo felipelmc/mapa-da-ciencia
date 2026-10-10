@@ -11,6 +11,9 @@ normal, como no `summary.glm` do R).
 O tamanho da mudança vem das participações ajustadas no primeiro e no último ano: `pp_periodo` pontos percentuais
 no período, ou `pp_por_ano` por ano. É o que a sparkline da interface mostra.
 
+Uma tendência marcada é **frágil** quando depende de um ano só: refeita sem um dos anos, ela muda de direção (ou
+fica sem dados suficientes) em ao menos uma das retiradas. `anos_decisivos` lista esses anos (desde a 2.3.0).
+
 Python puro, sem numpy: o mesmo algoritmo roda no navegador (`frontend/src/lib/estatistica/glm.ts`), com os
 filtros do painel, e os casos de `contrato/casos/tendencia.json` garantem que as duas versões dão o mesmo número.
 """
@@ -18,7 +21,7 @@ filtros do painel, e os casos de `contrato/casos/tendencia.json` garantem que as
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 from typing import Literal
 
@@ -54,6 +57,8 @@ class Tendencia:
     pp_por_ano: float | None = None
     anos: tuple[int, int] | None = None
     motivo: Motivo | None = None
+    fragil: bool | None = None  # só em alta ou em queda: se retirar um ano muda a direção
+    anos_decisivos: tuple[int, ...] = ()  # os anos cuja retirada muda a direção
 
 
 @dataclass(frozen=True)
@@ -193,6 +198,20 @@ def tendencia(
 ) -> Tendencia:
     """Tendência da série `n` (documentos do tópico por ano) sobre `total` (documentos de cada ano)."""
     usados = [(a, ni, ti) for a, ni, ti in zip(anos, n, total, strict=True) if ti > 0]
+    t = _tendencia(usados, dispersao, quantil)
+    if t.direcao not in ("alta", "queda"):
+        return t
+    decisivos = tuple(
+        usados[i][0]
+        for i in range(len(usados))
+        if _tendencia(usados[:i] + usados[i + 1 :], dispersao, quantil).direcao != t.direcao
+    )
+    return replace(t, fragil=bool(decisivos), anos_decisivos=decisivos)
+
+
+def _tendencia(usados: list[tuple[int, int, int]], dispersao: Dispersao, quantil: Quantil) -> Tendencia:
+    """A tendência dos anos `usados` (ano, documentos do tópico, documentos do ano), sem a conferência da
+    fragilidade."""
     periodo = (usados[0][0], usados[-1][0]) if usados else None
     if len(usados) < ANOS_MINIMOS:
         return Tendencia("insuficiente", anos=periodo, motivo="poucos_anos")
@@ -294,7 +313,24 @@ def casos_de_referencia() -> list[dict]:
                     "pp_por_ano": t.pp_por_ano,
                     "anos": list(t.anos) if t.anos else None,
                     "motivo": t.motivo,
+                    "fragil": t.fragil,
+                    "anos_decisivos": list(t.anos_decisivos),
                 },
             }
         )
+        _conferir_folga(nome, n, total, anos, dispersao, quantil)
     return casos
+
+
+FOLGA_PARIDADE = 1e-6
+
+
+def _conferir_folga(nome: str, n: list[int], total: list[int], anos: list[int], dispersao: Dispersao, quantil: Quantil):
+    """Recusa um caso de referência em que um limite do intervalo fica no fio da navalha (a menos de
+    `FOLGA_PARIDADE` de zero), no ajuste completo ou numa retirada: ali, uma diferença de arredondamento entre o
+    Python e o navegador mudaria a direção ou a fragilidade."""
+    usados = [(a, ni, ti) for a, ni, ti in zip(anos, n, total, strict=True) if ti > 0]
+    for sub in [usados] + [usados[:i] + usados[i + 1 :] for i in range(len(usados))]:
+        t = _tendencia(sub, dispersao, quantil)
+        if t.ic95 and min(abs(t.ic95[0]), abs(t.ic95[1])) < FOLGA_PARIDADE:
+            raise ValueError(f"o caso {nome!r} tem um intervalo no fio da navalha; troque a série")

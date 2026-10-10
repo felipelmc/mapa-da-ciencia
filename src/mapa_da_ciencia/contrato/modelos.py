@@ -352,6 +352,14 @@ class Tendencia(_Base):
     pp_por_ano: float | None = None
     anos: tuple[int, int] | None = None
     motivo: MotivoTendencia | None = Field(None, description="Por que não há tendência, quando é `insuficiente`.")
+    fragil: bool | None = Field(
+        None,
+        description="Só em alta ou em queda: `true` quando, refeita sem um dos anos, a tendência muda de direção (ou "
+        "fica sem dados suficientes) em ao menos uma das retiradas. Ausente nos dados até a 1.6.",
+    )
+    anos_decisivos: list[int] = Field(
+        default_factory=list, description="Os anos cuja retirada muda a direção de uma tendência frágil."
+    )
 
 
 class MetodoTendencia(_Base):

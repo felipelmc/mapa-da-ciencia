@@ -22,6 +22,8 @@ function comparar(obtido: ReturnType<typeof tendencia>, esperado: Record<string,
 	expect(obtido.direcao).toBe(esperado.direcao);
 	expect(obtido.motivo).toBe(esperado.motivo);
 	expect(obtido.anos).toEqual(esperado.anos);
+	expect(obtido.fragil).toBe(esperado.fragil);
+	expect(obtido.anos_decisivos).toEqual(esperado.anos_decisivos);
 	for (const campo of ['inclinacao', 'erro_padrao', 'dispersao', 'prop_inicio', 'prop_fim', 'pp_periodo', 'pp_por_ano'] as const) {
 		const e = esperado[campo] as number | null;
 		if (e === null) expect(obtido[campo]).toBeNull();
@@ -53,6 +55,8 @@ describe('tendência no navegador = referência em Python', () => {
 				expect(obtido.pp_periodo!).toBeCloseTo(t.tendencia.pp_periodo, 4);
 			if (t.tendencia.inclinacao !== null && t.tendencia.inclinacao !== undefined)
 				expect(obtido.inclinacao!).toBeCloseTo(t.tendencia.inclinacao, 5);
+			expect(obtido.fragil).toBe(t.tendencia.fragil ?? null);
+			expect(obtido.anos_decisivos).toEqual(t.tendencia.anos_decisivos ?? []);
 		}
 	});
 
