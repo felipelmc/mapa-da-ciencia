@@ -95,6 +95,7 @@ def aplicar_rotulos(projeto: Projeto, progresso: Progresso | None = None) -> Res
     """Aplica o `rotulos.yaml` aos tópicos em dia, grava o `resultado.json` e exporta. Não chama o modelo."""
     from ..armazenamento import ARQUIVO, ler_documentos
     from ..contrato.exportar import exportar
+    from ..redes.pipeline import atualizar_assinatura_legada
     from .resultado import assinatura_corpus
 
     progresso = progresso or ProgressoNulo()
@@ -108,6 +109,7 @@ def aplicar_rotulos(projeto: Projeto, progresso: Progresso | None = None) -> Res
         )
     progresso.etapa("Rótulos do rotulos.yaml", 1)
     resumo = aplicar(resultado, ler_manuais(projeto.raiz))
+    atualizar_assinatura_legada(projeto)  # redes de antes da 2.3.0: os rótulos ainda estavam na assinatura
     resultado.gravar_rotulos(pasta)
     progresso.avancar()
     if resumo.sem_topico:

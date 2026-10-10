@@ -945,14 +945,22 @@ def test_mudar_o_rotulo_de_um_topico_nao_desatualiza_as_redes(projeto):
         redes = m.Redes.model_validate_json((projeto.saida / "dados" / "redes.json").read_text(encoding="utf-8"))
         novo = next(c for c in redes.comunidades if (c.rede, c.id) == (comunidade.rede, comunidade.id))
         assert novo.rotulo.startswith("Um rótulo novo")
-        # as redes de antes da 2.3.0 (com os rótulos no hash dos tópicos) continuam em dia até a próxima `mapa redes`
+        # as redes de antes da 2.3.0 (com os rótulos no hash dos tópicos) continuam em dia, também depois de mudar um
+        # rótulo pelo `aplicar_rotulos` (ele regrava a assinatura no formato novo antes)
+        from mapa_da_ciencia.topicos.aplicar import aplicar_rotulos
+
         r = ResultadoRedes.ler(projeto.dados / PASTA)
-        legado = partes_das_entradas(projeto, legado=True)
-        r.entradas = assinatura_entradas(projeto, legado)
+        r.entradas = assinatura_entradas(projeto, partes_das_entradas(projeto, legado=True))
         r.gravar(projeto.dados / PASTA)
         assert redes_em_dia(projeto) is True
+        (projeto.raiz / "rotulos.yaml").write_text(f"topicos:\n  {alvo}:\n    rotulo: Outro rótulo\n", encoding="utf-8")
+        aplicar_rotulos(projeto)
+        assert redes_em_dia(projeto) is True
+        redes = m.Redes.model_validate_json((projeto.saida / "dados" / "redes.json").read_text(encoding="utf-8"))
+        assert any(c.rotulo.startswith("Outro rótulo") for c in redes.comunidades)
     finally:
         caminho.write_text(original, encoding="utf-8")
+        (projeto.raiz / "rotulos.yaml").unlink(missing_ok=True)
         gerar_redes(projeto)
 
 

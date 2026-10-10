@@ -245,6 +245,11 @@ def gerar_topicos(
         rotulador.fim()
         progresso.fim()
 
+    # redes de antes da 2.3.0 (com os rótulos na assinatura): a assinatura nova, antes de os rótulos mudarem
+    from mapa_da_ciencia.redes.pipeline import atualizar_assinatura_legada
+
+    atualizar_assinatura_legada(projeto)
+
     # ---- identidade (com os rótulos) e resultado
     for tid, r in rotulos.items():
         t = est.identidade.topicos[tid]

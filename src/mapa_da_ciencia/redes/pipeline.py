@@ -162,6 +162,21 @@ def redes_em_dia(projeto: Projeto) -> bool | None:
     return r.versao == VERSAO and r.entradas in _assinaturas_validas(projeto)
 
 
+def atualizar_assinatura_legada(projeto: Projeto) -> bool:
+    """Redes de antes da 2.3.0 (com os rótulos no hash dos tópicos) que ainda batem com as entradas ganham a assinatura
+    nova, que ignora os rótulos: chamada antes de mudar um rótulo, para que a mudança não as desatualize. Devolve se
+    regravou."""
+    r = ResultadoRedes.ler(projeto.dados / PASTA)
+    if r is None or r.versao != VERSAO:
+        return False
+    if r.entradas != assinatura_entradas(projeto, partes_das_entradas(projeto, legado=True)):
+        return False
+    r.partes = partes_das_entradas(projeto)
+    r.entradas = assinatura_entradas(projeto, r.partes)
+    r.gravar(projeto.dados / PASTA)
+    return True
+
+
 def _assinaturas_validas(projeto: Projeto) -> set[str]:
     """A assinatura atual e a de antes da 2.3.0 (com os rótulos no hash dos tópicos), que vale até a próxima
     `mapa redes`."""
