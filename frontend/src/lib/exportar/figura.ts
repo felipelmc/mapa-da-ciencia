@@ -220,8 +220,11 @@ function clonarMultiplos(container: HTMLElement): SVGSVGElement {
 			const t = titulo.getBoundingClientRect();
 			const e = getComputedStyle(titulo);
 			const texto = document.createElementNS(NS, 'text');
-			// `data-exportar`: um título mais completo que o da tela (o nome da revista, e não a sigla)
-			texto.textContent = (titulo.dataset.exportar ?? titulo.textContent ?? '').replace(/\s+/g, ' ').trim();
+			// `data-exportar`: um título mais completo que o da tela (o nome da revista, e não a sigla), cortado na largura
+			// do painel (o SVG não quebra a linha, e um nome longo entraria no painel do lado)
+			const medir = medidor(`${e.fontWeight} ${e.fontFamily}`);
+			const completo = (titulo.dataset.exportar ?? titulo.textContent ?? '').replace(/\s+/g, ' ').trim();
+			texto.textContent = caberNaLargura(completo, painel.getBoundingClientRect().width - 4, (x) => medir(x, parseFloat(e.fontSize)));
 			texto.setAttribute('x', String(t.left - base.left));
 			texto.setAttribute('y', String(t.top - base.top + parseFloat(e.fontSize)));
 			texto.setAttribute('style', `font-family:${e.fontFamily};font-size:${e.fontSize};font-weight:${e.fontWeight};fill:${e.color}`);
@@ -381,6 +384,15 @@ export function legendaEmSvg(itens: ItemLegenda[], o: OpcoesLegenda): { svg: str
 }
 
 /** Mede um texto com o `measureText` do canvas, na família dada (depois de as fontes carregarem). */
+/** O texto inteiro, se cabe na largura; senão, cortado com "…", mantendo um número entre parênteses no fim ("(430)"). */
+export function caberNaLargura(texto: string, largura: number, medir: (texto: string) => number): string {
+	if (medir(texto) <= largura) return texto;
+	const [, nome, sufixo] = texto.match(/^(.*?)( \([^)]*\))?$/) ?? [texto, texto, ''];
+	let corte = nome.length;
+	while (corte > 1 && medir(`${nome.slice(0, corte).trimEnd()}…${sufixo ?? ''}`) > largura) corte -= 1;
+	return `${nome.slice(0, corte).trimEnd()}…${sufixo ?? ''}`;
+}
+
 function medidor(fonte: string): OpcoesLegenda['medir'] {
 	const ctx = document.createElement('canvas').getContext('2d');
 	return (texto, tamanho) => {

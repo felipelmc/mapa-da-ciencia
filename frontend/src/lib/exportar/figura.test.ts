@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { larguraPx, legendaEmSvg, nomeDeArquivo, numeroCru, paraCsv, PRESETS, type ItemLegenda } from './figura';
+import { caberNaLargura, larguraPx, legendaEmSvg, nomeDeArquivo, numeroCru, paraCsv, PRESETS, type ItemLegenda } from './figura';
 
 describe('exportar', () => {
 	it('CSV com BOM, aspas quando precisa e CRLF', () => {
@@ -63,3 +63,13 @@ describe('legenda em SVG', () => {
 	});
 });
 
+describe('caberNaLargura', () => {
+	const medir = (t: string) => t.length * 10; // 10 px por caractere
+	it('deixa o texto que cabe e corta o que não cabe, mantendo o número entre parênteses', () => {
+		expect(caberNaLargura('Dados (412)', 200, medir)).toBe('Dados (412)');
+		const cortado = caberNaLargura('Revista Brasileira de Política Internacional (403)', 200, medir);
+		expect(cortado.endsWith('… (403)')).toBe(true);
+		expect(medir(cortado)).toBeLessThanOrEqual(200);
+		expect(caberNaLargura('Um nome comprido sem número', 100, medir)).toMatch(/…$/);
+	});
+});
