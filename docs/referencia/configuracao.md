@@ -60,7 +60,7 @@ Período e idiomas do corpus.
 | `anos` | par de inteiro e inteiro | **obrigatório** | Primeiro e último ano de publicação, inclusive. |
 | `idioma_analise` | `"pt"` \| `"en"` \| `"es"` | `"en"` | Idioma dos textos usados nos embeddings e nos tópicos. |
 | `idioma_exibicao` | `"pt"` \| `"en"` \| `"es"` | `"pt"` | Idioma preferido para mostrar resumos e palavras-chave. |
-| `excluir_sem_autor` | sim/não | `true` | Deixa de fora os documentos sem nenhum autor, que costumam ser encartes de dados, apresentações e declarações registrados como artigos. |
+| `excluir_sem_autor` | sim/não | `true` | Deixa de fora os documentos sem nenhum autor (nem na ArticleMeta nem no OpenAlex), que costumam ser encartes de dados, apresentações e declarações registrados como artigos. |
 | `excluir` | lista de texto | vazio | Documentos que ficam de fora do corpus, pelo PID do SciELO, pelo DOI ou pelo id do OpenAlex (`W…`). A coleta avisa quando um deles não aparece. |
 
 ### Modelos

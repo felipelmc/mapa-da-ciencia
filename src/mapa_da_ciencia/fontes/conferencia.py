@@ -5,8 +5,8 @@ Dois problemas que o piloto mostrou e que a coleta corrige depois da deduplicaç
 - **Fragmentos.** Parte dos "resumos" não é resumo: um pedaço do meio do texto que o OpenAlex raspou da página
   ("2] Ibid", "na revista Encontros com a…"), o aviso de um repositório ("Made available in DSpace…"), a palavra
   "Resumo" sozinha. Um texto com menos de `PALAVRAS_MINIMAS` palavras, um texto de repositório ou um resumo do OpenAlex
-  que começa no meio de uma frase (sem maiúscula nem aspas) sai; o documento fica com os resumos que sobrarem, ou só
-  com o título.
+  que começa no meio de uma frase (sem maiúscula, nem depois de aspas, "¿" ou parênteses, nem com um número) sai; o
+  documento fica com os resumos que sobrarem, ou só com o título.
 - **Idioma declarado.** Quando o detector (`mapa_da_ciencia.idioma`) reconhece com folga um idioma diferente do
   declarado, o resumo passa ao idioma detectado. O título e as palavras-chave da mesma fonte, no mesmo idioma
   declarado, seguem o resumo, a não ser que o próprio título confirme o idioma declarado (na RBPI de 2012, só os
@@ -31,7 +31,8 @@ _REPOSITORIO = re.compile(
     r"|^(?:keywords?|palavras-chave|palabras clave)\b",
     re.IGNORECASE,
 )
-_ABERTURA = "\"'“‘«"
+_ABERTURA = "\"'“‘«¿¡(["  # o que pode vir antes da primeira letra de uma frase
+_NUMERO_NO_INICIO = re.compile(r"^\d+[\s.,%ºª/–-]")  # "2013 foi o ano", "40% dos", e não "2] Ibid"
 
 
 @dataclass
@@ -45,7 +46,10 @@ def fragmento(resumo: Texto) -> bool:
     texto = resumo.texto.strip()
     if len(_PALAVRA.findall(texto)) < PALAVRAS_MINIMAS or _REPOSITORIO.search(texto):
         return True
-    return resumo.origem == "openalex" and not (texto[:1].isupper() or texto[:1] in _ABERTURA)
+    if resumo.origem != "openalex":
+        return False
+    inicio = texto.lstrip(_ABERTURA)
+    return not (inicio[:1].isupper() or _NUMERO_NO_INICIO.match(texto))
 
 
 def _um_por_idioma(textos: list[Texto], certos: set[int]) -> list[Texto]:

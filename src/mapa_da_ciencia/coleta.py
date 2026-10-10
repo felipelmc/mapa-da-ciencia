@@ -262,8 +262,9 @@ async def _enriquecer(
 def _excluir(
     documentos: list[Documento], sem_autor: bool, lista: list[str]
 ) -> tuple[list[Documento], dict[str, list[str]], list[str]]:
-    """Tira do corpus os documentos sem autor (se `sem_autor`) e os da lista do recorte (PID, DOI ou id do
-    OpenAlex). Devolve (documentos, excluídos por motivo, entradas da lista que não acharam nenhum documento)."""
+    """Tira do corpus os documentos sem autor (se `sem_autor`: nenhum na ArticleMeta e nenhuma autoria com nome no
+    OpenAlex) e os da lista do recorte (PID, DOI ou id do OpenAlex). Devolve (documentos, excluídos por motivo,
+    entradas da lista que não acharam nenhum documento)."""
     pedidos = {(normalizar_doi(x) or x.strip().removeprefix("openalex:")).upper(): x for x in lista}
     achados: set[str] = set()
     ficam: list[Documento] = []
@@ -273,7 +274,7 @@ def _excluir(
         if chaves:
             achados |= chaves
             excluidos.setdefault("lista", []).append(doc.id)
-        elif sem_autor and not doc.autores:
+        elif sem_autor and not doc.autores and not any(a.nome for a in doc.autorias_openalex):
             excluidos.setdefault("sem_autor", []).append(doc.id)
         else:
             ficam.append(doc)

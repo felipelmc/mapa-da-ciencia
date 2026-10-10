@@ -77,8 +77,8 @@ class Recorte(_Base):
     idioma_exibicao: Idioma = Field("pt", description="Idioma preferido para mostrar resumos e palavras-chave.")
     excluir_sem_autor: bool = Field(
         True,
-        description="Deixa de fora os documentos sem nenhum autor, que costumam ser encartes de dados, "
-        "apresentações e declarações registrados como artigos.",
+        description="Deixa de fora os documentos sem nenhum autor (nem na ArticleMeta nem no OpenAlex), que "
+        "costumam ser encartes de dados, apresentações e declarações registrados como artigos.",
     )
     excluir: list[str] = Field(
         default_factory=list,

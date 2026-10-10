@@ -49,7 +49,7 @@ recorte:
 
 ### Documentos que não são artigos
 
-Algumas revistas registram como artigo o que não é: encartes de dados, apresentações de dossiê, declarações. No piloto, a *Opinião Pública* tem oito "Encartes Tendências" registrados como artigos de pesquisa. Quase sempre eles não têm autor, e por isso **a coleta deixa de fora os documentos sem nenhum autor**. Para os outros casos, liste no recorte o que deve sair, pelo PID do SciELO, pelo DOI ou pelo id do OpenAlex:
+Algumas revistas registram como artigo o que não é: encartes de dados, apresentações de dossiê, declarações. No piloto, a *Opinião Pública* tem oito "Encartes Tendências" registrados como artigos de pesquisa. Quase sempre eles não têm autor, e por isso **a coleta deixa de fora os documentos sem nenhum autor**, nem na ArticleMeta nem no OpenAlex. Para os outros casos, liste no recorte o que deve sair, pelo PID do SciELO, pelo DOI ou pelo id do OpenAlex:
 
 ```yaml
 recorte:

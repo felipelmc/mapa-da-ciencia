@@ -272,3 +272,16 @@ def test_sem_autor_desligado_e_lista_do_recorte(projeto, apis_falsas):
     assert any("10.1590/nao-existe" in a for a in resumo.avisos)
     ids = {d.id for d in ler_documentos(projeto.dados / ARQUIVO)}
     assert "S0102-64452011000300001" in ids and "S0103-33522011000100001" not in ids
+
+
+def test_autores_so_no_openalex_nao_contam_como_sem_autor():
+    from mapa_da_ciencia.coleta import _excluir
+    from mapa_da_ciencia.documento import AutoriaOpenAlex, Documento
+
+    def doc(i, autorias):
+        return Documento(id=i, fonte="articlemeta", tipo="research-article", ano=2020, autorias_openalex=autorias)
+
+    com_nome = doc("a", [AutoriaOpenAlex(nome="Fulana de Tal")])
+    sem_nome = doc("b", [AutoriaOpenAlex(nome=None)])  # o encarte de 2014 da Opinião Pública
+    ficam, excluidos, _ = _excluir([com_nome, sem_nome], True, [])
+    assert [d.id for d in ficam] == ["a"] and excluidos == {"sem_autor": ["b"]}
