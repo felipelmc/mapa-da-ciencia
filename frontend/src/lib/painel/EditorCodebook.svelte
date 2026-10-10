@@ -23,6 +23,11 @@
 			.replace(/^_|_$/g, '')
 			.slice(0, 40);
 
+	/** Uma variável que virou booleana ou de texto não tem categorias (o servidor recusaria as que ficaram). */
+	function tirarCategoriasSeNaoUsa(v: CodebookEditavel['variaveis'][number]) {
+		if (v.tipo !== 'categorica' && v.tipo !== 'multipla') delete v.categorias;
+	}
+
 	function novaVariavel() {
 		const n = codebook.variaveis.length + 1;
 		codebook.variaveis.push({
@@ -56,7 +61,7 @@
 				<label class="curto">Identificador <input bind:value={v.id} pattern="[a-z0-9_]+" /></label>
 				<label class="curto">
 					Tipo
-					<select bind:value={v.tipo}>
+					<select bind:value={v.tipo} onchange={() => tirarCategoriasSeNaoUsa(v)}>
 						{#each TIPOS as [t, nome] (t)}<option value={t}>{nome}</option>{/each}
 					</select>
 				</label>

@@ -167,7 +167,8 @@ Ficaram para depois, registrados (a 2.2.0 os corrigiu, um por commit, na branch 
 - o cartão do documento, que cobre parte do mapa numa tela de 1440 px;
 - o kappa de uma pessoa, que conta fichas ainda não confirmadas (**corrigido na 2.2.0**: a confirmação fica
   guardada, e só fichas confirmadas entram nas métricas);
-- o editor do codebook, que acrescenta listas vazias ao YAML;
+- o editor do codebook, que acrescenta listas vazias ao YAML (**corrigido na 2.2.0**: os valores vazios não entram
+  no arquivo);
 - o histórico das etapas, que mostra "na fila" durante a execução;
 - o júri, que ainda não aparece na linha das etapas nem no `mapa status`;
 - nas redes:

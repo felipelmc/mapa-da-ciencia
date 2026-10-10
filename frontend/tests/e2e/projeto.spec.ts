@@ -130,8 +130,12 @@ test('o assistente em 5 passos salva o projeto e roda um piloto', async ({ page 
 	await expect(assistente.getByTestId('perfil-leve')).toHaveAttribute('aria-pressed', 'true');
 	await assistente.screenshot({ path: join(TELAS, 'assistente-modelos.png') });
 	await assistente.getByTestId('avancar').click();
-	// 4. codebook: uma variável nova
+	// 4. codebook: uma variável nova, e outra que vira booleana (as categorias dela saem)
 	await assistente.getByTestId('nova-variavel').click();
+	await assistente.getByTestId('nova-variavel').click();
+	const virouBooleana = assistente.locator('details.variavel').last();
+	await virouBooleana.getByLabel('Tipo').selectOption('booleana');
+	await expect(virouBooleana.locator('table.categorias')).toHaveCount(0);
 	await assistente.getByTestId('avancar').click();
 	// 5. revisão: o que muda e o que isso refaz
 	const mudancas = assistente.getByTestId('mudancas');
@@ -150,7 +154,9 @@ test('o assistente em 5 passos salva o projeto e roda um piloto', async ({ page 
 	expect(config.fontes.scielo.revistas).toEqual(['0103-3352']);
 	expect(config.modelos.classificacao.modelo).toBe('qwen3.5:4b');
 	const codebook = await (await page.request.get(`${url('PAINEL')}api/codebook`)).json();
-	expect(codebook.variaveis.at(-1).rotulo).toMatch(/^Variável \d+$/);
+	expect(codebook.variaveis.at(-2).rotulo).toMatch(/^Variável \d+$/);
+	expect(codebook.variaveis.at(-1)).toMatchObject({ tipo: 'booleana' });
+	expect(codebook.variaveis.at(-1).categorias ?? []).toEqual([]);
 	expect(semAQueda(problemas)).toEqual([]);
 });
 

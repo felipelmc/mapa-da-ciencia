@@ -113,6 +113,28 @@ def test_codebook(cliente, projeto):
     assert r.status_code == 422 and "codebook.yaml ficaria inválido" in r.json()["detail"]
 
 
+@pytest.mark.parametrize("modelo", ["ciencia-politica", "vazio"])
+def test_codebook_sem_mudanca_nao_muda_o_arquivo(modelo, tmp_path):
+    """O GET devolve os padrões que a leitura preencheu (`exemplos: []`, `rotulo: null`, `categorias: []` numa
+    booleana); devolvê-los no PUT, sem mudar nada, deixa o arquivo como estava, byte a byte."""
+    p = Projeto.criar(tmp_path / modelo, modelo=modelo, perfil=PERFIS["leve"])
+    arquivo = p.raiz / "codebook.yaml"
+    antes = arquivo.read_text(encoding="utf-8")
+    with TestClient(criar_app(pasta_dados=p.saida / "dados", projeto=p, estatico=tmp_path / "x"), base_url=LOCAL) as c:
+        cb = c.get("/api/codebook").json()
+        assert c.put("/api/codebook", json=cb).json()["hash"] == cb["hash"]
+        assert arquivo.read_text(encoding="utf-8") == antes
+        # mudar uma definição só troca essa linha; tirar as categorias de uma variável que virou booleana as apaga
+        variavel = next(v for v in cb["variaveis"] if v["categorias"])
+        variavel["categorias"][0]["definicao"] = "Outra definição."
+        variavel["tipo"] = "booleana"
+        del variavel["categorias"]
+        assert c.put("/api/codebook", json=cb).status_code == 200
+    depois = arquivo.read_text(encoding="utf-8")
+    assert "exemplos: []" not in depois and "categorias: []" not in depois and "rotulo: null" not in depois
+    assert yaml.safe_load(depois)["variaveis"][cb["variaveis"].index(variavel)].get("categorias") is None
+
+
 def test_nao_muda_o_projeto_com_uma_etapa_rodando(projeto, tmp_path):
     liberar = threading.Event()
 

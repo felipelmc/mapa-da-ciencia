@@ -3,6 +3,11 @@
 A escrita é *round-trip* (`ruamel.yaml`): só os valores que mudaram são trocados, e os comentários, a ordem das
 chaves e o estilo do arquivo ficam como estavam. O resultado é validado pelos mesmos modelos Pydantic da leitura
 antes de ir para o disco; se for inválido, o arquivo não muda e os problemas voltam na mensagem.
+
+O painel manda o codebook inteiro, com os valores padrão que a leitura preencheu (`exemplos: []`, `rotulo: null`,
+`categorias: []` numa booleana). Com `omitir_vazios`, um valor vazio (`None`, `[]`, `{}`) não cria a chave e tira a
+que existia: o arquivo continua como a pessoa o escreveu. Só serve onde o padrão de todo campo opcional é vazio, como
+no codebook.
 """
 
 from __future__ import annotations
@@ -38,7 +43,20 @@ def _identidade(item: Any) -> Any:
     return ("valor", item) if isinstance(item, str | int | float | bool) else None
 
 
-def _lista(atual: CommentedSeq, valor: list[Any], *, substituir: bool) -> CommentedSeq:
+def _vazio(valor: Any) -> bool:
+    return valor is None or (isinstance(valor, list | dict) and not valor)
+
+
+def _sem_vazios(valor: Any) -> Any:
+    """Um item novo (que não estava no arquivo) sem as chaves de valor vazio, em qualquer nível."""
+    if isinstance(valor, dict):
+        return {k: _sem_vazios(v) for k, v in valor.items() if not _vazio(v)}
+    if isinstance(valor, list):
+        return [_sem_vazios(v) for v in valor]
+    return valor
+
+
+def _lista(atual: CommentedSeq, valor: list[Any], *, substituir: bool, omitir_vazios: bool = False) -> CommentedSeq:
     """A lista nova, reaproveitando os itens (e os comentários) dos que já estavam nela, reconhecidos pelo valor
     ou pelo `id`/`valor` de cada item."""
     antigos = {}
@@ -53,31 +71,34 @@ def _lista(atual: CommentedSeq, valor: list[Any], *, substituir: bool) -> Commen
         if chave in antigos:
             i, velho = antigos[chave]
             if isinstance(item, dict) and isinstance(velho, CommentedMap):
-                _mesclar(velho, item, substituir=substituir)
+                _mesclar(velho, item, substituir=substituir, omitir_vazios=omitir_vazios)
                 item = velho
             nova.append(item)
             if i in atual.ca.items:
                 nova.ca.items[j] = atual.ca.items[i]
         else:
-            nova.append(item)
+            nova.append(_sem_vazios(item) if omitir_vazios else item)
     return nova
 
 
-def _mesclar(destino: CommentedMap, parcial: dict[str, Any], *, substituir: bool) -> None:
+def _mesclar(destino: CommentedMap, parcial: dict[str, Any], *, substituir: bool, omitir_vazios: bool = False) -> None:
     """Põe os valores de `parcial` em `destino`, mantendo o que não mudou e os comentários. Com `substituir`,
-    chaves ausentes de `parcial` saem."""
+    chaves ausentes de `parcial` saem; com `omitir_vazios`, as de valor vazio também (e não são criadas)."""
     if substituir:
         for chave in [k for k in destino if k not in parcial]:
             del destino[chave]
     for chave, valor in parcial.items():
         atual = destino.get(chave)
-        if isinstance(valor, dict) and isinstance(atual, CommentedMap):
-            _mesclar(atual, valor, substituir=substituir)
+        if omitir_vazios and _vazio(valor):
+            if chave in destino:
+                del destino[chave]
+        elif isinstance(valor, dict) and isinstance(atual, CommentedMap):
+            _mesclar(atual, valor, substituir=substituir, omitir_vazios=omitir_vazios)
         elif isinstance(valor, list) and isinstance(atual, CommentedSeq):
             if _simples(atual) != valor:
-                destino[chave] = _lista(atual, valor, substituir=substituir)
+                destino[chave] = _lista(atual, valor, substituir=substituir, omitir_vazios=omitir_vazios)
         elif atual != valor or chave not in destino:
-            destino[chave] = valor
+            destino[chave] = _sem_vazios(valor) if omitir_vazios else valor
 
 
 def _simples(no: Any) -> Any:
@@ -90,12 +111,17 @@ def _simples(no: Any) -> Any:
 
 
 def editar_yaml(
-    caminho: Path, parcial: dict[str, Any], validar: Callable[[dict[str, Any]], Any], *, substituir: bool = False
+    caminho: Path,
+    parcial: dict[str, Any],
+    validar: Callable[[dict[str, Any]], Any],
+    *,
+    substituir: bool = False,
+    omitir_vazios: bool = False,
 ) -> Any:
     """Aplica `parcial` ao YAML e grava, se `validar` aceitar o resultado. Devolve o que `validar` devolveu."""
     y = _yaml()
     doc = y.load(caminho.read_text(encoding="utf-8")) or CommentedMap()
-    _mesclar(doc, parcial, substituir=substituir)
+    _mesclar(doc, parcial, substituir=substituir, omitir_vazios=omitir_vazios)
     try:
         validado = validar(_simples(doc))
     except ValidationError as e:
