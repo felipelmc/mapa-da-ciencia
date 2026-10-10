@@ -149,10 +149,13 @@ test('o CSV sai com números crus, que o R e o pandas leem sem limpeza', async (
 	const [cabTend, ...tendencias] = await csvDe('tendencias');
 	expect(cabTend).toContain('IC 95% da inclinação (inferior)');
 	expect(tendencias.length).toBeGreaterThan(0);
+	expect(cabTend.slice(-2)).toEqual(['Frágil', 'Anos decisivos']);
 	for (const l of tendencias) {
 		expect(l[1]).toMatch(/^(alta|queda)$/);
-		for (const c of l.slice(2)) expect(c, l.join(',')).toMatch(NUMERO);
+		for (const c of l.slice(2, -1)) expect(c, l.join(',')).toMatch(NUMERO);
 		expect(Math.sign(Number(l[2]))).toBe(l[1] === 'alta' ? 1 : -1);
+		// os anos de que uma tendência frágil depende, separados por "; " (vazio numa tendência firme)
+		expect(l.at(-1)).toMatch(l.at(-2) === '1' ? /^\d{4}(; \d{4})*$/ : /^$/);
 	}
 });
 
