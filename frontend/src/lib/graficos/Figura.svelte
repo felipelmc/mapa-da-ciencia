@@ -41,7 +41,13 @@
 	let elemento = $state<HTMLElement | null>(null);
 </script>
 
-<figure class="figura" data-testid="figura-{id}" data-pronto={pronto ? 'sim' : undefined} bind:this={elemento}>
+<figure
+	class="figura"
+	data-testid="figura-{id}"
+	data-pronto={pronto ? 'sim' : undefined}
+	data-tabela={tabela ? 'aberta' : undefined}
+	bind:this={elemento}
+>
 	<header>
 		<h2>{titulo}</h2>
 		{#if controles}<div class="controles">{@render controles()}</div>{/if}

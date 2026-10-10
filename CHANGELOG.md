@@ -20,6 +20,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - **O painel "Exportar" de uma figura não passa mais da borda dela.** Ele nascia alinhado ao botão e, numa figura estreita (a colaboração ao lado do grafo, nas redes), passava da borda da figura e, perto de 1100 px ou em tela cheia, da janela. Agora ele recua para caber, em todas as figuras.
 - **Nas redes, fechar o cartão lendo a colaboração não a tira da tela.** Com o cartão aberto, a colaboração desce para baixo do grafo; ao fechá-lo, ela voltava para o lado do grafo e saía da janela de quem a lia. Agora a rolagem acompanha a mudança, e ela fica onde estava.
 - **No Mapa, o cartão do documento não esconde mais o documento aberto.** Numa tela de 1440 px, o cartão cobria cerca de 43% da nuvem, e o documento aberto (pelo clique, pela busca ou por um link) podia ficar embaixo dele. Agora o mapa desliza até deixá-lo à vista, sem mudar o zoom. A coluna vazia embaixo de um cartão curto também deixa de engolir o clique, o arrasto e a roda do mouse, e os rótulos dos tópicos só se escondem atrás do próprio cartão.
+- **Na Validação, com "Ver como tabela" aberto, a figura grudada continua cabendo na janela.** Numa tela larga, a tabela da concordância acompanha a rolagem ao lado do detalhe; com a tabela dos dados aberta, a figura passava da altura da janela. Agora as duas tabelas dividem a altura e rolam por dentro.
 
 ## [2.1.1] - 2026-09-29
 

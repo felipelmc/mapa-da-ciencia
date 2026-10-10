@@ -720,5 +720,12 @@
 			max-height: max(14rem, calc(100dvh - var(--altura-barra, 4rem) - 18rem));
 			overflow-y: auto;
 		}
+
+		/* com "Ver como tabela" aberto, as duas tabelas dividem a altura que a do par tinha sozinha (os 2rem a mais são
+		   a margem e a borda da tabela da figura), e a figura grudada continua cabendo na janela */
+		.par-e-detalhe > :global(.figura[data-tabela] .tabela-do-par),
+		.par-e-detalhe > :global(.figura[data-tabela] > .rolagem) {
+			max-height: max(7rem, calc((100dvh - var(--altura-barra, 4rem) - 20rem) / 2));
+		}
 	}
 </style>

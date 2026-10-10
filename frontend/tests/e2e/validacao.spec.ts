@@ -239,6 +239,37 @@ test('numa tela larga, com muitas variáveis, a tabela grudada rola por dentro e
 	expect(livre).toBe(true);
 });
 
+test('com "Ver como tabela" aberto, a figura grudada continua cabendo na janela', async ({ page }) => {
+	await page.route('**/dados/validacao.json', async (rota) => {
+		const resposta = await rota.fetch();
+		const v = await resposta.json();
+		const extra = [];
+		for (let k = 1; k < 5; k += 1) for (const m of v.metricas) extra.push({ ...m, variavel: `${m.variavel}_${k}` });
+		v.metricas.push(...extra);
+		await rota.fulfill({ response: resposta, json: v });
+	});
+	await page.setViewportSize({ width: 1600, height: 800 });
+	await page.goto(`${url('RAIZ')}#/validacao`);
+	const figura = page.getByTestId('figura-concordancia');
+	await figura.getByRole('button', { name: 'Ver como tabela' }).click();
+	await expect(figura).toHaveAttribute('data-tabela', 'aberta');
+	await figura.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top));
+	const caixa = (await figura.boundingBox())!;
+	expect(caixa.y).toBeGreaterThan(0);
+	expect(caixa.y + caixa.height).toBeLessThanOrEqual(800);
+	// as duas tabelas rolam por dentro, e a última linha de cada uma recebe o clique
+	for (const rolagem of [page.locator('.tabela-do-par'), page.locator('#tabela-concordancia')]) {
+		await rolagem.evaluate((el) => (el.scrollTop = el.scrollHeight));
+		const ultima = rolagem.locator('tbody tr').last();
+		const livre = await ultima.evaluate((el) => {
+			const c = el.getBoundingClientRect();
+			const topo = document.elementFromPoint(c.left + c.width / 2, c.top + c.height / 2);
+			return c.bottom <= innerHeight && !!topo && el.contains(topo);
+		});
+		expect(livre).toBe(true);
+	}
+});
+
 test('no site publicado, a validação abre no par principal, com nomes legíveis e a parte técnica recolhida', async ({ page }) => {
 	const problemas = vigiar(page);
 	await page.goto(`${url('PUBLICADO')}#/validacao`);
