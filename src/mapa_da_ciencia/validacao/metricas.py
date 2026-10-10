@@ -194,9 +194,10 @@ _TRACOS = re.compile(r"\s*[-‐‑‒–—−]\s*")
 
 
 def normalizar_texto(valor: str) -> str:
-    """Sem diferença de maiúsculas, acentos, espaços e tipo de traço: "1994 - 2018" = "1994–2018"."""
+    """Sem diferença de maiúsculas, acentos, espaços, sublinhados e tipo de traço: "1994 - 2018" = "1994–2018", e
+    "nao_se_aplica" (o modelo às vezes escreve o nome da categoria) = "não se aplica"."""
     sem_acento = "".join(c for c in unicodedata.normalize("NFKD", valor) if not unicodedata.combining(c))
-    return " ".join(_TRACOS.sub("–", sem_acento.casefold()).split())
+    return " ".join(_TRACOS.sub("–", sem_acento.casefold()).replace("_", " ").split())
 
 
 _COMPARAR: dict[str, Callable[[str], str]] = {

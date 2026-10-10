@@ -90,6 +90,11 @@ def test_sem_informacao(exemplo, com_multipla):
     assert sem_informacao(var["abordagem"], "nao_informado") and not sem_informacao(var["abordagem"], "mista")
     assert sem_informacao(var["brasil_como_caso"], False) and not sem_informacao(var["brasil_como_caso"], True)
     assert sem_informacao(var["periodo"], "Não se aplica.") and not sem_informacao(var["periodo"], "1994–2018")
+    assert sem_informacao(var["periodo"], "nao_se_aplica") and sem_informacao(var["periodo"], "nao_informado")
+    from mapa_da_ciencia.classificacao.codebook import conferir_valor
+
+    assert conferir_valor(var["periodo"], "nao_se_aplica") == ("não se aplica", None)
+    assert conferir_valor(var["periodo"], "  1994 –  2018 ") == ("1994 – 2018", None)
     assert sem_informacao(var["metodos"], []) and sem_informacao(var["metodos"], ["nao_informado"])
     assert not sem_informacao(var["metodos"], ["survey", "nao_informado"])
 

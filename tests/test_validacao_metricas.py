@@ -262,6 +262,7 @@ def test_texto_normalizado():
     n = vm.normalizar_texto
     assert n("1994 - 2018") == n("1994–2018") == n("1994—2018")
     assert n("Não se aplica") == n("nao  se aplica")
+    assert n("nao_se_aplica") == n("Não se aplica")  # o modelo às vezes escreve o nome da categoria
 
 
 def test_relatorio(projeto, tmp_path):
