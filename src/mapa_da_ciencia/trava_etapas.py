@@ -13,7 +13,9 @@ votação do júri chama a classificação; `mapa importar`, a coleta). O sistem
 
 `quem_roda` lê o dono (o painel consulta antes de começar um job e a cada poucos segundos): um arquivo vazio, ou com o
 PID de um processo que já não existe, quer dizer livre; com o PID de um processo vivo, uma sonda confere se a trava
-está mesmo presa (o PID pode ser de outro processo, depois de uma queda). Sem `fcntl` (Windows), não há trava.
+está mesmo presa (o PID pode ser de outro processo, depois de uma queda). A sonda segura a trava por um instante:
+por isso uma etapa tenta de novo (`TENTATIVAS`, a cada `ESPERA`) antes de dizer que outra roda. Sem `fcntl`
+(Windows), não há trava.
 """
 
 from __future__ import annotations
@@ -22,6 +24,7 @@ import functools
 import json
 import os
 import threading
+import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import datetime
@@ -31,6 +34,7 @@ from .config import ErroConfig
 from .projeto import Projeto
 
 ARQUIVO = ".etapa.lock"
+TENTATIVAS, ESPERA = 3, 0.05  # antes de dizer que outra etapa roda
 Origem = Literal["painel", "terminal"]
 _local = threading.local()
 
@@ -122,12 +126,16 @@ def uma_etapa_por_vez(projeto: Projeto, etapa: str) -> Iterator[None]:
             travas[chave][1] -= 1
         return
     arquivo = open(projeto.raiz / ARQUIVO, "a+", encoding="utf-8")  # noqa: SIM115 (fica aberto com a etapa)
-    try:
-        fcntl.flock(arquivo, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        dono = _ler(arquivo)
-        arquivo.close()
-        raise EtapaEmAndamento(mensagem(projeto, dono)) from None
+    for tentativa in range(TENTATIVAS):
+        try:
+            fcntl.flock(arquivo, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            break
+        except BlockingIOError:
+            if tentativa == TENTATIVAS - 1:
+                dono = _ler(arquivo)
+                arquivo.close()
+                raise EtapaEmAndamento(mensagem(projeto, dono)) from None
+            time.sleep(ESPERA)  # a sonda do `quem_roda` segura a trava por um instante
     arquivo.seek(0)
     arquivo.truncate()
     dono = {
@@ -193,7 +201,12 @@ def quem_roda(projeto: Projeto) -> dict[str, Any] | None:
     try:
         fcntl.flock(arquivo, fcntl.LOCK_SH | fcntl.LOCK_NB)
     except BlockingIOError:
-        return dono
+        # presa: relê o dono, que pode ser uma etapa que começou entre a leitura acima e a sonda
+        try:
+            atual = json.loads(arquivo.read() or "{}")
+        except json.JSONDecodeError:
+            atual = {}
+        return atual if atual and _vivo(atual.get("pid")) else dono
     else:
         fcntl.flock(arquivo, fcntl.LOCK_UN)
         return None  # o arquivo ficou de uma etapa que caiu

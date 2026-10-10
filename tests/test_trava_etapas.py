@@ -142,3 +142,14 @@ def test_arquivo_velho_com_pid_reaproveitado_nao_trava(projeto):
     assert quem_roda(projeto) is None
     with uma_etapa_por_vez(projeto, "coleta"):
         assert quem_roda(projeto)["etapa"] == "coleta"
+
+
+def test_a_sonda_de_um_instante_nao_barra_a_etapa(projeto):
+    # o `quem_roda` do painel segura a trava (LOCK_SH) por um instante: a etapa que começa nesse instante espera
+    import fcntl
+
+    sonda = open(projeto.raiz / ARQUIVO, "a+", encoding="utf-8")  # noqa: SIM115
+    fcntl.flock(sonda, fcntl.LOCK_SH)
+    threading.Timer(0.02, lambda: (fcntl.flock(sonda, fcntl.LOCK_UN), sonda.close())).start()
+    with uma_etapa_por_vez(projeto, "geografia"):
+        assert quem_roda(projeto)["etapa"] == "geografia"
