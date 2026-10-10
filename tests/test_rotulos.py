@@ -151,6 +151,11 @@ def test_caixa_de_frase_pelos_resumos():
     # idempotente
     certo = R.conferir_caixa(rotulo, caixa)
     assert R.conferir_caixa(certo, caixa) == certo
+    # num empate, a maiúscula sai: ela vem de um nome próprio maior, não da palavra
+    empate = R.Caixa().contar("o Horário Gratuito de Propaganda Eleitoral e a propaganda negativa, e a propaganda")
+    empate.contar("a Propaganda Eleitoral Gratuita")
+    assert (empate.maiusculas["propaganda"], empate.total["propaganda"]) == (2, 4)
+    assert R.conferir_caixa("Financiamento e Propaganda eleitoral", empate) == "Financiamento e propaganda eleitoral"
 
 
 def test_caixa_corrigida_tambem_no_rotulo_reaproveitado(tmp_path, apis_falsas):

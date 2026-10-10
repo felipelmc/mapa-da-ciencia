@@ -15,7 +15,7 @@ tópicos. Cuidados, do spike M0b (ADR 0005):
 - **Caixa de frase.** O prompt pede maiúscula só na primeira palavra, nas siglas e nos nomes próprios, e o modelo
   às vezes escreve em caixa de título ("Agenda Legislativa e Processo no Congresso"). Cada palavra depois da
   primeira só fica com a maiúscula se, no meio das frases dos resumos em português do tópico (ou do corpus, quando o
-  tópico tem menos de 3 ocorrências), ela aparece com maiúscula ao menos metade das vezes: "Congresso" e "Brasil"
+  tópico tem menos de 3 ocorrências), ela aparece com maiúscula na maioria das vezes: "Congresso" e "Brasil"
   ficam, "Legislativa" e "Processo" não. Siglas ficam. A conferência vale também para os rótulos do cache e os
   reaproveitados, e nada do que ela muda vai para o cache: por isso, mudar a regra não pede subir `VERSAO_PROMPT`.
 - **Edição à mão.** `rotulos.yaml`, na pasta do projeto, tem prioridade sobre tudo (`rotulo_fonte: manual`).
@@ -104,8 +104,10 @@ OCORRENCIAS_MINIMAS = 3  # no meio das frases, para decidir a caixa de uma palav
 
 def conferir_caixa(rotulo: str, *caixas: Caixa) -> str:
     """O rótulo em caixa de frase: uma palavra com maiúscula depois da primeira só fica assim se aparece com
-    maiúscula, no meio das frases, ao menos metade das vezes na primeira contagem com ocorrências bastantes (a do
-    tópico, depois a do corpus). Siglas, letras soltas e palavras sem ocorrências bastantes ficam como estão."""
+    maiúscula, no meio das frases, na maioria das vezes na primeira contagem com ocorrências bastantes (a do tópico,
+    depois a do corpus). Num empate, sai a maiúscula: ele vem de um nome próprio maior ("Defensoria Pública",
+    "Horário Gratuito de Propaganda Eleitoral"), que não faz da palavra sozinha um nome próprio. Siglas, letras soltas
+    e palavras sem ocorrências bastantes ficam como estão."""
     primeira = True
 
     def trocar(m: re.Match) -> str:
@@ -117,7 +119,7 @@ def conferir_caixa(rotulo: str, *caixas: Caixa) -> str:
         chave = palavra.casefold()
         for c in caixas:
             if c.total[chave] >= OCORRENCIAS_MINIMAS:
-                return palavra if 2 * c.maiusculas[chave] >= c.total[chave] else palavra.lower()
+                return palavra if 2 * c.maiusculas[chave] > c.total[chave] else palavra.lower()
         return palavra
 
     return re.sub(r"[^\W\d_]+", trocar, rotulo)
