@@ -554,6 +554,8 @@
 
 	.tecnico {
 		display: grid;
+		/* sem o minmax, a tabela larga não encolhe dentro do bloco e alarga a página no celular */
+		grid-template-columns: minmax(0, 1fr);
 		gap: 1.5rem;
 	}
 

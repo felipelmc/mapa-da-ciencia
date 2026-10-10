@@ -92,7 +92,7 @@
 	const resumoCobertura = $derived(
 		fracos.length
 			? `Em ${fracos.map(([x, y]) => (x === y ? `${x}` : `${x}–${y}`)).join(', ')}, mais de ` +
-					`${formatarPorcentagem(LIMIAR_AVISO)} do peso de cada ano fica com autores sem afiliação informada: ` +
+					`${formatarPorcentagem(LIMIAR_AVISO)} do peso ${fracos.length === 1 && fracos[0][0] === fracos[0][1] ? 'do ano' : 'de cada ano'} fica com autores sem afiliação informada: ` +
 					'a geografia desses anos é mais incompleta, e comparações com os outros pedem cuidado.'
 			: `Em todos os anos, pelo menos ${formatarPorcentagem(1 - LIMIAR_AVISO)} do peso tem afiliação informada.`
 	);

@@ -27,6 +27,7 @@ O fundo da figura é sempre opaco, na cor do tema, para o texto não sumir num s
 - Os controles (os botões de modo, os filtros) não entram no SVG nem no PNG.
 - A escala das espessuras na colaboração entre estados fica na nota da figura, e não no arquivo: descreva-a na legenda do artigo, ou use o CSV.
 - As redes de coautoria e de instituições são desenhadas num canvas, por causa dos milhares de nós: no SVG, os nós e as linhas entram como imagem (em dobro da resolução da tela), e só os rótulos, a legenda e os textos são vetoriais.
+- O texto acompanha a escala da figura: uma figura que na tela é estreita (como "A colaboração por ano", ao lado de outra numa tela larga) sai com as letras proporcionalmente maiores que uma figura larga exportada no mesmo tamanho. Para letras parecidas em várias figuras de um artigo, exporte-as com a janela na mesma largura, ou ajuste o tamanho da figura no editor de texto.
 - Figuras que são tabelas (o cruzamento da vista Classificação, o ranking das instituições, as tabelas da Validação, a lista em alta e em queda) só exportam o CSV.
 - A nuvem da vista Mapa não é uma figura exportável: para uma imagem dela, use a captura de tela do navegador.
 
