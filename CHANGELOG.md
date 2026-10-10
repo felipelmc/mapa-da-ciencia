@@ -17,6 +17,7 @@ Todas as mudanças relevantes do projeto ficam registradas aqui. O formato segue
 - **As últimas execuções, na vista Projeto do painel, acompanham o job ao vivo.** A etapa que acabou de começar aparecia "na fila" até terminar; agora a lista mostra o mesmo estado do acompanhamento (rodando, concluído, cancelado).
 - **Nas redes, um link com uma comunidade e um nó enquadra o nó.** Aberto direto (ou recarregado), o link com `comunidade=` e `no=` enquadrava a comunidade, e o nó do cartão podia ficar fora da tela. Escolher outra comunidade, na legenda ou no seletor, agora fecha o cartão aberto e enquadra a comunidade.
 - **Nas redes, o Esc solta a comunidade depois de fechar um cartão aberto pelo link.** O cartão aberto pelo link mandava o foco para a busca ao fechar, e o Esc seguinte ficava com o campo de texto. Agora o foco vai para o grafo, e o segundo Esc solta a comunidade; na busca, o Esc limpa o texto e, com o campo vazio, solta a comunidade.
+- **O painel "Exportar" de uma figura não passa mais da borda dela.** Ele nascia alinhado ao botão e, numa figura estreita (a colaboração ao lado do grafo, nas redes), passava da borda da figura e, perto de 1100 px ou em tela cheia, da janela. Agora ele recua para caber, em todas as figuras.
 
 ## [2.1.1] - 2026-09-29
 

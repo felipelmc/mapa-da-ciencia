@@ -831,6 +831,37 @@ test('em tela cheia, o cartão do nó aparece junto com o grafo', async ({ page 
 	await page.keyboard.press('Escape');
 });
 
+test('ao lado do grafo, o painel de exportar da colaboração fica dentro da figura e da janela', async ({ page }) => {
+	for (const [largura, altura] of [
+		[1440, 900],
+		[1200, 800]
+	]) {
+		await page.setViewportSize({ width: largura, height: altura });
+		await page.goto(`${url('RAIZ')}#/redes`);
+		await esperarRedes(page, 'coautoria');
+		const figura = page.getByTestId('figura-colaboracao');
+		await figura.scrollIntoViewIfNeeded();
+		// com a tabela aberta, o botão "Esconder a tabela" é mais largo e empurra o "Exportar" para a direita
+		for (const comTabela of [false, true]) {
+			if (comTabela) await figura.getByRole('button', { name: 'Ver como tabela' }).click();
+			await figura.getByTestId('abrir-exportar').click();
+			const painel = figura.getByRole('group', { name: 'Exportar a figura' });
+			await expect(painel).toBeVisible();
+			const f = (await figura.boundingBox())!;
+			// o recuo é medido depois de o painel aparecer
+			await expect
+				.poll(async () => {
+					const p = (await painel.boundingBox())!;
+					return p.x + p.width;
+				}, { message: `${largura} px, tabela ${comTabela}` })
+				.toBeLessThanOrEqual(f.x + f.width + 0.5);
+			expect((await painel.boundingBox())!.x).toBeGreaterThanOrEqual(0);
+			expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+			await figura.getByTestId('abrir-exportar').click();
+		}
+	}
+});
+
 test('com o cartão aberto, a colaboração desce para baixo do grafo, sem nada por cima, e a exportação dela abre', async ({ page }) => {
 	await page.setViewportSize({ width: 1920, height: 1080 });
 	await page.goto(`${url('RAIZ')}#/redes?no=${redes.pessoas.id[central()]}`);
